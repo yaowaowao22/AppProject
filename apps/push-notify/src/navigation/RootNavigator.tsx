@@ -1,4 +1,6 @@
 import React from 'react';
+import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedTabNavigator } from '@massapp/navigation';
 import type { TabScreen } from '@massapp/navigation';
@@ -39,5 +41,24 @@ const screens: TabScreen[] = [
 ];
 
 export function RootNavigator() {
-  return <ThemedTabNavigator screens={screens} />;
+  const insets = useSafeAreaInsets();
+  return (
+    <ThemedTabNavigator
+      screens={screens}
+      screenOptions={{
+        tabBarStyle: {
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          marginBottom: Platform.OS === 'ios' ? 0 : 4,
+        },
+        tabBarIconStyle: {
+          marginTop: 4,
+        },
+      }}
+    />
+  );
 }
