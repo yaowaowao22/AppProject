@@ -53,7 +53,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
   // Expo Push Token 取得
   const tokenResponse = await Notifications.getExpoPushTokenAsync({
-    projectId: undefined, // EASビルド時にはここにprojectIdを設定
+    projectId: '6bb9b696-be28-40e8-a06b-dda93652e07c',
   });
 
   return tokenResponse.data;

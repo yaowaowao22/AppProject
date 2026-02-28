@@ -7,7 +7,7 @@ compatibility_date = "2025-01-01"
 # Then replace the id below with the actual ID
 [[kv_namespaces]]
 binding = "PUSH_KV"
-id = "YOUR_KV_NAMESPACE_ID"
+id = "113de8f8e23d449196058adff27d56cb"
 
 # For local development:
 # wrangler dev will auto-create a local KV store

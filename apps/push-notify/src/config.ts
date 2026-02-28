@@ -10,7 +10,7 @@
 //   wrangler deploy
 //   → 出力されたURLを API_BASE に設定
 
-export const API_BASE = 'https://push-api.YOUR_SUBDOMAIN.workers.dev';
+export const API_BASE = 'https://push-api.selectinfo-yaowao.workers.dev';
 
 // 開発時はこちらを使用:
 // export const API_BASE = 'http://localhost:8787';
