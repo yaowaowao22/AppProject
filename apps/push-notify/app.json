@@ -36,7 +36,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "./plugins/withFirebaseModularHeaders",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
       [
         "react-native-google-mobile-ads",
         {
