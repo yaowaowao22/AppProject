@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   Linking,
+  TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +25,18 @@ export function InboxScreen() {
   );
   const [isPremium] = useLocalStorage('push_is_premium', false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredNotifications = useMemo(() => {
+    if (!searchQuery.trim()) return notifications;
+    const q = searchQuery.toLowerCase();
+    return notifications.filter(
+      (n) =>
+        n.title.toLowerCase().includes(q) ||
+        n.message.toLowerCase().includes(q) ||
+        (n.url && n.url.toLowerCase().includes(q))
+    );
+  }, [notifications, searchQuery]);
 
   const markAsRead = useCallback(
     (id: string) => {
@@ -164,13 +177,32 @@ export function InboxScreen() {
             variant={isPremium ? 'success' : notifications.length >= FREE_LIMIT ? 'error' : 'info'}
           />
         </View>
+
+        {notifications.length > 0 && (
+          <View style={[styles.searchBox, { backgroundColor: colors.surface, borderRadius: radius.sm, borderColor: colors.border }]}>
+            <Ionicons name="search" size={16} color={colors.textMuted} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder="通知を検索..."
+              placeholderTextColor={colors.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
 
       <FlatList
-        data={notifications}
+        data={filteredNotifications}
         renderItem={renderNotification}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={notifications.length === 0 ? styles.emptyList : { paddingHorizontal: spacing.md, paddingBottom: 16 }}
+        contentContainerStyle={filteredNotifications.length === 0 ? styles.emptyList : { paddingHorizontal: spacing.md, paddingBottom: 16 }}
         ListEmptyComponent={renderEmpty}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
@@ -215,6 +247,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    marginTop: 8,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: 0,
   },
   emptyContainer: {
     alignItems: 'center',
