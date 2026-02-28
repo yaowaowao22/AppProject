@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, H1, H2, Body, Caption, Card, Button, Badge } from '@massapp/ui';
-import { ScreenWrapper } from '@massapp/navigation';
 import { useLocalStorage } from '@massapp/hooks';
 import type { PushNotification, UsageInfo, Priority } from '../types';
 import { FREE_LIMIT } from '../types';
@@ -26,6 +26,7 @@ function copyToClipboard(text: string) {
 
 export function SetupScreen() {
   const { colors, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const [apiKey, setApiKey, apiKeyLoading] = useLocalStorage<string | null>('push_api_key', null);
   const [notifications, setNotifications] = useLocalStorage<PushNotification[]>(
     'push_notifications',
@@ -62,7 +63,6 @@ export function SetupScreen() {
       return;
     }
 
-    const priorities: Priority[] = ['low', 'normal', 'high', 'urgent'];
     const testMessages = [
       { title: 'サーバー監視', message: 'CPU使用率が正常範囲内です。全システム稼働中。', priority: 'normal' as Priority },
       { title: 'デプロイ完了', message: 'v2.1.0が本番環境にデプロイされました。ビルド時間: 3分42秒', priority: 'high' as Priority },
@@ -124,8 +124,8 @@ requests.post("${API_BASE}/api/send", json={
   const currentCount = usage.monthKey === monthKey ? usage.count : 0;
 
   return (
-    <ScreenWrapper edges={['top']} showBanner={false}>
-      <ScrollView style={[styles.container, { padding: spacing.md }]} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.md, paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
         <H1 style={{ fontSize: 24, marginBottom: spacing.md }}>API設定</H1>
 
         {/* API Key */}
@@ -185,7 +185,7 @@ requests.post("${API_BASE}/api/send", json={
             ]}
           >
             <Body style={{ fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier', fontSize: 13 }}>
-              POST {API_BASE}/send
+              POST {API_BASE}/api/send
             </Body>
           </View>
         </Card>
@@ -345,10 +345,10 @@ requests.post("${API_BASE}/api/send", json={
           title="テスト通知を送信"
           onPress={handleTestSend}
           variant="primary"
-          style={{ marginBottom: spacing.xxl }}
+          style={{ marginBottom: spacing.md }}
         />
       </ScrollView>
-    </ScreenWrapper>
+    </View>
   );
 }
 

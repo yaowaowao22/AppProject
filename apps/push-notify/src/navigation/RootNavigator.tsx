@@ -32,6 +32,7 @@ const screens: TabScreen[] = [
     component: SettingsScreen,
     options: {
       title: '設定',
+      headerShown: false,
       tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} />,
     },
   },

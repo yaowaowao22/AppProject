@@ -7,9 +7,9 @@ import {
   Alert,
   Linking,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme, H1, H2, Body, Caption, Card, Badge, Button } from '@massapp/ui';
-import { ScreenWrapper } from '@massapp/navigation';
+import { useTheme, H1, H2, Body, Caption, Card, Badge } from '@massapp/ui';
 import { useLocalStorage } from '@massapp/hooks';
 import type { PushNotification } from '../types';
 import { FREE_LIMIT, PRIORITY_CONFIG } from '../types';
@@ -17,6 +17,7 @@ import { formatRelativeTime } from '../utils/apiKey';
 
 export function InboxScreen() {
   const { colors, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useLocalStorage<PushNotification[]>(
     'push_notifications',
     []
@@ -149,8 +150,8 @@ export function InboxScreen() {
   );
 
   return (
-    <ScreenWrapper edges={['top']} showBanner={false}>
-      <View style={[styles.container, { padding: spacing.md }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      <View style={{ padding: spacing.md, paddingBottom: 0 }}>
         <View style={[styles.header, { marginBottom: spacing.md }]}>
           <View>
             <H1 style={{ fontSize: 24 }}>受信箱</H1>
@@ -163,18 +164,18 @@ export function InboxScreen() {
             variant={isPremium ? 'success' : notifications.length >= FREE_LIMIT ? 'error' : 'info'}
           />
         </View>
-
-        <FlatList
-          data={notifications}
-          renderItem={renderNotification}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={notifications.length === 0 ? styles.emptyList : { paddingBottom: 32 }}
-          ListEmptyComponent={renderEmpty}
-          showsVerticalScrollIndicator={false}
-          ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
-        />
       </View>
-    </ScreenWrapper>
+
+      <FlatList
+        data={notifications}
+        renderItem={renderNotification}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={notifications.length === 0 ? styles.emptyList : { paddingHorizontal: spacing.md, paddingBottom: 16 }}
+        ListEmptyComponent={renderEmpty}
+        showsVerticalScrollIndicator={false}
+        ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
+      />
+    </View>
   );
 }
 

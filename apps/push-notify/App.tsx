@@ -17,6 +17,21 @@ import { generateApiKey, getCurrentMonthKey } from './src/utils/apiKey';
 import type { PushNotification, UsageInfo } from './src/types';
 import { Linking } from 'react-native';
 
+function extractNotification(notification: any): PushNotification | null {
+  const content = notification.request?.content ?? notification?.notification?.request?.content;
+  if (!content) return null;
+  const data = content.data;
+  return {
+    id: data?.id ?? Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    title: data?.title ?? content.title ?? '通知',
+    message: data?.message ?? content.body ?? '',
+    priority: data?.priority ?? 'normal',
+    timestamp: new Date().toISOString(),
+    read: false,
+    url: data?.url,
+  };
+}
+
 function AppInner() {
   const [apiKey, setApiKey, apiKeyLoading] = useLocalStorage<string | null>('push_api_key', null);
   const [pushToken, setPushToken] = useLocalStorage<string | null>('push_token', null);
@@ -54,27 +69,13 @@ function AppInner() {
         }
       }
     })();
-  }, [apiKey, registered, setPushToken, setRegistered]);
+  }, [apiKey, apiKeyLoading, registered, setPushToken, setRegistered]);
 
-  // 通知受信ハンドラ
-  const handleNotificationReceived = useCallback(
-    (notification: any) => {
-      const data = notification.request?.content?.data;
-      if (!data) return;
-
-      const newNotif: PushNotification = {
-        id: data.id ?? Date.now().toString(36),
-        title: data.title ?? notification.request?.content?.title ?? '通知',
-        message: data.message ?? notification.request?.content?.body ?? '',
-        priority: data.priority ?? 'normal',
-        timestamp: new Date().toISOString(),
-        read: false,
-        url: data.url,
-      };
-
-      setNotifications([newNotif, ...notificationsRef.current]);
-
-      // 使用カウント更新
+  const addNotification = useCallback(
+    (notif: PushNotification) => {
+      // 重複チェック
+      if (notificationsRef.current.some((n) => n.id === notif.id)) return;
+      setNotifications([notif, ...notificationsRef.current]);
       const monthKey = getCurrentMonthKey();
       setUsage((prev: UsageInfo) => ({
         monthKey,
@@ -84,12 +85,27 @@ function AppInner() {
     [setNotifications, setUsage]
   );
 
-  const handleNotificationTapped = useCallback((response: any) => {
-    const data = response.notification?.request?.content?.data;
-    if (data?.url) {
-      Linking.openURL(data.url).catch(() => {});
-    }
-  }, []);
+  // 通知受信ハンドラ（フォアグラウンド）
+  const handleNotificationReceived = useCallback(
+    (notification: any) => {
+      const notif = extractNotification(notification);
+      if (notif) addNotification(notif);
+    },
+    [addNotification]
+  );
+
+  // 通知タップハンドラ（バックグラウンドからの復帰含む）
+  const handleNotificationTapped = useCallback(
+    (response: any) => {
+      const notif = extractNotification(response);
+      if (notif) addNotification({ ...notif, read: true });
+      const data = response.notification?.request?.content?.data;
+      if (data?.url) {
+        Linking.openURL(data.url).catch(() => {});
+      }
+    },
+    [addNotification]
+  );
 
   // 通知リスナー設定
   useEffect(() => {
