@@ -112,7 +112,7 @@ export function InboxScreen() {
   );
 
   return (
-    <ScreenWrapper>
+    <ScreenWrapper edges={['top']}>
       <View style={[styles.container, { padding: spacing.md }]}>
         <View style={[styles.header, { marginBottom: spacing.md }]}>
           <View>

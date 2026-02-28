@@ -130,7 +130,7 @@ requests.post("${API_BASE}/api/send", json={
   const currentCount = usage.monthKey === monthKey ? usage.count : 0;
 
   return (
-    <ScreenWrapper>
+    <ScreenWrapper edges={['top']}>
       <ScrollView style={[styles.container, { padding: spacing.md }]} showsVerticalScrollIndicator={false}>
         <H1 style={{ fontSize: 24, marginBottom: spacing.md }}>API設定</H1>
 

@@ -100,7 +100,7 @@ export function SettingsScreen() {
   const currentCount = usage.monthKey === monthKey ? usage.count : 0;
 
   return (
-    <ScreenWrapper>
+    <ScreenWrapper edges={['top']}>
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         <View style={{ padding: spacing.md }}>
           {/* Plan Section */}
