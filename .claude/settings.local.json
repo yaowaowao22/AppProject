@@ -23,7 +23,11 @@
       "Bash(curl:*)",
       "Bash(pnpm install:*)",
       "Bash(rm:*)",
-      "Bash(npx eas:*)"
+      "Bash(npx eas:*)",
+      "Bash(grep:*)",
+      "Bash(yes:*)",
+      "Bash(export:*)",
+      "Bash(node:*)"
     ]
   }
 }

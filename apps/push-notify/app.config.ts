@@ -29,6 +29,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   web: {
     favicon: './assets/favicon.png',
   },
+  extra: {
+    eas: {
+      projectId: '6bb9b696-be28-40e8-a06b-dda93652e07c',
+    },
+  },
+  owner: 'yaowao',
   plugins: [
     [
       'expo-notifications',
