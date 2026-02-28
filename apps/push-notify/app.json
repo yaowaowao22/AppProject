@@ -35,7 +35,16 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [],
+    "plugins": [
+      "./plugins/withFirebaseModularHeaders",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-6549870597795219~8560699337"
+        }
+      ]
+    ],
     "owner": "yaowao"
   }
 }
