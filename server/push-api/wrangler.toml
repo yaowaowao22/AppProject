@@ -1,0 +1,16 @@
+name = "push-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# KV namespace for storing device tokens and usage data
+# Run: wrangler kv namespace create PUSH_KV
+# Then replace the id below with the actual ID
+[[kv_namespaces]]
+binding = "PUSH_KV"
+id = "YOUR_KV_NAMESPACE_ID"
+
+# For local development:
+# wrangler dev will auto-create a local KV store
+
+[vars]
+FREE_MONTHLY_LIMIT = "10"

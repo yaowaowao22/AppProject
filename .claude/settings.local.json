@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.page)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:huyha.zone)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:blog.g1mishra.dev)",
+      "Bash(gh api:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(which pnpm:*)",
+      "Bash(npm install:*)",
+      "Bash(cd:*)",
+      "Bash(grep 8081:*)",
+      "Bash(netstat:*)",
+      "Bash(pkill:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(tail:*)",
+      "Bash(ls:*)",
+      "Bash(npx expo:*)",
+      "Bash(curl:*)",
+      "Bash(pnpm install:*)",
+      "Bash(rm:*)",
+      "Bash(npx eas:*)"
+    ]
+  }
+}

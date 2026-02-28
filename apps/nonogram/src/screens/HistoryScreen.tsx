@@ -1,0 +1,92 @@
+import React from 'react';
+import { View, StyleSheet, FlatList } from 'react-native';
+import { useTheme, H2, ListItem, Divider, EmptyState, Caption } from '@massapp/ui';
+import { ScreenWrapper } from '@massapp/navigation';
+import { useLocalStorage } from '@massapp/hooks';
+import { PuzzleResult } from '../types';
+import { formatTime } from '../utils/nonogram';
+
+function formatDate(isoString: string): string {
+  const date = new Date(isoString);
+  const y = date.getFullYear();
+  const m = (date.getMonth() + 1).toString().padStart(2, '0');
+  const d = date.getDate().toString().padStart(2, '0');
+  const h = date.getHours().toString().padStart(2, '0');
+  const min = date.getMinutes().toString().padStart(2, '0');
+  return `${y}/${m}/${d} ${h}:${min}`;
+}
+
+function getSizeLabel(size: number): string {
+  switch (size) {
+    case 5:
+      return '5x5 初級';
+    case 10:
+      return '10x10 中級';
+    case 15:
+      return '15x15 上級';
+    default:
+      return `${size}x${size}`;
+  }
+}
+
+export function HistoryScreen() {
+  const { colors, spacing } = useTheme();
+  const [results] = useLocalStorage<PuzzleResult[]>('nonogram-results', []);
+
+  const data = results || [];
+
+  const renderItem = ({ item }: { item: PuzzleResult }) => (
+    <View>
+      <ListItem
+        title={item.puzzleName}
+        subtitle={`${getSizeLabel(item.size)} | ${formatTime(item.timeSeconds)} | ${formatDate(item.date)}`}
+        leftIcon="🏆"
+      />
+      <Divider />
+    </View>
+  );
+
+  return (
+    <ScreenWrapper>
+      <View style={[styles.container, { padding: spacing.lg }]}>
+        <H2 style={{ marginBottom: spacing.lg }}>クリア記録</H2>
+        {data.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <EmptyState
+              icon="🏆"
+              title="まだ記録がありません"
+              subtitle="パズルをクリアして記録を残しましょう"
+            />
+          </View>
+        ) : (
+          <>
+            <Caption
+              style={{
+                marginBottom: spacing.md,
+                color: colors.textMuted,
+              }}
+            >
+              合計 {data.length} 件のクリア記録
+            </Caption>
+            <FlatList
+              data={data}
+              keyExtractor={(item) => item.id}
+              renderItem={renderItem}
+              showsVerticalScrollIndicator={false}
+            />
+          </>
+        )}
+      </View>
+    </ScreenWrapper>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+});
