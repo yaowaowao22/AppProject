@@ -26,7 +26,7 @@ function copyToClipboard(text: string) {
 
 export function SetupScreen() {
   const { colors, spacing, radius } = useTheme();
-  const [apiKey, setApiKey] = useLocalStorage<string | null>('push_api_key', null);
+  const [apiKey, setApiKey, apiKeyLoading] = useLocalStorage<string | null>('push_api_key', null);
   const [notifications, setNotifications] = useLocalStorage<PushNotification[]>(
     'push_notifications',
     []
@@ -40,13 +40,7 @@ export function SetupScreen() {
   const [deviceRegistered] = useLocalStorage('push_device_registered', false);
   const [activeTab, setActiveTab] = useState<CodeTab>('curl');
 
-  // Initialize API key on first render
-  if (apiKey === null) {
-    const key = generateApiKey();
-    setApiKey(key);
-  }
-
-  const currentKey = apiKey ?? '読み込み中...';
+  const currentKey = apiKeyLoading ? '読み込み中...' : (apiKey ?? '読み込み中...');
 
   const handleCopy = useCallback(
     (text: string, label: string) => {

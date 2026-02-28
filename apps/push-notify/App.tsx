@@ -18,7 +18,7 @@ import type { PushNotification, UsageInfo } from './src/types';
 import { Linking } from 'react-native';
 
 function AppInner() {
-  const [apiKey, setApiKey] = useLocalStorage<string | null>('push_api_key', null);
+  const [apiKey, setApiKey, apiKeyLoading] = useLocalStorage<string | null>('push_api_key', null);
   const [pushToken, setPushToken] = useLocalStorage<string | null>('push_token', null);
   const [notifications, setNotifications] = useLocalStorage<PushNotification[]>(
     'push_notifications',
@@ -32,16 +32,16 @@ function AppInner() {
   const notificationsRef = useRef(notifications);
   notificationsRef.current = notifications;
 
-  // APIキー初期化
+  // APIキー初期化（AsyncStorage読み込み完了後のみ）
   useEffect(() => {
-    if (apiKey === null) {
+    if (!apiKeyLoading && apiKey === null) {
       setApiKey(generateApiKey());
     }
-  }, [apiKey, setApiKey]);
+  }, [apiKey, apiKeyLoading, setApiKey]);
 
   // プッシュ通知登録
   useEffect(() => {
-    if (!apiKey || registered) return;
+    if (apiKeyLoading || !apiKey || registered) return;
 
     (async () => {
       const token = await registerForPushNotifications();
