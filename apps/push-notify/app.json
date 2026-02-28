@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "かんたんプッシュ",
+    "slug": "push-notify",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "extra": {
+      "eas": {
+        "projectId": "6bb9b696-be28-40e8-a06b-dda93652e07c"
+      }
+    },
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A1929"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.massapp.pushnotify",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A1929"
+      },
+      "package": "com.massapp.pushnotify",
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/6bb9b696-be28-40e8-a06b-dda93652e07c"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "plugins": [
+      "expo-notifications",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~3347511713"
+        }
+      ]
+    ],
+    "owner": "yaowao"
+  }
+}
