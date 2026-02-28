@@ -31,7 +31,8 @@
       "Bash(/c/Windows/System32/cmd.exe:*)",
       "Bash(winpty:*)",
       "Bash(wait bygus982o:*)",
-      "Bash(wait bipwicary:*)"
+      "Bash(wait bipwicary:*)",
+      "Bash(EXPO_APPLE_ID=\"y.tata02020202@icloud.com\" EXPO_APPLE_PASSWORD=\"Takato0202\" npx eas:*)"
     ]
   }
 }
