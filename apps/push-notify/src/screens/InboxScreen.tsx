@@ -179,7 +179,7 @@ export function InboxScreen() {
         </View>
 
         {notifications.length > 0 && (
-          <View style={[styles.searchBox, { backgroundColor: colors.surface, borderRadius: radius.sm, borderColor: colors.border }]}>
+          <View style={[styles.searchBox, { backgroundColor: colors.surface, borderRadius: radius.sm, borderColor: colors.border, marginBottom: spacing.sm }]}>
             <Ionicons name="search" size={16} color={colors.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: colors.text }]}
