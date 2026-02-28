@@ -27,7 +27,11 @@
       "Bash(grep:*)",
       "Bash(yes:*)",
       "Bash(export:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(/c/Windows/System32/cmd.exe:*)",
+      "Bash(winpty:*)",
+      "Bash(wait bygus982o:*)",
+      "Bash(wait bipwicary:*)"
     ]
   }
 }
