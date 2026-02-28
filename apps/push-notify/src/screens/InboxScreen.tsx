@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,7 +8,7 @@ import {
   Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme, H1, H2, Body, Caption, Card, Badge } from '@massapp/ui';
+import { useTheme, H1, H2, Body, Caption, Card, Badge, Button } from '@massapp/ui';
 import { ScreenWrapper } from '@massapp/navigation';
 import { useLocalStorage } from '@massapp/hooks';
 import type { PushNotification } from '../types';
@@ -22,6 +22,7 @@ export function InboxScreen() {
     []
   );
   const [isPremium] = useLocalStorage('push_is_premium', false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const markAsRead = useCallback(
     (id: string) => {
@@ -37,23 +38,28 @@ export function InboxScreen() {
         {
           text: '削除',
           style: 'destructive',
-          onPress: () => setNotifications(notifications.filter((n) => n.id !== id)),
+          onPress: () => {
+            setNotifications(notifications.filter((n) => n.id !== id));
+            if (expandedId === id) setExpandedId(null);
+          },
         },
       ]);
     },
-    [notifications, setNotifications]
+    [notifications, setNotifications, expandedId]
   );
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const renderNotification = ({ item }: { item: PushNotification }) => {
     const priorityConfig = PRIORITY_CONFIG[item.priority];
+    const isExpanded = expandedId === item.id;
+
     return (
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={() => {
           markAsRead(item.id);
-          if (item.url) Linking.openURL(item.url).catch(() => {});
+          setExpandedId(isExpanded ? null : item.id);
         }}
         onLongPress={() => deleteNotification(item.id)}
       >
@@ -74,21 +80,52 @@ export function InboxScreen() {
                 {item.title}
               </H2>
             </View>
-            <Caption color={colors.textMuted}>{formatRelativeTime(item.timestamp)}</Caption>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Caption color={colors.textMuted}>{formatRelativeTime(item.timestamp)}</Caption>
+              <Ionicons
+                name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                size={16}
+                color={colors.textMuted}
+              />
+            </View>
           </View>
           <Body
             color={item.read ? colors.textMuted : colors.text}
             style={{ marginTop: spacing.xs }}
-            numberOfLines={3}
+            numberOfLines={isExpanded ? undefined : 2}
           >
             {item.message}
           </Body>
-          {item.url && (
-            <View style={[styles.urlRow, { marginTop: spacing.xs }]}>
-              <Ionicons name="link-outline" size={12} color={colors.primary} />
-              <Caption color={colors.primary} numberOfLines={1} style={{ marginLeft: 4, flex: 1 }}>
-                {item.url}
-              </Caption>
+
+          {isExpanded && (
+            <View style={{ marginTop: spacing.sm }}>
+              <View style={[styles.detailRow, { paddingTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}>
+                <Caption color={colors.textMuted}>優先度</Caption>
+                <Badge label={priorityConfig.label} variant={item.priority === 'urgent' ? 'error' : item.priority === 'high' ? 'warning' : 'info'} />
+              </View>
+              <View style={[styles.detailRow, { marginTop: spacing.xs }]}>
+                <Caption color={colors.textMuted}>受信時刻</Caption>
+                <Caption color={colors.textSecondary}>
+                  {new Date(item.timestamp).toLocaleString('ja-JP')}
+                </Caption>
+              </View>
+              {item.url && (
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(item.url!).catch(() => {})}
+                  style={[styles.urlButton, { backgroundColor: colors.primary + '15', borderRadius: radius.sm, marginTop: spacing.sm }]}
+                >
+                  <Ionicons name="open-outline" size={14} color={colors.primary} />
+                  <Caption color={colors.primary} numberOfLines={1} style={{ marginLeft: 6, flex: 1 }}>
+                    {item.url}
+                  </Caption>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                onPress={() => deleteNotification(item.id)}
+                style={{ marginTop: spacing.sm, alignSelf: 'flex-end' }}
+              >
+                <Caption color={colors.error}>削除</Caption>
+              </TouchableOpacity>
             </View>
           )}
         </Card>
@@ -112,7 +149,7 @@ export function InboxScreen() {
   );
 
   return (
-    <ScreenWrapper edges={['top']}>
+    <ScreenWrapper edges={['top']} showBanner={false}>
       <View style={[styles.container, { padding: spacing.md }]}>
         <View style={[styles.header, { marginBottom: spacing.md }]}>
           <View>
@@ -131,7 +168,7 @@ export function InboxScreen() {
           data={notifications}
           renderItem={renderNotification}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={notifications.length === 0 ? styles.emptyList : undefined}
+          contentContainerStyle={notifications.length === 0 ? styles.emptyList : { paddingBottom: 32 }}
           ListEmptyComponent={renderEmpty}
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
@@ -168,9 +205,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     flex: 1,
   },
-  urlRow: {
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  urlButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 10,
   },
   emptyContainer: {
     alignItems: 'center',

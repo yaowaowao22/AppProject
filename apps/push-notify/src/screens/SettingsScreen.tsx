@@ -100,8 +100,8 @@ export function SettingsScreen() {
   const currentCount = usage.monthKey === monthKey ? usage.count : 0;
 
   return (
-    <ScreenWrapper edges={['top']}>
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+    <ScreenWrapper edges={['top']} showBanner={false}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={{ padding: spacing.md }}>
           {/* Plan Section */}
           <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
