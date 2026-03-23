@@ -9,6 +9,9 @@ export const STORE_KEYS = {
   isPremium:          'subradar_is_premium',
   themeMode:          'subradar_theme_mode',
   monthlySnapshot:    'subradar_monthly_snapshot',
+  notify3days:        'sub_notify_3days',
+  notify1day:         'sub_notify_1day',
+  defaultCurrency:    'sub_default_currency',
 } as const;
 
 // ── 通貨→JPY 固定レート ───────────────────────────
