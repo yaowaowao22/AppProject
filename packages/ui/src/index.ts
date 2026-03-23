@@ -30,6 +30,7 @@ export type { ThemeMode, ThemeContextValue, ThemeProviderProps } from './theme/T
 
 // Presets
 export {
+  presetWhiteBase,
   presetWarmOrange,
   presetMonochrome,
   presetOceanBlue,

@@ -16,7 +16,7 @@ export const adConfig: AdConfig = {
       ios: 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX',
     },
   },
-  adsDisabled: false,
+  adsDisabled: true,
   ...AD_CONFIG_UTILITY,
   interstitialFrequency: AD_CONFIG_UTILITY.interstitialFrequency!,
   interstitialInitialDelay: AD_CONFIG_UTILITY.interstitialInitialDelay!,

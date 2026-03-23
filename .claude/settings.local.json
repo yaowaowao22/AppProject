@@ -32,7 +32,21 @@
       "Bash(winpty:*)",
       "Bash(wait bygus982o:*)",
       "Bash(wait bipwicary:*)",
-      "Bash(EXPO_APPLE_ID=\"y.tata02020202@icloud.com\" EXPO_APPLE_PASSWORD=\"Takato0202\" npx eas:*)"
+      "Bash(EXPO_APPLE_ID=\"y.tata02020202@icloud.com\" EXPO_APPLE_PASSWORD=\"Takato0202\" npx eas:*)",
+      "Bash(npx wrangler:*)",
+      "Bash(python3:*)",
+      "Bash(python:*)",
+      "Bash(/tmp/send1.ps1:*)",
+      "Bash(EXPO_APPLE_ID=y.tata02020202@icloud.com npx eas:*)",
+      "WebFetch(domain:www.revenuecat.com)",
+      "Bash(powershell:*)",
+      "WebFetch(domain:api.revenuecat.com)",
+      "WebFetch(domain:push-api.selectinfo-yaowao.workers.dev)",
+      "Bash(npx puppeteer:*)",
+      "Bash(npm:*)",
+      "Bash(cp:*)",
+      "WebFetch(domain:apps.apple.com)",
+      "WebFetch(domain:www.familyhandyman.com)"
     ]
   }
 }

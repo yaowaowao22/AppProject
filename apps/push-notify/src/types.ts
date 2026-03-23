@@ -8,7 +8,10 @@ export interface PushNotification {
   timestamp: string;
   read: boolean;
   url?: string;
+  category?: string;
 }
+
+export const DEFAULT_CATEGORY = '未分類';
 
 export interface UsageInfo {
   monthKey: string; // "2026-02" format

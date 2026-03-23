@@ -4,10 +4,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, H1, H2, Body, Caption, Card, Button, Badge } from '@massapp/ui';
 import { useLocalStorage } from '@massapp/hooks';
-import type { PushNotification, UsageInfo, Priority } from '../types';
+import type { PushNotification, Priority } from '../types';
 import { FREE_LIMIT } from '../types';
 import { generateApiKey, getCurrentMonthKey } from '../utils/apiKey';
 import { API_BASE } from '../config';
+import { useUsage } from '../UsageContext';
 
 type CodeTab = 'curl' | 'python' | 'node';
 
@@ -32,11 +33,11 @@ export function SetupScreen() {
     'push_notifications',
     []
   );
-  const [usage, setUsage] = useLocalStorage<UsageInfo>('push_usage', {
+  const { usage, isPremium } = useUsage();
+  const [, setUsage] = useLocalStorage<{ monthKey: string; count: number }>('push_usage', {
     monthKey: getCurrentMonthKey(),
     count: 0,
   });
-  const [isPremium] = useLocalStorage('push_is_premium', false);
   const [pushToken] = useLocalStorage<string | null>('push_token', null);
   const [deviceRegistered] = useLocalStorage('push_device_registered', false);
   const [activeTab, setActiveTab] = useState<CodeTab>('curl');
@@ -64,11 +65,11 @@ export function SetupScreen() {
     }
 
     const testMessages = [
-      { title: 'サーバー監視', message: 'CPU使用率が正常範囲内です。全システム稼働中。', priority: 'normal' as Priority },
-      { title: 'デプロイ完了', message: 'v2.1.0が本番環境にデプロイされました。ビルド時間: 3分42秒', priority: 'high' as Priority },
-      { title: 'バックアップ完了', message: 'データベースの自動バックアップが完了しました。サイズ: 2.4GB', priority: 'low' as Priority },
-      { title: 'エラー検知', message: 'APIエンドポイント /users で500エラーが5回連続で発生しています。', priority: 'urgent' as Priority, url: 'https://example.com/errors/12345' },
-      { title: 'IoTセンサー', message: 'リビングの温度が28℃を超えました。エアコンを自動起動します。', priority: 'normal' as Priority },
+      { title: 'サーバー監視', message: 'CPU使用率が正常範囲内です。全システム稼働中。', priority: 'normal' as Priority, category: 'Server' },
+      { title: 'デプロイ完了', message: 'v2.1.0が本番環境にデプロイされました。ビルド時間: 3分42秒', priority: 'high' as Priority, category: 'CI/CD' },
+      { title: 'バックアップ完了', message: 'データベースの自動バックアップが完了しました。サイズ: 2.4GB', priority: 'low' as Priority, category: 'Backup' },
+      { title: 'エラー検知', message: 'APIエンドポイント /users で500エラーが5回連続で発生しています。', priority: 'urgent' as Priority, category: 'Server', url: 'https://example.com/errors/12345' },
+      { title: 'IoTセンサー', message: 'リビングの温度が28℃を超えました。エアコンを自動起動します。', priority: 'normal' as Priority, category: 'IoT' },
     ];
 
     const sample = testMessages[Math.floor(Math.random() * testMessages.length)];
@@ -81,6 +82,7 @@ export function SetupScreen() {
       timestamp: new Date().toISOString(),
       read: false,
       url: sample.url,
+      category: sample.category,
     };
 
     setNotifications([newNotification, ...notifications]);
@@ -94,7 +96,8 @@ export function SetupScreen() {
     "token": "${currentKey}",
     "title": "サーバーダウン",
     "message": "Web server is not responding",
-    "priority": "high"
+    "priority": "high",
+    "category": "Server"
   }'`;
 
   const pythonExample = `import requests
@@ -104,6 +107,7 @@ requests.post("${API_BASE}/api/send", json={
     "title": "サーバーダウン",
     "message": "Web server is not responding",
     "priority": "high",
+    "category": "Server",
 })`;
 
   const nodeExample = `fetch("${API_BASE}/api/send", {
@@ -114,6 +118,7 @@ requests.post("${API_BASE}/api/send", json={
     title: "サーバーダウン",
     message: "Web server is not responding",
     priority: "high",
+    category: "Server",
   }),
 });`;
 
@@ -324,6 +329,7 @@ requests.post("${API_BASE}/api/send", json={
               { name: 'message', type: 'string', required: true, desc: '通知本文' },
               { name: 'priority', type: 'string', required: false, desc: 'low / normal / high / urgent' },
               { name: 'url', type: 'string', required: false, desc: 'タップ時に開くURL' },
+              { name: 'category', type: 'string', required: false, desc: '通知カテゴリ（グループ分け用）' },
             ].map((field) => (
               <View key={field.name} style={styles.fieldRow}>
                 <View style={styles.fieldNameRow}>

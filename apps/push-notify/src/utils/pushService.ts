@@ -78,11 +78,45 @@ export async function registerDevice(apiKey: string, pushToken: string): Promise
 }
 
 /**
+ * 通知センターに残っているプッシュ通知を取得
+ */
+export async function getPendingNotifications(): Promise<any[]> {
+  if (!Notifications) return [];
+  try {
+    return await Notifications.getPresentedNotificationsAsync();
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 通知センターの通知をすべてクリア
+ */
+export async function dismissAllNotifications(): Promise<void> {
+  if (!Notifications) return;
+  try {
+    await Notifications.dismissAllNotificationsAsync();
+  } catch {}
+}
+
+/**
+ * タップで起動した通知レスポンスを取得
+ * addNotificationResponseReceivedListener を登録していない場合のみ値が返る
+ */
+export async function getLastNotificationResponse(): Promise<any | null> {
+  if (!Notifications) return null;
+  try {
+    return await Notifications.getLastNotificationResponseAsync();
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Expo Notifications のリスナーを設定
  */
 export function setupNotificationHandlers(
   onReceived: (notification: any) => void,
-  onTapped: (response: any) => void
 ) {
   if (!Notifications) return { remove: () => {} };
 
@@ -97,13 +131,13 @@ export function setupNotificationHandlers(
     }),
   });
 
+  // フォアグラウンド受信のみリスナー登録
+  // タップ処理はApp.tsxのuseLastNotificationResponseフックで行う
   const receivedSub = Notifications.addNotificationReceivedListener(onReceived);
-  const tappedSub = Notifications.addNotificationResponseReceivedListener(onTapped);
 
   return {
     remove: () => {
       receivedSub.remove();
-      tappedSub.remove();
     },
   };
 }

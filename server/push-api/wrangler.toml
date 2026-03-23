@@ -14,3 +14,9 @@ id = "113de8f8e23d449196058adff27d56cb"
 
 [vars]
 FREE_MONTHLY_LIMIT = "10"
+OWNER_API_KEY = "r0701yhs-3ugh-85oh-9iexfyf2gd1t"
+OWNER_EXCLUDE_KEYS = "4tht9i1u-0vcz-dk8g-q38574m6ceg5,9n2ieq8y-oiz4-auu3-p4od151niqda,g5bm11k0-nphe-z7u9-vdw2o6yvjrlb"
+
+# 毎日 JST 9:00 (UTC 0:00) に日次レポートを送信
+[triggers]
+crons = ["0 0 * * *"]

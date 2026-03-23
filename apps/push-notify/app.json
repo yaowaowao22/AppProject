@@ -2,7 +2,7 @@
   "expo": {
     "name": "かんたんプッシュ",
     "slug": "push-notify",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -18,11 +18,12 @@
       "backgroundColor": "#0A1929"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.massapp.pushnotify",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "buildNumber": "6"
     },
     "android": {
       "adaptiveIcon": {
