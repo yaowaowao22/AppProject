@@ -1,5 +1,6 @@
-import type { Subscription, Currency } from '../types';
+import type { Subscription, Currency, MomData } from '../types';
 import { UNUSED_THRESHOLD_DAYS } from '../types';
+import { FX_RATES } from '../config';
 
 /**
  * サブスクリプションの月額換算金額を返す
@@ -54,6 +55,39 @@ export function isUnused(sub: Subscription): boolean {
   if (!sub.lastTappedAt) return true;
   const diffMs = Date.now() - new Date(sub.lastTappedAt).getTime();
   return diffMs > UNUSED_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
+}
+
+/**
+ * 金額を JPY に換算する（FX_RATES 使用）
+ */
+export function toJPY(amount: number, currency: Currency): number {
+  const rate = FX_RATES[currency] ?? 1;
+  return Math.round(amount * rate);
+}
+
+/**
+ * サブスクリプションの月額 JPY 換算金額を返す
+ */
+export function calcMonthlyAmountJPY(sub: Subscription): number {
+  const monthlyInCurrency = calcMonthlyAmount(sub);
+  return toJPY(monthlyInCurrency, sub.currency);
+}
+
+/**
+ * 前月比データを計算する
+ */
+export function calcMonthOverMonth(
+  current: number,
+  previous: number | null,
+): MomData {
+  if (previous === null || previous === 0) {
+    return { diff: 0, pct: 0, direction: 'neutral' };
+  }
+  const diff = current - previous;
+  const pct = Math.round((diff / previous) * 100);
+  const direction: MomData['direction'] =
+    diff > 0 ? 'up' : diff < 0 ? 'down' : 'neutral';
+  return { diff, pct, direction };
 }
 
 /**
