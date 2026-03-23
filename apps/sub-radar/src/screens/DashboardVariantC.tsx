@@ -308,8 +308,9 @@ export function DashboardVariantC({ onAddPress, onEditPress }: DashboardVariantC
   const {
     subscriptions,
     isPremium,
-    totalMonthly,
-    totalYearly,
+    totalMonthlyJPY,
+    totalYearlyJPY,
+    momData,
     updateSubscription,
   } = useSubscriptions();
 
@@ -419,32 +420,49 @@ export function DashboardVariantC({ onAddPress, onEditPress }: DashboardVariantC
                 {isPremium ? '  [プレミアム]' : '  [無料版]'}
               </Text>
             </View>
-            {/* 前月比バッジ（暫定: 0%表示） */}
-            <View style={[aStyles.momBadge, aStyles.momBadgeNeutral]}>
-              <Ionicons name="remove-outline" size={12} color={AC.textMid} />
-              <Text style={[aStyles.momText, { color: AC.textMid }]}>前月比 -</Text>
-            </View>
+            {/* 前月比バッジ */}
+            {momData === null ? (
+              <View style={[aStyles.momBadge, aStyles.momBadgeNeutral]}>
+                <Ionicons name="remove-outline" size={12} color={AC.textMid} />
+                <Text style={[aStyles.momText, { color: AC.textMid }]}>前月比 -</Text>
+              </View>
+            ) : momData.direction === 'up' ? (
+              <View style={[aStyles.momBadge, aStyles.momBadgeUp]}>
+                <Ionicons name="trending-up-outline" size={12} color="#F44336" />
+                <Text style={[aStyles.momText, { color: '#F44336' }]}>前月比 +{momData.pct}%</Text>
+              </View>
+            ) : momData.direction === 'down' ? (
+              <View style={[aStyles.momBadge, aStyles.momBadgeDown]}>
+                <Ionicons name="trending-down-outline" size={12} color={AC.downTeal} />
+                <Text style={[aStyles.momText, { color: AC.downTeal }]}>前月比 -{momData.pct}%</Text>
+              </View>
+            ) : (
+              <View style={[aStyles.momBadge, aStyles.momBadgeNeutral]}>
+                <Ionicons name="remove-outline" size={12} color={AC.textMid} />
+                <Text style={[aStyles.momText, { color: AC.textMid }]}>前月比 ±0%</Text>
+              </View>
+            )}
           </View>
 
           <Text style={aStyles.mainAmount}>
-            ¥{Math.round(totalMonthly).toLocaleString('ja-JP')}
+            ¥{Math.round(totalMonthlyJPY).toLocaleString('ja-JP')}
           </Text>
           <Text style={aStyles.yearlyAmount}>
-            年間換算 ¥{Math.round(totalYearly).toLocaleString('ja-JP')}
+            年間換算 ¥{Math.round(totalYearlyJPY).toLocaleString('ja-JP')}
           </Text>
 
           {/* 3軸KPI */}
           <View style={aStyles.kpiRow}>
             <View style={aStyles.kpiItem}>
               <Text style={aStyles.kpiValue}>
-                ¥{Math.round(totalMonthly).toLocaleString('ja-JP')}
+                ¥{Math.round(totalMonthlyJPY).toLocaleString('ja-JP')}
               </Text>
               <Text style={aStyles.kpiLabel}>月額</Text>
             </View>
             <View style={aStyles.kpiDivider} />
             <View style={aStyles.kpiItem}>
               <Text style={aStyles.kpiValue}>
-                ¥{Math.round(totalYearly).toLocaleString('ja-JP')}
+                ¥{Math.round(totalYearlyJPY).toLocaleString('ja-JP')}
               </Text>
               <Text style={aStyles.kpiLabel}>年間</Text>
             </View>
@@ -467,7 +485,7 @@ export function DashboardVariantC({ onAddPress, onEditPress }: DashboardVariantC
           weeks={calendarData.weeks}
           today={calendarData.today}
           monthLabel={calendarData.monthLabel}
-          monthTotal={totalMonthly}
+          monthTotal={totalMonthlyJPY}
         />
 
         {/* ── Section D: 未使用サブスク警告 ── */}
