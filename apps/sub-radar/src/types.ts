@@ -50,3 +50,19 @@ export const FREE_LIMIT = 3;
 
 // ── 未使用判定しきい値 ────────────────────────────
 export const UNUSED_THRESHOLD_DAYS = 30;
+
+// ── 月次スナップショット ──────────────────────────
+export interface MonthlySnapshot {
+  yearMonth: string;          // 'YYYY-MM' 形式
+  totalMonthlyJPY: number;    // 月額合計（JPY換算）
+  totalYearlyJPY: number;     // 年額合計（JPY換算）
+  count: number;              // アクティブなサブスク数
+  savedAt: string;            // ISO datetime
+}
+
+// ── 前月比データ ──────────────────────────────────
+export interface MomData {
+  diff: number;                           // 差分（JPY）
+  pct: number;                            // 変化率（%）
+  direction: 'up' | 'down' | 'neutral';  // 増減方向
+}
