@@ -54,11 +54,11 @@ export function SettingsScreen() {
   // テーマ永続化
   const [, setSavedMode] = useLocalStorage<string>(STORE_KEYS.themeMode, 'system');
   // 通知設定
-  const [notify3days, setNotify3days] = useLocalStorage<boolean>('sub_notify_3days', true);
-  const [notify1day, setNotify1day] = useLocalStorage<boolean>('sub_notify_1day', true);
+  const [notify3days, setNotify3days] = useLocalStorage<boolean>(STORE_KEYS.notify3days, true);
+  const [notify1day, setNotify1day] = useLocalStorage<boolean>(STORE_KEYS.notify1day, true);
   // デフォルト通貨
   const [defaultCurrency, setDefaultCurrency] = useLocalStorage<Currency>(
-    'sub_default_currency',
+    STORE_KEYS.defaultCurrency,
     'JPY',
   );
 
