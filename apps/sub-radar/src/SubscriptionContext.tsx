@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useCallback } from 'react';
+import React, { createContext, useContext, useCallback, useEffect, useMemo } from 'react';
 import { useLocalStorage } from '@massapp/hooks';
-import type { Subscription } from './types';
+import type { Subscription, MonthlySnapshot, MomData } from './types';
 import { FREE_LIMIT } from './types';
 import { STORE_KEYS } from './config';
+import { calcMonthlyAmountJPY, calcMonthOverMonth } from './utils/subscriptionUtils';
 
 // ── Context 型 ─────────────────────────────────────
 interface SubscriptionContextValue {
@@ -11,8 +12,11 @@ interface SubscriptionContextValue {
   addSubscription: (sub: Subscription) => boolean; // false = 無料版制限
   updateSubscription: (id: string, patch: Partial<Subscription>) => void;
   deleteSubscription: (id: string) => void;
-  totalMonthly: number;  // 全サブスクの月額合計（JPY換算）
-  totalYearly: number;   // 年間合計
+  totalMonthly: number;       // 全サブスクの月額合計（旧互換・非JPY換算）
+  totalYearly: number;        // 年間合計（旧互換・非JPY換算）
+  totalMonthlyJPY: number;    // 月額合計（JPY換算）
+  totalYearlyJPY: number;     // 年額合計（JPY換算）
+  momData: MomData | null;    // 前月比データ
 }
 
 // ── Context 生成 ───────────────────────────────────
@@ -24,6 +28,9 @@ const SubscriptionContext = createContext<SubscriptionContextValue>({
   deleteSubscription: () => undefined,
   totalMonthly: 0,
   totalYearly: 0,
+  totalMonthlyJPY: 0,
+  totalYearlyJPY: 0,
+  momData: null,
 });
 
 // ── Provider ───────────────────────────────────────
@@ -33,6 +40,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     [],
   );
   const [isPremium] = useLocalStorage<boolean>(STORE_KEYS.isPremium, false);
+  const [monthlySnapshot, setMonthlySnapshot] = useLocalStorage<MonthlySnapshot | null>(
+    STORE_KEYS.monthlySnapshot,
+    null,
+  );
 
   const addSubscription = useCallback(
     (sub: Subscription): boolean => {
@@ -61,20 +72,64 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     [subscriptions, setSubscriptions],
   );
 
-  // 月額合計（billingCycle に応じて月換算）
-  const totalMonthly = subscriptions
-    .filter((s) => s.isActive)
-    .reduce((sum, s) => {
-      switch (s.billingCycle) {
-        case 'monthly':   return sum + s.amount;
-        case 'yearly':    return sum + s.amount / 12;
-        case 'quarterly': return sum + s.amount / 3;
-        case 'weekly':    return sum + s.amount * 4.33;
-        default:          return sum;
-      }
-    }, 0);
+  // 月額合計（旧互換：billingCycle 月換算のみ、通貨換算なし）
+  const totalMonthly = useMemo(
+    () =>
+      subscriptions
+        .filter((s) => s.isActive)
+        .reduce((sum, s) => {
+          switch (s.billingCycle) {
+            case 'monthly':   return sum + s.amount;
+            case 'yearly':    return sum + s.amount / 12;
+            case 'quarterly': return sum + s.amount / 3;
+            case 'weekly':    return sum + s.amount * 4.33;
+            default:          return sum;
+          }
+        }, 0),
+    [subscriptions],
+  );
 
-  const totalYearly = totalMonthly * 12;
+  const totalYearly = useMemo(() => totalMonthly * 12, [totalMonthly]);
+
+  // 月額合計（JPY換算）
+  const totalMonthlyJPY = useMemo(
+    () =>
+      subscriptions
+        .filter((s) => s.isActive)
+        .reduce((sum, s) => sum + calcMonthlyAmountJPY(s), 0),
+    [subscriptions],
+  );
+
+  const totalYearlyJPY = useMemo(() => totalMonthlyJPY * 12, [totalMonthlyJPY]);
+
+  // 月初チェック：先月分スナップショットがなければ保存
+  useEffect(() => {
+    const now = new Date();
+    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    if (monthlySnapshot?.yearMonth !== currentYearMonth) {
+      const activeCount = subscriptions.filter((s) => s.isActive).length;
+      const snapshot: MonthlySnapshot = {
+        yearMonth: currentYearMonth,
+        totalMonthlyJPY,
+        totalYearlyJPY,
+        count: activeCount,
+        savedAt: now.toISOString(),
+      };
+      setMonthlySnapshot(snapshot);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 起動時のみ実行
+
+  // 前月比データ
+  const momData: MomData | null = useMemo(() => {
+    if (!monthlySnapshot) return null;
+    const now = new Date();
+    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    // 今月のスナップショットしかない場合は比較不可
+    if (monthlySnapshot.yearMonth === currentYearMonth) return null;
+    return calcMonthOverMonth(totalMonthlyJPY, monthlySnapshot.totalMonthlyJPY);
+  }, [monthlySnapshot, totalMonthlyJPY]);
 
   return (
     <SubscriptionContext.Provider
@@ -86,6 +141,9 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         deleteSubscription,
         totalMonthly,
         totalYearly,
+        totalMonthlyJPY,
+        totalYearlyJPY,
+        momData,
       }}
     >
       {children}
