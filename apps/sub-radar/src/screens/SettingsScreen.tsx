@@ -38,7 +38,7 @@ import { useLocalStorage } from '@massapp/hooks';
 import { useSubscriptions } from '../SubscriptionContext';
 import { FREE_LIMIT } from '../types';
 import type { Currency } from '../types';
-import { APP_VERSION, APP_NAME, STORE_KEYS, PREMIUM_PRICE_JPY } from '../config';
+import { APP_VERSION, APP_NAME, STORE_KEYS, PREMIUM_PRICE_JPY, USE_MOCK_PURCHASES } from '../config';
 import {
   scheduleSubscriptionReminders,
   getScheduledCount,
@@ -103,8 +103,12 @@ export function SettingsScreen() {
     [setMode, setSavedMode],
   );
 
-  // プレミアム購入（モック: フェーズ2で RevenueCat 連携予定）
+  // プレミアム購入（モック: __DEV__ 環境のみ動作。フェーズ2で RevenueCat 連携予定）
   const handlePurchase = useCallback(async () => {
+    if (!USE_MOCK_PURCHASES) {
+      Alert.alert('近日公開', 'アプリ内課金は近日公開予定です。');
+      return;
+    }
     setPurchasing(true);
     try {
       await new Promise<void>((resolve) => setTimeout(resolve, 800));
