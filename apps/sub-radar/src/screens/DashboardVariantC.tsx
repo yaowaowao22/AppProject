@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,7 +13,6 @@ import type { Subscription } from '../types';
 import { CATEGORY_COLORS } from '../types';
 import {
   calcMonthlyAmount,
-  getNextBillingDate,
   getDaysUntilBilling,
   isUnused,
   formatCurrency,
