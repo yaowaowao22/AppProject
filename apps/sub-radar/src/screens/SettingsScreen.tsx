@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -28,6 +28,10 @@ import { useSubscriptions } from '../SubscriptionContext';
 import { FREE_LIMIT } from '../types';
 import type { Currency } from '../types';
 import { APP_VERSION, APP_NAME, STORE_KEYS, PREMIUM_PRICE_JPY } from '../config';
+import {
+  scheduleSubscriptionReminders,
+  getScheduledCount,
+} from '../utils/notificationUtils';
 
 export function SettingsScreen() {
   const { colors, spacing, radius, mode, setMode } = useTheme();
@@ -49,6 +53,36 @@ export function SettingsScreen() {
 
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [scheduledCount, setScheduledCount] = useState<number>(0);
+
+  // 画面表示時にスケジュール済み件数を取得
+  useEffect(() => {
+    getScheduledCount()
+      .then(setScheduledCount)
+      .catch(() => {});
+  }, []);
+
+  const handleNotify3daysChange = useCallback(
+    (val: boolean) => {
+      setNotify3days(val);
+      scheduleSubscriptionReminders(subscriptions, val, notify1day ?? true)
+        .then(() => getScheduledCount())
+        .then(setScheduledCount)
+        .catch(() => {});
+    },
+    [setNotify3days, subscriptions, notify1day],
+  );
+
+  const handleNotify1dayChange = useCallback(
+    (val: boolean) => {
+      setNotify1day(val);
+      scheduleSubscriptionReminders(subscriptions, notify3days ?? true, val)
+        .then(() => getScheduledCount())
+        .then(setScheduledCount)
+        .catch(() => {});
+    },
+    [setNotify1day, subscriptions, notify3days],
+  );
 
   const handleSetMode = useCallback(
     (m: ThemeMode) => {
@@ -182,7 +216,7 @@ export function SettingsScreen() {
               <Body>請求日の3日前に通知</Body>
               <Switch
                 value={notify3days}
-                onValueChange={setNotify3days}
+                onValueChange={handleNotify3daysChange}
                 trackColor={{ true: colors.primary, false: colors.border }}
                 thumbColor={notify3days ? colors.textOnPrimary : colors.textMuted}
               />
@@ -192,11 +226,14 @@ export function SettingsScreen() {
               <Body>請求日の前日に通知</Body>
               <Switch
                 value={notify1day}
-                onValueChange={setNotify1day}
+                onValueChange={handleNotify1dayChange}
                 trackColor={{ true: colors.primary, false: colors.border }}
                 thumbColor={notify1day ? colors.textOnPrimary : colors.textMuted}
               />
             </View>
+            <Caption color={colors.textMuted} style={{ marginTop: spacing.xs }}>
+              {scheduledCount}件スケジュール済み
+            </Caption>
           </View>
         </Card>
 
