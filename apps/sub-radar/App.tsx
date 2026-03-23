@@ -10,7 +10,6 @@ import { theme } from './src/theme';
 import { STORE_KEYS } from './src/config';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { SubscriptionProvider, useSubscriptions } from './src/SubscriptionContext';
-import { UIVariantProvider } from './src/UIVariantContext';
 import { AddSubscriptionModal } from './src/screens/AddSubscriptionModal';
 import type { Subscription } from './src/types';
 
@@ -108,11 +107,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider theme={theme} initialMode={themeMode}>
-        <UIVariantProvider>
           <SubscriptionProvider>
             <AppInner />
           </SubscriptionProvider>
-        </UIVariantProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
