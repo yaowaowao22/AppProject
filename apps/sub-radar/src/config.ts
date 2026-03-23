@@ -8,6 +8,14 @@ export const STORE_KEYS = {
   notificationConfig: 'subradar_notification_config',
   isPremium:          'subradar_is_premium',
   themeMode:          'subradar_theme_mode',
+  monthlySnapshot:    'subradar_monthly_snapshot',
+} as const;
+
+// ── 通貨→JPY 固定レート ───────────────────────────
+export const FX_RATES: Record<string, number> = {
+  JPY: 1,
+  USD: 150,
+  EUR: 163,
 } as const;
 
 // ── プレミアム価格 ────────────────────────────────
