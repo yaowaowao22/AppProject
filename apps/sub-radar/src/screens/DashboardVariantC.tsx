@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme, H2, Body, Caption } from '@massapp/ui';
 import { useSubscriptions } from '../SubscriptionContext';
 import type { Subscription } from '../types';
 import { CATEGORY_COLORS } from '../types';
@@ -303,7 +302,6 @@ function GridCard({
 
 // ── メインコンポーネント ──────────────────────────────────────────────────────
 export function DashboardVariantC({ onAddPress, onEditPress }: DashboardVariantCProps) {
-  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const {
     subscriptions,
