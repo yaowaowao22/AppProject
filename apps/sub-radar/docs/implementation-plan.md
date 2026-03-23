@@ -1007,3 +1007,13 @@ Alert.alert(
 ---
 
 *作成: Claude Sonnet 4.6 / 2026-03-23*
+
+---
+
+## 要追加パッケージ
+
+```
+pnpm add expo-notifications
+```
+
+`expo-notifications` は `package.json` に未登録のため、実装前に追加が必要。
