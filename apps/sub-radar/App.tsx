@@ -6,16 +6,32 @@ import { Alert } from 'react-native';
 import { ThemeProvider } from '@massapp/ui';
 import type { ThemeMode } from '@massapp/ui';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useLocalStorage } from '@massapp/hooks';
 import { theme } from './src/theme';
 import { STORE_KEYS } from './src/config';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { SubscriptionProvider, useSubscriptions } from './src/SubscriptionContext';
 import { AddSubscriptionModal } from './src/screens/AddSubscriptionModal';
 import type { Subscription } from './src/types';
+import { requestPermissions, scheduleSubscriptionReminders } from './src/utils/notificationUtils';
 
 // ── AppInner: モーダル状態・サブスク操作を担当 ─────────────────────────────
 function AppInner() {
-  const { addSubscription, updateSubscription, deleteSubscription } = useSubscriptions();
+  const { subscriptions, addSubscription, updateSubscription, deleteSubscription } = useSubscriptions();
+  const [notify3days] = useLocalStorage<boolean>('sub_notify_3days', true);
+  const [notify1day] = useLocalStorage<boolean>('sub_notify_1day', true);
+
+  // 通知権限リクエスト（初回起動時）
+  useEffect(() => {
+    requestPermissions().catch(() => {});
+  }, []);
+
+  // サブスク・通知設定変更時にリマインダーを再スケジュール
+  useEffect(() => {
+    scheduleSubscriptionReminders(subscriptions, notify3days ?? true, notify1day ?? true).catch(
+      () => {},
+    );
+  }, [subscriptions, notify3days, notify1day]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | undefined>(
