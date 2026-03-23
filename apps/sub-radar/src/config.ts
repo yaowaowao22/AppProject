@@ -23,3 +23,8 @@ export const PREMIUM_PRICE_JPY = 480;
 
 // ── 通知デフォルト設定 ────────────────────────────
 export const DEFAULT_DAYS_BEFORE = [1, 3]; // 前日・3日前
+
+// ── RevenueCat モック購入ガード ───────────────────
+// true のときのみモック購入が動作する（本番ビルド誤提出防止）
+declare const __DEV__: boolean;
+export const USE_MOCK_PURCHASES = __DEV__;
