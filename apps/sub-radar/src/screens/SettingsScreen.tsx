@@ -190,7 +190,8 @@ export function SettingsScreen() {
               </View>
               <Badge
                 label={isPremium ? '有効' : `${subscriptions.length}/${FREE_LIMIT}`}
-                variant={isPremium ? 'success' : 'info'}
+                variant="filled"
+                color={isPremium ? AC.teal : AC.textMid}
               />
             </View>
             {!isPremium && (
