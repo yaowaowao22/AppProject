@@ -5,6 +5,11 @@ import { FREE_LIMIT } from './types';
 import { STORE_KEYS } from './config';
 import { calcMonthlyAmountJPY, calcMonthOverMonth } from './utils/subscriptionUtils';
 
+/** 'YYYY-MM' 形式の文字列を返す */
+function toYearMonth(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
 // ── Context 型 ─────────────────────────────────────
 interface SubscriptionContextValue {
   subscriptions: Subscription[];
@@ -103,9 +108,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const totalYearlyJPY = useMemo(() => totalMonthlyJPY * 12, [totalMonthlyJPY]);
 
   // 月初チェック：先月分スナップショットがなければ保存
+  // subscriptions を deps に含めることで、AsyncStorage からのロード完了後に実行される
+  // （[] だと初期値 [] のまま totalMonthlyJPY=0 でスナップショットを保存してしまう）
   useEffect(() => {
-    const now = new Date();
-    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const currentYearMonth = toYearMonth(new Date());
 
     if (monthlySnapshot?.yearMonth !== currentYearMonth) {
       const activeCount = subscriptions.filter((s) => s.isActive).length;
@@ -114,20 +120,17 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         totalMonthlyJPY,
         totalYearlyJPY,
         count: activeCount,
-        savedAt: now.toISOString(),
+        savedAt: new Date().toISOString(),
       };
       setMonthlySnapshot(snapshot);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 起動時のみ実行
+  }, [subscriptions]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 前月比データ
   const momData: MomData | null = useMemo(() => {
     if (!monthlySnapshot) return null;
-    const now = new Date();
-    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     // 今月のスナップショットしかない場合は比較不可
-    if (monthlySnapshot.yearMonth === currentYearMonth) return null;
+    if (monthlySnapshot.yearMonth === toYearMonth(new Date())) return null;
     return calcMonthOverMonth(totalMonthlyJPY, monthlySnapshot.totalMonthlyJPY);
   }, [monthlySnapshot, totalMonthlyJPY]);
 
