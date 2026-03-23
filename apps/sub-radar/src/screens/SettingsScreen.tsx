@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
+  Text,
   StyleSheet,
   ScrollView,
   Alert,
@@ -8,6 +9,16 @@ import {
   TouchableOpacity,
   Linking,
 } from 'react-native';
+
+// ── カラーパレット ──────────────────────────────────
+const AC = {
+  bgDeep:       '#0D1117',
+  bgCard:       '#161B22',
+  teal:         '#26C6DA',
+  textBright:   '#E6EDF3',
+  textMid:      '#8B949E',
+  borderSubtle: '#21262D',
+};
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -141,16 +152,16 @@ export function SettingsScreen() {
   }, [subscriptions, deleteSubscription]);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: AC.bgDeep, paddingTop: insets.top }]}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: spacing.md, paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
       >
-        <H1 style={{ fontSize: 24, marginBottom: spacing.md }}>設定</H1>
+        <H1 style={{ fontSize: 24, marginBottom: spacing.md, color: AC.textBright }}>設定</H1>
 
         {/* ── プランセクション ─────────────────────────────── */}
-        <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
+        <Card style={{ padding: spacing.md, marginBottom: spacing.md, backgroundColor: AC.bgCard, borderColor: AC.borderSubtle }}>
           <View style={styles.sectionHeader}>
             <Ionicons name="diamond-outline" size={20} color={colors.primary} />
             <H2 style={{ fontSize: 16, marginLeft: 8 }}>プラン</H2>
@@ -183,13 +194,25 @@ export function SettingsScreen() {
               />
             </View>
             {!isPremium && (
-              <Button
-                title={purchasing ? '処理中...' : `プレミアムにアップグレード — ¥${PREMIUM_PRICE_JPY}`}
-                onPress={handlePurchase}
-                variant="primary"
-                style={{ marginTop: spacing.md }}
-                disabled={purchasing}
-              />
+              <View style={{ marginTop: spacing.sm }}>
+                {[
+                  '✓ 登録数無制限',
+                  '✓ 月次トレンド分析',
+                  '✓ 通知カスタマイズ',
+                  '✓ CSV出力（近日公開）',
+                ].map((feat) => (
+                  <Text key={feat} style={{ color: AC.teal, fontSize: 13, marginBottom: 4 }}>
+                    {feat}
+                  </Text>
+                ))}
+                <Button
+                  title={purchasing ? '処理中...' : `プレミアムにアップグレード — ¥${PREMIUM_PRICE_JPY}`}
+                  onPress={handlePurchase}
+                  variant="primary"
+                  style={{ marginTop: spacing.sm }}
+                  disabled={purchasing}
+                />
+              </View>
             )}
           </View>
           <View style={{ marginTop: spacing.sm }}>
@@ -206,7 +229,7 @@ export function SettingsScreen() {
         </Card>
 
         {/* ── 通知設定セクション ───────────────────────────── */}
-        <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
+        <Card style={{ padding: spacing.md, marginBottom: spacing.md, backgroundColor: AC.bgCard, borderColor: AC.borderSubtle }}>
           <View style={styles.sectionHeader}>
             <Ionicons name="notifications-outline" size={20} color={colors.primary} />
             <H2 style={{ fontSize: 16, marginLeft: 8 }}>通知設定</H2>
@@ -238,7 +261,7 @@ export function SettingsScreen() {
         </Card>
 
         {/* ── 表示設定セクション ───────────────────────────── */}
-        <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
+        <Card style={{ padding: spacing.md, marginBottom: spacing.md, backgroundColor: AC.bgCard, borderColor: AC.borderSubtle }}>
           <View style={styles.sectionHeader}>
             <Ionicons name="color-palette-outline" size={20} color={colors.primary} />
             <H2 style={{ fontSize: 16, marginLeft: 8 }}>表示設定</H2>
@@ -288,7 +311,7 @@ export function SettingsScreen() {
               デフォルト通貨
             </Body>
             <View style={styles.segmentRow}>
-              {(['JPY', 'USD'] as Currency[]).map((cur) => (
+              {(['JPY', 'USD', 'EUR'] as Currency[]).map((cur) => (
                 <TouchableOpacity
                   key={cur}
                   onPress={() => setDefaultCurrency(cur)}
@@ -305,7 +328,7 @@ export function SettingsScreen() {
                     color={defaultCurrency === cur ? colors.textOnPrimary : colors.textSecondary}
                     style={{ fontSize: 14, fontWeight: '600' }}
                   >
-                    {cur === 'JPY' ? '¥ JPY' : '$ USD'}
+                    {cur === 'JPY' ? '¥ JPY' : cur === 'USD' ? '$ USD' : '€ EUR'}
                   </Caption>
                 </TouchableOpacity>
               ))}
@@ -314,7 +337,7 @@ export function SettingsScreen() {
         </Card>
 
         {/* ── データセクション ─────────────────────────────── */}
-        <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
+        <Card style={{ padding: spacing.md, marginBottom: spacing.md, backgroundColor: AC.bgCard, borderColor: AC.borderSubtle }}>
           <View style={styles.sectionHeader}>
             <Ionicons name="trash-outline" size={20} color={colors.primary} />
             <H2 style={{ fontSize: 16, marginLeft: 8 }}>データ</H2>
@@ -332,7 +355,7 @@ export function SettingsScreen() {
         </Card>
 
         {/* ── このアプリについてセクション ─────────────────── */}
-        <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
+        <Card style={{ padding: spacing.md, marginBottom: spacing.md, backgroundColor: AC.bgCard, borderColor: AC.borderSubtle }}>
           <View style={styles.sectionHeader}>
             <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
             <H2 style={{ fontSize: 16, marginLeft: 8 }}>このアプリについて</H2>
