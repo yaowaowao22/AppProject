@@ -508,9 +508,10 @@ export function DashboardVariantC({ onAddPress, onEditPress }: DashboardVariantC
             <Text style={[aStyles.kpiValue, { marginTop: 16, textAlign: 'center' }]}>
               サブスクがまだありません
             </Text>
-            <Text style={[aStyles.kpiLabel, { marginTop: 8, textAlign: 'center' }]}>
-              右下の ＋ ボタンから追加してください
-            </Text>
+            <TouchableOpacity style={aStyles.emptyAddButton} onPress={onAddPress} activeOpacity={0.8}>
+              <Ionicons name="add" size={20} color="#fff" />
+              <Text style={aStyles.emptyAddButtonText}>最初のサブスクを追加</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -924,6 +925,7 @@ const aStyles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 20,
+    zIndex: 10,
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -934,5 +936,21 @@ const aStyles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 8,
     elevation: 8,
+  },
+  // 空状態 CTA ボタン
+  emptyAddButton: {
+    marginTop: 24,
+    backgroundColor: AC.teal,
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyAddButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
   },
 });
