@@ -16,6 +16,18 @@ import { useTheme, H2, Body, Caption, Card, Button } from '@massapp/ui';
 import type { Subscription, BillingCycle, Currency, SubscriptionCategory } from '../types';
 import { BILLING_CYCLE_LABEL, CATEGORY_COLORS } from '../types';
 
+const AC = {
+  bgDeep: '#0D1117',
+  bgCard: '#161B22',
+  bgElevated: '#1C2128',
+  teal: '#26C6DA',
+  textBright: '#E6EDF3',
+  textMid: '#8B949E',
+  textDim: '#484F58',
+  borderSubtle: '#21262D',
+  warnOrange: '#FF9800',
+};
+
 interface Props {
   subscription?: Subscription;
   onClose: () => void;
@@ -42,7 +54,7 @@ const ICON_CANDIDATES = [
 ] as const;
 
 export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }: Props) {
-  const { colors, spacing, radius } = useTheme();
+  const { spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const isEdit = !!subscription;
 
@@ -113,7 +125,7 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        style={[styles.container, { backgroundColor: colors.background }]}
+        style={[styles.container, { backgroundColor: AC.bgDeep }]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* ヘッダー */}
@@ -121,18 +133,19 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
           style={[
             styles.header,
             {
+              backgroundColor: AC.bgCard,
               paddingTop: insets.top + spacing.sm,
               paddingHorizontal: spacing.md,
               paddingBottom: spacing.sm,
-              borderBottomColor: colors.border,
+              borderBottomColor: AC.borderSubtle,
             },
           ]}
         >
-          <H2 style={{ fontSize: 17 }}>
+          <H2 style={{ fontSize: 17, color: AC.textBright }}>
             {isEdit ? 'サブスクを編集' : 'サブスクを追加'}
           </H2>
           <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="close-circle" size={28} color={colors.textMuted} />
+            <Ionicons name="close-circle" size={28} color={AC.textMid} />
           </TouchableOpacity>
         </View>
 
@@ -143,20 +156,21 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
           showsVerticalScrollIndicator={false}
         >
           {/* サービス名 */}
-          <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
-            <Caption color={colors.textSecondary} style={{ marginBottom: spacing.xs }}>
-              サービス名 <Caption color={colors.error}>*</Caption>
+          <Card style={{ backgroundColor: AC.bgCard, padding: spacing.md, marginBottom: spacing.md }}>
+            <Caption style={{ color: AC.textMid, marginBottom: spacing.xs }}>
+              サービス名 <Caption style={{ color: AC.warnOrange }}>*</Caption>
             </Caption>
             <TextInput
               value={name}
               onChangeText={setName}
               placeholder="例: Netflix, Spotify"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={AC.textDim}
               style={[
                 styles.textInput,
                 {
-                  color: colors.text,
-                  borderColor: colors.border,
+                  backgroundColor: AC.bgElevated,
+                  color: AC.textBright,
+                  borderColor: AC.borderSubtle,
                   borderRadius: radius.sm,
                   padding: spacing.sm,
                 },
@@ -165,21 +179,22 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
           </Card>
 
           {/* 金額 */}
-          <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
-            <Caption color={colors.textSecondary} style={{ marginBottom: spacing.xs }}>
-              金額 <Caption color={colors.error}>*</Caption>
+          <Card style={{ backgroundColor: AC.bgCard, padding: spacing.md, marginBottom: spacing.md }}>
+            <Caption style={{ color: AC.textMid, marginBottom: spacing.xs }}>
+              金額 <Caption style={{ color: AC.warnOrange }}>*</Caption>
             </Caption>
             <TextInput
               value={amount}
               onChangeText={setAmount}
               placeholder="0"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={AC.textDim}
               keyboardType="numeric"
               style={[
                 styles.textInput,
                 {
-                  color: colors.text,
-                  borderColor: colors.border,
+                  backgroundColor: AC.bgElevated,
+                  color: AC.textBright,
+                  borderColor: AC.borderSubtle,
                   borderRadius: radius.sm,
                   padding: spacing.sm,
                 },
@@ -188,8 +203,8 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
           </Card>
 
           {/* 通貨 */}
-          <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
-            <Caption color={colors.textSecondary} style={{ marginBottom: spacing.sm }}>
+          <Card style={{ backgroundColor: AC.bgCard, padding: spacing.md, marginBottom: spacing.md }}>
+            <Caption style={{ color: AC.textMid, marginBottom: spacing.sm }}>
               通貨
             </Caption>
             <View style={styles.buttonGroup}>
@@ -200,15 +215,15 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
                   style={[
                     styles.segmentButton,
                     {
-                      backgroundColor: currency === c ? colors.primary : colors.background,
-                      borderColor: currency === c ? colors.primary : colors.border,
+                      backgroundColor: currency === c ? AC.teal + '20' : AC.bgElevated,
+                      borderColor: currency === c ? AC.teal : AC.borderSubtle,
                       borderRadius: radius.sm,
                     },
                   ]}
                 >
                   <Body
                     style={{
-                      color: currency === c ? colors.textOnPrimary : colors.textSecondary,
+                      color: currency === c ? AC.textBright : AC.textMid,
                       fontWeight: currency === c ? 'bold' : 'normal',
                     }}
                   >
@@ -220,8 +235,8 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
           </Card>
 
           {/* 請求サイクル */}
-          <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
-            <Caption color={colors.textSecondary} style={{ marginBottom: spacing.sm }}>
+          <Card style={{ backgroundColor: AC.bgCard, padding: spacing.md, marginBottom: spacing.md }}>
+            <Caption style={{ color: AC.textMid, marginBottom: spacing.sm }}>
               請求サイクル
             </Caption>
             <View style={styles.buttonGroupWrap}>
@@ -232,17 +247,15 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
                   style={[
                     styles.segmentButton,
                     {
-                      backgroundColor:
-                        billingCycle === cycle ? colors.primary : colors.background,
-                      borderColor: billingCycle === cycle ? colors.primary : colors.border,
+                      backgroundColor: billingCycle === cycle ? AC.teal + '20' : AC.bgElevated,
+                      borderColor: billingCycle === cycle ? AC.teal : AC.borderSubtle,
                       borderRadius: radius.sm,
                     },
                   ]}
                 >
                   <Body
                     style={{
-                      color:
-                        billingCycle === cycle ? colors.textOnPrimary : colors.textSecondary,
+                      color: billingCycle === cycle ? AC.textBright : AC.textMid,
                       fontWeight: billingCycle === cycle ? 'bold' : 'normal',
                     }}
                   >
@@ -255,8 +268,8 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
 
           {/* 請求日（月次・四半期のみ） */}
           {showBillingDay && (
-            <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
-              <Caption color={colors.textSecondary} style={{ marginBottom: spacing.sm }}>
+            <Card style={{ backgroundColor: AC.bgCard, padding: spacing.md, marginBottom: spacing.md }}>
+              <Caption style={{ color: AC.textMid, marginBottom: spacing.sm }}>
                 請求日
               </Caption>
               <View style={styles.dayGrid}>
@@ -267,16 +280,15 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
                     style={[
                       styles.dayButton,
                       {
-                        backgroundColor:
-                          billingDay === day ? colors.primary : colors.background,
-                        borderColor: billingDay === day ? colors.primary : colors.border,
+                        backgroundColor: billingDay === day ? AC.teal + '20' : AC.bgElevated,
+                        borderColor: billingDay === day ? AC.teal : AC.borderSubtle,
                         borderRadius: radius.sm,
                       },
                     ]}
                   >
                     <Body
                       style={{
-                        color: billingDay === day ? colors.textOnPrimary : colors.textSecondary,
+                        color: billingDay === day ? AC.textBright : AC.textMid,
                         fontWeight: billingDay === day ? 'bold' : 'normal',
                         fontSize: 13,
                       }}
@@ -290,8 +302,8 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
           )}
 
           {/* カテゴリ */}
-          <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
-            <Caption color={colors.textSecondary} style={{ marginBottom: spacing.sm }}>
+          <Card style={{ backgroundColor: AC.bgCard, padding: spacing.md, marginBottom: spacing.md }}>
+            <Caption style={{ color: AC.textMid, marginBottom: spacing.sm }}>
               カテゴリ
             </Caption>
             <View style={styles.buttonGroupWrap}>
@@ -303,15 +315,15 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
                     styles.segmentButton,
                     {
                       backgroundColor:
-                        category === cat ? CATEGORY_COLORS[cat] : colors.background,
-                      borderColor: category === cat ? CATEGORY_COLORS[cat] : colors.border,
+                        category === cat ? CATEGORY_COLORS[cat] : AC.bgElevated,
+                      borderColor: category === cat ? CATEGORY_COLORS[cat] : AC.borderSubtle,
                       borderRadius: radius.sm,
                     },
                   ]}
                 >
                   <Body
                     style={{
-                      color: category === cat ? '#FFFFFF' : colors.textSecondary,
+                      color: category === cat ? '#FFFFFF' : AC.textMid,
                       fontWeight: category === cat ? 'bold' : 'normal',
                     }}
                   >
@@ -323,8 +335,8 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
           </Card>
 
           {/* アイコン選択 */}
-          <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
-            <Caption color={colors.textSecondary} style={{ marginBottom: spacing.sm }}>
+          <Card style={{ backgroundColor: AC.bgCard, padding: spacing.md, marginBottom: spacing.md }}>
+            <Caption style={{ color: AC.textMid, marginBottom: spacing.sm }}>
               アイコン（任意）
             </Caption>
             <View style={styles.iconGrid}>
@@ -335,9 +347,8 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
                   style={[
                     styles.iconButton,
                     {
-                      backgroundColor:
-                        iconName === icon ? colors.primaryLight + '30' : colors.background,
-                      borderColor: iconName === icon ? colors.primary : colors.border,
+                      backgroundColor: iconName === icon ? AC.teal + '20' : AC.bgElevated,
+                      borderColor: iconName === icon ? AC.teal : AC.borderSubtle,
                       borderRadius: radius.md,
                     },
                   ]}
@@ -345,7 +356,7 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
                   <Ionicons
                     name={icon as any}
                     size={24}
-                    color={iconName === icon ? colors.primary : colors.textSecondary}
+                    color={iconName === icon ? AC.teal : AC.textMid}
                   />
                 </TouchableOpacity>
               ))}
@@ -353,23 +364,24 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
           </Card>
 
           {/* メモ */}
-          <Card style={{ padding: spacing.md, marginBottom: spacing.lg }}>
-            <Caption color={colors.textSecondary} style={{ marginBottom: spacing.xs }}>
+          <Card style={{ backgroundColor: AC.bgCard, padding: spacing.md, marginBottom: spacing.lg }}>
+            <Caption style={{ color: AC.textMid, marginBottom: spacing.xs }}>
               メモ（任意）
             </Caption>
             <TextInput
               value={note}
               onChangeText={setNote}
               placeholder="備考など"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={AC.textDim}
               multiline
               numberOfLines={3}
               style={[
                 styles.textInput,
                 styles.textArea,
                 {
-                  color: colors.text,
-                  borderColor: colors.border,
+                  backgroundColor: AC.bgElevated,
+                  color: AC.textBright,
+                  borderColor: AC.borderSubtle,
                   borderRadius: radius.sm,
                   padding: spacing.sm,
                 },
@@ -382,7 +394,7 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
             title="保存"
             onPress={handleSave}
             variant="primary"
-            style={{ marginBottom: spacing.sm }}
+            style={{ backgroundColor: AC.teal, marginBottom: spacing.sm }}
           />
 
           {/* 削除ボタン（編集モードのみ） */}
@@ -392,14 +404,14 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
               style={[
                 styles.deleteButton,
                 {
-                  borderColor: colors.error,
+                  borderColor: AC.warnOrange,
                   borderRadius: radius.md,
                   marginBottom: spacing.sm,
                 },
               ]}
             >
-              <Ionicons name="trash-outline" size={16} color={colors.error} style={{ marginRight: 6 }} />
-              <Body style={{ color: colors.error, fontWeight: '600' }}>削除</Body>
+              <Ionicons name="trash-outline" size={16} color={AC.warnOrange} style={{ marginRight: 6 }} />
+              <Body style={{ color: AC.warnOrange, fontWeight: '600' }}>削除</Body>
             </TouchableOpacity>
           )}
         </ScrollView>
