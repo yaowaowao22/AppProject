@@ -3,6 +3,7 @@ import {
   Modal,
   View,
   ScrollView,
+  Text,
   TextInput,
   TouchableOpacity,
   Alert,
@@ -12,7 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme, H2, Body, Caption, Card, Button } from '@massapp/ui';
+import { useTheme, H2, Body, Caption, Card } from '@massapp/ui';
 import type { Subscription, BillingCycle, Currency, SubscriptionCategory } from '../types';
 import { BILLING_CYCLE_LABEL, CATEGORY_COLORS } from '../types';
 
@@ -123,7 +124,7 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
   };
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal visible animationType="slide" presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : undefined} onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={[styles.container, { backgroundColor: AC.bgDeep }]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -390,12 +391,16 @@ export function AddSubscriptionModal({ subscription, onClose, onSave, onDelete }
           </Card>
 
           {/* 保存ボタン */}
-          <Button
-            title="保存"
+          <TouchableOpacity
             onPress={handleSave}
-            variant="primary"
-            style={{ backgroundColor: AC.teal, marginBottom: spacing.sm }}
-          />
+            activeOpacity={0.7}
+            style={[
+              styles.saveButton,
+              { borderRadius: radius.md, marginBottom: spacing.sm },
+            ]}
+          >
+            <Text style={styles.saveButtonText}>保存</Text>
+          </TouchableOpacity>
 
           {/* 削除ボタン（編集モードのみ） */}
           {isEdit && (
@@ -475,6 +480,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
+  },
+  saveButton: {
+    backgroundColor: '#26C6DA',
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   deleteButton: {
     flexDirection: 'row',
