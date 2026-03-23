@@ -18,20 +18,23 @@ import { requestPermissions, scheduleSubscriptionReminders } from './src/utils/n
 // ── AppInner: モーダル状態・サブスク操作を担当 ─────────────────────────────
 function AppInner() {
   const { subscriptions, addSubscription, updateSubscription, deleteSubscription } = useSubscriptions();
-  const [notify3days] = useLocalStorage<boolean>('sub_notify_3days', true);
-  const [notify1day] = useLocalStorage<boolean>('sub_notify_1day', true);
+  const [notify3days] = useLocalStorage<boolean>(STORE_KEYS.notify3days, true);
+  const [notify1day] = useLocalStorage<boolean>(STORE_KEYS.notify1day, true);
 
   // 通知権限リクエスト（初回起動時）
   useEffect(() => {
     requestPermissions().catch(() => {});
   }, []);
 
-  // サブスク・通知設定変更時にリマインダーを再スケジュール
+  // サブスク変更時にリマインダーを再スケジュール
+  // NOTE: notify3days/notify1day は SettingsScreen の Switch 変更時に直接再スケジュール済みのため、
+  // ここでは subscriptions 変更時のみ実行して二重スケジュールを防ぐ
   useEffect(() => {
     scheduleSubscriptionReminders(subscriptions, notify3days ?? true, notify1day ?? true).catch(
       () => {},
     );
-  }, [subscriptions, notify3days, notify1day]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subscriptions]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | undefined>(
