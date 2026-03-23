@@ -3,6 +3,19 @@ const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
+// Windows上でMetroが作成するtmpディレクトリをFallbackWatcherが監視しようとして
+// ENOENT エラーになる問題を回避する（レースコンディション）
+const existingBlockList = config.resolver.blockList;
+const existingBlockListArray = Array.isArray(existingBlockList)
+  ? existingBlockList
+  : existingBlockList
+    ? [existingBlockList]
+    : [];
+config.resolver.blockList = [
+  ...existingBlockListArray,
+  /.*_tmp_\d+.*/,
+];
+
 // Mock native-only modules on web
 const originalResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
