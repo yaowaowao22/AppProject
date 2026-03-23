@@ -20,6 +20,11 @@ import {
   isUnused,
   formatCurrency,
 } from '../utils/subscriptionUtils';
+import { useUIVariant } from '../UIVariantContext';
+import { DashboardVariantA } from './DashboardVariantA';
+import { DashboardVariantB } from './DashboardVariantB';
+import { DashboardVariantC } from './DashboardVariantC';
+import { VariantSwitcher } from '../components/VariantSwitcher';
 
 const BUTTON_W = 72;
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -94,9 +99,10 @@ function SwipeableRow({
 // ── DashboardScreen ───────────────────────────────────────────────────────────
 interface DashboardScreenProps {
   onAddPress?: () => void;
+  onEditPress?: (s: Subscription) => void;
 }
 
-export function DashboardScreen({ onAddPress }: DashboardScreenProps) {
+function OriginalDashboard({ onAddPress }: DashboardScreenProps) {
   const { colors, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const {
@@ -490,3 +496,25 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
 });
+
+// ── バリアントルーター ─────────────────────────────────────────────────────────
+export function DashboardScreen({ onAddPress, onEditPress }: DashboardScreenProps) {
+  const { variant } = useUIVariant();
+  const handleAdd  = onAddPress  ?? (() => {});
+  const handleEdit = onEditPress ?? (() => {});
+
+  return (
+    <View style={{ flex: 1 }}>
+      {variant === 'premium' ? (
+        <DashboardVariantA onAddPress={handleAdd} onEditPress={handleEdit} />
+      ) : variant === 'minimal' ? (
+        <DashboardVariantB onAddPress={handleAdd} onEditPress={handleEdit} />
+      ) : variant === 'analytics' ? (
+        <DashboardVariantC onAddPress={handleAdd} onEditPress={handleEdit} />
+      ) : (
+        <OriginalDashboard onAddPress={onAddPress} />
+      )}
+      <VariantSwitcher />
+    </View>
+  );
+}

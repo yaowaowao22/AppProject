@@ -7,17 +7,20 @@ import type { TabScreen } from '@massapp/navigation';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 
+import type { Subscription } from '../types';
+
 interface RootNavigatorProps {
   onAddPress: () => void;
+  onEditPress: (s: Subscription) => void;
 }
 
-export function RootNavigator({ onAddPress }: RootNavigatorProps) {
+export function RootNavigator({ onAddPress, onEditPress }: RootNavigatorProps) {
   const insets = useSafeAreaInsets();
 
-  // DashboardScreen に onAddPress を渡すためのラッパーコンポーネント
+  // DashboardScreen に onAddPress / onEditPress を渡すためのラッパーコンポーネント
   const DashboardTab = useCallback(
-    () => <DashboardScreen onAddPress={onAddPress} />,
-    [onAddPress],
+    () => <DashboardScreen onAddPress={onAddPress} onEditPress={onEditPress} />,
+    [onAddPress, onEditPress],
   );
 
   const screens: TabScreen[] = [

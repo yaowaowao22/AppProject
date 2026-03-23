@@ -10,6 +10,7 @@ import { theme } from './src/theme';
 import { STORE_KEYS } from './src/config';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { SubscriptionProvider, useSubscriptions } from './src/SubscriptionContext';
+import { UIVariantProvider } from './src/UIVariantContext';
 import { AddSubscriptionModal } from './src/screens/AddSubscriptionModal';
 import type { Subscription } from './src/types';
 
@@ -24,6 +25,11 @@ function AppInner() {
 
   const handleAddPress = useCallback(() => {
     setEditingSubscription(undefined);
+    setShowAddModal(true);
+  }, []);
+
+  const handleEditPress = useCallback((sub: Subscription) => {
+    setEditingSubscription(sub);
     setShowAddModal(true);
   }, []);
 
@@ -63,7 +69,7 @@ function AppInner() {
     <>
       <NavigationContainer>
         <StatusBar style="auto" />
-        <RootNavigator onAddPress={handleAddPress} />
+        <RootNavigator onAddPress={handleAddPress} onEditPress={handleEditPress} />
       </NavigationContainer>
 
       {/* AddSubscriptionModal は NavigationContainer 外・プロバイダー内でレンダリング */}
@@ -102,9 +108,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider theme={theme} initialMode={themeMode}>
-        <SubscriptionProvider>
-          <AppInner />
-        </SubscriptionProvider>
+        <UIVariantProvider>
+          <SubscriptionProvider>
+            <AppInner />
+          </SubscriptionProvider>
+        </UIVariantProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
