@@ -2,20 +2,15 @@
   "expo": {
     "name": "SubRadar",
     "slug": "sub-radar",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
-    "extra": {
-      "eas": {
-        "projectId": "YOUR_PROJECT_ID"
-      }
-    },
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0D1F0D"
+      "backgroundColor": "#0A1929"
     },
     "ios": {
       "supportsTablet": false,
@@ -28,7 +23,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0D1F0D"
+        "backgroundColor": "#0A1929"
       },
       "package": "com.massapp.subradar",
       "edgeToEdgeEnabled": true
@@ -36,23 +31,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "useFrameworks": "static"
-          }
-        }
-      ],
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
-          "iosAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX"
-        }
-      ]
-    ],
     "owner": "yaowao"
   }
 }

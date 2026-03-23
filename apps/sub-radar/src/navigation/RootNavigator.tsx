@@ -1,51 +1,50 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedTabNavigator } from '@massapp/navigation';
 import type { TabScreen } from '@massapp/navigation';
 import { DashboardScreen } from '../screens/DashboardScreen';
-import { SubscriptionsScreen } from '../screens/SubscriptionsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 
-const screens: TabScreen[] = [
-  {
-    name: 'Dashboard',
-    component: DashboardScreen,
-    options: {
-      title: 'ダッシュボード',
-      headerShown: false,
-      tabBarIcon: ({ color, size }) => (
-        <Ionicons name="grid-outline" size={size} color={color} />
-      ),
-    },
-  },
-  {
-    name: 'Subscriptions',
-    component: SubscriptionsScreen,
-    options: {
-      title: 'サブスク',
-      headerShown: false,
-      tabBarIcon: ({ color, size }) => (
-        <Ionicons name="card-outline" size={size} color={color} />
-      ),
-    },
-  },
-  {
-    name: 'Settings',
-    component: SettingsScreen,
-    options: {
-      title: '設定',
-      headerShown: false,
-      tabBarIcon: ({ color, size }) => (
-        <Ionicons name="settings-outline" size={size} color={color} />
-      ),
-    },
-  },
-];
+interface RootNavigatorProps {
+  onAddPress: () => void;
+}
 
-export function RootNavigator() {
+export function RootNavigator({ onAddPress }: RootNavigatorProps) {
   const insets = useSafeAreaInsets();
+
+  // DashboardScreen に onAddPress を渡すためのラッパーコンポーネント
+  const DashboardTab = useCallback(
+    () => <DashboardScreen onAddPress={onAddPress} />,
+    [onAddPress],
+  );
+
+  const screens: TabScreen[] = [
+    {
+      name: 'Dashboard',
+      component: DashboardTab,
+      options: {
+        title: 'ホーム',
+        headerShown: false,
+        tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+          <Ionicons name="home" size={size} color={color} />
+        ),
+      },
+    },
+    {
+      name: 'Settings',
+      component: SettingsScreen,
+      options: {
+        title: '設定',
+        headerShown: false,
+        tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+          <Ionicons name="settings" size={size} color={color} />
+        ),
+      },
+    },
+  ];
+
   return (
     <ThemedTabNavigator
       screens={screens}

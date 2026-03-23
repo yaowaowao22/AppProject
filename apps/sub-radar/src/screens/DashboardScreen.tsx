@@ -1,137 +1,379 @@
-import React, { useMemo } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Animated,
+  PanResponder,
+  Dimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, H1, H2, Body, Caption, Card, Badge } from '@massapp/ui';
-import { useLocalStorage } from '@massapp/hooks';
+import { useSubscriptions } from '../SubscriptionContext';
 import type { Subscription } from '../types';
-import { toJPY, daysUntilBilling, isUnused, CURRENCY_SYMBOLS } from '../types';
+import {
+  calcMonthlyAmount,
+  getNextBillingDate,
+  getDaysUntilBilling,
+  isUnused,
+  formatCurrency,
+} from '../utils/subscriptionUtils';
 
-export function DashboardScreen() {
-  const { colors, spacing, radius } = useTheme();
-  const insets = useSafeAreaInsets();
-  const [subscriptions] = useLocalStorage<Subscription[]>('subradar_subscriptions', []);
+const BUTTON_W = 72;
+const { width: SCREEN_W } = Dimensions.get('window');
 
-  const stats = useMemo(() => {
-    const monthlyJPY = subscriptions.reduce(
-      (sum, s) => sum + toJPY(s.amount, s.currency),
-      0
-    );
-    const annualJPY = monthlyJPY * 12;
+// ── SwipeableRow（InboxScreen から流用）──────────────────────────────────────
+function SwipeableRow({
+  children,
+  onDelete,
+}: {
+  children: React.ReactNode;
+  onDelete: () => void;
+}) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const offsetRef = useRef(0);
+  const { colors } = useTheme();
 
-    const upcoming = [...subscriptions]
-      .map((s) => ({ ...s, daysLeft: daysUntilBilling(s.billingDay) }))
-      .filter((s) => s.daysLeft <= 30)
-      .sort((a, b) => a.daysLeft - b.daysLeft);
+  const snap = (to: number) => {
+    offsetRef.current = to;
+    Animated.timing(translateX, {
+      toValue: to,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
 
-    const unused = subscriptions.filter((s) => isUnused(s.lastTappedAt));
-
-    return { monthlyJPY, annualJPY, upcoming, unused };
-  }, [subscriptions]);
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, g) =>
+        Math.abs(g.dx) > 4 && Math.abs(g.dx) > Math.abs(g.dy) * 1.2,
+      onMoveShouldSetPanResponderCapture: (_, g) =>
+        Math.abs(g.dx) > 15 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+      onPanResponderMove: (_, g) => {
+        const next = offsetRef.current + g.dx;
+        translateX.setValue(Math.max(Math.min(next, 0), -SCREEN_W));
+      },
+      onPanResponderRelease: (_, g) => {
+        const next = offsetRef.current + g.dx;
+        if (g.vx < -0.5 || next < -BUTTON_W * 0.4) {
+          snap(-BUTTON_W);
+        } else {
+          snap(0);
+        }
+      },
+      onPanResponderTerminationRequest: () => false,
+    }),
+  ).current;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ padding: spacing.md, paddingBottom: 32 }}
-        showsVerticalScrollIndicator={false}
+    <View style={{ overflow: 'hidden' }}>
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() => {
+          snap(0);
+          onDelete();
+        }}
+        style={[styles.deleteAction, { backgroundColor: colors.error, width: BUTTON_W }]}
       >
-        <H1 style={{ fontSize: 24, marginBottom: spacing.md }}>ダッシュボード</H1>
+        <Ionicons name="trash-outline" size={20} color="#fff" />
+        <Caption color="#fff" style={{ fontSize: 10, marginTop: 2 }}>削除</Caption>
+      </TouchableOpacity>
+      <Animated.View
+        style={{ transform: [{ translateX }], backgroundColor: colors.background }}
+        {...panResponder.panHandlers}
+      >
+        {children}
+      </Animated.View>
+    </View>
+  );
+}
 
-        {/* 月額合計 */}
-        <Card style={[styles.summaryCard, { backgroundColor: colors.primary, marginBottom: spacing.md }]}>
-          <Caption color={colors.textOnPrimary} style={{ opacity: 0.8 }}>月額合計</Caption>
-          <H1 style={[styles.bigAmount, { color: colors.textOnPrimary }]}>
-            ¥{stats.monthlyJPY.toLocaleString()}
-          </H1>
-          <View style={styles.annualRow}>
-            <Caption color={colors.textOnPrimary} style={{ opacity: 0.7 }}>年間合計</Caption>
-            <Caption color={colors.textOnPrimary} style={{ opacity: 0.9, fontWeight: '600' }}>
-              ¥{stats.annualJPY.toLocaleString()}
-            </Caption>
-          </View>
-          <Caption color={colors.textOnPrimary} style={{ opacity: 0.6, marginTop: spacing.xs }}>
-            {subscriptions.length}件のサブスク
-          </Caption>
-        </Card>
+// ── DashboardScreen ───────────────────────────────────────────────────────────
+interface DashboardScreenProps {
+  onAddPress?: () => void;
+}
 
-        {/* 未使用サービス警告 */}
-        {stats.unused.length > 0 && (
-          <Card style={[styles.warningCard, { backgroundColor: colors.warning + '18', borderColor: colors.warning + '40', marginBottom: spacing.md, borderWidth: 1 }]}>
-            <View style={styles.warningHeader}>
-              <Ionicons name="warning-outline" size={20} color={colors.warning} />
-              <H2 style={{ fontSize: 15, marginLeft: 8, color: colors.warning }}>
-                未使用のサービス ({stats.unused.length}件)
-              </H2>
+export function DashboardScreen({ onAddPress }: DashboardScreenProps) {
+  const { colors, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
+  const {
+    subscriptions,
+    isPremium,
+    totalMonthly,
+    totalYearly,
+    deleteSubscription,
+    updateSubscription,
+  } = useSubscriptions();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // 今後7日以内に請求日が来るサブスク（日付昇順）
+  const upcomingBillings = useMemo(() => {
+    return subscriptions
+      .filter((s) => s.isActive)
+      .map((s) => ({ sub: s, days: getDaysUntilBilling(s) }))
+      .filter(({ days }) => days <= 7)
+      .sort((a, b) => a.days - b.days);
+  }, [subscriptions]);
+
+  // 未使用サービス（30日以上タップなし）
+  const unusedSubs = useMemo(
+    () => subscriptions.filter((s) => s.isActive && isUnused(s)),
+    [subscriptions],
+  );
+
+  const activeSubs = useMemo(
+    () => subscriptions.filter((s) => s.isActive),
+    [subscriptions],
+  );
+
+  // タップ: lastTappedAt 更新 + 詳細展開トグル
+  const handleTap = useCallback(
+    (sub: Subscription) => {
+      updateSubscription(sub.id, { lastTappedAt: new Date().toISOString() });
+      setExpandedId((prev) => (prev === sub.id ? null : sub.id));
+    },
+    [updateSubscription],
+  );
+
+  const renderSubscriptionItem = ({ item }: { item: Subscription }) => {
+    const days = getDaysUntilBilling(item);
+    const nextDate = getNextBillingDate(item);
+    const monthly = calcMonthlyAmount(item);
+    const unused = isUnused(item);
+    const isExpanded = expandedId === item.id;
+
+    const nextDateStr = nextDate.toLocaleDateString('ja-JP', {
+      month: 'numeric',
+      day: 'numeric',
+    });
+
+    const cycleLabel =
+      item.billingCycle === 'monthly'   ? '月次'   :
+      item.billingCycle === 'yearly'    ? '年次'   :
+      item.billingCycle === 'quarterly' ? '四半期' : '週次';
+
+    return (
+      <SwipeableRow onDelete={() => deleteSubscription(item.id)}>
+        <TouchableOpacity activeOpacity={0.8} onPress={() => handleTap(item)}>
+          <Card style={[styles.subCard, { borderLeftWidth: 3, borderLeftColor: item.color }]}>
+            <View style={styles.subRow}>
+              {/* アイコン */}
+              <View style={[styles.iconCircle, { backgroundColor: item.color + '22' }]}>
+                <Ionicons
+                  name={(item.iconName as any) ?? 'card-outline'}
+                  size={20}
+                  color={item.color}
+                />
+              </View>
+
+              {/* サービス名・次回請求日 */}
+              <View style={styles.subInfo}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <H2 style={styles.subName}>{item.name}</H2>
+                  {unused && <Badge label="⚠️ 未使用" variant="warning" />}
+                </View>
+                <Caption color={colors.textMuted}>{nextDateStr} 次回請求</Caption>
+              </View>
+
+              {/* 金額・カテゴリ */}
+              <View style={styles.subRight}>
+                <Body style={{ fontWeight: '600' }}>
+                  {formatCurrency(monthly, item.currency)}/月
+                </Body>
+                <Badge
+                  label={item.category}
+                  variant="info"
+                  style={{ marginTop: 4, alignSelf: 'flex-end' }}
+                />
+              </View>
             </View>
-            <Caption color={colors.textSecondary} style={{ marginTop: spacing.xs, lineHeight: 18 }}>
-              30日以上使っていないサービスがあります。解約を検討してみましょう。
-            </Caption>
-            {stats.unused.map((s) => (
-              <View key={s.id} style={[styles.unusedItem, { marginTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm }]}>
-                <View style={styles.unusedRow}>
-                  <Ionicons name="alert-circle-outline" size={16} color={colors.warning} />
-                  <Body style={{ marginLeft: 6, flex: 1 }}>{s.name}</Body>
-                  <Caption color={colors.textMuted}>
-                    ¥{toJPY(s.amount, s.currency).toLocaleString()}/月
+
+            {/* 展開時詳細 */}
+            {isExpanded && (
+              <View
+                style={[
+                  styles.expandedDetail,
+                  { borderTopColor: colors.border, marginTop: spacing.sm, paddingTop: spacing.sm },
+                ]}
+              >
+                <View style={styles.detailRow}>
+                  <Caption color={colors.textMuted}>請求サイクル</Caption>
+                  <Caption color={colors.textSecondary}>{cycleLabel}</Caption>
+                </View>
+                <View style={[styles.detailRow, { marginTop: spacing.xs }]}>
+                  <Caption color={colors.textMuted}>請求日</Caption>
+                  <Caption color={colors.textSecondary}>毎月{item.billingDay}日</Caption>
+                </View>
+                <View style={[styles.detailRow, { marginTop: spacing.xs }]}>
+                  <Caption color={colors.textMuted}>月額換算</Caption>
+                  <Caption color={colors.textSecondary}>
+                    {formatCurrency(monthly, item.currency)}
                   </Caption>
                 </View>
-              </View>
-            ))}
-          </Card>
-        )}
-
-        {/* 次回請求リスト */}
-        <H2 style={{ fontSize: 16, marginBottom: spacing.sm }}>直近の請求</H2>
-        {stats.upcoming.length === 0 ? (
-          <Card style={{ padding: spacing.md }}>
-            <Body color={colors.textMuted} style={{ textAlign: 'center' }}>
-              直近30日以内の請求はありません
-            </Body>
-          </Card>
-        ) : (
-          stats.upcoming.map((s) => (
-            <Card key={s.id} style={[styles.upcomingCard, { marginBottom: spacing.sm }]}>
-              <View style={styles.upcomingRow}>
-                <View style={[styles.daysCircle, {
-                  backgroundColor: s.daysLeft <= 3
-                    ? colors.error + '15'
-                    : s.daysLeft <= 7
-                    ? colors.warning + '15'
-                    : colors.primary + '15',
-                  borderRadius: radius.full,
-                }]}>
-                  <Body style={{
-                    fontSize: 18,
-                    fontWeight: 'bold',
-                    color: s.daysLeft <= 3 ? colors.error : s.daysLeft <= 7 ? colors.warning : colors.primary,
-                  }}>
-                    {s.daysLeft}
-                  </Body>
-                  <Caption style={{
-                    fontSize: 9,
-                    color: s.daysLeft <= 3 ? colors.error : s.daysLeft <= 7 ? colors.warning : colors.primary,
-                  }}>日後</Caption>
-                </View>
-                <View style={{ flex: 1, marginLeft: spacing.sm }}>
-                  <H2 style={{ fontSize: 15 }}>{s.name}</H2>
-                  <Caption color={colors.textMuted}>{s.category} · 毎月{s.billingDay}日</Caption>
-                </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Body style={{ fontWeight: '600' }}>
-                    {CURRENCY_SYMBOLS[s.currency]}{s.amount.toLocaleString()}
-                  </Body>
-                  {s.currency !== 'JPY' && (
-                    <Caption color={colors.textMuted}>
-                      ≈¥{toJPY(s.amount, s.currency).toLocaleString()}
+                {item.note ? (
+                  <View style={[styles.detailRow, { marginTop: spacing.xs }]}>
+                    <Caption color={colors.textMuted}>メモ</Caption>
+                    <Caption
+                      color={colors.textSecondary}
+                      style={{ flex: 1, textAlign: 'right' }}
+                    >
+                      {item.note}
                     </Caption>
-                  )}
+                  </View>
+                ) : null}
+              </View>
+            )}
+          </Card>
+        </TouchableOpacity>
+      </SwipeableRow>
+    );
+  };
+
+  const ListHeader = (
+    <View>
+      {/* ── ヘッダー ── */}
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top + spacing.sm, marginBottom: spacing.md },
+        ]}
+      >
+        <View>
+          <H1 style={{ fontSize: 24 }}>ダッシュボード</H1>
+          <Caption color={colors.textMuted}>{activeSubs.length}件のサブスク</Caption>
+        </View>
+        <Badge
+          label={isPremium ? 'プレミアム' : '無料版'}
+          variant={isPremium ? 'success' : 'info'}
+        />
+      </View>
+
+      {/* ── サマリーカード ── */}
+      <Card style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
+        <Caption color={colors.textOnPrimary + 'CC'}>今月の合計</Caption>
+        <H1 style={[styles.totalAmount, { color: colors.textOnPrimary }]}>
+          ¥{Math.round(totalMonthly).toLocaleString('ja-JP')}
+        </H1>
+        <Caption color={colors.textOnPrimary + 'AA'}>
+          年間: ¥{Math.round(totalYearly).toLocaleString('ja-JP')}
+        </Caption>
+        <View style={[styles.summaryDivider, { borderTopColor: colors.textOnPrimary + '33' }]} />
+        <View style={styles.summaryFooter}>
+          <Caption color={colors.textOnPrimary + 'CC'}>アクティブ</Caption>
+          <Caption color={colors.textOnPrimary} style={{ fontWeight: '600' }}>
+            {activeSubs.length}件
+          </Caption>
+        </View>
+      </Card>
+
+      {/* ── 次回請求セクション（7日以内）── */}
+      {upcomingBillings.length > 0 && (
+        <View style={{ marginTop: spacing.lg }}>
+          <H2 style={{ marginBottom: spacing.sm }}>次回請求（7日以内）</H2>
+          {upcomingBillings.map(({ sub, days }) => (
+            <Card key={sub.id} style={[styles.upcomingCard, { marginBottom: spacing.sm }]}>
+              <View style={styles.upcomingRow}>
+                <View style={styles.rowLeft}>
+                  <View style={[styles.dot, { backgroundColor: sub.color }]} />
+                  <Body style={{ fontWeight: '500' }}>{sub.name}</Body>
+                </View>
+                <View style={styles.upcomingRight}>
+                  <Body style={{ fontWeight: '600' }}>
+                    {formatCurrency(sub.amount, sub.currency)}
+                  </Body>
+                  <Badge
+                    label={days === 0 ? '今日' : `残${days}日`}
+                    variant={days <= 1 ? 'error' : days <= 3 ? 'warning' : 'info'}
+                    style={{ marginLeft: 8 }}
+                  />
                 </View>
               </View>
             </Card>
-          ))
+          ))}
+        </View>
+      )}
+
+      {/* ── 未使用サービス警告バナー ── */}
+      {unusedSubs.length > 0 && (
+        <View style={{ marginTop: spacing.lg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
+            <H2>⚠️ 未使用の可能性</H2>
+            <Badge
+              label={`${unusedSubs.length}件`}
+              variant="warning"
+              style={{ marginLeft: 8 }}
+            />
+          </View>
+          {unusedSubs.map((sub) => (
+            <Card
+              key={sub.id}
+              style={[
+                styles.unusedCard,
+                { borderLeftWidth: 3, borderLeftColor: '#FF9800', marginBottom: spacing.sm },
+              ]}
+            >
+              <View style={styles.upcomingRow}>
+                <View style={styles.rowLeft}>
+                  <Ionicons name="warning-outline" size={16} color="#FF9800" />
+                  <Body style={{ marginLeft: 6 }}>{sub.name}</Body>
+                </View>
+                <Body style={{ fontWeight: '600' }}>
+                  {formatCurrency(calcMonthlyAmount(sub), sub.currency)}/月
+                </Body>
+              </View>
+            </Card>
+          ))}
+        </View>
+      )}
+
+      {/* ── 全サブスク一覧ヘッダー ── */}
+      <H2 style={{ marginTop: spacing.lg, marginBottom: spacing.sm }}>すべてのサブスク</H2>
+    </View>
+  );
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <FlatList
+        data={activeSubs}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{
+          paddingHorizontal: spacing.md,
+          paddingBottom: 100 + insets.bottom,
+        }}
+        showsVerticalScrollIndicator={false}
+        ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
+        renderItem={renderSubscriptionItem}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="albums-outline" size={64} color={colors.textMuted} />
+            <H2 style={{ marginTop: spacing.md }} color={colors.textSecondary}>
+              サブスクがまだありません
+            </H2>
+            <Body
+              color={colors.textMuted}
+              style={{ marginTop: spacing.sm, textAlign: 'center' }}
+            >
+              右下の ＋ ボタンから追加してください
+            </Body>
+          </View>
         )}
-      </ScrollView>
+      />
+
+      {/* ── FAB ── */}
+      <TouchableOpacity
+        style={[
+          styles.fab,
+          { backgroundColor: colors.primary, bottom: insets.bottom + spacing.lg },
+        ]}
+        onPress={onAddPress}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={28} color={colors.textOnPrimary} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -140,45 +382,111 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
   summaryCard: {
     padding: 20,
     borderRadius: 16,
   },
-  bigAmount: {
-    fontSize: 42,
-    fontWeight: 'bold',
-    marginTop: 4,
-    marginBottom: 8,
+  totalAmount: {
+    fontSize: 40,
+    fontWeight: '700',
+    marginVertical: 4,
   },
-  annualRow: {
+  summaryDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    marginVertical: 12,
+  },
+  summaryFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  warningCard: {
-    padding: 14,
-    borderRadius: 12,
-  },
-  warningHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  unusedItem: {},
-  unusedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   upcomingCard: {
     padding: 12,
   },
   upcomingRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  daysCircle: {
-    width: 52,
-    height: 52,
+  upcomingRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  unusedCard: {
+    padding: 12,
+  },
+  subCard: {
+    padding: 12,
+  },
+  subRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
+  },
+  subInfo: {
+    flex: 1,
+  },
+  subName: {
+    fontSize: 15,
+  },
+  subRight: {
+    alignItems: 'flex-end',
+  },
+  expandedDetail: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 8,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
+  },
+  deleteAction: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
   },
 });

@@ -1,48 +1,100 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
+import { Alert } from 'react-native';
 import { ThemeProvider } from '@massapp/ui';
 import type { ThemeMode } from '@massapp/ui';
-import { AdProvider } from '@massapp/ads';
-import { useLocalStorage } from '@massapp/hooks';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from './src/theme';
-import { adConfig } from './src/ads.config';
+import { STORE_KEYS } from './src/config';
 import { RootNavigator } from './src/navigation/RootNavigator';
-import { initPurchases, checkPremium } from './src/utils/purchases';
+import { SubscriptionProvider, useSubscriptions } from './src/SubscriptionContext';
+import { AddSubscriptionModal } from './src/screens/AddSubscriptionModal';
+import type { Subscription } from './src/types';
 
+// ── AppInner: モーダル状態・サブスク操作を担当 ─────────────────────────────
 function AppInner() {
-  const [isPremium, setIsPremium] = useLocalStorage('subradar_is_premium', false);
+  const { addSubscription, updateSubscription, deleteSubscription } = useSubscriptions();
 
-  useEffect(() => {
-    (async () => {
-      await initPurchases();
-      const hasPremium = await checkPremium();
-      setIsPremium(hasPremium);
-    })();
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingSubscription, setEditingSubscription] = useState<Subscription | undefined>(
+    undefined,
+  );
+
+  const handleAddPress = useCallback(() => {
+    setEditingSubscription(undefined);
+    setShowAddModal(true);
   }, []);
 
+  const handleClose = useCallback(() => {
+    setShowAddModal(false);
+    setEditingSubscription(undefined);
+  }, []);
+
+  const handleSave = useCallback(
+    (sub: Subscription) => {
+      if (editingSubscription) {
+        updateSubscription(sub.id, sub);
+      } else {
+        const added = addSubscription(sub);
+        if (!added) {
+          Alert.alert(
+            '無料版の上限',
+            '無料版では3件まで登録できます。\nプレミアムにアップグレードすると無制限に追加できます。',
+            [{ text: 'OK' }],
+          );
+          return;
+        }
+      }
+      handleClose();
+    },
+    [editingSubscription, addSubscription, updateSubscription, handleClose],
+  );
+
+  const handleDelete = useCallback(() => {
+    if (editingSubscription) {
+      deleteSubscription(editingSubscription.id);
+    }
+    handleClose();
+  }, [editingSubscription, deleteSubscription, handleClose]);
+
   return (
-    <NavigationContainer>
-      <StatusBar style="auto" />
-      <RootNavigator />
-    </NavigationContainer>
+    <>
+      <NavigationContainer>
+        <StatusBar style="auto" />
+        <RootNavigator onAddPress={handleAddPress} />
+      </NavigationContainer>
+
+      {/* AddSubscriptionModal は NavigationContainer 外・プロバイダー内でレンダリング */}
+      {showAddModal && (
+        <AddSubscriptionModal
+          subscription={editingSubscription}
+          onClose={handleClose}
+          onSave={handleSave}
+          onDelete={editingSubscription ? handleDelete : undefined}
+        />
+      )}
+    </>
   );
 }
 
+// ── App: プロバイダー + テーマ初期化 ─────────────────────────────────────
 export default function App() {
   const [themeMode, setThemeMode] = useState<ThemeMode>('system');
   const [ready, setReady] = useState(false);
 
+  // AsyncStorage からテーマモードを復元（push-notify と同パターン）
   useEffect(() => {
-    AsyncStorage.getItem('subradar_theme_mode').then((raw) => {
-      const saved = raw ? JSON.parse(raw) : null;
-      if (saved === 'light' || saved === 'dark' || saved === 'system') {
-        setThemeMode(saved);
-      }
-      setReady(true);
-    }).catch(() => setReady(true));
+    AsyncStorage.getItem(STORE_KEYS.themeMode)
+      .then((raw) => {
+        const saved = raw ? JSON.parse(raw) : null;
+        if (saved === 'light' || saved === 'dark' || saved === 'system') {
+          setThemeMode(saved);
+        }
+        setReady(true);
+      })
+      .catch(() => setReady(true));
   }, []);
 
   if (!ready) return null;
@@ -50,9 +102,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider theme={theme} initialMode={themeMode}>
-        <AdProvider config={adConfig}>
+        <SubscriptionProvider>
           <AppInner />
-        </AdProvider>
+        </SubscriptionProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

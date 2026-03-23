@@ -1,79 +1,110 @@
 import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  Switch,
+  TouchableOpacity,
+  Linking,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme, H1, H2, Body, Caption, Card, Button, Badge, Divider, ListItem } from '@massapp/ui';
+import {
+  useTheme,
+  H1,
+  H2,
+  Body,
+  Caption,
+  Card,
+  Button,
+  Badge,
+  Divider,
+  ListItem,
+} from '@massapp/ui';
 import type { ThemeMode } from '@massapp/ui';
 import { useLocalStorage } from '@massapp/hooks';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Subscription } from '../types';
+import { useSubscriptions } from '../SubscriptionContext';
 import { FREE_LIMIT } from '../types';
-import { buyPremium, restorePurchases } from '../utils/purchases';
+import type { Currency } from '../types';
+import { APP_VERSION, APP_NAME, STORE_KEYS, PREMIUM_PRICE_JPY } from '../config';
 
 export function SettingsScreen() {
   const { colors, spacing, radius, mode, setMode } = useTheme();
   const insets = useSafeAreaInsets();
-  const [isPremium, setIsPremium] = useLocalStorage('subradar_is_premium', false);
-  const [subscriptions, setSubscriptions] = useLocalStorage<Subscription[]>('subradar_subscriptions', []);
-  const [, setSavedMode] = useLocalStorage<string>('subradar_theme_mode', 'system');
+  const { subscriptions, isPremium, deleteSubscription } = useSubscriptions();
+
+  // プレミアム状態（購入モック用）
+  const [, setIsPremium] = useLocalStorage<boolean>(STORE_KEYS.isPremium, false);
+  // テーマ永続化
+  const [, setSavedMode] = useLocalStorage<string>(STORE_KEYS.themeMode, 'system');
+  // 通知設定
+  const [notify3days, setNotify3days] = useLocalStorage<boolean>('sub_notify_3days', true);
+  const [notify1day, setNotify1day] = useLocalStorage<boolean>('sub_notify_1day', true);
+  // デフォルト通貨
+  const [defaultCurrency, setDefaultCurrency] = useLocalStorage<Currency>(
+    'sub_default_currency',
+    'JPY',
+  );
+
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
-  const handleSetMode = useCallback((m: ThemeMode) => {
-    setMode(m);
-    setSavedMode(m);
-    AsyncStorage.setItem('subradar_theme_mode', JSON.stringify(m)).catch(() => {});
-  }, [setMode, setSavedMode]);
+  const handleSetMode = useCallback(
+    (m: ThemeMode) => {
+      setMode(m);
+      setSavedMode(m);
+    },
+    [setMode, setSavedMode],
+  );
 
+  // プレミアム購入（モック: フェーズ2で RevenueCat 連携予定）
   const handlePurchase = useCallback(async () => {
     setPurchasing(true);
     try {
-      const result = await buyPremium();
-      if (result.success) {
-        setIsPremium(true);
-        Alert.alert('購入完了', 'SubRadar プレミアムが有効になりました！\n登録件数が無制限になります。');
-      } else if (result.error !== 'cancelled') {
-        Alert.alert('購入エラー', result.error ?? '購入処理に失敗しました');
-      }
+      await new Promise<void>((resolve) => setTimeout(resolve, 800));
+      setIsPremium(true);
+      Alert.alert('購入完了', 'プレミアムプランが有効になりました！\n登録数が無制限になります。');
     } catch {
       Alert.alert('エラー', '購入処理中にエラーが発生しました');
     }
     setPurchasing(false);
   }, [setIsPremium]);
 
-  const handleRestore = useCallback(async () => {
+  // 購入復元（モック）
+  const handleRestorePurchase = useCallback(async () => {
     setRestoring(true);
     try {
-      const restored = await restorePurchases();
-      if (restored) {
-        setIsPremium(true);
-        Alert.alert('復元完了', 'プレミアムプランが復元されました！');
-      } else {
-        Alert.alert('復元結果', '復元可能な購入が見つかりませんでした');
-      }
+      await new Promise<void>((resolve) => setTimeout(resolve, 800));
+      Alert.alert('復元結果', '復元可能な購入が見つかりませんでした');
     } catch {
       Alert.alert('エラー', '復元処理中にエラーが発生しました');
     }
     setRestoring(false);
-  }, [setIsPremium]);
+  }, []);
 
-  const handleClearData = useCallback(() => {
+  // 全サブスク削除
+  const handleClearAll = useCallback(() => {
     if (subscriptions.length === 0) {
-      Alert.alert('データなし', '削除するデータはありません');
+      Alert.alert('データなし', '削除するサブスクはありません');
       return;
     }
-    Alert.alert('全データを削除', `${subscriptions.length}件のサブスクをすべて削除しますか？`, [
-      { text: 'キャンセル', style: 'cancel' },
-      {
-        text: 'すべて削除',
-        style: 'destructive',
-        onPress: () => {
-          setSubscriptions([]);
-          Alert.alert('完了', 'すべてのデータを削除しました');
+    Alert.alert(
+      '全サブスクを削除',
+      `${subscriptions.length}件のサブスクをすべて削除しますか？\nこの操作は元に戻せません。`,
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: 'すべて削除',
+          style: 'destructive',
+          onPress: () => {
+            subscriptions.forEach((s) => deleteSubscription(s.id));
+            Alert.alert('完了', 'すべてのサブスクを削除しました');
+          },
         },
-      },
-    ]);
-  }, [subscriptions, setSubscriptions]);
+      ],
+    );
+  }, [subscriptions, deleteSubscription]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
@@ -84,23 +115,32 @@ export function SettingsScreen() {
       >
         <H1 style={{ fontSize: 24, marginBottom: spacing.md }}>設定</H1>
 
-        {/* プランカード */}
+        {/* ── プランセクション ─────────────────────────────── */}
         <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
           <View style={styles.sectionHeader}>
             <Ionicons name="diamond-outline" size={20} color={colors.primary} />
             <H2 style={{ fontSize: 16, marginLeft: 8 }}>プラン</H2>
           </View>
-          <View style={[styles.planCard, {
-            backgroundColor: isPremium ? colors.success + '15' : colors.primary + '15',
-            borderRadius: radius.md,
-            padding: spacing.md,
-            marginTop: spacing.sm,
-          }]}>
-            <View style={styles.planRow}>
+          <View
+            style={[
+              styles.planCard,
+              {
+                backgroundColor: isPremium ? colors.success + '15' : colors.primaryLight + '15',
+                borderRadius: radius.md,
+                padding: spacing.md,
+                marginTop: spacing.sm,
+              },
+            ]}
+          >
+            <View style={styles.planHeader}>
               <View>
-                <H2 style={{ fontSize: 18 }}>{isPremium ? 'プレミアム' : '無料プラン'}</H2>
+                <H2 style={{ fontSize: 18 }}>
+                  {isPremium ? 'プレミアム' : '無料プラン'}
+                </H2>
                 <Caption color={colors.textSecondary}>
-                  {isPremium ? '登録件数無制限 · 買い切り済み' : `${FREE_LIMIT}件まで無料`}
+                  {isPremium
+                    ? '登録数無制限・買い切り済み'
+                    : `${FREE_LIMIT}件まで無料`}
                 </Caption>
               </View>
               <Badge
@@ -109,86 +149,152 @@ export function SettingsScreen() {
               />
             </View>
             {!isPremium && (
-              <>
-                <Button
-                  title={purchasing ? '処理中...' : 'プレミアムにアップグレード — ¥480'}
-                  onPress={handlePurchase}
-                  variant="primary"
-                  style={{ marginTop: spacing.md }}
-                  disabled={purchasing}
-                />
-                {purchasing && <ActivityIndicator style={{ marginTop: spacing.sm }} color={colors.primary} />}
-              </>
+              <Button
+                title={purchasing ? '処理中...' : `プレミアムにアップグレード — ¥${PREMIUM_PRICE_JPY}`}
+                onPress={handlePurchase}
+                variant="primary"
+                style={{ marginTop: spacing.md }}
+                disabled={purchasing}
+              />
             )}
           </View>
-        </Card>
-
-        {/* アカウント */}
-        <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="person-outline" size={20} color={colors.primary} />
-            <H2 style={{ fontSize: 16, marginLeft: 8 }}>アカウント</H2>
-          </View>
           <View style={{ marginTop: spacing.sm }}>
+            <Divider />
             <ListItem
               title="購入を復元"
               subtitle={restoring ? '復元中...' : '別端末での購入を復元'}
-              onPress={restoring ? undefined : handleRestore}
+              onPress={restoring ? undefined : handleRestorePurchase}
               rightIcon={
-                restoring
-                  ? <ActivityIndicator size="small" color={colors.primary} />
-                  : <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               }
             />
           </View>
         </Card>
 
-        {/* 表示設定 */}
+        {/* ── 通知設定セクション ───────────────────────────── */}
         <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="moon-outline" size={20} color={colors.primary} />
-            <H2 style={{ fontSize: 16, marginLeft: 8 }}>テーマ</H2>
+            <Ionicons name="notifications-outline" size={20} color={colors.primary} />
+            <H2 style={{ fontSize: 16, marginLeft: 8 }}>通知設定</H2>
           </View>
-          <View style={[styles.themeRow, { marginTop: spacing.sm }]}>
-            {([['light', 'sunny-outline', 'ライト'], ['dark', 'moon-outline', 'ダーク'], ['system', 'phone-portrait-outline', '自動']] as const).map(([m, icon, label]) => (
-              <TouchableOpacity
-                key={m}
-                onPress={() => handleSetMode(m as ThemeMode)}
-                style={[
-                  styles.themeButton,
-                  {
-                    backgroundColor: mode === m ? colors.primary : colors.surface,
-                    borderColor: mode === m ? colors.primary : colors.border,
-                    borderRadius: radius.sm,
-                  },
-                ]}
-              >
-                <Ionicons name={icon as any} size={18} color={mode === m ? colors.textOnPrimary : colors.text} />
-                <Caption color={mode === m ? colors.textOnPrimary : colors.textSecondary} style={{ fontSize: 11, marginTop: 2 }}>
-                  {label}
-                </Caption>
-              </TouchableOpacity>
-            ))}
+          <View style={{ marginTop: spacing.sm }}>
+            <View style={styles.switchRow}>
+              <Body>請求日の3日前に通知</Body>
+              <Switch
+                value={notify3days}
+                onValueChange={setNotify3days}
+                trackColor={{ true: colors.primary, false: colors.border }}
+                thumbColor={notify3days ? colors.textOnPrimary : colors.textMuted}
+              />
+            </View>
+            <Divider style={{ marginVertical: spacing.xs }} />
+            <View style={styles.switchRow}>
+              <Body>請求日の前日に通知</Body>
+              <Switch
+                value={notify1day}
+                onValueChange={setNotify1day}
+                trackColor={{ true: colors.primary, false: colors.border }}
+                thumbColor={notify1day ? colors.textOnPrimary : colors.textMuted}
+              />
+            </View>
           </View>
         </Card>
 
-        {/* データ管理 */}
+        {/* ── 表示設定セクション ───────────────────────────── */}
+        <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="color-palette-outline" size={20} color={colors.primary} />
+            <H2 style={{ fontSize: 16, marginLeft: 8 }}>表示設定</H2>
+          </View>
+          <View style={{ marginTop: spacing.sm }}>
+            {/* テーマ切替 */}
+            <Body color={colors.textSecondary} style={{ marginBottom: spacing.xs }}>
+              テーマ
+            </Body>
+            <View style={styles.segmentRow}>
+              {([
+                ['light',  'sunny-outline',           'ライト'],
+                ['dark',   'moon-outline',             'ダーク'],
+                ['system', 'phone-portrait-outline',   '自動'],
+              ] as const).map(([m, icon, label]) => (
+                <TouchableOpacity
+                  key={m}
+                  onPress={() => handleSetMode(m as ThemeMode)}
+                  style={[
+                    styles.segmentButton,
+                    {
+                      backgroundColor: mode === m ? colors.primary : colors.surface,
+                      borderColor:     mode === m ? colors.primary : colors.border,
+                      borderRadius:    radius.sm,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={icon as any}
+                    size={18}
+                    color={mode === m ? colors.textOnPrimary : colors.text}
+                  />
+                  <Caption
+                    color={mode === m ? colors.textOnPrimary : colors.textSecondary}
+                    style={{ fontSize: 11, marginTop: 2 }}
+                  >
+                    {label}
+                  </Caption>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Divider style={{ marginVertical: spacing.sm }} />
+
+            {/* デフォルト通貨 */}
+            <Body color={colors.textSecondary} style={{ marginBottom: spacing.xs }}>
+              デフォルト通貨
+            </Body>
+            <View style={styles.segmentRow}>
+              {(['JPY', 'USD'] as Currency[]).map((cur) => (
+                <TouchableOpacity
+                  key={cur}
+                  onPress={() => setDefaultCurrency(cur)}
+                  style={[
+                    styles.segmentButton,
+                    {
+                      backgroundColor: defaultCurrency === cur ? colors.primary : colors.surface,
+                      borderColor:     defaultCurrency === cur ? colors.primary : colors.border,
+                      borderRadius:    radius.sm,
+                    },
+                  ]}
+                >
+                  <Caption
+                    color={defaultCurrency === cur ? colors.textOnPrimary : colors.textSecondary}
+                    style={{ fontSize: 14, fontWeight: '600' }}
+                  >
+                    {cur === 'JPY' ? '¥ JPY' : '$ USD'}
+                  </Caption>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </Card>
+
+        {/* ── データセクション ─────────────────────────────── */}
         <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
           <View style={styles.sectionHeader}>
             <Ionicons name="trash-outline" size={20} color={colors.primary} />
-            <H2 style={{ fontSize: 16, marginLeft: 8 }}>データ管理</H2>
+            <H2 style={{ fontSize: 16, marginLeft: 8 }}>データ</H2>
           </View>
           <View style={{ marginTop: spacing.sm }}>
             <ListItem
-              title="すべてのデータを削除"
+              title="全サブスクを削除"
               subtitle={`${subscriptions.length}件のサブスク`}
-              onPress={handleClearData}
-              rightIcon={<Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
+              onPress={handleClearAll}
+              rightIcon={
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              }
             />
           </View>
         </Card>
 
-        {/* アプリについて */}
+        {/* ── このアプリについてセクション ─────────────────── */}
         <Card style={{ padding: spacing.md, marginBottom: spacing.md }}>
           <View style={styles.sectionHeader}>
             <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
@@ -197,17 +303,34 @@ export function SettingsScreen() {
           <View style={{ marginTop: spacing.sm, gap: spacing.sm }}>
             <View style={styles.aboutRow}>
               <Body color={colors.textSecondary}>バージョン</Body>
-              <Body>1.0.0</Body>
+              <Body>{APP_VERSION}</Body>
             </View>
             <View style={styles.aboutRow}>
               <Body color={colors.textSecondary}>アプリ名</Body>
-              <Body>SubRadar</Body>
+              <Body>{APP_NAME}</Body>
             </View>
             <Divider />
             <Caption color={colors.textMuted} style={{ lineHeight: 18 }}>
-              サブスクリプションの管理・節約提案アプリです。{'\n'}
-              口座連携不要。あなたのデータはデバイスから外に出ません。
+              サブスクリプションを一括管理し、無駄な支出を見える化するアプリです。
+              口座連携なし・データはデバイス内のみに保存します。
             </Caption>
+            <Divider />
+            <ListItem
+              title="プライバシーポリシー"
+              onPress={() =>
+                Linking.openURL('https://massapp.example.com/sub-radar/privacy')
+              }
+              rightIcon={<Ionicons name="open-outline" size={16} color={colors.textMuted} />}
+            />
+            <ListItem
+              title="利用規約"
+              onPress={() =>
+                Linking.openURL(
+                  'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
+                )
+              }
+              rightIcon={<Ionicons name="open-outline" size={16} color={colors.textMuted} />}
+            />
           </View>
         </Card>
       </ScrollView>
@@ -216,31 +339,39 @@ export function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   planCard: {},
-  planRow: {
+  planHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  themeRow: {
+  switchRow: {
     flexDirection: 'row',
-    gap: 8,
-  },
-  themeButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderWidth: 1,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 4,
   },
   aboutRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  segmentRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  segmentButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
