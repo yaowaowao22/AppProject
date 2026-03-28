@@ -1,0 +1,777 @@
+import React, { useMemo, useState } from 'react';
+import {
+  Dimensions,
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BottomSheet, SheetRow, SparkBars } from '../components/BottomSheet';
+import { BODY_PARTS, EXERCISES } from '../exerciseDB';
+import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from '../theme';
+import type { BodyPart } from '../types';
+import { useWorkout } from '../WorkoutContext';
+
+// ── ヘルパー ──────────────────────────────────────────────────────────────────
+
+function toDateStr(d: Date): string {
+  return d.toISOString().split('T')[0];
+}
+
+function formatDate(isoStr: string): string {
+  const d = new Date(isoStr);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const dow = d.getDay(); // 0=日
+  const diff = dow === 0 ? -6 : 1 - dow; // 月曜始まり
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function getWeekLabel(weekStart: Date): string {
+  return `${weekStart.getMonth() + 1}/${weekStart.getDate()}`;
+}
+
+// ── コンポーネント ─────────────────────────────────────────────────────────────
+
+// ── BottomSheet state types ───────────────────────────────────────────────────
+
+type CalSheet = {
+  type: 'cal';
+  title: string;
+  subtitle: string;
+  rows: { label: string; detail: string; value: string; badge: boolean }[];
+};
+
+type PRSheet = {
+  type: 'pr';
+  title: string;
+  subtitle: string;
+  sparks: { label: string; value: number; isCurrent?: boolean }[];
+  rows: { label: string; detail: string; value: string; badge: boolean }[];
+};
+
+type SheetState = CalSheet | PRSheet | null;
+
+export default function ProgressScreen() {
+  const { workouts, personalRecords, weeklyStats } = useWorkout();
+  const insets = useSafeAreaInsets();
+  const [sheet, setSheet] = useState<SheetState>(null);
+
+  const [displayMonth, setDisplayMonth] = useState<Date>(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+
+  // ── Section 1: PRカード ──────────────────────────────────────────────────
+  const prCards = useMemo(() => {
+    return personalRecords
+      .filter(pr => pr.maxWeight !== null)
+      .map(pr => ({
+        exerciseId: pr.exerciseId,
+        name: EXERCISES.find(e => e.id === pr.exerciseId)?.name ?? pr.exerciseId,
+        maxWeight: pr.maxWeight as number,
+        achievedAt: pr.achievedAt,
+      }))
+      .sort((a, b) => b.maxWeight - a.maxWeight);
+  }, [personalRecords]);
+
+  // ── Section 2: 部位別ベストボリューム ────────────────────────────────────
+  const partVolumes = useMemo(() => {
+    const volMap: Record<BodyPart, number> = {
+      chest: 0, back: 0, legs: 0, shoulders: 0, arms: 0, core: 0,
+    };
+    const dateMap: Record<BodyPart, string> = {
+      chest: '', back: '', legs: '', shoulders: '', arms: '', core: '',
+    };
+
+    for (const daily of workouts) {
+      for (const session of daily.sessions) {
+        const exercise = EXERCISES.find(e => e.id === session.exerciseId);
+        if (!exercise) continue;
+        const vol = session.sets.reduce((sum, s) => {
+          return sum + (s.weight !== null && s.reps !== null ? s.weight * s.reps : 0);
+        }, 0);
+        const bp = exercise.bodyPart;
+        if (vol > volMap[bp]) {
+          volMap[bp] = vol;
+          dateMap[bp] = daily.date;
+        }
+      }
+    }
+
+    return BODY_PARTS.map(bp => ({
+      id: bp.id as BodyPart,
+      label: bp.label,
+      volume: volMap[bp.id as BodyPart],
+      achievedAt: dateMap[bp.id as BodyPart],
+    }));
+  }, [workouts]);
+
+  // ── Section 3: 週間ボリュームチャート（直近8週）──────────────────────────
+  const weeklyChartData = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const currentWeekStart = getWeekStart(today);
+
+    type WeekEntry = {
+      start: Date;
+      end: Date;
+      label: string;
+      volume: number;
+      isCurrent: boolean;
+    };
+
+    const weeks: WeekEntry[] = [];
+    for (let i = 7; i >= 0; i--) {
+      const weekStart = new Date(currentWeekStart);
+      weekStart.setDate(currentWeekStart.getDate() - i * 7);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weeks.push({ start: weekStart, end: weekEnd, label: getWeekLabel(weekStart), volume: 0, isCurrent: i === 0 });
+    }
+
+    for (const daily of workouts) {
+      const d = new Date(daily.date);
+      d.setHours(0, 0, 0, 0);
+      for (const week of weeks) {
+        if (d >= week.start && d <= week.end) {
+          week.volume += daily.totalVolume;
+          break;
+        }
+      }
+    }
+
+    return weeks;
+  }, [workouts]);
+
+  const maxWeeklyVolume = useMemo(
+    () => Math.max(...weeklyChartData.map(w => w.volume), 1),
+    [weeklyChartData],
+  );
+
+  // ── Section 5: カレンダー ─────────────────────────────────────────────────
+  const calendarData = useMemo(() => {
+    const year = displayMonth.getFullYear();
+    const month = displayMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDayNum = new Date(year, month + 1, 0).getDate();
+
+    const dow = firstDay.getDay(); // 0=日
+    const startOffset = dow === 0 ? 6 : dow - 1; // 月曜始まり
+
+    type CalDay = { date: number | null; dateStr: string; hasWorkout: boolean; isToday: boolean };
+    const days: CalDay[] = [];
+
+    for (let i = 0; i < startOffset; i++) {
+      days.push({ date: null, dateStr: '', hasWorkout: false, isToday: false });
+    }
+
+    const todayStr = toDateStr(new Date());
+    const workoutDates = new Set(workouts.map(w => w.date));
+
+    for (let d = 1; d <= lastDayNum; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      days.push({
+        date: d,
+        dateStr,
+        hasWorkout: workoutDates.has(dateStr),
+        isToday: dateStr === todayStr,
+      });
+    }
+
+    while (days.length % 7 !== 0) {
+      days.push({ date: null, dateStr: '', hasWorkout: false, isToday: false });
+    }
+
+    return { days, label: `${year}年${month + 1}月` };
+  }, [displayMonth, workouts]);
+
+  const onDayPress = (dateStr: string) => {
+    const daily = workouts.find(w => w.date === dateStr);
+    if (!daily) return;
+
+    const date = new Date(dateStr + 'T00:00:00');
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
+    const title = `${month}月${day}日（${weekDays[date.getDay()]}）`;
+
+    const totalSets = daily.sessions.reduce((sum, s) => sum + s.sets.length, 0);
+    const subtitle = `${daily.sessions.length}種目 · ${totalSets}セット · ${daily.totalVolume.toLocaleString()}kg`;
+
+    const rows = daily.sessions.map((s, i) => {
+      const ex = EXERCISES.find(e => e.id === s.exerciseId);
+      const maxW = s.sets.reduce<number | null>((m, set) =>
+        set.weight !== null ? (m === null ? set.weight : Math.max(m, set.weight)) : m, null);
+      const hasPR = s.sets.some(set => set.isPersonalRecord);
+      return {
+        label: ex?.name ?? s.exerciseId,
+        detail: `${s.sets.length}セット`,
+        value: maxW !== null ? `${maxW}kg` : '自重',
+        badge: hasPR,
+      };
+    });
+
+    setSheet({ type: 'cal', title, subtitle, rows });
+  };
+
+  const onPRCardPress = (exerciseId: string) => {
+    const ex = EXERCISES.find(e => e.id === exerciseId);
+    const pr = personalRecords.find(r => r.exerciseId === exerciseId);
+    if (!ex || !pr) return;
+
+    const title = ex.name;
+    const subtitle = pr.maxWeight !== null ? `自己ベスト ${pr.maxWeight}kg` : '記録なし';
+
+    // 過去セッション（この種目）を日付昇順で最大6件
+    const pastSessions = workouts
+      .flatMap(w => w.sessions.map(s => ({ ...s, date: w.date })))
+      .filter(s => s.exerciseId === exerciseId && !!s.completedAt)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-6);
+
+    const sparks = pastSessions.map((s, i) => {
+      const d = new Date(s.date + 'T00:00:00');
+      const label = `${d.getMonth() + 1}/${d.getDate()}`;
+      const maxW = s.sets.reduce<number>((m, set) => Math.max(m, set.weight ?? 0), 0);
+      return { label, value: maxW, isCurrent: i === pastSessions.length - 1 };
+    });
+
+    const rows = pastSessions
+      .slice()
+      .reverse()
+      .map((s, i) => {
+        const d = new Date(s.date + 'T00:00:00');
+        const label = `${d.getMonth() + 1}月${d.getDate()}日`;
+        const maxW = s.sets.reduce<number | null>((m, set) =>
+          set.weight !== null ? (m === null ? set.weight : Math.max(m, set.weight)) : m, null);
+        const hasPR = s.sets.some(set => set.isPersonalRecord);
+        return {
+          label,
+          detail: `${s.sets.length}セット`,
+          value: maxW !== null ? `${maxW}kg` : '自重',
+          badge: hasPR,
+        };
+      });
+
+    setSheet({ type: 'pr', title, subtitle, sparks, rows });
+  };
+
+  // ── レンダリング ──────────────────────────────────────────────────────────
+
+  return (
+    <>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + SPACING.md }]}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* スクリーンタイトル */}
+      <Text style={styles.screenTitle}>進捗</Text>
+
+      {/* ── Section 1: PRカード ── */}
+      <Text style={styles.sectionLabel}>自己ベスト</Text>
+      {prCards.length === 0 ? (
+        <Text style={styles.emptyText}>まだ記録がありません</Text>
+      ) : (
+        <FlatList
+          horizontal
+          data={prCards}
+          keyExtractor={item => item.exerciseId}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.hListContent}
+          scrollEnabled
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.prCard}
+              onPress={() => onPRCardPress(item.exerciseId)}
+              activeOpacity={0.72}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.name} 自己ベスト ${item.maxWeight}kg`}
+            >
+              <Text style={styles.prExName}>{item.name}</Text>
+              <View style={styles.prNumRow}>
+                <Text style={styles.prNum}>{item.maxWeight}</Text>
+                <Text style={styles.prUnit}>kg</Text>
+              </View>
+              <Text style={styles.prDate}>{formatDate(item.achievedAt)}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      )}
+
+      {/* ── Section 2: 部位別ベストボリュームカード ── */}
+      <Text style={styles.sectionLabel}>部位別ベスト</Text>
+      <FlatList
+        horizontal
+        data={partVolumes}
+        keyExtractor={item => item.id}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.hListContent}
+        scrollEnabled
+        renderItem={({ item }) => (
+          <View
+            style={styles.pvCard}
+            accessibilityLabel={`${item.label} ベストボリューム ${item.volume > 0 ? `${item.volume}kg` : 'なし'}`}
+          >
+            <Text style={styles.pvPart}>{item.label}</Text>
+            <View style={styles.pvNumRow}>
+              <Text style={styles.pvVol}>
+                {item.volume > 0 ? item.volume.toLocaleString() : '—'}
+              </Text>
+              {item.volume > 0 && <Text style={styles.pvUnit}>kg</Text>}
+            </View>
+            <Text style={styles.pvDate}>
+              {item.achievedAt ? formatDate(item.achievedAt) : '—'}
+            </Text>
+          </View>
+        )}
+      />
+
+      {/* ── Section 3: 週間ボリュームチャート ── */}
+      <Text style={styles.sectionLabel}>週間ボリューム</Text>
+      <View style={styles.chartBox}>
+        <Text style={styles.chartTitle}>直近 {weeklyChartData.length} 週間</Text>
+        <View style={styles.chartBars}>
+          {weeklyChartData.map((week, idx) => {
+            const ratio = week.volume / maxWeeklyVolume;
+            const barH = Math.max(ratio * 72, week.volume > 0 ? 4 : 0);
+            return (
+              <View key={idx} style={styles.barCol}>
+                {week.volume > 0 && (
+                  <Text style={[styles.barTopVal, week.isCurrent && styles.barTopValCurrent]}>
+                    {week.volume >= 1000
+                      ? `${(week.volume / 1000).toFixed(1)}k`
+                      : String(Math.round(week.volume))}
+                  </Text>
+                )}
+                <View
+                  style={[
+                    styles.barFill,
+                    { height: barH },
+                    week.isCurrent ? styles.barFillCurrent : styles.barFillDefault,
+                  ]}
+                />
+                <Text style={[styles.barLabel, week.isCurrent && styles.barLabelCurrent]}>
+                  {week.label}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* ── Section 4: ストリークカウンター ── */}
+      <View style={styles.streakRow}>
+        <Text style={styles.streakNumber}>{weeklyStats.streakDays}</Text>
+        <Text style={styles.streakUnit}>日</Text>
+      </View>
+      <Text style={styles.streakSub}>連続トレーニング日</Text>
+
+      {/* ── Section 5: カレンダー ── */}
+      <Text style={styles.sectionLabel}>カレンダー</Text>
+      <View style={styles.calBox}>
+        {/* 月ヘッダー + ナビ */}
+        <View style={styles.calHeader}>
+          <TouchableOpacity
+            style={styles.calNavBtn}
+            onPress={() =>
+              setDisplayMonth(prev => {
+                const d = new Date(prev);
+                d.setMonth(d.getMonth() - 1);
+                return d;
+              })
+            }
+            accessibilityLabel="前の月"
+          >
+            <Text style={styles.calNavText}>‹</Text>
+          </TouchableOpacity>
+          <Text style={styles.calMonthLabel}>{calendarData.label}</Text>
+          <TouchableOpacity
+            style={styles.calNavBtn}
+            onPress={() =>
+              setDisplayMonth(prev => {
+                const d = new Date(prev);
+                d.setMonth(d.getMonth() + 1);
+                return d;
+              })
+            }
+            accessibilityLabel="次の月"
+          >
+            <Text style={styles.calNavText}>›</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 7列グリッド */}
+        <View style={styles.calGrid}>
+          {/* 曜日ヘッダー */}
+          {['月', '火', '水', '木', '金', '土', '日'].map(dow => (
+            <View key={dow} style={styles.calCell}>
+              <Text style={styles.calWeekLabel}>{dow}</Text>
+            </View>
+          ))}
+
+          {/* 日付セル */}
+          {calendarData.days.map((day, idx) => (
+            <View key={idx} style={styles.calCell}>
+              {day.date !== null ? (
+                <TouchableOpacity
+                  style={[styles.calDayBtn, day.isToday && styles.calDayBtnToday]}
+                  onPress={() => day.hasWorkout ? onDayPress(day.dateStr) : undefined}
+                  activeOpacity={day.hasWorkout ? 0.7 : 1}
+                  accessibilityLabel={`${day.date}日${day.hasWorkout ? ' トレーニングあり' : ''}`}
+                >
+                  <Text
+                    style={[
+                      styles.calDayText,
+                      day.hasWorkout && !day.isToday && styles.calDayTextWorkout,
+                      day.isToday && styles.calDayTextToday,
+                    ]}
+                  >
+                    {day.date}
+                  </Text>
+                  {day.hasWorkout && !day.isToday && <View style={styles.calDot} />}
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.calDayBtn} />
+              )}
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.bottomPad} />
+    </ScrollView>
+
+    <BottomSheet
+      visible={sheet !== null}
+      onClose={() => setSheet(null)}
+      title={sheet?.title ?? ''}
+      subtitle={sheet?.subtitle}
+    >
+      {sheet?.type === 'pr' && sheet.sparks.length > 0 && (
+        <SparkBars bars={sheet.sparks} />
+      )}
+      {sheet !== null && sheet.rows.map((row, i) => (
+        <SheetRow
+          key={i}
+          label={row.label}
+          detail={row.detail}
+          value={row.value}
+          badge={row.badge}
+          isLast={i === sheet.rows.length - 1}
+        />
+      ))}
+    </BottomSheet>
+    </>
+  );
+}
+
+// ── スタイル ──────────────────────────────────────────────────────────────────
+
+// カレンダーセル幅 = (画面幅 - contentMargin×2 - calBox padding×2) ÷ 7
+const SCREEN_W = Dimensions.get('window').width;
+const CAL_INNER_W = SCREEN_W - SPACING.contentMargin * 2 - SPACING.md * 2;
+const CELL_W = Math.floor(CAL_INNER_W / 7);
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  content: {
+    paddingBottom: SPACING.xxl,
+  },
+
+  // ── タイトル ────────────────────────────────────────────────────────────────
+  screenTitle: {
+    fontSize: TYPOGRAPHY.screenTitle,
+    fontWeight: TYPOGRAPHY.bold,
+    color: COLORS.textPrimary,
+    letterSpacing: -0.5,
+    paddingHorizontal: SPACING.contentMargin,
+    marginBottom: SPACING.sectionGap,
+  },
+
+  // ── セクションラベル ─────────────────────────────────────────────────────────
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: TYPOGRAPHY.semiBold,
+    color: COLORS.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.9,
+    paddingHorizontal: SPACING.contentMargin,
+    marginTop: SPACING.sectionGap,
+    marginBottom: 10,
+  },
+
+  emptyText: {
+    fontSize: TYPOGRAPHY.caption,
+    color: COLORS.textTertiary,
+    paddingHorizontal: SPACING.contentMargin,
+  },
+
+  hListContent: {
+    paddingHorizontal: SPACING.contentMargin,
+    gap: SPACING.cardGap,
+  },
+
+  // ── PRカード ─────────────────────────────────────────────────────────────────
+  prCard: {
+    width: 140,
+    backgroundColor: COLORS.surface1,
+    borderRadius: RADIUS.card,
+    borderTopWidth: 1.5,
+    borderTopColor: COLORS.accent,
+    padding: SPACING.cardPadding,
+  },
+  prExName: {
+    fontSize: TYPOGRAPHY.captionSmall,
+    fontWeight: TYPOGRAPHY.semiBold,
+    color: COLORS.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 6,
+  },
+  prNumRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  prNum: {
+    fontSize: 30,
+    fontWeight: TYPOGRAPHY.heavy,
+    color: COLORS.textPrimary,
+    letterSpacing: -1.2,
+    lineHeight: 34,
+    fontVariant: ['tabular-nums'],
+  },
+  prUnit: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginBottom: 3,
+  },
+  prDate: {
+    fontSize: TYPOGRAPHY.captionSmall,
+    color: COLORS.textTertiary,
+    marginTop: 4,
+  },
+
+  // ── 部位別ベストカード ────────────────────────────────────────────────────────
+  pvCard: {
+    width: 130,
+    backgroundColor: COLORS.surface1,
+    borderRadius: RADIUS.card,
+    borderTopWidth: 1.5,
+    borderTopColor: COLORS.separator,
+    padding: SPACING.cardPadding,
+  },
+  pvPart: {
+    fontSize: 18,
+    fontWeight: TYPOGRAPHY.heavy,
+    color: COLORS.textPrimary,
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  pvNumRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  pvVol: {
+    fontSize: 22,
+    fontWeight: TYPOGRAPHY.heavy,
+    color: COLORS.textPrimary,
+    letterSpacing: -1,
+    lineHeight: 26,
+    fontVariant: ['tabular-nums'],
+  },
+  pvUnit: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginBottom: 2,
+  },
+  pvDate: {
+    fontSize: TYPOGRAPHY.captionSmall,
+    color: COLORS.textTertiary,
+    marginTop: 5,
+  },
+
+  // ── 週間ボリュームバーチャート ────────────────────────────────────────────────
+  chartBox: {
+    backgroundColor: COLORS.surface1,
+    borderRadius: RADIUS.card,
+    padding: SPACING.cardPadding,
+    marginHorizontal: SPACING.contentMargin,
+  },
+  chartTitle: {
+    fontSize: TYPOGRAPHY.caption,
+    fontWeight: TYPOGRAPHY.semiBold,
+    color: COLORS.textSecondary,
+    marginBottom: 14,
+  },
+  chartBars: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    height: 96,
+    gap: 5,
+  },
+  barCol: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    height: '100%',
+  },
+  barTopVal: {
+    fontSize: 8,
+    color: COLORS.textTertiary,
+    marginBottom: 3,
+    fontVariant: ['tabular-nums'],
+  },
+  barTopValCurrent: {
+    color: COLORS.textPrimary,
+    fontWeight: TYPOGRAPHY.semiBold,
+  },
+  barFill: {
+    width: '100%',
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  barFillDefault: {
+    backgroundColor: COLORS.surface2,
+  },
+  barFillCurrent: {
+    backgroundColor: COLORS.accent,
+  },
+  barLabel: {
+    fontSize: 9,
+    color: COLORS.textTertiary,
+    marginTop: 5,
+    fontVariant: ['tabular-nums'],
+  },
+  barLabelCurrent: {
+    color: COLORS.textPrimary,
+    fontWeight: TYPOGRAPHY.semiBold,
+  },
+
+  // ── ストリーク ───────────────────────────────────────────────────────────────
+  streakRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    paddingHorizontal: SPACING.contentMargin,
+    paddingTop: SPACING.xs,
+    marginTop: SPACING.sectionGap,
+  },
+  streakNumber: {
+    fontSize: 48,
+    fontWeight: TYPOGRAPHY.heavy,
+    color: COLORS.textPrimary,
+    letterSpacing: -3,
+    lineHeight: 52,
+    fontVariant: ['tabular-nums'],
+  },
+  streakUnit: {
+    fontSize: 14,
+    fontWeight: TYPOGRAPHY.regular,
+    color: COLORS.textTertiary,
+  },
+  streakSub: {
+    fontSize: TYPOGRAPHY.caption,
+    color: COLORS.textTertiary,
+    lineHeight: 19,
+    paddingHorizontal: SPACING.contentMargin,
+    paddingTop: 4,
+  },
+
+  // ── カレンダー ───────────────────────────────────────────────────────────────
+  calBox: {
+    backgroundColor: COLORS.surface1,
+    borderRadius: RADIUS.card,
+    padding: SPACING.md,
+    marginHorizontal: SPACING.contentMargin,
+  },
+  calHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  calNavBtn: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calNavText: {
+    fontSize: 22,
+    color: COLORS.textSecondary,
+  },
+  calMonthLabel: {
+    fontSize: TYPOGRAPHY.caption,
+    fontWeight: TYPOGRAPHY.semiBold,
+    color: COLORS.textSecondary,
+  },
+  calGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  calCell: {
+    width: CELL_W,
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  calWeekLabel: {
+    fontSize: 9,
+    fontWeight: TYPOGRAPHY.semiBold,
+    color: COLORS.textTertiary,
+    textAlign: 'center',
+    paddingVertical: 3,
+  },
+  calDayBtn: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 17,
+  },
+  calDayBtnToday: {
+    backgroundColor: COLORS.textPrimary,
+  },
+  calDayText: {
+    fontSize: TYPOGRAPHY.caption,
+    fontWeight: TYPOGRAPHY.regular,
+    color: COLORS.textTertiary,
+    textAlign: 'center',
+  },
+  calDayTextWorkout: {
+    color: COLORS.textSecondary,
+  },
+  calDayTextToday: {
+    color: COLORS.background,
+    fontWeight: TYPOGRAPHY.bold,
+  },
+  calDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.accent,
+    marginTop: 2,
+  },
+
+  bottomPad: {
+    height: SPACING.lg,
+  },
+});

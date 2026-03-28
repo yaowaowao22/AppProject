@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TANREN</title>
+<style>
+  /* ── MA no Kozo: Silence/3 · KOKKAKU+MA · #111113 forge dark ── */
+  :root {
+    --bg:   #111113;
+    --s1:   #191919;
+    --s2:   #222224;
+    --t1:   #F5F5F7;
+    --t2:   rgba(245,245,247,0.45);
+    --t3:   rgba(245,245,247,0.22);
+    --ac:   #FF6200;
+    --acd:  rgba(255,98,0,0.12);
+    --ok:   #2DB55D;
+    --sep:  rgba(255,255,255,0.07);
+    --mg:   16px;
+    --r:    13px;
+    --rbtn: 16px;
+    --sp:   0.3s cubic-bezier(0.34,1.4,0.64,1);
+    --ez:   0.18s ease-out;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0C0C0C;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    font-family: -apple-system, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Phone ── */
+  .wrap { position: relative; width: 393px; height: 852px; filter: drop-shadow(0 28px 56px rgba(0,0,0,0.95)); }
+  .frame {
+    position: absolute; inset: 0; border-radius: 54px;
+    background: #0E0E0F; border: 1px solid rgba(255,255,255,0.09);
+    overflow: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.09);
+  }
+  .frame::before {
+    content: ''; position: absolute; left: -3px; top: 158px;
+    width: 3px; height: 36px; background: rgba(255,255,255,0.12);
+    border-radius: 2px 0 0 2px;
+    box-shadow: 0 52px 0 rgba(255,255,255,0.12), 0 104px 0 rgba(255,255,255,0.12);
+  }
+  .frame::after {
+    content: ''; position: absolute; right: -3px; top: 198px;
+    width: 3px; height: 66px; background: rgba(255,255,255,0.1);
+    border-radius: 0 2px 2px 0;
+  }
+  .screen {
+    position: absolute; inset: 0; border-radius: 54px;
+    background: var(--bg); overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+
+  /* ── Status bar ── */
+  .sb {
+    height: 54px; padding: 14px 28px 0;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; position: relative; z-index: 10;
+  }
+  .sb-t { font-size: 15px; font-weight: 600; color: var(--t1); letter-spacing: -0.3px; }
+  .sb-i { display: flex; align-items: center; gap: 6px; }
+  .di { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); width: 120px; height: 34px; background: #000; border-radius: 20px; }
+
+  /* ── Panels ── */
+  .tabs { flex: 1; position: relative; overflow: hidden; }
+  .panel {
+    position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden;
+    padding: 8px 0 0; opacity: 0; pointer-events: none; transform: translateY(5px);
+    transition: opacity var(--ez), transform var(--ez);
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .panel::-webkit-scrollbar { display: none; }
+  .panel.on { opacity: 1; pointer-events: all; transform: none; }
+
+  /* ── Tab bar ── */
+  .tbar {
+    height: 83px; padding: 8px 0 20px;
+    background: rgba(17,17,19,0.96);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--sep);
+    display: flex; align-items: flex-start; justify-content: space-around;
+    flex-shrink: 0; z-index: 100;
+  }
+  .ti {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 6px 0; cursor: pointer; min-height: 44px;
+    border: none; background: none; -webkit-tap-highlight-color: transparent;
+  }
+  .ti:focus-visible { outline: 2px solid var(--ac); outline-offset: -2px; border-radius: 8px; }
+  .ti-i { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; transition: transform var(--sp); }
+  .ti-i svg { width: 22px; height: 22px; fill: var(--t3); transition: fill var(--ez); }
+  .ti-l { font-size: 10px; font-weight: 500; color: var(--t3); transition: color var(--ez); }
+  .ti.on .ti-i svg { fill: var(--ac); }
+  .ti.on .ti-l { color: var(--ac); }
+  .ti.on .ti-i { transform: scale(1.08); }
+
+  /* ── Common ── */
+  .ptitle { font-size: 26px; font-weight: 700; color: var(--t1); letter-spacing: -0.5px; padding: 0 var(--mg); margin-bottom: 20px; }
+  .slbl { font-size: 11px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: 0.9px; padding: 0 var(--mg); margin: 16px 0 10px; }
+
+  /* ── Primary button (accent restricted here) ── */
+  .btn-p {
+    width: calc(100% - var(--mg)*2); margin: 0 var(--mg);
+    height: 60px; background: var(--ac); color: #fff;
+    font-size: 17px; font-weight: 700; letter-spacing: -0.2px;
+    border: none; border-radius: var(--rbtn); cursor: pointer;
+    transition: transform var(--sp), opacity var(--ez);
+    -webkit-tap-highlight-color: transparent; font-family: inherit;
+  }
+  .btn-p:hover { opacity: 0.88; }
+  .btn-p:active { transform: scale(0.97); }
+  .btn-p:focus-visible { outline: 3px solid rgba(255,98,0,0.45); outline-offset: 2px; }
+
+  /* Ghost secondary button — no fill, no border color */
+  .btn-g {
+    width: calc(100% - var(--mg)*2); margin: 10px var(--mg) 0;
+    height: 50px; background: var(--s1); color: var(--t2);
+    font-size: 15px; font-weight: 500;
+    border: none; border-radius: var(--rbtn); cursor: pointer;
+    transition: background var(--ez), transform var(--sp);
+    -webkit-tap-highlight-color: transparent; font-family: inherit;
+  }
+  .btn-g:hover { background: var(--s2); color: var(--t1); }
+  .btn-g:active { transform: scale(0.97); }
+  .btn-g:focus-visible { outline: 2px solid var(--t3); outline-offset: 2px; }
+
+  /* ── HOME ── */
+  .home-date { font-size: 13px; color: var(--t3); padding: 2px var(--mg) 22px; font-weight: 400; }
+
+  /* Stats — no cards, numbers float in space */
+  .srow { display: flex; padding: 0 var(--mg); margin-bottom: 18px; }
+  .sitem { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+  .sitem + .sitem { border-left: 1px solid var(--sep); padding-left: 16px; }
+  .snum { font-size: 24px; font-weight: 800; color: var(--t1); letter-spacing: -1px; font-variant-numeric: tabular-nums; line-height: 1; }
+  .skey { font-size: 10px; color: var(--t3); font-weight: 500; }
+
+  /* Chips */
+  .chips { display: flex; gap: 7px; padding: 0 var(--mg); overflow-x: auto; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0; background: var(--s1); border-radius: 20px; padding: 9px 14px;
+    font-size: 13px; font-weight: 500; color: var(--t2); cursor: pointer;
+    white-space: nowrap; min-height: 44px; display: flex; align-items: center;
+    transition: background var(--ez), color var(--ez);
+    -webkit-tap-highlight-color: transparent; border: none; font-family: inherit;
+  }
+  .chip:hover { background: var(--s2); color: var(--t1); }
+  .chip:active { background: var(--s2); }
+  .chip:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+
+  /* ── WORKOUT steps ── */
+  .wstep { display: none; }
+  .wstep.on { display: block; }
+
+  /* Step 1: parts grid — minimal, no card fill */
+  .parts-grid { display: grid; grid-template-columns: 1fr 1fr; padding: 0 var(--mg); }
+  .part-btn {
+    background: none; border: none; border-bottom: 1px solid var(--sep);
+    padding: 18px 4px 18px 0; cursor: pointer; text-align: left;
+    display: flex; flex-direction: column; gap: 3px; min-height: 80px;
+    transition: background var(--ez);
+    -webkit-tap-highlight-color: transparent; font-family: inherit;
+    border-radius: 0;
+  }
+  .part-btn:nth-child(odd) { padding-right: 12px; border-right: 1px solid var(--sep); }
+  .part-btn:nth-child(even) { padding-left: 12px; }
+  /* last row: no bottom border */
+  .part-btn:nth-last-child(-n+2) { border-bottom: none; }
+  .part-btn:hover { background: rgba(255,255,255,0.03); }
+  .part-btn:active { background: rgba(255,255,255,0.05); }
+  .part-btn:focus-visible { outline: 2px solid var(--ac); outline-offset: -2px; border-radius: 4px; }
+  .pjp { font-size: 20px; font-weight: 700; color: var(--t1); letter-spacing: -0.3px; }
+  .pen { font-size: 10px; font-weight: 500; color: var(--t3); text-transform: uppercase; letter-spacing: 0.8px; }
+  .pcnt { font-size: 11px; color: var(--t3); }
+
+  /* Step 2: exercise list */
+  .ex-head { display: flex; align-items: center; gap: 12px; padding: 0 var(--mg) 14px; }
+  .back-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--s1); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--t2); flex-shrink: 0;
+    transition: background var(--ez);
+    -webkit-tap-highlight-color: transparent; font-family: inherit;
+  }
+  .back-btn:hover { background: var(--s2); }
+  .back-btn:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+  .ex-pname { font-size: 22px; font-weight: 700; color: var(--t1); letter-spacing: -0.4px; }
+  .exlist { padding: 0 var(--mg); }
+  .exrow {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0; border-bottom: 1px solid var(--sep);
+    background: none; border-left: none; border-right: none; border-top: none;
+    cursor: pointer; width: 100%; text-align: left; min-height: 52px;
+    transition: opacity var(--ez);
+    -webkit-tap-highlight-color: transparent; font-family: inherit;
+  }
+  .exrow:last-child { border-bottom: none; }
+  .exrow:hover { opacity: 0.75; }
+  .exrow:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; border-radius: 4px; }
+  .exname { font-size: 16px; font-weight: 600; color: var(--t1); letter-spacing: -0.2px; }
+  .exdet { font-size: 11px; color: var(--t3); margin-top: 2px; }
+  .exchev { color: var(--t3); }
+
+  /* Step 3: active workout */
+  .act-top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 2px var(--mg) 14px;
+  }
+  .act-name { font-size: 20px; font-weight: 700; color: var(--t1); letter-spacing: -0.4px; }
+  .act-sub { font-size: 11px; color: var(--t3); margin-top: 2px; }
+  .setbadge {
+    background: var(--s1); border-radius: 9px; padding: 5px 11px;
+    font-size: 12px; font-weight: 600; color: var(--t2); white-space: nowrap; flex-shrink: 0;
+  }
+  .setbadge span { color: var(--t1); font-weight: 800; }
+
+  .numctrl { display: flex; gap: 10px; padding: 0 var(--mg) 12px; }
+  .numblk { flex: 1; background: var(--s1); border-radius: var(--r); padding: 14px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .numlbl { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: 0.8px; }
+  .numval {
+    font-size: 58px; font-weight: 800; color: var(--t1);
+    line-height: 1; letter-spacing: -2px;
+    font-variant-numeric: tabular-nums; font-feature-settings: "tnum";
+    min-width: 72px; text-align: center;
+  }
+  .numval.bump { animation: bump 0.26s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes bump { 0%{transform:scale(1)} 40%{transform:scale(1.1)} 100%{transform:scale(1)} }
+  .numunit { font-size: 12px; color: var(--t3); margin-top: -5px; }
+  .steprow { display: flex; gap: 8px; }
+  .stepbtn {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--s2); border: none; color: var(--t2);
+    font-size: 22px; font-weight: 300; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background var(--ez), transform var(--sp), color var(--ez);
+    -webkit-tap-highlight-color: transparent; font-family: inherit;
+  }
+  .stepbtn:hover { background: #2E2E30; color: var(--t1); }
+  .stepbtn:active { transform: scale(0.88); }
+  .stepbtn:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+
+  /* Done button — accent only here */
+  .done-btn {
+    width: calc(100% - var(--mg)*2); margin: 0 var(--mg) 12px;
+    height: 60px; background: var(--ac); color: #fff;
+    font-size: 17px; font-weight: 700; letter-spacing: -0.2px;
+    border: none; border-radius: var(--rbtn); cursor: pointer;
+    transition: transform var(--sp), opacity var(--ez), background 0.25s;
+    -webkit-tap-highlight-color: transparent;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: inherit;
+  }
+  .done-btn:hover { opacity: 0.88; }
+  .done-btn:active { transform: scale(0.97); }
+  .done-btn:focus-visible { outline: 3px solid rgba(255,98,0,0.45); outline-offset: 2px; }
+  .done-btn.fin { background: var(--ok); animation: spop 0.36s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes spop { 0%{transform:scale(1)} 40%{transform:scale(1.04)} 100%{transform:scale(1)} }
+
+  /* Set log — rows only, no fills */
+  .slog { padding: 0 var(--mg); }
+  .slog .slbl { padding: 0; margin: 0 0 8px; }
+  .srow-i {
+    display: flex; align-items: center; padding: 12px 0;
+    border-bottom: 1px solid var(--sep); min-height: 44px;
+  }
+  .srow-i:last-child { border-bottom: none; }
+  .snum { font-size: 11px; font-weight: 600; color: var(--t3); width: 48px; flex-shrink: 0; }
+  .svals { font-size: 15px; font-weight: 700; color: var(--t1); font-variant-numeric: tabular-nums; flex: 1; }
+  .schk {
+    width: 18px; height: 18px; border-radius: 50%; background: var(--ok);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transform: scale(0);
+    transition: opacity var(--ez), transform var(--sp); flex-shrink: 0;
+  }
+  .srow-i.done .schk { opacity: 1; transform: scale(1); }
+  .srow-i.done .svals { color: var(--t3); }
+
+  .timer-pill { font-size: 12px; font-weight: 500; color: var(--t3); font-variant-numeric: tabular-nums; }
+
+  /* ── HISTORY ── */
+  .hlist { padding: 0 var(--mg); }
+  .hcard {
+    background: none; border-bottom: 1px solid var(--sep);
+    padding: 14px 0; cursor: pointer; width: 100%; text-align: left;
+    transition: opacity var(--ez);
+  }
+  .hcard:last-child { border-bottom: none; }
+  .hcard:hover { opacity: 0.72; }
+  .hcard:active { opacity: 0.55; }
+  .hcard:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; border-radius: 4px; }
+  .hc-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .hc-date { font-size: 15px; font-weight: 700; color: var(--t1); letter-spacing: -0.2px; }
+  .hc-dur { font-size: 12px; color: var(--t3); }
+  .hc-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+  .htag { font-size: 11px; color: var(--t2); background: var(--s1); border-radius: 5px; padding: 3px 8px; }
+  .hc-stats { display: flex; gap: 16px; }
+  .hst-v { font-size: 14px; font-weight: 700; color: var(--t2); font-variant-numeric: tabular-nums; }
+  .hst-k { font-size: 10px; color: var(--t3); }
+
+  /* ── PROGRESS ── */
+  /* PR cards — marketing zone, minimal accent border only */
+  .pr-scroll { display: flex; gap: 8px; padding: 0 var(--mg); overflow-x: auto; scrollbar-width: none; }
+  .pr-scroll::-webkit-scrollbar { display: none; }
+  .prcard {
+    flex-shrink: 0; width: 140px; background: var(--s1); border-radius: var(--r);
+    padding: 14px 12px; position: relative; cursor: pointer;
+    border: none; border-top: 1.5px solid var(--ac);
+    text-align: left; font-family: inherit;
+    transition: opacity var(--ez);
+  }
+  .prcard:hover { opacity: 0.8; }
+  .prcard:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+  .pr-ex { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+  .pr-num { font-size: 30px; font-weight: 800; color: var(--t1); letter-spacing: -1.2px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .pr-unit { font-size: 11px; color: var(--t2); margin-left: 1px; }
+  .pr-dt { font-size: 10px; color: var(--t3); margin-top: 4px; }
+
+  /* Bar chart */
+  .chart-box { background: var(--s1); border-radius: var(--r); padding: 14px; margin: 0 var(--mg); }
+  .chart-ttl { font-size: 12px; font-weight: 600; color: var(--t2); margin-bottom: 14px; }
+  .cbars { display: flex; align-items: flex-end; gap: 5px; height: 72px; }
+  .bcol { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .bfill { width: 100%; background: var(--s2); border-radius: 3px 3px 0 0; }
+  .bfill.td { background: var(--t2); }  /* no orange — just brighter grey for today */
+  .blbl { font-size: 9px; color: var(--t3); margin-top: 5px; }
+  .blbl.td { color: var(--t1); font-weight: 600; }
+
+  /* Streak — text only, no card */
+  .streak-row { display: flex; align-items: baseline; gap: 10px; padding: 4px var(--mg) 0; }
+  .streak-n { font-size: 48px; font-weight: 800; color: var(--t1); letter-spacing: -3px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .streak-unit { font-size: 14px; font-weight: 500; color: var(--t3); }
+  .streak-sub { font-size: 12px; color: var(--t3); line-height: 1.6; padding: 4px var(--mg) 0; }
+
+  .cal-box { background: var(--s1); border-radius: var(--r); padding: var(--mg); margin: 0 var(--mg); }
+  .cal-hd { font-size: 12px; font-weight: 600; color: var(--t2); margin-bottom: 10px; }
+  .cal-g { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .cal-wl { text-align: center; font-size: 9px; font-weight: 600; color: var(--t3); padding: 3px 0; }
+  .cal-d { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: var(--t3); border-radius: 50%; position: relative; }
+  button.cal-d { background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; -webkit-tap-highlight-color: transparent; width: 100%; }
+  button.cal-d:focus-visible { outline: 2px solid var(--ac); outline-offset: 1px; }
+  .cal-d.dot { color: var(--t2); }
+  .cal-d.dot::after { content: ''; position: absolute; bottom: 1px; width: 3px; height: 3px; background: var(--t2); border-radius: 50%; }
+  .cal-d.td { background: var(--t1); color: var(--bg); font-weight: 700; }
+  .cal-d.td::after { display: none; }
+
+  /* ── History chart (active workout) ── */
+  .hist-section { padding: 0 var(--mg); margin-top: 8px; }
+  .hist-bars-wrap { display: flex; align-items: flex-end; gap: 4px; height: 60px; margin-bottom: 8px; }
+  .hb-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .hb-fill { width: 100%; border-radius: 2px 2px 0 0; transition: height 0.45s cubic-bezier(0.34,1.1,0.64,1); }
+  .hb-prev { background: var(--s2); }
+  .hb-cur  { background: var(--t2); }
+  .hb-lbl { font-size: 8px; color: var(--t3); margin-top: 4px; white-space: nowrap; }
+  .hb-now { color: var(--t1); font-weight: 600; }
+  .hist-note { font-size: 11px; color: var(--t3); padding-top: 8px; border-top: 1px solid var(--sep); display: flex; align-items: center; gap: 6px; }
+  .hist-dot { width: 6px; height: 6px; background: var(--s2); border-radius: 1px; flex-shrink: 0; }
+
+
+  /* ── Part volume cards ── */
+  .pvcard {
+    flex-shrink: 0; width: 130px; background: var(--s1); border-radius: var(--r);
+    padding: 14px 12px; border: none; border-top: 1.5px solid var(--sep);
+    text-align: left; font-family: inherit; cursor: pointer;
+    transition: opacity var(--ez);
+  }
+  .pvcard:hover { opacity: 0.75; }
+  .pvcard:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+  .pv-part { font-size: 18px; font-weight: 800; color: var(--t1); letter-spacing: -0.5px; margin-bottom: 6px; }
+  .pv-vol { font-size: 22px; font-weight: 800; color: var(--t1); letter-spacing: -1px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .pv-unit { font-size: 11px; color: var(--t2); margin-left: 1px; }
+  .pv-dt { font-size: 10px; color: var(--t3); margin-top: 5px; }
+
+  /* ── Bottom sheet ── */
+  .overlay {
+    position: absolute; inset: 0; border-radius: 54px;
+    background: rgba(0,0,0,0); z-index: 200;
+    pointer-events: none; transition: background 0.25s;
+  }
+  .overlay.on { background: rgba(0,0,0,0.65); pointer-events: all; }
+  .sheet {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: var(--s1); border-radius: 18px 18px 0 0;
+    z-index: 201; max-height: 76%;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.25,1,0.5,1);
+    display: flex; flex-direction: column;
+  }
+  .sheet.on { transform: translateY(0); }
+  .sheet-grip {
+    width: 36px; height: 4px; background: var(--s2); border-radius: 2px;
+    margin: 10px auto 0; flex-shrink: 0;
+  }
+  .sheet-head {
+    padding: 14px var(--mg) 12px; flex-shrink: 0;
+    border-bottom: 1px solid var(--sep);
+  }
+  .sheet-title { font-size: 17px; font-weight: 700; color: var(--t1); letter-spacing: -0.3px; }
+  .sheet-sub { font-size: 12px; color: var(--t3); margin-top: 3px; }
+  .sheet-body { flex: 1; overflow-y: auto; padding: 0 var(--mg) 24px; scrollbar-width: none; }
+  .sheet-body::-webkit-scrollbar { display: none; }
+  .sheet-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 1px solid var(--sep); min-height: 44px;
+  }
+  .sheet-row:last-child { border-bottom: none; }
+  .sr-left { display: flex; flex-direction: column; gap: 2px; }
+  .sr-name { font-size: 15px; font-weight: 600; color: var(--t1); }
+  .sr-detail { font-size: 11px; color: var(--t3); }
+  .sr-right { display: flex; align-items: center; gap: 8px; }
+  .sr-val { font-size: 15px; font-weight: 700; color: var(--t1); font-variant-numeric: tabular-nums; }
+  .sr-pr { font-size: 9px; font-weight: 800; color: var(--ac); background: rgba(255,98,0,0.12); padding: 2px 5px; border-radius: 4px; }
+  /* mini spark chart in sheet */
+  .spark-wrap { padding: 14px 0 4px; }
+  .spark-bars { display: flex; align-items: flex-end; gap: 4px; height: 52px; }
+  .spark-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .spark-fill { width: 100%; border-radius: 2px 2px 0 0; background: var(--s2); }
+  .spark-fill.sp-hi { background: var(--t2); }
+  .spark-lbl { font-size: 8px; color: var(--t3); margin-top: 4px; }
+
+  /* clickable htag */
+  button.htag {
+    display: inline-block; background: var(--s1); border: none; border-radius: 5px;
+    padding: 3px 8px; font-size: 11px; color: var(--t2); cursor: pointer;
+    font-family: inherit; line-height: inherit;
+    transition: color var(--ez), background var(--ez);
+    -webkit-tap-highlight-color: transparent; vertical-align: middle;
+  }
+  button.htag:hover { background: var(--s2); color: var(--t1); }
+  button.htag:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+
+  .pad { height: 20px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="frame">
+    <div class="screen">
+
+      <div class="sb">
+        <span class="sb-t">9:41</span>
+        <div class="di"></div>
+        <div class="sb-i">
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="white" aria-hidden="true"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0.5" width="3" height="11.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1" opacity="0.35"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="white" aria-hidden="true"><path d="M8 2.5C10.5 2.5 12.7 3.6 14.2 5.3L15.5 3.9C13.6 1.8 10.9 0.5 8 0.5C5.1 0.5 2.4 1.8 0.5 3.9L1.8 5.3C3.3 3.6 5.5 2.5 8 2.5Z" opacity="0.5"/><path d="M8 5.5C9.7 5.5 11.2 6.3 12.2 7.5L13.5 6.1C12.1 4.6 10.2 3.5 8 3.5C5.8 3.5 3.9 4.6 2.5 6.1L3.8 7.5C4.8 6.3 6.3 5.5 8 5.5Z" opacity="0.75"/><path d="M8 8.5C9 8.5 9.9 8.9 10.5 9.6L8 12L5.5 9.6C6.1 8.9 7 8.5 8 8.5Z"/></svg>
+          <svg width="26" height="12" viewBox="0 0 26 12" fill="white" aria-hidden="true"><rect x="0" y="1" width="22" height="10" rx="3" stroke="white" stroke-width="1" fill="none" opacity="0.4"/><rect x="23" y="3.5" width="2" height="5" rx="1" opacity="0.4"/><rect x="1" y="2" width="17" height="8" rx="2"/></svg>
+        </div>
+      </div>
+
+      <div class="tabs">
+
+        <!-- HOME -->
+        <div class="panel on" id="p-home" role="tabpanel" aria-label="今すぐ">
+          <div class="ptitle">今すぐ</div>
+          <div class="home-date">2026年3月29日 日曜日</div>
+          <button class="btn-p" onclick="switchTab('workout')" aria-label="ワークアウトを開始する">ワークアウト開始</button>
+          <div class="slbl" style="margin-top:28px;">今週</div>
+          <div class="srow">
+            <div class="sitem"><div class="snum">5</div><div class="skey">トレーニング</div></div>
+            <div class="sitem"><div class="snum">12,840</div><div class="skey">kg ボリューム</div></div>
+            <div class="sitem"><div class="snum">14</div><div class="skey">日連続</div></div>
+          </div>
+          <div class="slbl">クイックスタート</div>
+          <div class="chips">
+            <button class="chip" onclick="startEx('\u30d9\u30f3\u30c1\u30d7\u30ec\u30b9','\u80f8')">ベンチプレス</button>
+            <button class="chip" onclick="startEx('\u30b9\u30af\u30ef\u30c3\u30c8','\u811a')">スクワット</button>
+            <button class="chip" onclick="startEx('\u30c7\u30c3\u30c9\u30ea\u30d5\u30c8','\u80cc\u4e2d')">デッドリフト</button>
+            <button class="chip" onclick="startEx('\u30b7\u30e7\u30eb\u30c0\u30fc\u30d7\u30ec\u30b9','\u80a9')">ショルダープレス</button>
+            <button class="chip" onclick="startEx('\u61f8\u5439','\u80cc\u4e2d')">懸垂</button>
+          </div>
+          <div class="slbl" style="margin-top:22px;">本日のメニュー</div>
+          <div style="padding:0 var(--mg);" id="today-log"></div>
+          <div class="pad"></div>
+        </div>
+
+        <!-- WORKOUT -->
+        <div class="panel" id="p-workout" role="tabpanel" aria-label="トレーニング">
+
+          <!-- Step 1: parts -->
+          <div class="wstep on" id="ws-parts">
+            <div class="ptitle">部位を選ぶ</div>
+            <div class="parts-grid">
+              <button class="part-btn" onclick="selPart('\u80f8','Chest')" aria-label="胸"><span class="pjp">胸</span><span class="pen">Chest</span><span class="pcnt">8種目</span></button>
+              <button class="part-btn" onclick="selPart('\u80cc\u4e2d','Back')" aria-label="背中"><span class="pjp">背中</span><span class="pen">Back</span><span class="pcnt">10種目</span></button>
+              <button class="part-btn" onclick="selPart('\u811a','Legs')" aria-label="脚"><span class="pjp">脚</span><span class="pen">Legs</span><span class="pcnt">9種目</span></button>
+              <button class="part-btn" onclick="selPart('\u80a9','Shoulders')" aria-label="肩"><span class="pjp">肩</span><span class="pen">Shoulders</span><span class="pcnt">6種目</span></button>
+              <button class="part-btn" onclick="selPart('\u8155','Arms')" aria-label="腕"><span class="pjp">腕</span><span class="pen">Arms</span><span class="pcnt">7種目</span></button>
+              <button class="part-btn" onclick="selPart('\u8179','Core')" aria-label="腹"><span class="pjp">腹</span><span class="pen">Core</span><span class="pcnt">5種目</span></button>
+            </div>
+            <div class="pad"></div>
+          </div>
+
+          <!-- Step 2: exercise list -->
+          <div class="wstep" id="ws-exlist">
+            <div class="ex-head">
+              <button class="back-btn" onclick="goBack('ws-parts')" aria-label="部位選択に戻る">
+                <svg width="9" height="15" viewBox="0 0 9 15" fill="none" aria-hidden="true"><path d="M7.5 1.5L2 7.5L7.5 13.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <span class="ex-pname" id="part-title">胸</span>
+            </div>
+            <div class="exlist" id="exlist-items"></div>
+            <div class="pad"></div>
+          </div>
+
+          <!-- Step 3: active -->
+          <div class="wstep" id="ws-active">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:4px var(--mg) 0;">
+              <button class="back-btn" onclick="goBack('ws-exlist')" aria-label="種目一覧に戻る">
+                <svg width="9" height="15" viewBox="0 0 9 15" fill="none" aria-hidden="true"><path d="M7.5 1.5L2 7.5L7.5 13.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <span class="timer-pill" id="timer">00:00</span>
+            </div>
+            <div class="act-top">
+              <div>
+                <div class="act-name" id="act-name">ベンチプレス</div>
+                <div class="act-sub" id="act-sub">胸・肩・上腕三頭筋</div>
+              </div>
+              <div class="setbadge">セット <span id="cur-set">1</span>/5</div>
+            </div>
+            <div class="numctrl">
+              <div class="numblk">
+                <div class="numlbl">重量</div>
+                <div class="numval" id="w-v">80</div>
+                <div class="numunit">kg</div>
+                <div class="steprow">
+                  <button class="stepbtn" onclick="chg('w',-2.5)" aria-label="重量−2.5kg">−</button>
+                  <button class="stepbtn" onclick="chg('w',2.5)" aria-label="重量＋2.5kg">＋</button>
+                </div>
+              </div>
+              <div class="numblk">
+                <div class="numlbl">回数</div>
+                <div class="numval" id="r-v">8</div>
+                <div class="numunit">reps</div>
+                <div class="steprow">
+                  <button class="stepbtn" onclick="chg('r',-1)" aria-label="回数−1">−</button>
+                  <button class="stepbtn" onclick="chg('r',1)" aria-label="回数＋1">＋</button>
+                </div>
+              </div>
+            </div>
+            <button class="done-btn" id="done-btn" onclick="doneSet()" aria-label="セットを完了する">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="7" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/><path d="M4.5 8L7 10.5L11.5 5.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg>
+              セット完了
+            </button>
+            <div class="slog">
+              <div class="slbl">記録</div>
+              <div class="srow-i" id="sr1"><span class="snum">セット 1</span><span class="svals" id="sv1">—</span><div class="schk" aria-hidden="true"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5L3.5 6.5L7.5 2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+              <div class="srow-i" id="sr2"><span class="snum">セット 2</span><span class="svals" id="sv2">—</span><div class="schk" aria-hidden="true"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5L3.5 6.5L7.5 2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+              <div class="srow-i" id="sr3"><span class="snum">セット 3</span><span class="svals" id="sv3">—</span><div class="schk" aria-hidden="true"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5L3.5 6.5L7.5 2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+              <div class="srow-i" id="sr4"><span class="snum">セット 4</span><span class="svals" id="sv4">—</span><div class="schk" aria-hidden="true"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5L3.5 6.5L7.5 2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+              <div class="srow-i" id="sr5"><span class="snum">セット 5</span><span class="svals" id="sv5">—</span><div class="schk" aria-hidden="true"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5L3.5 6.5L7.5 2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+            </div>
+            <!-- Previous session chart -->
+            <div class="hist-section">
+              <div class="slbl" style="padding:0; margin:14px 0 10px;">前回との比較</div>
+              <div class="hist-bars-wrap" id="hist-bars"></div>
+              <div class="hist-note"><div class="hist-dot"></div><span id="hist-note">前回 80kg（最高 102kg）</span></div>
+            </div>
+            <div class="pad"></div>
+          </div>
+
+        </div>
+
+        <!-- HISTORY -->
+        <div class="panel" id="p-history" role="tabpanel" aria-label="履歴">
+          <div class="ptitle">履歴</div>
+          <div class="hlist">
+            <div class="hcard" onclick="openDaySheet('3月28日（土）','52分','脚',14,5820)" role="button" tabindex="0" aria-label="3月28日のワークアウト">
+              <div class="hc-top"><span class="hc-date">3月28日（土）</span><span class="hc-dur">52分</span></div>
+              <div class="hc-tags">
+                <button class="htag" onclick="event.stopPropagation();openExSheet('スクワット')">スクワット</button>
+                <button class="htag" onclick="event.stopPropagation();openExSheet('レッグプレス')">レッグプレス</button>
+                <button class="htag" onclick="event.stopPropagation();openExSheet('カーフレイズ')">カーフレイズ</button>
+              </div>
+              <div class="hc-stats"><div><div class="hst-v">3種目</div><div class="hst-k">種目数</div></div><div><div class="hst-v">14セット</div><div class="hst-k">総セット</div></div><div><div class="hst-v">5,820 kg</div><div class="hst-k">ボリューム</div></div></div>
+            </div>
+            <div class="hcard" onclick="openDaySheet('3月27日（金）','48分','胸',16,6240)" role="button" tabindex="0" aria-label="3月27日のワークアウト">
+              <div class="hc-top"><span class="hc-date">3月27日（金）</span><span class="hc-dur">48分</span></div>
+              <div class="hc-tags">
+                <button class="htag" onclick="event.stopPropagation();openExSheet('ベンチプレス')">ベンチプレス</button>
+                <button class="htag" onclick="event.stopPropagation();openExSheet('ダンベルフライ')">ダンベルフライ</button>
+                <button class="htag" onclick="event.stopPropagation();openExSheet('ディップス')">ディップス</button>
+              </div>
+              <div class="hc-stats"><div><div class="hst-v">4種目</div><div class="hst-k">種目数</div></div><div><div class="hst-v">16セット</div><div class="hst-k">総セット</div></div><div><div class="hst-v">6,240 kg</div><div class="hst-k">ボリューム</div></div></div>
+            </div>
+            <div class="hcard" onclick="openDaySheet('3月25日（水）','61分','背中',13,7380)" role="button" tabindex="0" aria-label="3月25日のワークアウト">
+              <div class="hc-top"><span class="hc-date">3月25日（水）</span><span class="hc-dur">61分</span></div>
+              <div class="hc-tags">
+                <button class="htag" onclick="event.stopPropagation();openExSheet('デッドリフト')">デッドリフト</button>
+                <button class="htag" onclick="event.stopPropagation();openExSheet('バーベルロウ')">バーベルロウ</button>
+                <button class="htag" onclick="event.stopPropagation();openExSheet('懸垂')">懸垂</button>
+              </div>
+              <div class="hc-stats"><div><div class="hst-v">3種目</div><div class="hst-k">種目数</div></div><div><div class="hst-v">13セット</div><div class="hst-k">総セット</div></div><div><div class="hst-v">7,380 kg</div><div class="hst-k">ボリューム</div></div></div>
+            </div>
+          </div>
+          <div class="pad"></div>
+        </div>
+
+        <!-- PROGRESS -->
+        <div class="panel" id="p-progress" role="tabpanel" aria-label="進捗">
+          <div class="ptitle">進捗</div>
+          <div class="slbl">種目 PR</div>
+          <div class="pr-scroll" id="pr-dyn">
+            <button class="prcard" aria-label="ベンチプレス PR 102kg"><div class="pr-ex">ベンチプレス</div><div class="pr-num">102<span class="pr-unit"> kg</span></div><div class="pr-dt">3月15日</div></button>
+            <button class="prcard" aria-label="スクワット PR 140kg"><div class="pr-ex">スクワット</div><div class="pr-num">140<span class="pr-unit"> kg</span></div><div class="pr-dt">3月22日</div></button>
+            <button class="prcard" aria-label="デッドリフト PR 160kg"><div class="pr-ex">デッドリフト</div><div class="pr-num">160<span class="pr-unit"> kg</span></div><div class="pr-dt">3月18日</div></button>
+            <button class="prcard" aria-label="レッグプレス PR 200kg"><div class="pr-ex">レッグプレス</div><div class="pr-num">200<span class="pr-unit"> kg</span></div><div class="pr-dt">3月17日</div></button>
+            <button class="prcard" aria-label="ショルダープレス PR 72.5kg"><div class="pr-ex">ショルダープレス</div><div class="pr-num">72.5<span class="pr-unit"> kg</span></div><div class="pr-dt">3月10日</div></button>
+          </div>
+          <div class="slbl" style="margin-top:18px;">部位別 1日ベスト</div>
+          <div class="pr-scroll" id="part-vol-cards"></div>
+          <div class="slbl" style="margin-top:18px;">週間ボリューム</div>
+          <div class="chart-box"><div class="chart-ttl">過去7日間（kg）</div><div class="cbars" id="cbars"></div></div>
+          <div class="slbl" style="margin-top:20px;">連続記録</div>
+          <div class="streak-row"><div class="streak-n">14</div><div class="streak-unit">日</div></div>
+          <div class="streak-sub">過去最高 31日 ／ 今月の目標 20日</div>
+          <div class="slbl" style="margin-top:18px;">3月の記録</div>
+          <div class="cal-box"><div class="cal-hd">2026年3月</div><div class="cal-g" id="cal-g"></div></div>
+          <div class="pad"></div>
+        </div>
+
+      </div>
+
+      <nav class="tbar" role="tablist" aria-label="メインナビゲーション">
+        <button class="ti on" id="t-home" onclick="switchTab('home')" role="tab" aria-selected="true" aria-controls="p-home">
+          <div class="ti-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2.05V12h4.5l-5.5 9.95V12H7.5L13 2.05z"/></svg></div>
+          <span class="ti-l">今すぐ</span>
+        </button>
+        <button class="ti" id="t-workout" onclick="switchTab('workout')" role="tab" aria-selected="false" aria-controls="p-workout">
+          <div class="ti-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29l-1.43-1.43z"/></svg></div>
+          <span class="ti-l">トレーニング</span>
+        </button>
+        <button class="ti" id="t-history" onclick="switchTab('history')" role="tab" aria-selected="false" aria-controls="p-history">
+          <div class="ti-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg></div>
+          <span class="ti-l">履歴</span>
+        </button>
+        <button class="ti" id="t-progress" onclick="switchTab('progress')" role="tab" aria-selected="false" aria-controls="p-progress">
+          <div class="ti-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg></div>
+          <span class="ti-l">進捗</span>
+        </button>
+      </nav>
+
+      <!-- Bottom sheet overlay -->
+      <div class="overlay" id="overlay" onclick="closeSheet()"></div>
+      <div class="sheet" id="sheet" role="dialog" aria-modal="true">
+        <div class="sheet-grip"></div>
+        <div class="sheet-head">
+          <div class="sheet-title" id="sheet-title"></div>
+          <div class="sheet-sub" id="sheet-sub"></div>
+        </div>
+        <div class="sheet-body" id="sheet-body"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+var exDB = {
+  '\u80f8':[{n:'\u30d9\u30f3\u30c1\u30d7\u30ec\u30b9',d:'\u30d0\u30fc\u30d9\u30eb'},{n:'\u30c0\u30f3\u30d9\u30eb\u30d5\u30e9\u30a4',d:'\u30c0\u30f3\u30d9\u30eb'},{n:'\u30a4\u30f3\u30af\u30e9\u30a4\u30f3\u30d9\u30f3\u30c1',d:'\u30d0\u30fc\u30d9\u30eb'},{n:'\u30c7\u30a3\u30c3\u30d7\u30b9',d:'\u81ea\u91cd'},{n:'\u30b1\u30fc\u30d6\u30eb\u30af\u30ed\u30b9',d:'\u30b1\u30fc\u30d6\u30eb'},{n:'\u30d7\u30c3\u30b7\u30e5\u30a2\u30c3\u30d7',d:'\u81ea\u91cd'}],
+  '\u80cc\u4e2d':[{n:'\u30c7\u30c3\u30c9\u30ea\u30d5\u30c8',d:'\u30d0\u30fc\u30d9\u30eb'},{n:'\u30d0\u30fc\u30d9\u30eb\u30ed\u30a6',d:'\u30d0\u30fc\u30d9\u30eb'},{n:'\u61f8\u5439',d:'\u81ea\u91cd'},{n:'\u30e9\u30c3\u30c8\u30d7\u30eb\u30c0\u30a6\u30f3',d:'\u30b1\u30fc\u30d6\u30eb'},{n:'\u30b7\u30fc\u30c6\u30c3\u30c9\u30ed\u30a6',d:'\u30de\u30b7\u30f3'},{n:'\u30c0\u30f3\u30d9\u30eb\u30ed\u30a6',d:'\u30c0\u30f3\u30d9\u30eb'}],
+  '\u811a':[{n:'\u30b9\u30af\u30ef\u30c3\u30c8',d:'\u30d0\u30fc\u30d9\u30eb'},{n:'\u30ec\u30c3\u30b0\u30d7\u30ec\u30b9',d:'\u30de\u30b7\u30f3'},{n:'\u30ec\u30c3\u30b0\u30ab\u30fc\u30eb',d:'\u30de\u30b7\u30f3'},{n:'\u30ec\u30c3\u30b0\u30a8\u30af\u30b9\u30c6\u30f3\u30b7\u30e7\u30f3',d:'\u30de\u30b7\u30f3'},{n:'\u30ab\u30fc\u30d5\u30ec\u30a4\u30ba',d:'\u30de\u30b7\u30f3'},{n:'\u30d6\u30eb\u30ac\u30ea\u30a2\u30f3\u30b9\u30af\u30ef\u30c3\u30c8',d:'\u30c0\u30f3\u30d9\u30eb'}],
+  '\u80a9':[{n:'\u30b7\u30e7\u30eb\u30c0\u30fc\u30d7\u30ec\u30b9',d:'\u30d0\u30fc\u30d9\u30eb'},{n:'\u30b5\u30a4\u30c9\u30ec\u30a4\u30ba',d:'\u30c0\u30f3\u30d9\u30eb'},{n:'\u30d5\u30ed\u30f3\u30c8\u30ec\u30a4\u30ba',d:'\u30c0\u30f3\u30d9\u30eb'},{n:'\u30d5\u30a7\u30a4\u30b9\u30d7\u30eb',d:'\u30b1\u30fc\u30d6\u30eb'},{n:'\u30a2\u30c3\u30d7\u30e9\u30a4\u30c8\u30ed\u30a6',d:'\u30d0\u30fc\u30d9\u30eb'}],
+  '\u8155':[{n:'\u30d0\u30fc\u30d9\u30eb\u30ab\u30fc\u30eb',d:'\u30d0\u30fc\u30d9\u30eb'},{n:'\u30c8\u30e9\u30a4\u30bb\u30c3\u30d7\u30b9\u30d7\u30c3\u30b7\u30e5\u30c0\u30a6\u30f3',d:'\u30b1\u30fc\u30d6\u30eb'},{n:'\u30cf\u30f3\u30de\u30fc\u30ab\u30fc\u30eb',d:'\u30c0\u30f3\u30d9\u30eb'},{n:'\u30b9\u30ab\u30eb\u30af\u30e9\u30c3\u30b7\u30e3\u30fc',d:'\u30d0\u30fc\u30d9\u30eb'},{n:'\u30c1\u30fc\u30c8\u30ab\u30fc\u30eb',d:'\u30c4\u30fc\u30eb'}],
+  '\u8179':[{n:'\u30af\u30e9\u30f3\u30c1',d:'\u81ea\u91cd'},{n:'\u30d7\u30e9\u30f3\u30af',d:'\u81ea\u91cd'},{n:'\u30ec\u30c3\u30b0\u30ec\u30a4\u30ba',d:'\u81ea\u91cd'},{n:'\u30ed\u30fc\u30eb\u30a2\u30a6\u30c8',d:'\u30ed\u30fc\u30e9\u30fc'},{n:'\u30b5\u30a4\u30c9\u30af\u30e9\u30f3\u30c1',d:'\u81ea\u91cd'}]
+};
+var muscleSub = {'\u30d9\u30f3\u30c1\u30d7\u30ec\u30b9':'\u80f8\u30fb\u80a9\u30fb\u4e0a\u8155\u4e09\u982d\u7b4b','\u30c7\u30c3\u30c9\u30ea\u30d5\u30c8':'\u80cc\u4e2d\u30fb\u81c0\u90e8\u30fb\u8155','\u30b9\u30af\u30ef\u30c3\u30c8':'\u5927\u817f\u56db\u982d\u7b4b\u30fb\u81c0\u90e8\u30fb\u30cf\u30e0\u30b9\u30c8\u30ea\u30f3\u30b0','\u61f8\u5439':'\u80cc\u4e2d\u30fb\u4e8c\u982d\u7b4b\u30fb\u30b3\u30a2'};
+
+function switchTab(n) {
+  ['home','workout','history','progress'].forEach(function(t) {
+    document.getElementById('p-'+t).classList.toggle('on', t===n);
+    var tb=document.getElementById('t-'+t);
+    tb.classList.toggle('on', t===n);
+    tb.setAttribute('aria-selected', String(t===n));
+  });
+}
+function showStep(id) {
+  ['ws-parts','ws-exlist','ws-active'].forEach(function(s){
+    document.getElementById(s).classList.toggle('on', s===id);
+  });
+}
+function selPart(jp) {
+  document.getElementById('part-title').textContent = jp;
+  var list=document.getElementById('exlist-items'); list.innerHTML='';
+  (exDB[jp]||[]).forEach(function(ex) {
+    var b=document.createElement('button');
+    b.className='exrow';
+    b.setAttribute('aria-label', ex.n);
+    b.innerHTML='<div><div class="exname">'+ex.n+'</div><div class="exdet">'+ex.d+'</div></div><svg class="exchev" width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M1 1L6 6L1 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    b.onclick=function(){startEx(ex.n, jp);};
+    list.appendChild(b);
+  });
+  showStep('ws-exlist');
+}
+function goBack(step) { showStep(step); }
+function startEx(name, part) {
+  switchTab('workout');
+  document.getElementById('act-name').textContent = name;
+  document.getElementById('act-sub').textContent = muscleSub[name] || part;
+  curSet=1; wt=80; rp=8;
+  document.getElementById('cur-set').textContent=1;
+  document.getElementById('w-v').textContent=80;
+  document.getElementById('r-v').textContent=8;
+  for(var i=1;i<=5;i++){document.getElementById('sv'+i).textContent='\u2014';document.getElementById('sr'+i).classList.remove('done');}
+  var btn=document.getElementById('done-btn');
+  btn.classList.remove('fin'); btn.style.background='';
+  btn.innerHTML='<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="7" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/><path d="M4.5 8L7 10.5L11.5 5.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg> \u30bb\u30c3\u30c8\u5b8c\u4e86';
+  showStep('ws-active');
+  renderHistChart(name);
+}
+
+var curSet=1, wt=80, rp=8;
+function chg(t,d) {
+  if(t==='w'){wt=Math.max(0,Math.round((wt+d)*10)/10);var e=document.getElementById('w-v');e.textContent=(wt%1===0)?wt:wt.toFixed(1);e.classList.remove('bump');void e.offsetWidth;e.classList.add('bump');}
+  else{rp=Math.max(1,rp+d);var e2=document.getElementById('r-v');e2.textContent=rp;e2.classList.remove('bump');void e2.offsetWidth;e2.classList.add('bump');}
+}
+function doneSet() {
+  if(curSet>5) return;
+  document.getElementById('sv'+curSet).textContent=wt+'kg \xd7 '+rp+'reps';
+  document.getElementById('sr'+curSet).classList.add('done');
+  var btn=document.getElementById('done-btn');
+  btn.classList.add('fin'); btn.textContent='\u5b8c\u4e86\uff01';
+  setTimeout(function(){
+    curSet++; btn.classList.remove('fin');
+    if(curSet<=5){document.getElementById('cur-set').textContent=curSet;btn.innerHTML='<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="7" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/><path d="M4.5 8L7 10.5L11.5 5.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg> \u30bb\u30c3\u30c8\u5b8c\u4e86';btn.style.background='';}
+    else{btn.textContent='\u30ef\u30fc\u30af\u30a2\u30a6\u30c8\u5b8c\u4e86\uff01';btn.style.background='var(--ok)';}
+  },1000);
+}
+
+var sec=0;
+setInterval(function(){sec++;var m=String(Math.floor(sec/60)).padStart(2,'0'),s=String(sec%60).padStart(2,'0');var e=document.getElementById('timer');if(e)e.textContent=m+':'+s;},1000);
+
+// ── Exercise history data (max weight per session, last 5) ──
+var exHist = {
+  '\u30d9\u30f3\u30c1\u30d7\u30ec\u30b9': [{d:'3/8',w:97.5},{d:'3/13',w:100},{d:'3/18',w:100},{d:'3/24',w:102},{d:'3/27',w:100},{d:'\u4eca\u65e5',w:null}],
+  '\u30b9\u30af\u30ef\u30c3\u30c8':       [{d:'3/7',w:130},{d:'3/12',w:135},{d:'3/17',w:137.5},{d:'3/22',w:140},{d:'3/27',w:137.5},{d:'\u4eca\u65e5',w:null}],
+  '\u30c7\u30c3\u30c9\u30ea\u30d5\u30c8':   [{d:'3/5',w:150},{d:'3/11',w:155},{d:'3/15',w:157.5},{d:'3/18',w:160},{d:'3/25',w:157.5},{d:'\u4eca\u65e5',w:null}],
+  '\u61f8\u5439':                           [{d:'3/8',w:null},{d:'3/13',w:null},{d:'3/18',w:null},{d:'3/22',w:null},{d:'3/27',w:null},{d:'\u4eca\u65e5',w:null}]
+};
+var DEFAULT_HIST = [{d:'3/8',w:60},{d:'3/13',w:62.5},{d:'3/18',w:65},{d:'3/22',w:65},{d:'3/27',w:67.5},{d:'\u4eca\u65e5',w:null}];
+
+function renderHistChart(exName) {
+  var bars = document.getElementById('hist-bars');
+  if (!bars) return;
+  bars.innerHTML = '';
+  var data = exHist[exName] || DEFAULT_HIST;
+  var vals = data.filter(function(d){return d.w;}).map(function(d){return d.w;});
+  var mx = vals.length ? Math.max.apply(null,vals) : 80;
+  var mn = vals.length ? Math.min.apply(null,vals) : 50;
+  var range = mx - mn || 20;
+  data.forEach(function(d,i) {
+    var isToday = i === data.length-1;
+    var h = d.w ? Math.max(8, ((d.w-mn)/range)*44+8) : 5;
+    var col = document.createElement('div');
+    col.className = 'hb-col';
+    col.innerHTML = '<div class="hb-fill '+(isToday?'hb-cur':'hb-prev')+'" style="height:'+h+'px"></div>'
+      +'<span class="hb-lbl'+(isToday?' hb-now':'')+'">'+d.d+'</span>';
+    bars.appendChild(col);
+  });
+  var prev = data.slice(0,-1).filter(function(d){return d.w;}).pop();
+  var note = document.getElementById('hist-note');
+  if (note) note.textContent = prev ? '\u524d\u56de '+prev.w+'kg\uff08\u6700\u9ad8 '+mx+'kg\uff09' : '\u521d\u56de\u306e\u8a18\u9332';
+}
+
+// ── Progress ──
+// PR lookup map: exercise name → {kg, dt}
+var prMap = {
+  '\u30d9\u30f3\u30c1\u30d7\u30ec\u30b9':         {kg:102,   dt:'3/15'},
+  '\u30c0\u30f3\u30d9\u30eb\u30d5\u30e9\u30a4':    {kg:52.5,  dt:'3/2'},
+  '\u30a4\u30f3\u30af\u30e9\u30a4\u30f3\u30d9\u30f3\u30c1': {kg:95, dt:'3/8'},
+  '\u30c7\u30a3\u30c3\u30d7\u30b9':                {kg:null,  dt:null},
+  '\u30b1\u30fc\u30d6\u30eb\u30af\u30ed\u30b9':    {kg:20,    dt:'3/5'},
+  '\u30d7\u30c3\u30b7\u30e5\u30a2\u30c3\u30d7':    {kg:null,  dt:null},
+  '\u30c7\u30c3\u30c9\u30ea\u30d5\u30c8':          {kg:160,   dt:'3/18'},
+  '\u30d0\u30fc\u30d9\u30eb\u30ed\u30a6':          {kg:95,    dt:'3/20'},
+  '\u61f8\u5439':                                  {kg:null,  dt:null},
+  '\u30e9\u30c3\u30c8\u30d7\u30eb\u30c0\u30a6\u30f3': {kg:75, dt:'3/14'},
+  '\u30b7\u30fc\u30c6\u30c3\u30c9\u30ed\u30a6':    {kg:80,    dt:'3/11'},
+  '\u30c0\u30f3\u30d9\u30eb\u30ed\u30a6':          {kg:50,    dt:'3/9'},
+  '\u30b9\u30af\u30ef\u30c3\u30c8':                {kg:140,   dt:'3/22'},
+  '\u30ec\u30c3\u30b0\u30d7\u30ec\u30b9':          {kg:200,   dt:'3/17'},
+  '\u30ec\u30c3\u30b0\u30ab\u30fc\u30eb':          {kg:62.5,  dt:'3/12'},
+  '\u30ec\u30c3\u30b0\u30a8\u30af\u30b9\u30c6\u30f3\u30b7\u30e7\u30f3': {kg:70, dt:'3/8'},
+  '\u30ab\u30fc\u30d5\u30ec\u30a4\u30ba':          {kg:100,   dt:'3/7'},
+  '\u30d6\u30eb\u30ac\u30ea\u30a2\u30f3\u30b9\u30af\u30ef\u30c3\u30c8': {kg:50, dt:'3/3'},
+  '\u30b7\u30e7\u30eb\u30c0\u30fc\u30d7\u30ec\u30b9': {kg:72.5, dt:'3/10'},
+  '\u30b5\u30a4\u30c9\u30ec\u30a4\u30ba':          {kg:22,    dt:'3/15'},
+  '\u30d5\u30ed\u30f3\u30c8\u30ec\u30a4\u30ba':    {kg:18,    dt:'3/6'},
+  '\u30d5\u30a7\u30a4\u30b9\u30d7\u30eb':          {kg:35,    dt:'3/13'},
+  '\u30a2\u30c3\u30d7\u30e9\u30a4\u30c8\u30ed\u30a6': {kg:55, dt:'3/4'},
+  '\u30d0\u30fc\u30d9\u30eb\u30ab\u30fc\u30eb':    {kg:55,    dt:'3/12'},
+  '\u30c8\u30e9\u30a4\u30bb\u30c3\u30d7\u30b9\u30d7\u30c3\u30b7\u30e5\u30c0\u30a6\u30f3': {kg:40, dt:'3/14'},
+  '\u30cf\u30f3\u30de\u30fc\u30ab\u30fc\u30eb':    {kg:32.5,  dt:'3/9'},
+  '\u30b9\u30ab\u30eb\u30af\u30e9\u30c3\u30b7\u30e3\u30fc': {kg:45, dt:'3/6'},
+  '\u30c1\u30fc\u30c8\u30ab\u30fc\u30eb':          {kg:65,    dt:'3/1'},
+  '\u30af\u30e9\u30f3\u30c1':                      {kg:null,  dt:null},
+  '\u30d7\u30e9\u30f3\u30af':                      {kg:null,  dt:null},
+  '\u30ec\u30c3\u30b0\u30ec\u30a4\u30ba':          {kg:null,  dt:null},
+  '\u30ed\u30fc\u30eb\u30a2\u30a6\u30c8':          {kg:null,  dt:null},
+  '\u30b5\u30a4\u30c9\u30af\u30e9\u30f3\u30c1':    {kg:null,  dt:null},
+};
+
+// Part best-day volume data
+var partVolPR = [
+  {part:'\u80f8',      vol:6240, dt:'3/27'},
+  {part:'\u80cc\u4e2d',vol:7380, dt:'3/25'},
+  {part:'\u811a',      vol:5820, dt:'3/28'},
+  {part:'\u80a9',      vol:2640, dt:'3/20'},
+  {part:'\u8155',      vol:1980, dt:'3/14'},
+  {part:'\u8179',      vol:980,  dt:'3/19'},
+];
+
+(function renderPartCards() {
+  var el = document.getElementById('part-vol-cards');
+  if (!el) return;
+  partVolPR.forEach(function(p) {
+    var btn = document.createElement('button');
+    btn.className = 'pvcard';
+    btn.setAttribute('aria-label', p.part + ' 1\u65e5\u30d9\u30b9\u30c8 ' + p.vol + 'kg');
+    btn.innerHTML = '<div class="pv-part">'+p.part+'</div>'
+      + '<div class="pv-vol">'+p.vol.toLocaleString()+'<span class="pv-unit"> kg</span></div>'
+      + '<div class="pv-dt">'+p.dt+'</div>';
+    btn.onclick = function(){ openPartSheet(p.part); };
+    el.appendChild(btn);
+  });
+})();
+
+// ── Day detail data ──
+var dayData = {
+  '3月28日（土）': {label:'3月28日（土）', dur:'52分', part:'脚', sets:14, vol:5820,
+    exs:[
+      {n:'スクワット',     kg:137.5, sets:5, isPR:false},
+      {n:'レッグプレス',  kg:200,   sets:5, isPR:true},
+      {n:'カーフレイズ',  kg:100,   sets:4, isPR:true},
+    ]},
+  '3月27日（金）': {label:'3月27日（金）', dur:'48分', part:'胸', sets:16, vol:6240,
+    exs:[
+      {n:'ベンチプレス',    kg:102,  sets:5, isPR:true},
+      {n:'ダンベルフライ',  kg:50,   sets:4, isPR:false},
+      {n:'ディップス',      kg:null, sets:4, isPR:false},
+      {n:'ケーブルクロス',  kg:20,   sets:3, isPR:false},
+    ]},
+  '3月25日（水）': {label:'3月25日（水）', dur:'61分', part:'背中', sets:13, vol:7380,
+    exs:[
+      {n:'デッドリフト',  kg:160,  sets:5, isPR:true},
+      {n:'バーベルロウ',  kg:95,   sets:4, isPR:false},
+      {n:'懸垂',          kg:null, sets:4, isPR:false},
+    ]},
+};
+
+// ── Exercise session history ──
+var exSessions = {
+  '\u30d9\u30f3\u30c1\u30d7\u30ec\u30b9': [
+    {d:'3/8', kg:95,   sets:5},{d:'3/13',kg:97.5,sets:5},{d:'3/18',kg:100, sets:4},
+    {d:'3/24',kg:100,  sets:5},{d:'3/27',kg:102, sets:5, isPR:true},
+  ],
+  '\u30b9\u30af\u30ef\u30c3\u30c8': [
+    {d:'3/7', kg:130,  sets:5},{d:'3/12',kg:135, sets:5},{d:'3/17',kg:137.5,sets:4},
+    {d:'3/22',kg:140,  sets:5, isPR:true},{d:'3/28',kg:137.5,sets:5},
+  ],
+  '\u30c7\u30c3\u30c9\u30ea\u30d5\u30c8': [
+    {d:'3/5', kg:150,  sets:4},{d:'3/11',kg:155, sets:4},{d:'3/15',kg:157.5,sets:4},
+    {d:'3/18',kg:160,  sets:5, isPR:true},{d:'3/25',kg:157.5,sets:5},
+  ],
+  '\u30ec\u30c3\u30b0\u30d7\u30ec\u30b9': [
+    {d:'3/4', kg:180,  sets:4},{d:'3/10',kg:185, sets:4},{d:'3/17',kg:190, sets:4},
+    {d:'3/22',kg:195,  sets:4},{d:'3/28',kg:200, sets:5, isPR:true},
+  ],
+  '\u30c7\u30a3\u30c3\u30d7\u30b9': [
+    {d:'3/6', kg:null, sets:3},{d:'3/11',kg:null,sets:3},{d:'3/18',kg:null,sets:4},
+    {d:'3/27',kg:null, sets:4},
+  ],
+  '\u30d0\u30fc\u30d9\u30eb\u30ed\u30a6': [
+    {d:'3/9', kg:85,   sets:4},{d:'3/14',kg:87.5,sets:4},{d:'3/20',kg:92.5,sets:4},
+    {d:'3/25',kg:95,   sets:4, isPR:true},
+  ],
+  '\u61f8\u5439': [
+    {d:'3/8', kg:null, sets:3},{d:'3/14',kg:null,sets:4},{d:'3/20',kg:null,sets:4},
+    {d:'3/25',kg:null, sets:4},
+  ],
+  '\u30ab\u30fc\u30d5\u30ec\u30a4\u30ba': [
+    {d:'3/7', kg:90,   sets:4},{d:'3/14',kg:95,  sets:4},{d:'3/21',kg:97.5,sets:4},
+    {d:'3/28',kg:100,  sets:4, isPR:true},
+  ],
+};
+
+// ── Sheet logic ──
+function openSheet(title, sub, bodyHtml) {
+  document.getElementById('sheet-title').textContent = title;
+  document.getElementById('sheet-sub').textContent = sub;
+  document.getElementById('sheet-body').innerHTML = bodyHtml;
+  document.getElementById('overlay').classList.add('on');
+  document.getElementById('sheet').classList.add('on');
+}
+function closeSheet() {
+  document.getElementById('overlay').classList.remove('on');
+  document.getElementById('sheet').classList.remove('on');
+}
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeSheet(); });
+
+function openDaySheet(label, dur, part, sets, vol) {
+  var day = dayData[label] || null;
+  var rows = day ? day.exs.map(function(ex) {
+    var kg = ex.kg ? ex.kg+'kg' : '\u81ea\u91cd';
+    var pr = ex.isPR ? '<span class="sr-pr">PR</span>' : '';
+    return '<div class="sheet-row"><div class="sr-left"><span class="sr-name">'+ex.n+'</span><span class="sr-detail">'+ex.sets+'\u30bb\u30c3\u30c8</span></div>'
+      +'<div class="sr-right">'+pr+'<span class="sr-val">'+kg+'</span></div></div>';
+  }).join('') : '<div style="padding:16px 0;color:var(--t3);font-size:13px;">\u30c7\u30fc\u30bf\u306a\u3057</div>';
+  openSheet(label, part+' \u30fb '+dur+' \u30fb '+vol.toLocaleString()+'kg', rows);
+}
+
+function openExSheet(exName) {
+  var sessions = exSessions[exName];
+  if (!sessions) {
+    openSheet(exName, '\u8a18\u9332\u306a\u3057', '<div style="padding:16px 0;color:var(--t3);font-size:13px;">\u307e\u3060\u8a18\u9332\u304c\u3042\u308a\u307e\u305b\u3093</div>');
+    return;
+  }
+  // spark chart
+  var vals = sessions.map(function(s){return s.kg||0;});
+  var mx = Math.max.apply(null,vals)||1;
+  var mn = Math.min.apply(null,vals.filter(function(v){return v>0;}))||0;
+  var rng = mx-mn||10;
+  var spark = '<div class="spark-wrap"><div class="spark-bars">'
+    + sessions.map(function(s,i){
+        var isLast = i===sessions.length-1;
+        var h = s.kg ? Math.max(8,((s.kg-mn)/rng)*42+8) : 6;
+        return '<div class="spark-col"><div class="spark-fill'+(isLast?' sp-hi':'')+'" style="height:'+h+'px"></div>'
+          +'<span class="spark-lbl">'+s.d+'</span></div>';
+      }).join('')
+    + '</div></div>';
+  var pr = prMap[exName];
+  var prStr = pr && pr.kg ? 'PR '+pr.kg+'kg \u30fb '+sessions.length+'\u56de\u8a18\u9332' : sessions.length+'\u56de\u8a18\u9332';
+  var rows = sessions.slice().reverse().map(function(s) {
+    var kg = s.kg ? s.kg+'kg' : '\u81ea\u91cd';
+    var prBadge = s.isPR ? '<span class="sr-pr">PR</span>' : '';
+    return '<div class="sheet-row"><div class="sr-left"><span class="sr-name">'+s.d+'</span>'
+      +'<span class="sr-detail">'+s.sets+'\u30bb\u30c3\u30c8</span></div>'
+      +'<div class="sr-right">'+prBadge+'<span class="sr-val">'+kg+'</span></div></div>';
+  }).join('');
+  openSheet(exName, prStr, spark + rows);
+}
+
+function openPartSheet(part) {
+  var exs = exDB[part] || [];
+  var rows = exs.map(function(ex) {
+    var pr = prMap[ex.n];
+    var kg = pr && pr.kg ? pr.kg+'kg' : '\u2014';
+    var hasSessions = !!exSessions[ex.n];
+    return '<div class="sheet-row" style="cursor:'+(hasSessions?'pointer':'default')+'" onclick="'+(hasSessions?'openExSheet(\''+ex.n+'\')':'')+'">'
+      +'<div class="sr-left"><span class="sr-name">'+ex.n+'</span><span class="sr-detail">'+ex.d+'</span></div>'
+      +'<div class="sr-right"><span class="sr-val" style="font-size:14px;">'+kg+'</span>'
+      +(hasSessions?'<svg width="6" height="10" viewBox="0 0 6 10" fill="none"><path d="M1 1L5 5L1 9" stroke="rgba(245,245,247,0.3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':'')
+      +'</div></div>';
+  }).join('');
+  var pv = partVolPR.filter(function(p){return p.part===part;})[0];
+  var sub = pv ? '\u30d9\u30b9\u30c8\u65e5\u5408\u8a08 '+pv.vol.toLocaleString()+'kg \uff08'+pv.dt+'\uff09' : '';
+  openSheet(part+'\u306e\u7a2e\u76ee', sub, rows);
+}
+
+// ── Today's menu ──
+var todayMenu = [
+  {ex:'\u30d9\u30f3\u30c1\u30d7\u30ec\u30b9', sets:5, maxKg:102, isPR:true,  part:'\u80f8'},
+  {ex:'\u30c0\u30f3\u30d9\u30eb\u30d5\u30e9\u30a4', sets:4, maxKg:50,  isPR:false, part:'\u80f8'},
+  {ex:'\u30c7\u30a3\u30c3\u30d7\u30b9',        sets:3, maxKg:null,isPR:false, part:'\u80f8'},
+];
+
+(function renderTodayLog() {
+  var el = document.getElementById('today-log');
+  if (!el) return;
+  if (!todayMenu.length) {
+    el.innerHTML = '<div style="padding:16px 0;font-size:13px;color:var(--t3);">\u307e\u3060\u8a18\u9332\u304c\u3042\u308a\u307e\u305b\u3093</div>';
+    return;
+  }
+  el.innerHTML = todayMenu.map(function(item, i) {
+    var isLast = i === todayMenu.length - 1;
+    var prBadge = item.isPR
+      ? '<span style="font-size:9px;font-weight:800;color:var(--ac);background:rgba(255,98,0,0.12);padding:2px 6px;border-radius:5px;letter-spacing:0.4px;margin-left:7px;">PR</span>'
+      : '';
+    var kgStr = item.maxKg ? item.maxKg + ' kg' : '\u81ea\u91cd';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;'
+      + (isLast ? '' : 'border-bottom:1px solid var(--sep);') + 'min-height:44px;">'
+      + '<div style="display:flex;align-items:center;gap:0;">'
+      +   '<span style="font-size:15px;font-weight:600;color:var(--t1);">' + item.ex + '</span>'
+      +   prBadge
+      + '</div>'
+      + '<div style="text-align:right;">'
+      +   '<span style="font-size:15px;font-weight:700;color:var(--t1);font-variant-numeric:tabular-nums;">' + kgStr + '</span>'
+      +   '<span style="font-size:11px;color:var(--t3);margin-left:6px;">' + item.sets + '\u30bb\u30c3\u30c8</span>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+})();
+
+// Chart
+var cd=[{d:'\u65e5',v:5820,t:0},{d:'\u6708',v:0,t:0},{d:'\u706b',v:4200,t:0},{d:'\u6c34',v:7380,t:0},{d:'\u6728',v:0,t:0},{d:'\u91d1',v:6240,t:0},{d:'\u4eca',v:3100,t:1}];
+var mx=Math.max.apply(null,cd.map(function(d){return d.v;}));
+var cb=document.getElementById('cbars');
+cd.forEach(function(d){var h=d.v>0?Math.max(5,(d.v/mx)*66):2;var col=document.createElement('div');col.className='bcol';col.innerHTML='<div class="bfill'+(d.t?' td':'')+'" style="height:'+h+'px"></div><span class="blbl'+(d.t?' td':'')+'">'+d.d+'</span>';cb.appendChild(col);});
+
+// Calendar
+var wd={3:1,4:1,5:1,7:1,10:1,11:1,14:1,15:1,17:1,18:1,19:1,21:1,22:1,24:1,25:1,27:1,28:1};
+var cg=document.getElementById('cal-g');
+['\u65e5','\u6708','\u706b','\u6c34','\u6728','\u91d1','\u571f'].forEach(function(d){var l=document.createElement('div');l.className='cal-wl';l.textContent=d;cg.appendChild(l);});
+var calKeyMap = {'25':'3月25日（水）','27':'3月27日（金）','28':'3月28日（土）'};
+for(var i=1;i<=31;i++){
+  var isWd=wd[i], isTd=(i===29);
+  var dayKey=calKeyMap[String(i)];
+  var e;
+  if(isWd && dayKey){
+    e=document.createElement('button');
+    (function(k){
+      e.onclick=function(){var d=dayData[k];if(d)openDaySheet(d.label,d.dur,d.part,d.sets,d.vol);};
+    })(dayKey);
+  } else {
+    e=document.createElement('div');
+  }
+  e.className='cal-d';
+  e.textContent=i;
+  if(isTd) e.classList.add('td');
+  else if(isWd) e.classList.add('dot');
+  else if(i>29) e.classList.add('fad');
+  cg.appendChild(e);
+}
+</script>
+</body>
+</html>

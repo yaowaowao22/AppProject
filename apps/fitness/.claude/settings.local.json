@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp /c/Users/ytata/AppProject/baseProject/apps/push-notify/assets/icon.png /c/Users/ytata/AppProject/baseProject/apps/fitness/assets/icon.png)",
+      "Bash(cp /c/Users/ytata/AppProject/baseProject/apps/push-notify/assets/splash-icon.png /c/Users/ytata/AppProject/baseProject/apps/fitness/assets/splash-icon.png)",
+      "Bash(cp /c/Users/ytata/AppProject/baseProject/apps/push-notify/assets/favicon.png /c/Users/ytata/AppProject/baseProject/apps/fitness/assets/favicon.png)",
+      "Bash(cp /c/Users/ytata/AppProject/baseProject/apps/push-notify/assets/adaptive-icon.png /c/Users/ytata/AppProject/baseProject/apps/fitness/assets/adaptive-icon.png)",
+      "Bash(netstat -ano)",
+      "Bash(curl -s http://localhost:8081/status)",
+      "Bash(curl -s http://localhost:8081)",
+      "Bash(curl -s http://localhost:19000)"
+    ]
+  }
+}
