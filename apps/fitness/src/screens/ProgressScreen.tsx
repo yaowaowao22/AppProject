@@ -8,12 +8,18 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomSheet, SheetRow, SparkBars } from '../components/BottomSheet';
+import { ScreenHeader } from '../components/ScreenHeader';
 import { BODY_PARTS, EXERCISES } from '../exerciseDB';
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from '../theme';
+import { RADIUS, SPACING, TYPOGRAPHY } from '../theme';
+import type { TanrenThemeColors } from '../theme';
+import { useTheme } from '../ThemeContext';
 import type { BodyPart } from '../types';
 import { useWorkout } from '../WorkoutContext';
+import type { ProgressStackParamList } from '../navigation/RootNavigator';
 
 // ── ヘルパー ──────────────────────────────────────────────────────────────────
 
@@ -43,26 +49,21 @@ function getWeekLabel(weekStart: Date): string {
 
 // ── BottomSheet state types ───────────────────────────────────────────────────
 
-type CalSheet = {
-  type: 'cal';
-  title: string;
-  subtitle: string;
-  rows: { label: string; detail: string; value: string; badge: boolean }[];
-};
-
 type PRSheet = {
   type: 'pr';
   title: string;
   subtitle: string;
   sparks: { label: string; value: number; isCurrent?: boolean }[];
-  rows: { label: string; detail: string; value: string; badge: boolean }[];
+  rows: { label: string; detail: string; value: string; badge: boolean; onPress?: () => void }[];
 };
 
-type SheetState = CalSheet | PRSheet | null;
+type SheetState = PRSheet | null;
 
 export default function ProgressScreen() {
   const { workouts, personalRecords, weeklyStats } = useWorkout();
-  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const navigation = useNavigation<NativeStackNavigationProp<ProgressStackParamList, 'ProgressHome'>>();
   const [sheet, setSheet] = useState<SheetState>(null);
 
   const [displayMonth, setDisplayMonth] = useState<Date>(() => {
@@ -117,46 +118,30 @@ export default function ProgressScreen() {
     }));
   }, [workouts]);
 
-  // ── Section 3: 週間ボリュームチャート（直近8週）──────────────────────────
-  const weeklyChartData = useMemo(() => {
+  // ── Section 3: 直近7日ボリュームチャート（日別・タップでDayDetail）────────
+  const dailyChartData = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const currentWeekStart = getWeekStart(today);
-
-    type WeekEntry = {
-      start: Date;
-      end: Date;
-      label: string;
-      volume: number;
-      isCurrent: boolean;
-    };
-
-    const weeks: WeekEntry[] = [];
-    for (let i = 7; i >= 0; i--) {
-      const weekStart = new Date(currentWeekStart);
-      weekStart.setDate(currentWeekStart.getDate() - i * 7);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-      weeks.push({ start: weekStart, end: weekEnd, label: getWeekLabel(weekStart), volume: 0, isCurrent: i === 0 });
+    const result = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateStr = toDateStr(d);
+      const daily = workouts.find(w => w.date === dateStr);
+      result.push({
+        dateStr,
+        label: `${d.getMonth() + 1}/${d.getDate()}`,
+        volume: daily?.totalVolume ?? 0,
+        workoutId: daily?.id ?? null,
+        isToday: i === 0,
+      });
     }
-
-    for (const daily of workouts) {
-      const d = new Date(daily.date);
-      d.setHours(0, 0, 0, 0);
-      for (const week of weeks) {
-        if (d >= week.start && d <= week.end) {
-          week.volume += daily.totalVolume;
-          break;
-        }
-      }
-    }
-
-    return weeks;
+    return result;
   }, [workouts]);
 
-  const maxWeeklyVolume = useMemo(
-    () => Math.max(...weeklyChartData.map(w => w.volume), 1),
-    [weeklyChartData],
+  const maxDailyVolume = useMemo(
+    () => Math.max(...dailyChartData.map(d => d.volume), 1),
+    [dailyChartData],
   );
 
   // ── Section 5: カレンダー ─────────────────────────────────────────────────
@@ -199,30 +184,7 @@ export default function ProgressScreen() {
   const onDayPress = (dateStr: string) => {
     const daily = workouts.find(w => w.date === dateStr);
     if (!daily) return;
-
-    const date = new Date(dateStr + 'T00:00:00');
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
-    const title = `${month}月${day}日（${weekDays[date.getDay()]}）`;
-
-    const totalSets = daily.sessions.reduce((sum, s) => sum + s.sets.length, 0);
-    const subtitle = `${daily.sessions.length}種目 · ${totalSets}セット · ${daily.totalVolume.toLocaleString()}kg`;
-
-    const rows = daily.sessions.map((s, i) => {
-      const ex = EXERCISES.find(e => e.id === s.exerciseId);
-      const maxW = s.sets.reduce<number | null>((m, set) =>
-        set.weight !== null ? (m === null ? set.weight : Math.max(m, set.weight)) : m, null);
-      const hasPR = s.sets.some(set => set.isPersonalRecord);
-      return {
-        label: ex?.name ?? s.exerciseId,
-        detail: `${s.sets.length}セット`,
-        value: maxW !== null ? `${maxW}kg` : '自重',
-        badge: hasPR,
-      };
-    });
-
-    setSheet({ type: 'cal', title, subtitle, rows });
+    navigation.navigate('DayDetail', { workoutId: daily.id });
   };
 
   const onPRCardPress = (exerciseId: string) => {
@@ -256,11 +218,15 @@ export default function ProgressScreen() {
         const maxW = s.sets.reduce<number | null>((m, set) =>
           set.weight !== null ? (m === null ? set.weight : Math.max(m, set.weight)) : m, null);
         const hasPR = s.sets.some(set => set.isPersonalRecord);
+        const workoutId = workouts.find(w => w.date === s.date)?.id;
         return {
           label,
           detail: `${s.sets.length}セット`,
           value: maxW !== null ? `${maxW}kg` : '自重',
           badge: hasPR,
+          onPress: workoutId
+            ? () => { setSheet(null); navigation.navigate('DayDetail', { workoutId }); }
+            : undefined,
         };
       });
 
@@ -271,13 +237,13 @@ export default function ProgressScreen() {
 
   return (
     <>
+    <SafeAreaView style={styles.safe} edges={['bottom']}>
+      <ScreenHeader title="進捗" showHamburger />
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + SPACING.md }]}
+      contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* スクリーンタイトル */}
-      <Text style={styles.screenTitle}>進捗</Text>
 
       {/* ── Section 1: PRカード ── */}
       <Text style={styles.sectionLabel}>自己ベスト</Text>
@@ -338,34 +304,54 @@ export default function ProgressScreen() {
         )}
       />
 
-      {/* ── Section 3: 週間ボリュームチャート ── */}
-      <Text style={styles.sectionLabel}>週間ボリューム</Text>
+      {/* ── Section 3: 直近7日ボリュームチャート ── */}
+      <Text style={styles.sectionLabel}>直近7日</Text>
       <View style={styles.chartBox}>
-        <Text style={styles.chartTitle}>直近 {weeklyChartData.length} 週間</Text>
+        <Text style={styles.chartTitle}>日別ボリューム</Text>
         <View style={styles.chartBars}>
-          {weeklyChartData.map((week, idx) => {
-            const ratio = week.volume / maxWeeklyVolume;
-            const barH = Math.max(ratio * 72, week.volume > 0 ? 4 : 0);
+          {dailyChartData.map((day, idx) => {
+            const ratio = day.volume / maxDailyVolume;
+            const barH = Math.max(ratio * 72, day.volume > 0 ? 4 : 0);
             return (
-              <View key={idx} style={styles.barCol}>
-                {week.volume > 0 && (
-                  <Text style={[styles.barTopVal, week.isCurrent && styles.barTopValCurrent]}>
-                    {week.volume >= 1000
-                      ? `${(week.volume / 1000).toFixed(1)}k`
-                      : String(Math.round(week.volume))}
+              <TouchableOpacity
+                key={idx}
+                style={styles.barCol}
+                onPress={() => {
+                  if (day.workoutId) {
+                    navigation.navigate('DayDetail', { workoutId: day.workoutId });
+                  }
+                }}
+                activeOpacity={day.workoutId ? 0.7 : 1}
+                disabled={!day.workoutId}
+                accessibilityRole={day.workoutId ? 'button' : 'none'}
+                accessibilityLabel={
+                  day.workoutId
+                    ? `${day.label} ワークアウト詳細を見る`
+                    : `${day.label} データなし`
+                }
+              >
+                {day.volume > 0 && (
+                  <Text style={[styles.barTopVal, day.isToday && styles.barTopValCurrent]}>
+                    {day.volume >= 1000
+                      ? `${(day.volume / 1000).toFixed(1)}k`
+                      : String(Math.round(day.volume))}
                   </Text>
                 )}
                 <View
                   style={[
                     styles.barFill,
                     { height: barH },
-                    week.isCurrent ? styles.barFillCurrent : styles.barFillDefault,
+                    day.isToday
+                      ? styles.barFillCurrent
+                      : day.workoutId
+                        ? styles.barFillActive
+                        : styles.barFillDefault,
                   ]}
                 />
-                <Text style={[styles.barLabel, week.isCurrent && styles.barLabelCurrent]}>
-                  {week.label}
+                <Text style={[styles.barLabel, day.isToday && styles.barLabelCurrent]}>
+                  {day.label}
                 </Text>
-              </View>
+              </TouchableOpacity>
             );
           })}
         </View>
@@ -470,9 +456,11 @@ export default function ProgressScreen() {
           value={row.value}
           badge={row.badge}
           isLast={i === sheet.rows.length - 1}
+          onPress={row.onPress}
         />
       ))}
     </BottomSheet>
+    </SafeAreaView>
     </>
   );
 }
@@ -484,294 +472,303 @@ const SCREEN_W = Dimensions.get('window').width;
 const CAL_INNER_W = SCREEN_W - SPACING.contentMargin * 2 - SPACING.md * 2;
 const CELL_W = Math.floor(CAL_INNER_W / 7);
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  content: {
-    paddingBottom: SPACING.xxl,
-  },
+function makeStyles(c: TanrenThemeColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    content: {
+      paddingBottom: SPACING.xxl,
+    },
 
-  // ── タイトル ────────────────────────────────────────────────────────────────
-  screenTitle: {
-    fontSize: TYPOGRAPHY.screenTitle,
-    fontWeight: TYPOGRAPHY.bold,
-    color: COLORS.textPrimary,
-    letterSpacing: -0.5,
-    paddingHorizontal: SPACING.contentMargin,
-    marginBottom: SPACING.sectionGap,
-  },
+    // ── タイトル ────────────────────────────────────────────────────────────────
+    screenTitle: {
+      fontSize: TYPOGRAPHY.screenTitle,
+      fontWeight: TYPOGRAPHY.bold,
+      color: c.textPrimary,
+      letterSpacing: -0.5,
+      paddingHorizontal: SPACING.contentMargin,
+      marginBottom: SPACING.sectionGap,
+    },
 
-  // ── セクションラベル ─────────────────────────────────────────────────────────
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: TYPOGRAPHY.semiBold,
-    color: COLORS.textTertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.9,
-    paddingHorizontal: SPACING.contentMargin,
-    marginTop: SPACING.sectionGap,
-    marginBottom: 10,
-  },
+    // ── セクションラベル ─────────────────────────────────────────────────────────
+    sectionLabel: {
+      fontSize: 11,
+      fontWeight: TYPOGRAPHY.semiBold,
+      color: c.textTertiary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.9,
+      paddingHorizontal: SPACING.contentMargin,
+      marginTop: SPACING.sectionGap,
+      marginBottom: 10,
+    },
 
-  emptyText: {
-    fontSize: TYPOGRAPHY.caption,
-    color: COLORS.textTertiary,
-    paddingHorizontal: SPACING.contentMargin,
-  },
+    emptyText: {
+      fontSize: TYPOGRAPHY.caption,
+      color: c.textTertiary,
+      paddingHorizontal: SPACING.contentMargin,
+    },
 
-  hListContent: {
-    paddingHorizontal: SPACING.contentMargin,
-    gap: SPACING.cardGap,
-  },
+    hListContent: {
+      paddingHorizontal: SPACING.contentMargin,
+      gap: SPACING.cardGap,
+    },
 
-  // ── PRカード ─────────────────────────────────────────────────────────────────
-  prCard: {
-    width: 140,
-    backgroundColor: COLORS.surface1,
-    borderRadius: RADIUS.card,
-    borderTopWidth: 1.5,
-    borderTopColor: COLORS.accent,
-    padding: SPACING.cardPadding,
-  },
-  prExName: {
-    fontSize: TYPOGRAPHY.captionSmall,
-    fontWeight: TYPOGRAPHY.semiBold,
-    color: COLORS.textTertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 6,
-  },
-  prNumRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 2,
-  },
-  prNum: {
-    fontSize: 30,
-    fontWeight: TYPOGRAPHY.heavy,
-    color: COLORS.textPrimary,
-    letterSpacing: -1.2,
-    lineHeight: 34,
-    fontVariant: ['tabular-nums'],
-  },
-  prUnit: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    marginBottom: 3,
-  },
-  prDate: {
-    fontSize: TYPOGRAPHY.captionSmall,
-    color: COLORS.textTertiary,
-    marginTop: 4,
-  },
+    // ── PRカード ─────────────────────────────────────────────────────────────────
+    prCard: {
+      width: 140,
+      backgroundColor: c.surface1,
+      borderRadius: RADIUS.card,
+      borderTopWidth: 1.5,
+      borderTopColor: c.accent,
+      padding: SPACING.cardPadding,
+    },
+    prExName: {
+      fontSize: TYPOGRAPHY.captionSmall,
+      fontWeight: TYPOGRAPHY.semiBold,
+      color: c.textTertiary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+      marginBottom: 6,
+    },
+    prNumRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: 2,
+    },
+    prNum: {
+      fontSize: 30,
+      fontWeight: TYPOGRAPHY.heavy,
+      color: c.textPrimary,
+      letterSpacing: -1.2,
+      lineHeight: 34,
+      fontVariant: ['tabular-nums'],
+    },
+    prUnit: {
+      fontSize: 11,
+      color: c.textSecondary,
+      marginBottom: 3,
+    },
+    prDate: {
+      fontSize: TYPOGRAPHY.captionSmall,
+      color: c.textTertiary,
+      marginTop: 4,
+    },
 
-  // ── 部位別ベストカード ────────────────────────────────────────────────────────
-  pvCard: {
-    width: 130,
-    backgroundColor: COLORS.surface1,
-    borderRadius: RADIUS.card,
-    borderTopWidth: 1.5,
-    borderTopColor: COLORS.separator,
-    padding: SPACING.cardPadding,
-  },
-  pvPart: {
-    fontSize: 18,
-    fontWeight: TYPOGRAPHY.heavy,
-    color: COLORS.textPrimary,
-    letterSpacing: -0.5,
-    marginBottom: 6,
-  },
-  pvNumRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 2,
-  },
-  pvVol: {
-    fontSize: 22,
-    fontWeight: TYPOGRAPHY.heavy,
-    color: COLORS.textPrimary,
-    letterSpacing: -1,
-    lineHeight: 26,
-    fontVariant: ['tabular-nums'],
-  },
-  pvUnit: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    marginBottom: 2,
-  },
-  pvDate: {
-    fontSize: TYPOGRAPHY.captionSmall,
-    color: COLORS.textTertiary,
-    marginTop: 5,
-  },
+    // ── 部位別ベストカード ────────────────────────────────────────────────────────
+    pvCard: {
+      width: 130,
+      backgroundColor: c.surface1,
+      borderRadius: RADIUS.card,
+      borderTopWidth: 1.5,
+      borderTopColor: c.separator,
+      padding: SPACING.cardPadding,
+    },
+    pvPart: {
+      fontSize: 18,
+      fontWeight: TYPOGRAPHY.heavy,
+      color: c.textPrimary,
+      letterSpacing: -0.5,
+      marginBottom: 6,
+    },
+    pvNumRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: 2,
+    },
+    pvVol: {
+      fontSize: 22,
+      fontWeight: TYPOGRAPHY.heavy,
+      color: c.textPrimary,
+      letterSpacing: -1,
+      lineHeight: 26,
+      fontVariant: ['tabular-nums'],
+    },
+    pvUnit: {
+      fontSize: 11,
+      color: c.textSecondary,
+      marginBottom: 2,
+    },
+    pvDate: {
+      fontSize: TYPOGRAPHY.captionSmall,
+      color: c.textTertiary,
+      marginTop: 5,
+    },
 
-  // ── 週間ボリュームバーチャート ────────────────────────────────────────────────
-  chartBox: {
-    backgroundColor: COLORS.surface1,
-    borderRadius: RADIUS.card,
-    padding: SPACING.cardPadding,
-    marginHorizontal: SPACING.contentMargin,
-  },
-  chartTitle: {
-    fontSize: TYPOGRAPHY.caption,
-    fontWeight: TYPOGRAPHY.semiBold,
-    color: COLORS.textSecondary,
-    marginBottom: 14,
-  },
-  chartBars: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    height: 96,
-    gap: 5,
-  },
-  barCol: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    height: '100%',
-  },
-  barTopVal: {
-    fontSize: 8,
-    color: COLORS.textTertiary,
-    marginBottom: 3,
-    fontVariant: ['tabular-nums'],
-  },
-  barTopValCurrent: {
-    color: COLORS.textPrimary,
-    fontWeight: TYPOGRAPHY.semiBold,
-  },
-  barFill: {
-    width: '100%',
-    borderTopLeftRadius: 3,
-    borderTopRightRadius: 3,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-  },
-  barFillDefault: {
-    backgroundColor: COLORS.surface2,
-  },
-  barFillCurrent: {
-    backgroundColor: COLORS.accent,
-  },
-  barLabel: {
-    fontSize: 9,
-    color: COLORS.textTertiary,
-    marginTop: 5,
-    fontVariant: ['tabular-nums'],
-  },
-  barLabelCurrent: {
-    color: COLORS.textPrimary,
-    fontWeight: TYPOGRAPHY.semiBold,
-  },
+    // ── 週間ボリュームバーチャート ────────────────────────────────────────────────
+    chartBox: {
+      backgroundColor: c.surface1,
+      borderRadius: RADIUS.card,
+      padding: SPACING.cardPadding,
+      marginHorizontal: SPACING.contentMargin,
+    },
+    chartTitle: {
+      fontSize: TYPOGRAPHY.caption,
+      fontWeight: TYPOGRAPHY.semiBold,
+      color: c.textSecondary,
+      marginBottom: 14,
+    },
+    chartBars: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      height: 96,
+      gap: 5,
+    },
+    barCol: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      height: '100%',
+    },
+    barTopVal: {
+      fontSize: 8,
+      color: c.textTertiary,
+      marginBottom: 3,
+      fontVariant: ['tabular-nums'],
+    },
+    barTopValCurrent: {
+      color: c.textPrimary,
+      fontWeight: TYPOGRAPHY.semiBold,
+    },
+    barFill: {
+      width: '100%',
+      borderTopLeftRadius: 3,
+      borderTopRightRadius: 3,
+      borderBottomLeftRadius: 0,
+      borderBottomRightRadius: 0,
+    },
+    barFillDefault: {
+      backgroundColor: c.surface2,
+    },
+    barFillActive: {
+      backgroundColor: c.textTertiary,
+    },
+    barFillCurrent: {
+      backgroundColor: c.accent,
+    },
+    barLabel: {
+      fontSize: 9,
+      color: c.textTertiary,
+      marginTop: 5,
+      fontVariant: ['tabular-nums'],
+    },
+    barLabelCurrent: {
+      color: c.textPrimary,
+      fontWeight: TYPOGRAPHY.semiBold,
+    },
 
-  // ── ストリーク ───────────────────────────────────────────────────────────────
-  streakRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    paddingHorizontal: SPACING.contentMargin,
-    paddingTop: SPACING.xs,
-    marginTop: SPACING.sectionGap,
-  },
-  streakNumber: {
-    fontSize: 48,
-    fontWeight: TYPOGRAPHY.heavy,
-    color: COLORS.textPrimary,
-    letterSpacing: -3,
-    lineHeight: 52,
-    fontVariant: ['tabular-nums'],
-  },
-  streakUnit: {
-    fontSize: 14,
-    fontWeight: TYPOGRAPHY.regular,
-    color: COLORS.textTertiary,
-  },
-  streakSub: {
-    fontSize: TYPOGRAPHY.caption,
-    color: COLORS.textTertiary,
-    lineHeight: 19,
-    paddingHorizontal: SPACING.contentMargin,
-    paddingTop: 4,
-  },
+    // ── ストリーク ───────────────────────────────────────────────────────────────
+    streakRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 8,
+      paddingHorizontal: SPACING.contentMargin,
+      paddingTop: SPACING.xs,
+      marginTop: SPACING.sectionGap,
+    },
+    streakNumber: {
+      fontSize: 48,
+      fontWeight: TYPOGRAPHY.heavy,
+      color: c.textPrimary,
+      letterSpacing: -3,
+      lineHeight: 52,
+      fontVariant: ['tabular-nums'],
+    },
+    streakUnit: {
+      fontSize: 14,
+      fontWeight: TYPOGRAPHY.regular,
+      color: c.textTertiary,
+    },
+    streakSub: {
+      fontSize: TYPOGRAPHY.caption,
+      color: c.textTertiary,
+      lineHeight: 19,
+      paddingHorizontal: SPACING.contentMargin,
+      paddingTop: 4,
+    },
 
-  // ── カレンダー ───────────────────────────────────────────────────────────────
-  calBox: {
-    backgroundColor: COLORS.surface1,
-    borderRadius: RADIUS.card,
-    padding: SPACING.md,
-    marginHorizontal: SPACING.contentMargin,
-  },
-  calHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  calNavBtn: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  calNavText: {
-    fontSize: 22,
-    color: COLORS.textSecondary,
-  },
-  calMonthLabel: {
-    fontSize: TYPOGRAPHY.caption,
-    fontWeight: TYPOGRAPHY.semiBold,
-    color: COLORS.textSecondary,
-  },
-  calGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  calCell: {
-    width: CELL_W,
-    alignItems: 'center',
-    marginBottom: 2,
-  },
-  calWeekLabel: {
-    fontSize: 9,
-    fontWeight: TYPOGRAPHY.semiBold,
-    color: COLORS.textTertiary,
-    textAlign: 'center',
-    paddingVertical: 3,
-  },
-  calDayBtn: {
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 17,
-  },
-  calDayBtnToday: {
-    backgroundColor: COLORS.textPrimary,
-  },
-  calDayText: {
-    fontSize: TYPOGRAPHY.caption,
-    fontWeight: TYPOGRAPHY.regular,
-    color: COLORS.textTertiary,
-    textAlign: 'center',
-  },
-  calDayTextWorkout: {
-    color: COLORS.textSecondary,
-  },
-  calDayTextToday: {
-    color: COLORS.background,
-    fontWeight: TYPOGRAPHY.bold,
-  },
-  calDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.accent,
-    marginTop: 2,
-  },
+    // ── カレンダー ───────────────────────────────────────────────────────────────
+    calBox: {
+      backgroundColor: c.surface1,
+      borderRadius: RADIUS.card,
+      padding: SPACING.md,
+      marginHorizontal: SPACING.contentMargin,
+    },
+    calHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 10,
+    },
+    calNavBtn: {
+      width: 44,
+      height: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    calNavText: {
+      fontSize: 22,
+      color: c.textSecondary,
+    },
+    calMonthLabel: {
+      fontSize: TYPOGRAPHY.caption,
+      fontWeight: TYPOGRAPHY.semiBold,
+      color: c.textSecondary,
+    },
+    calGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    calCell: {
+      width: CELL_W,
+      alignItems: 'center',
+      marginBottom: 2,
+    },
+    calWeekLabel: {
+      fontSize: 9,
+      fontWeight: TYPOGRAPHY.semiBold,
+      color: c.textTertiary,
+      textAlign: 'center',
+      paddingVertical: 3,
+    },
+    calDayBtn: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 20,
+    },
+    calDayBtnToday: {
+      backgroundColor: c.textPrimary,
+    },
+    calDayText: {
+      fontSize: TYPOGRAPHY.caption,
+      fontWeight: TYPOGRAPHY.regular,
+      color: c.textTertiary,
+      textAlign: 'center',
+    },
+    calDayTextWorkout: {
+      color: c.textSecondary,
+    },
+    calDayTextToday: {
+      color: c.background,
+      fontWeight: TYPOGRAPHY.bold,
+    },
+    calDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: c.accent,
+      marginTop: 2,
+    },
 
-  bottomPad: {
-    height: SPACING.lg,
-  },
-});
+    bottomPad: {
+      height: SPACING.lg,
+    },
+  });
+}

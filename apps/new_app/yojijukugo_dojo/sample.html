@@ -1,0 +1,2048 @@
+<!DOCTYPE html>
+<!--
+  四字熟語道場 — iOS App UI Prototype
+  Design: 凛雅 (Ringa) philosophy × 武道道場 motif
+  Concept: 道場の静寂と鍛錬の緊張感。墨黒×紅×金が語る格調。
+  Structure(4) × Silence(4) — 型の規律の中に達成の喜びを宿す。
+  Author: Claude Code | 2026-03-28
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>四字熟語道場 — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500;600;700;900&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════
+   凛雅 DESIGN TOKENS — 四字熟語道場
+   ═══════════════════════════════════════════════════ */
+:root {
+  /* Core Palette */
+  --koku:     #1A1A1C;   /* 墨黒 */
+  --koku-90:  #2A2A2D;
+  --koku-80:  #3A3A3E;
+  --koku-60:  #5A5A60;
+  --kurenai:  #8B0000;   /* 紅 */
+  --kurenai-l:#A31515;
+  --kurenai-xl:#C41E1E;
+  --kin:      #C8973A;   /* 金 */
+  --kin-l:    #DBA84A;
+  --shiroi:   #F7F5F0;   /* 絹白 */
+  --shiroi-d: #EDE9E0;
+  --gin:      #8A8A8E;   /* 銀 */
+  --gin-l:    #B0B0B4;
+  --gin-xl:   #D8D8DC;
+
+  /* Belt Colors */
+  --belt-white:  #F0EDE8;
+  --belt-yellow: #E8C840;
+  --belt-orange: #E87820;
+  --belt-green:  #2D7A3A;
+  --belt-blue:   #1A4A8B;
+  --belt-brown:  #6B3A1A;
+  --belt-black:  #1A1A1C;
+
+  /* Ma Spacing */
+  --ma-xs:     4px;
+  --ma-sm:     8px;
+  --ma-md:     16px;
+  --ma-lg:     24px;
+  --ma-xl:     32px;
+  --ma-breath: 48px;
+
+  /* Typography */
+  --font-serif: 'Noto Serif JP', serif;
+  --font-sans:  'Noto Sans JP', sans-serif;
+
+  /* Radii */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+
+  /* Shadows */
+  --shadow-card: 0 2px 12px rgba(26,26,28,0.18), 0 1px 3px rgba(26,26,28,0.12);
+  --shadow-raised: 0 8px 32px rgba(26,26,28,0.28), 0 2px 8px rgba(26,26,28,0.16);
+
+  /* Spring Animation */
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.0, 0.0, 0.2, 1);
+}
+
+/* ═══════════════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  font-family: var(--font-sans);
+  background: #111;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+/* ═══════════════════════════════════════════════════
+   NOISE TEXTURE (和紙感)
+   ═══════════════════════════════════════════════════ */
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 200px;
+}
+
+/* ═══════════════════════════════════════════════════
+   iPHONE 15 PRO FRAME
+   ═══════════════════════════════════════════════════ */
+.device-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.device-label {
+  color: #555;
+  font-size: 11px;
+  font-family: var(--font-sans);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.iphone-frame {
+  position: relative;
+  width: 393px;
+  height: 852px;
+  background: #1C1C1E;
+  border-radius: 54px;
+  box-shadow:
+    0 0 0 1px #3A3A3C,
+    0 0 0 2px #2C2C2E,
+    inset 0 0 0 1px #4A4A4C,
+    0 40px 120px rgba(0,0,0,0.8),
+    0 20px 60px rgba(0,0,0,0.6);
+  overflow: hidden;
+}
+
+/* Titanium side sheen */
+.iphone-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 54px;
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.08) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(255,255,255,0.04) 100%);
+  pointer-events: none;
+  z-index: 200;
+}
+
+/* Side buttons */
+.btn-volume-up, .btn-volume-down, .btn-silent, .btn-power {
+  position: absolute;
+  background: #2E2E30;
+  border-radius: 2px;
+}
+.btn-silent  { left: -3px; top: 120px; width: 3px; height: 28px; }
+.btn-volume-up   { left: -3px; top: 168px; width: 3px; height: 52px; }
+.btn-volume-down { left: -3px; top: 232px; width: 3px; height: 52px; }
+.btn-power  { right: -3px; top: 180px; width: 3px; height: 80px; }
+
+.screen {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 54px;
+  overflow: hidden;
+  background: var(--shiroi);
+}
+
+/* ═══════════════════════════════════════════════════
+   DYNAMIC ISLAND
+   ═══════════════════════════════════════════════════ */
+.dynamic-island {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 126px;
+  height: 37px;
+  background: #000;
+  border-radius: 20px;
+  z-index: 150;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+/* ═══════════════════════════════════════════════════
+   STATUS BAR
+   ═══════════════════════════════════════════════════ */
+.status-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 59px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 28px 8px;
+  z-index: 120;
+  pointer-events: none;
+}
+.status-time {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--koku);
+  letter-spacing: -0.3px;
+}
+.status-icons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.status-icons svg { display: block; }
+
+/* ═══════════════════════════════════════════════════
+   APP SCREENS
+   ═══════════════════════════════════════════════════ */
+.app-screen {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--shiroi);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.app-screen.active { display: flex; }
+
+/* ═══════════════════════════════════════════════════
+   TAB BAR
+   ═══════════════════════════════════════════════════ */
+.tab-bar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 83px;
+  background: rgba(247,245,240,0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 0.5px solid rgba(26,26,28,0.1);
+  display: flex;
+  align-items: flex-start;
+  padding-top: 8px;
+  z-index: 110;
+}
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  padding: var(--ma-sm) 0;
+  transition: transform 0.2s var(--spring);
+  -webkit-tap-highlight-color: transparent;
+}
+.tab-item:active { transform: scale(0.92); }
+.tab-icon {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+.tab-label {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: color 0.2s ease;
+  color: var(--gin);
+}
+.tab-item.active .tab-label { color: var(--kurenai); }
+.tab-item.active .tab-icon  { color: var(--kurenai); filter: drop-shadow(0 0 4px rgba(139,0,0,0.3)); }
+
+/* ═══════════════════════════════════════════════════
+   SCROLL CONTAINER
+   ═══════════════════════════════════════════════════ */
+.scroll-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 59px 0 83px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-content::-webkit-scrollbar { display: none; }
+
+/* ═══════════════════════════════════════════════════
+   SCREEN 1: HOME (道場)
+   ═══════════════════════════════════════════════════ */
+#screen-home .scroll-content {
+  background: var(--shiroi);
+}
+
+/* Hero Banner */
+.dojo-hero {
+  position: relative;
+  margin: var(--ma-md) var(--ma-md) 0;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  background: var(--koku);
+  padding: var(--ma-xl) var(--ma-lg);
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.dojo-hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 80% 20%, rgba(139,0,0,0.35) 0%, transparent 60%),
+    radial-gradient(ellipse at 20% 80%, rgba(200,151,58,0.2) 0%, transparent 50%),
+    var(--koku);
+}
+.dojo-hero-pattern {
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255,255,255,0.5) 0px, rgba(255,255,255,0.5) 1px,
+    transparent 1px, transparent 20px
+  );
+}
+.dojo-hero-kanji {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-serif);
+  font-size: 72px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.06);
+  line-height: 1;
+  letter-spacing: -4px;
+  writing-mode: vertical-rl;
+  pointer-events: none;
+}
+.dojo-hero-content { position: relative; z-index: 1; }
+.dojo-hero-title {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(247,245,240,0.6);
+  letter-spacing: 0.15em;
+  margin-bottom: 4px;
+}
+.dojo-hero-rank {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--shiroi);
+  margin-bottom: var(--ma-sm);
+}
+.dojo-hero-rank span {
+  color: var(--kin);
+  font-size: 22px;
+}
+
+/* Belt Progress */
+.belt-progress-wrap {
+  position: relative;
+  height: 8px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  overflow: visible;
+  margin-bottom: var(--ma-sm);
+}
+.belt-progress-bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 62%;
+  background: linear-gradient(90deg, var(--kin-l), var(--kin));
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(200,151,58,0.6);
+}
+.belt-progress-text {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: rgba(247,245,240,0.5);
+}
+
+/* Streak Widget */
+.streak-widget {
+  margin: var(--ma-md) var(--ma-md) 0;
+  background: var(--koku);
+  border-radius: var(--r-lg);
+  padding: var(--ma-md) var(--ma-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--ma-md);
+  position: relative;
+  overflow: hidden;
+}
+.streak-widget-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 0% 50%, rgba(200,151,58,0.15) 0%, transparent 60%);
+}
+.streak-fire {
+  font-size: 36px;
+  line-height: 1;
+  filter: drop-shadow(0 0 8px rgba(255,140,0,0.6));
+  animation: flamePulse 2s ease-in-out infinite;
+}
+@keyframes flamePulse {
+  0%,100% { transform: scale(1) rotate(-2deg); }
+  50%      { transform: scale(1.08) rotate(2deg); }
+}
+.streak-info { flex: 1; position: relative; }
+.streak-number {
+  font-family: var(--font-serif);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--kin);
+  line-height: 1;
+}
+.streak-label {
+  font-size: 12px;
+  color: rgba(247,245,240,0.6);
+  margin-top: 2px;
+}
+.streak-dots {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.streak-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+}
+.streak-dot.done { background: var(--kin); box-shadow: 0 0 4px rgba(200,151,58,0.5); }
+.streak-dot.today { background: var(--kurenai-xl); box-shadow: 0 0 6px rgba(196,30,30,0.6); animation: todayPulse 1.5s ease-in-out infinite; }
+@keyframes todayPulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+
+/* Stats Row */
+.stats-row {
+  display: flex;
+  gap: var(--ma-sm);
+  margin: var(--ma-sm) var(--ma-md) 0;
+}
+.stat-card {
+  flex: 1;
+  background: #fff;
+  border-radius: var(--r-md);
+  padding: var(--ma-md) var(--ma-sm);
+  text-align: center;
+  box-shadow: var(--shadow-card);
+  border: 0.5px solid rgba(26,26,28,0.06);
+  cursor: pointer;
+  transition: transform 0.2s var(--spring);
+}
+.stat-card:active { transform: scale(0.96); }
+.stat-card-value {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--koku);
+  line-height: 1;
+}
+.stat-card-value.accent { color: var(--kurenai); }
+.stat-card-value.gold   { color: var(--kin); }
+.stat-card-label {
+  font-size: 11px;
+  color: var(--gin);
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* Section Header */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: var(--ma-lg) var(--ma-md) var(--ma-sm);
+}
+.section-title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--koku);
+  display: flex;
+  align-items: center;
+  gap: var(--ma-sm);
+}
+.section-title::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 16px;
+  background: var(--kurenai);
+  border-radius: 2px;
+}
+.section-more {
+  font-size: 13px;
+  color: var(--kurenai);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Belt Ranks */
+.belt-list {
+  padding: 0 var(--ma-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ma-sm);
+}
+.belt-row {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: var(--r-md);
+  padding: var(--ma-md);
+  gap: var(--ma-md);
+  box-shadow: var(--shadow-card);
+  border: 0.5px solid rgba(26,26,28,0.06);
+  cursor: pointer;
+  transition: transform 0.2s var(--spring), box-shadow 0.2s ease;
+}
+.belt-row:active { transform: scale(0.98); }
+.belt-row.current { border-color: var(--kin); box-shadow: 0 0 0 1.5px var(--kin), var(--shadow-card); }
+.belt-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.belt-info { flex: 1 }
+.belt-name {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--koku);
+}
+.belt-sub {
+  font-size: 12px;
+  color: var(--gin);
+  margin-top: 2px;
+}
+.belt-count {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gin);
+}
+.belt-check {
+  color: var(--kin);
+  font-size: 18px;
+}
+.mini-bar-wrap {
+  flex: 1;
+  height: 4px;
+  background: var(--gin-xl);
+  border-radius: 2px;
+  margin-top: var(--ma-xs);
+}
+.mini-bar { height: 100%; border-radius: 2px; }
+
+/* Today's Review CTA */
+.review-cta {
+  margin: var(--ma-md) var(--ma-md) 0;
+  background: linear-gradient(135deg, var(--kurenai) 0%, #6B0000 100%);
+  border-radius: var(--r-lg);
+  padding: var(--ma-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: transform 0.2s var(--spring), box-shadow 0.2s ease;
+  box-shadow: 0 4px 20px rgba(139,0,0,0.4);
+  position: relative;
+  overflow: hidden;
+}
+.review-cta::before {
+  content: '修';
+  position: absolute;
+  right: 60px;
+  font-family: var(--font-serif);
+  font-size: 80px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.05);
+  line-height: 1;
+}
+.review-cta:active { transform: scale(0.98); box-shadow: 0 2px 10px rgba(139,0,0,0.4); }
+.review-cta-text {}
+.review-cta-count {
+  font-family: var(--font-serif);
+  font-size: 36px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+.review-cta-label {
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+  margin-top: 2px;
+}
+.review-cta-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 10px 20px;
+  color: #fff;
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+
+/* ═══════════════════════════════════════════════════
+   SCREEN 2: STUDY CARD (学習)
+   ═══════════════════════════════════════════════════ */
+.study-header {
+  position: absolute;
+  top: 59px;
+  left: 0; right: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--ma-md);
+  z-index: 20;
+}
+.study-header-title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--koku);
+}
+.study-progress-pill {
+  background: var(--koku);
+  color: var(--shiroi);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+/* Progress bar strip */
+.study-progress-strip {
+  position: absolute;
+  top: 103px;
+  left: 0; right: 0;
+  height: 3px;
+  background: var(--gin-xl);
+  z-index: 20;
+}
+.study-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--kurenai), var(--kin));
+  border-radius: 0 2px 2px 0;
+  transition: width 0.4s var(--ease-out);
+  width: 30%;
+}
+
+#screen-study {
+  background: #F0ECE3;
+}
+
+.study-content {
+  position: absolute;
+  top: 106px;
+  left: 0; right: 0;
+  bottom: 83px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ma-md);
+  gap: var(--ma-xl);
+}
+
+/* 3D Flip Card */
+.flip-card-scene {
+  width: 100%;
+  max-width: 340px;
+  height: 320px;
+  perspective: 1200px;
+  cursor: pointer;
+}
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+.flip-card-scene.flipped .flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-front, .flip-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-raised);
+}
+
+/* Front: 四字熟語 */
+.flip-front {
+  background: var(--koku);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ma-md);
+  position: relative;
+}
+.flip-front-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 30%, rgba(139,0,0,0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 70%, rgba(200,151,58,0.15) 0%, transparent 50%);
+}
+.flip-front-stamp {
+  position: absolute;
+  top: var(--ma-md);
+  right: var(--ma-md);
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(200,151,58,0.4);
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: 10px;
+  color: rgba(200,151,58,0.6);
+  letter-spacing: 0.05em;
+}
+.flip-front-level {
+  position: absolute;
+  top: var(--ma-md);
+  left: var(--ma-md);
+  background: rgba(139,0,0,0.6);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(247,245,240,0.8);
+  letter-spacing: 0.05em;
+}
+.flip-kanji {
+  font-family: var(--font-serif);
+  font-size: 72px;
+  font-weight: 900;
+  color: var(--shiroi);
+  letter-spacing: -4px;
+  line-height: 1;
+  text-shadow: 0 2px 20px rgba(200,151,58,0.3);
+  position: relative;
+  z-index: 1;
+}
+.flip-tap-hint {
+  font-size: 12px;
+  color: rgba(247,245,240,0.35);
+  letter-spacing: 0.08em;
+  position: relative;
+  z-index: 1;
+  animation: hintBlink 2.5s ease-in-out infinite;
+}
+@keyframes hintBlink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+/* Back: 解説 */
+.flip-back {
+  background: #fff;
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  padding: var(--ma-xl) var(--ma-lg);
+  gap: var(--ma-md);
+}
+.flip-back-reading {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  color: var(--gin);
+  letter-spacing: 0.1em;
+  border-bottom: 1px solid var(--gin-xl);
+  padding-bottom: var(--ma-sm);
+}
+.flip-back-kanji-sm {
+  font-family: var(--font-serif);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--koku);
+  letter-spacing: -2px;
+}
+.flip-back-meaning-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--kurenai);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.flip-back-meaning {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--koku-80);
+}
+.flip-back-example {
+  margin-top: auto;
+  background: var(--shiroi);
+  border-radius: var(--r-sm);
+  padding: var(--ma-sm) var(--ma-md);
+  border-left: 3px solid var(--kin);
+}
+.flip-back-example-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--kin);
+  letter-spacing: 0.1em;
+  margin-bottom: 3px;
+}
+.flip-back-example-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--koku-60);
+}
+
+/* Answer Buttons */
+.answer-buttons {
+  display: flex;
+  gap: var(--ma-md);
+  width: 100%;
+  max-width: 340px;
+}
+.btn-again {
+  flex: 1;
+  padding: 16px;
+  border-radius: var(--r-lg);
+  background: #fff;
+  border: 1.5px solid var(--gin-xl);
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gin);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s var(--spring);
+  box-shadow: var(--shadow-card);
+}
+.btn-again:active { transform: scale(0.97); background: #f5f5f5; }
+.btn-again span { display: block; font-size: 11px; font-weight: 400; font-family: var(--font-sans); color: var(--gin-l); margin-top: 2px; }
+.btn-got {
+  flex: 1;
+  padding: 16px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, #1A7A3A, #0D5C2A);
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s var(--spring);
+  box-shadow: 0 4px 16px rgba(26,122,58,0.4);
+  border: none;
+}
+.btn-got:active { transform: scale(0.97); }
+.btn-got span { display: block; font-size: 11px; font-weight: 400; font-family: var(--font-sans); color: rgba(255,255,255,0.65); margin-top: 2px; }
+
+/* Study session info */
+.study-session-info {
+  display: flex;
+  gap: var(--ma-lg);
+  align-items: center;
+}
+.study-info-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.study-info-val {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--koku);
+}
+.study-info-label {
+  font-size: 10px;
+  color: var(--gin);
+  letter-spacing: 0.05em;
+}
+.study-info-sep {
+  width: 1px;
+  height: 28px;
+  background: var(--gin-xl);
+}
+
+/* ═══════════════════════════════════════════════════
+   SCREEN 3: QUIZ (クイズ)
+   ═══════════════════════════════════════════════════ */
+#screen-quiz { background: var(--koku); }
+
+.quiz-header {
+  position: absolute;
+  top: 59px; left: 0; right: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--ma-md);
+  z-index: 20;
+}
+.quiz-header-title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--shiroi);
+}
+.quiz-score {
+  background: rgba(200,151,58,0.2);
+  border: 1px solid rgba(200,151,58,0.4);
+  border-radius: 12px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--kin);
+}
+
+/* Timer bar */
+.quiz-timer-wrap {
+  position: absolute;
+  top: 103px; left: 0; right: 0;
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  z-index: 20;
+}
+.quiz-timer-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--kin), var(--kurenai-xl));
+  border-radius: 0 2px 2px 0;
+  transition: width 0.1s linear;
+  animation: timerCount 20s linear forwards;
+}
+@keyframes timerCount { from{width:100%;} to{width:0%;} }
+
+.quiz-content {
+  position: absolute;
+  top: 107px; left: 0; right: 0; bottom: 83px;
+  display: flex;
+  flex-direction: column;
+  padding: var(--ma-lg) var(--ma-md);
+  gap: var(--ma-lg);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.quiz-content::-webkit-scrollbar { display: none; }
+
+/* Question Card */
+.quiz-question-card {
+  background: var(--koku-90);
+  border-radius: var(--r-xl);
+  padding: var(--ma-xl) var(--ma-lg);
+  text-align: center;
+  border: 0.5px solid rgba(255,255,255,0.06);
+  position: relative;
+  overflow: hidden;
+}
+.quiz-question-card::before {
+  content: '？';
+  position: absolute;
+  right: 16px;
+  bottom: -8px;
+  font-family: var(--font-serif);
+  font-size: 80px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.03);
+}
+.quiz-q-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--kin);
+  letter-spacing: 0.15em;
+  margin-bottom: var(--ma-sm);
+}
+.quiz-q-text {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--shiroi);
+  font-family: var(--font-sans);
+}
+.quiz-q-example {
+  margin-top: var(--ma-sm);
+  font-size: 13px;
+  color: rgba(247,245,240,0.45);
+  font-style: italic;
+}
+
+/* Choices */
+.quiz-choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ma-sm);
+}
+.quiz-choice {
+  background: rgba(255,255,255,0.06);
+  border: 1.5px solid rgba(255,255,255,0.08);
+  border-radius: var(--r-lg);
+  padding: var(--ma-md) var(--ma-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--ma-md);
+  cursor: pointer;
+  transition: all 0.2s var(--spring);
+  -webkit-tap-highlight-color: transparent;
+}
+.quiz-choice:active { transform: scale(0.98); }
+.quiz-choice.correct {
+  background: rgba(26,122,58,0.25);
+  border-color: rgba(26,200,80,0.6);
+  box-shadow: 0 0 16px rgba(26,200,80,0.2);
+}
+.quiz-choice.wrong {
+  background: rgba(139,0,0,0.25);
+  border-color: rgba(196,30,30,0.6);
+  box-shadow: 0 0 16px rgba(196,30,30,0.2);
+}
+.quiz-choice-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gin-l);
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+.quiz-choice.correct .quiz-choice-num { background: rgba(26,200,80,0.3); color: #4ade80; }
+.quiz-choice.wrong   .quiz-choice-num { background: rgba(196,30,30,0.4); color: #f87171; }
+.quiz-choice-text {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--shiroi);
+  letter-spacing: -1px;
+  transition: color 0.2s ease;
+}
+.quiz-choice.correct .quiz-choice-text { color: #4ade80; }
+.quiz-choice.wrong   .quiz-choice-text { color: #f87171; }
+
+/* Explanation panel */
+.quiz-explanation {
+  background: rgba(200,151,58,0.1);
+  border: 1px solid rgba(200,151,58,0.2);
+  border-radius: var(--r-lg);
+  padding: var(--ma-md);
+  display: none;
+}
+.quiz-explanation.show { display: block; animation: slideUp 0.35s var(--spring); }
+@keyframes slideUp { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:translateY(0);} }
+.quiz-exp-correct-ans {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--kin);
+  letter-spacing: 0.1em;
+  margin-bottom: var(--ma-xs);
+}
+.quiz-exp-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(247,245,240,0.7);
+}
+.quiz-next-btn {
+  display: block;
+  width: 100%;
+  margin-top: var(--ma-md);
+  padding: 14px;
+  background: var(--kin);
+  border-radius: var(--r-md);
+  border: none;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--koku);
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.2s var(--spring);
+}
+.quiz-next-btn:active { transform: scale(0.98); }
+
+/* ═══════════════════════════════════════════════════
+   SCREEN 4: DICTIONARY (辞典)
+   ═══════════════════════════════════════════════════ */
+#screen-dict { background: var(--shiroi); }
+
+.dict-header {
+  position: absolute;
+  top: 59px; left: 0; right: 0;
+  z-index: 20;
+  padding: 0 var(--ma-md);
+  padding-top: 0;
+  background: rgba(247,245,240,0.94);
+  backdrop-filter: blur(20px);
+}
+.dict-title-row {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dict-title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--koku);
+}
+.dict-filter-row {
+  padding: var(--ma-sm) 0;
+  display: flex;
+  gap: var(--ma-sm);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.dict-filter-row::-webkit-scrollbar { display: none; }
+
+/* Search Bar */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--ma-sm);
+  background: rgba(26,26,28,0.07);
+  border-radius: var(--r-md);
+  padding: var(--ma-sm) var(--ma-md);
+  margin-bottom: var(--ma-sm);
+}
+.search-bar svg { flex-shrink: 0; opacity: 0.4; }
+.search-bar input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  font-family: var(--font-sans);
+  color: var(--koku);
+}
+.search-bar input::placeholder { color: var(--gin-l); }
+
+/* Filter chips */
+.filter-chip {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s var(--spring);
+  background: rgba(26,26,28,0.06);
+  color: var(--koku-60);
+  border: 1px solid transparent;
+}
+.filter-chip.active {
+  background: var(--koku);
+  color: var(--shiroi);
+}
+
+.dict-scroll {
+  position: absolute;
+  top: 190px; left: 0; right: 0; bottom: 83px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: 0 var(--ma-md) var(--ma-md);
+}
+.dict-scroll::-webkit-scrollbar { display: none; }
+
+/* Section index */
+.dict-section-head {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--kurenai);
+  padding: var(--ma-md) 0 var(--ma-xs);
+  border-bottom: 1px solid rgba(139,0,0,0.15);
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: var(--ma-sm);
+}
+
+/* Dict list item */
+.dict-item {
+  display: flex;
+  align-items: center;
+  padding: var(--ma-md) 0;
+  border-bottom: 0.5px solid rgba(26,26,28,0.07);
+  gap: var(--ma-md);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-radius: var(--r-sm);
+  padding-left: var(--ma-sm);
+  margin-left: calc(-1 * var(--ma-sm));
+}
+.dict-item:active { background: rgba(26,26,28,0.04); }
+.dict-item-kanji {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--koku);
+  width: 84px;
+  flex-shrink: 0;
+  letter-spacing: -1px;
+}
+.dict-item-info { flex: 1; min-width: 0; }
+.dict-item-reading {
+  font-size: 12px;
+  color: var(--gin);
+  margin-bottom: 2px;
+}
+.dict-item-meaning {
+  font-size: 13px;
+  color: var(--koku-60);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.status-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 8px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.status-new    { background: rgba(200,151,58,0.12); color: var(--kin); border: 1px solid rgba(200,151,58,0.2); }
+.status-learn  { background: rgba(26,74,139,0.1);  color: #1A4A8B;   border: 1px solid rgba(26,74,139,0.2); }
+.status-master { background: rgba(26,122,58,0.1);  color: #1A7A3A;   border: 1px solid rgba(26,122,58,0.2); }
+
+/* ═══════════════════════════════════════════════════
+   SCREEN TRANSITIONS
+   ═══════════════════════════════════════════════════ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.app-screen.active {
+  animation: fadeIn 0.25s var(--ease-out);
+}
+</style>
+</head>
+<body>
+
+<!-- ── DEVICE WRAPPER ── -->
+<div class="device-wrapper">
+  <div class="device-label">四字熟語道場 — iOS Prototype</div>
+
+  <div class="iphone-frame">
+    <!-- Side buttons -->
+    <div class="btn-silent"></div>
+    <div class="btn-volume-up"></div>
+    <div class="btn-volume-down"></div>
+    <div class="btn-power"></div>
+
+    <div class="screen">
+      <div class="noise-overlay"></div>
+
+      <!-- Dynamic Island -->
+      <div class="dynamic-island"></div>
+
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <!-- Signal -->
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
+            <rect x="0" y="8" width="3" height="4" rx="0.5" fill="#1A1A1C"/>
+            <rect x="4.5" y="5.5" width="3" height="6.5" rx="0.5" fill="#1A1A1C"/>
+            <rect x="9" y="3" width="3" height="9" rx="0.5" fill="#1A1A1C"/>
+            <rect x="13.5" y="0" width="3" height="12" rx="0.5" fill="#1A1A1C"/>
+          </svg>
+          <!-- WiFi -->
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+            <path d="M8 9.5C8.83 9.5 9.5 10.17 9.5 11S8.83 12.5 8 12.5 6.5 11.83 6.5 11 7.17 9.5 8 9.5Z" fill="#1A1A1C"/>
+            <path d="M4.5 7.2C5.7 5.98 7.3 5.3 8 5.3s2.3.68 3.5 1.9" stroke="#1A1A1C" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            <path d="M2 4.5C3.9 2.6 5.85 1.5 8 1.5s4.1 1.1 6 3" stroke="#1A1A1C" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          </svg>
+          <!-- Battery -->
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+            <rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke="#1A1A1C" stroke-opacity="0.35"/>
+            <rect x="2" y="2" width="17" height="8" rx="1.5" fill="#1A1A1C"/>
+            <path d="M23 4v4a2 2 0 000-4z" fill="#1A1A1C" fill-opacity="0.4"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════
+           SCREEN 1: HOME (道場)
+           ════════════════════════════════════════ -->
+      <div class="app-screen active" id="screen-home">
+        <div class="scroll-content">
+
+          <!-- Hero Banner -->
+          <div class="dojo-hero">
+            <div class="dojo-hero-bg"></div>
+            <div class="dojo-hero-pattern"></div>
+            <div class="dojo-hero-kanji">道<br>場</div>
+            <div class="dojo-hero-content">
+              <div class="dojo-hero-title">現在の帯ランク</div>
+              <div class="dojo-hero-rank">青帯 <span>修行者</span></div>
+              <div class="belt-progress-wrap">
+                <div class="belt-progress-bar"></div>
+              </div>
+              <div class="belt-progress-text">次の帯まで 38語 / 青帯 → 茶帯</div>
+            </div>
+          </div>
+
+          <!-- Streak Widget -->
+          <div class="streak-widget">
+            <div class="streak-widget-bg"></div>
+            <div class="streak-fire">🔥</div>
+            <div class="streak-info">
+              <div class="streak-number">12</div>
+              <div class="streak-label">日連続学習中</div>
+            </div>
+            <div class="streak-dots">
+              <div class="streak-dot done"></div>
+              <div class="streak-dot done"></div>
+              <div class="streak-dot done"></div>
+              <div class="streak-dot done"></div>
+              <div class="streak-dot done"></div>
+              <div class="streak-dot done"></div>
+              <div class="streak-dot today"></div>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-card-value accent">24</div>
+              <div class="stat-card-label">今日の復習</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-value gold">148</div>
+              <div class="stat-card-label">習得済み</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-value">87<span style="font-size:18px">%</span></div>
+              <div class="stat-card-label">正解率</div>
+            </div>
+          </div>
+
+          <!-- Review CTA -->
+          <div class="review-cta" onclick="switchTab('study')">
+            <div class="review-cta-text">
+              <div class="review-cta-count">24</div>
+              <div class="review-cta-label">枚のカードが復習待ち</div>
+            </div>
+            <div class="review-cta-btn">修行を始める →</div>
+          </div>
+
+          <!-- Belt Ranks -->
+          <div class="section-header">
+            <div class="section-title">帯ランク一覧</div>
+          </div>
+          <div class="belt-list">
+            <div class="belt-row">
+              <div class="belt-badge" style="background:rgba(240,237,232,0.6);border:2px solid #CCC;">🤍</div>
+              <div class="belt-info">
+                <div class="belt-name">白帯</div>
+                <div class="belt-sub">入門 (0〜49語)</div>
+                <div class="mini-bar-wrap"><div class="mini-bar" style="width:100%;background:var(--gin-xl);"></div></div>
+              </div>
+              <div class="belt-check">✓</div>
+            </div>
+            <div class="belt-row">
+              <div class="belt-badge" style="background:rgba(232,200,64,0.2);border:2px solid var(--belt-yellow);">💛</div>
+              <div class="belt-info">
+                <div class="belt-name">黄帯</div>
+                <div class="belt-sub">初伝 (50〜99語)</div>
+                <div class="mini-bar-wrap"><div class="mini-bar" style="width:100%;background:var(--belt-yellow);"></div></div>
+              </div>
+              <div class="belt-check">✓</div>
+            </div>
+            <div class="belt-row">
+              <div class="belt-badge" style="background:rgba(232,120,32,0.15);border:2px solid var(--belt-orange);">🧡</div>
+              <div class="belt-info">
+                <div class="belt-name">橙帯</div>
+                <div class="belt-sub">中伝 (100〜149語)</div>
+                <div class="mini-bar-wrap"><div class="mini-bar" style="width:100%;background:var(--belt-orange);"></div></div>
+              </div>
+              <div class="belt-check">✓</div>
+            </div>
+            <div class="belt-row">
+              <div class="belt-badge" style="background:rgba(45,122,58,0.15);border:2px solid var(--belt-green);">💚</div>
+              <div class="belt-info">
+                <div class="belt-name">緑帯</div>
+                <div class="belt-sub">皆伝 (150〜199語)</div>
+                <div class="mini-bar-wrap"><div class="mini-bar" style="width:100%;background:var(--belt-green);"></div></div>
+              </div>
+              <div class="belt-check">✓</div>
+            </div>
+            <div class="belt-row current">
+              <div class="belt-badge" style="background:rgba(26,74,139,0.15);border:2px solid var(--belt-blue);">💙</div>
+              <div class="belt-info">
+                <div class="belt-name" style="color:var(--kin);">青帯 ← 現在</div>
+                <div class="belt-sub">奥義 (200〜249語) · 148/200</div>
+                <div class="mini-bar-wrap"><div class="mini-bar" style="width:62%;background:var(--belt-blue);"></div></div>
+              </div>
+              <div class="belt-count" style="color:var(--kin);">62%</div>
+            </div>
+            <div class="belt-row" style="opacity:0.5;">
+              <div class="belt-badge" style="background:rgba(107,58,26,0.15);border:2px dashed var(--belt-brown);">🤎</div>
+              <div class="belt-info">
+                <div class="belt-name">茶帯</div>
+                <div class="belt-sub">師範代 (250〜399語)</div>
+                <div class="mini-bar-wrap"><div class="mini-bar" style="width:0;background:var(--belt-brown);"></div></div>
+              </div>
+              <div class="belt-count">未達</div>
+            </div>
+            <div class="belt-row" style="opacity:0.35;">
+              <div class="belt-badge" style="background:rgba(26,26,28,0.15);border:2px dashed var(--belt-black);">🖤</div>
+              <div class="belt-info">
+                <div class="belt-name">黒帯</div>
+                <div class="belt-sub">名人 (400〜500語)</div>
+                <div class="mini-bar-wrap"><div class="mini-bar" style="width:0;background:var(--belt-black);"></div></div>
+              </div>
+              <div class="belt-count">未達</div>
+            </div>
+          </div>
+
+          <div style="height:var(--ma-xl)"></div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab-item active" onclick="switchTab('home')">
+            <div class="tab-icon">⛩️</div>
+            <div class="tab-label">道場</div>
+          </div>
+          <div class="tab-item" onclick="switchTab('study')">
+            <div class="tab-icon">📇</div>
+            <div class="tab-label">学習</div>
+          </div>
+          <div class="tab-item" onclick="switchTab('quiz')">
+            <div class="tab-icon">⚔️</div>
+            <div class="tab-label">クイズ</div>
+          </div>
+          <div class="tab-item" onclick="switchTab('dict')">
+            <div class="tab-icon">📖</div>
+            <div class="tab-label">辞典</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════
+           SCREEN 2: STUDY CARD (学習)
+           ════════════════════════════════════════ -->
+      <div class="app-screen" id="screen-study">
+        <!-- Header -->
+        <div class="study-header">
+          <div class="study-header-title">青帯 修行</div>
+          <div class="study-progress-pill" id="card-counter">3 / 24</div>
+        </div>
+        <div class="study-progress-strip">
+          <div class="study-progress-fill" id="study-prog" style="width:12%"></div>
+        </div>
+
+        <div class="study-content">
+          <!-- Session info -->
+          <div class="study-session-info">
+            <div class="study-info-item">
+              <div class="study-info-val" id="info-new">8</div>
+              <div class="study-info-label">新規</div>
+            </div>
+            <div class="study-info-sep"></div>
+            <div class="study-info-item">
+              <div class="study-info-val accent" id="info-review" style="color:var(--kurenai)">16</div>
+              <div class="study-info-label">復習</div>
+            </div>
+            <div class="study-info-sep"></div>
+            <div class="study-info-item">
+              <div class="study-info-val gold" id="info-done" style="color:var(--kin)">2</div>
+              <div class="study-info-label">完了</div>
+            </div>
+          </div>
+
+          <!-- Flip Card -->
+          <div class="flip-card-scene" id="flip-card" onclick="flipCard()">
+            <div class="flip-card-inner" id="flip-inner">
+              <!-- Front -->
+              <div class="flip-front">
+                <div class="flip-front-bg"></div>
+                <div class="flip-front-level" id="card-level">青帯 · 中級</div>
+                <div class="flip-front-stamp">道場</div>
+                <div class="flip-kanji" id="card-kanji">一石二鳥</div>
+                <div class="flip-tap-hint">タップして意味を確認</div>
+                <div class="noise-overlay"></div>
+              </div>
+              <!-- Back -->
+              <div class="flip-back">
+                <div class="flip-back-reading" id="card-reading">いっせきにちょう</div>
+                <div class="flip-back-kanji-sm" id="card-kanji-back">一石二鳥</div>
+                <div class="flip-back-meaning-label">意味</div>
+                <div class="flip-back-meaning" id="card-meaning">一つの行動で、二つの利益を得ること。一つの石を投げて、二羽の鳥を同時に捕らえるという意味から。</div>
+                <div class="flip-back-example">
+                  <div class="flip-back-example-label">用例</div>
+                  <div class="flip-back-example-text" id="card-example">勉強しながら英語も身につくなんて、一石二鳥だ。</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Answer Buttons -->
+          <div class="answer-buttons" id="answer-buttons" style="display:none;">
+            <div class="btn-again" onclick="nextCard('again')">
+              もう一度
+              <span>次回また出題</span>
+            </div>
+            <div class="btn-got" onclick="nextCard('got')">
+              覚えた！
+              <span>次の出題まで間隔が延びる</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab-item" onclick="switchTab('home')">
+            <div class="tab-icon">⛩️</div>
+            <div class="tab-label">道場</div>
+          </div>
+          <div class="tab-item active" onclick="switchTab('study')">
+            <div class="tab-icon">📇</div>
+            <div class="tab-label">学習</div>
+          </div>
+          <div class="tab-item" onclick="switchTab('quiz')">
+            <div class="tab-icon">⚔️</div>
+            <div class="tab-label">クイズ</div>
+          </div>
+          <div class="tab-item" onclick="switchTab('dict')">
+            <div class="tab-icon">📖</div>
+            <div class="tab-label">辞典</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════
+           SCREEN 3: QUIZ (クイズ)
+           ════════════════════════════════════════ -->
+      <div class="app-screen" id="screen-quiz">
+        <!-- Header -->
+        <div class="quiz-header">
+          <div class="quiz-header-title">⚔️ 道場試合</div>
+          <div class="quiz-score" id="quiz-score-disp">8 / 10</div>
+        </div>
+        <div class="quiz-timer-wrap">
+          <div class="quiz-timer-bar" id="quiz-timer"></div>
+        </div>
+
+        <div class="quiz-content" id="quiz-content">
+          <!-- Question -->
+          <div class="quiz-question-card">
+            <div class="quiz-q-label">問 11 — 意味から四字熟語を選べ</div>
+            <div class="quiz-q-text" id="quiz-q-text">
+              物事が急激に変わり、まるで別世界のようになること。世の中の移り変わりの激しさを表す言葉。
+            </div>
+            <div class="quiz-q-example" id="quiz-q-ex">「_____の感がある」</div>
+          </div>
+
+          <!-- Choices -->
+          <div class="quiz-choices" id="quiz-choices">
+            <div class="quiz-choice" onclick="selectChoice(this, false)">
+              <div class="quiz-choice-num">1</div>
+              <div class="quiz-choice-text">七転八倒</div>
+            </div>
+            <div class="quiz-choice" onclick="selectChoice(this, true)">
+              <div class="quiz-choice-num">2</div>
+              <div class="quiz-choice-text">隔世之感</div>
+            </div>
+            <div class="quiz-choice" onclick="selectChoice(this, false)">
+              <div class="quiz-choice-num">3</div>
+              <div class="quiz-choice-text">一騎当千</div>
+            </div>
+            <div class="quiz-choice" onclick="selectChoice(this, false)">
+              <div class="quiz-choice-num">4</div>
+              <div class="quiz-choice-text">付和雷同</div>
+            </div>
+          </div>
+
+          <!-- Explanation (hidden until answered) -->
+          <div class="quiz-explanation" id="quiz-explanation">
+            <div class="quiz-exp-correct-ans">正解 ✓ 隔世之感 (かくせいのかん)</div>
+            <div class="quiz-exp-text">時代の変化があまりにも大きく、別の世代のことのように感じられること。「隔世」は世代が隔たること。受験頻出単語。</div>
+            <button class="quiz-next-btn" onclick="nextQuiz()">次の問題へ →</button>
+          </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab-item" onclick="switchTab('home')">
+            <div class="tab-icon">⛩️</div>
+            <div class="tab-label">道場</div>
+          </div>
+          <div class="tab-item" onclick="switchTab('study')">
+            <div class="tab-icon">📇</div>
+            <div class="tab-label">学習</div>
+          </div>
+          <div class="tab-item active" onclick="switchTab('quiz')">
+            <div class="tab-icon">⚔️</div>
+            <div class="tab-label">クイズ</div>
+          </div>
+          <div class="tab-item" onclick="switchTab('dict')">
+            <div class="tab-icon">📖</div>
+            <div class="tab-label">辞典</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════
+           SCREEN 4: DICTIONARY (辞典)
+           ════════════════════════════════════════ -->
+      <div class="app-screen" id="screen-dict">
+        <div class="dict-header">
+          <div class="dict-title-row">
+            <div class="dict-title">四字熟語辞典</div>
+            <div style="font-size:13px;color:var(--kurenai);font-weight:500;">500語収録</div>
+          </div>
+          <div class="search-bar">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="6.5" cy="6.5" r="5" stroke="#1A1A1C" stroke-width="1.5"/>
+              <path d="M11 11l3 3" stroke="#1A1A1C" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <input type="text" placeholder="四字熟語を検索..." oninput="filterDict(this.value)">
+          </div>
+          <div class="dict-filter-row">
+            <div class="filter-chip active" onclick="setFilter(this,'all')">すべて</div>
+            <div class="filter-chip" onclick="setFilter(this,'new')">未学習</div>
+            <div class="filter-chip" onclick="setFilter(this,'learn')">学習中</div>
+            <div class="filter-chip" onclick="setFilter(this,'master')">マスター</div>
+            <div class="filter-chip" onclick="setFilter(this,'beginner')">白〜黄帯</div>
+            <div class="filter-chip" onclick="setFilter(this,'advanced')">青〜黒帯</div>
+          </div>
+        </div>
+
+        <div class="dict-scroll" id="dict-list">
+          <!-- あ行 -->
+          <div class="dict-section-head">あ行</div>
+
+          <div class="dict-item">
+            <div class="dict-item-kanji">悪戦苦闘</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">あくせんくとう</div>
+              <div class="dict-item-meaning">困難な状況で必死に戦い苦しむこと</div>
+            </div>
+            <div class="status-badge status-master">マスター</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">以心伝心</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">いしんでんしん</div>
+              <div class="dict-item-meaning">言葉を使わずに心と心で通じ合うこと</div>
+            </div>
+            <div class="status-badge status-master">マスター</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">一石二鳥</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">いっせきにちょう</div>
+              <div class="dict-item-meaning">一つの行為で二つの利益を得ること</div>
+            </div>
+            <div class="status-badge status-learn">学習中</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">一騎当千</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">いっきとうせん</div>
+              <div class="dict-item-meaning">一人で千人を相手にできるほどの強さ</div>
+            </div>
+            <div class="status-badge status-learn">学習中</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">一期一会</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">いちごいちえ</div>
+              <div class="dict-item-meaning">一生に一度限りの出会いを大切にすること</div>
+            </div>
+            <div class="status-badge status-master">マスター</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">一刀両断</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">いっとうりょうだん</div>
+              <div class="dict-item-meaning">物事を素早く決断・処理すること</div>
+            </div>
+            <div class="status-badge status-new">未学習</div>
+          </div>
+
+          <!-- か行 -->
+          <div class="dict-section-head">か行</div>
+
+          <div class="dict-item">
+            <div class="dict-item-kanji">隔世之感</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">かくせいのかん</div>
+              <div class="dict-item-meaning">時代の変化が激しく別世界のようだという感覚</div>
+            </div>
+            <div class="status-badge status-learn">学習中</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">臥薪嘗胆</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">がしんしょうたん</div>
+              <div class="dict-item-meaning">目的のために苦労を重ね、辛抱すること</div>
+            </div>
+            <div class="status-badge status-new">未学習</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">起死回生</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">きしかいせい</div>
+              <div class="dict-item-meaning">絶望的な状況から立て直すこと</div>
+            </div>
+            <div class="status-badge status-master">マスター</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">九死一生</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">きゅうしいっしょう</div>
+              <div class="dict-item-meaning">ほとんど死にそうな危機をかろうじて生き延びること</div>
+            </div>
+            <div class="status-badge status-learn">学習中</div>
+          </div>
+
+          <!-- さ行 -->
+          <div class="dict-section-head">さ行</div>
+
+          <div class="dict-item">
+            <div class="dict-item-kanji">試行錯誤</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">しこうさくご</div>
+              <div class="dict-item-meaning">繰り返し試みて、失敗しながら解決策を見つけること</div>
+            </div>
+            <div class="status-badge status-master">マスター</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">七転八倒</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">しちてんばっとう</div>
+              <div class="dict-item-meaning">苦しみのあまり激しくのたうちまわること</div>
+            </div>
+            <div class="status-badge status-new">未学習</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">自業自得</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">じごうじとく</div>
+              <div class="dict-item-meaning">自分の行いの報いを自分が受けること</div>
+            </div>
+            <div class="status-badge status-master">マスター</div>
+          </div>
+
+          <!-- た行 -->
+          <div class="dict-section-head">た行</div>
+
+          <div class="dict-item">
+            <div class="dict-item-kanji">大器晩成</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">たいきばんせい</div>
+              <div class="dict-item-meaning">大きな人物は遅く成長するが、最終的に大きな成果を上げること</div>
+            </div>
+            <div class="status-badge status-learn">学習中</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">適材適所</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">てきざいてきしょ</div>
+              <div class="dict-item-meaning">人をその能力に合った地位や仕事につけること</div>
+            </div>
+            <div class="status-badge status-master">マスター</div>
+          </div>
+
+          <!-- は行 -->
+          <div class="dict-section-head">は行</div>
+
+          <div class="dict-item">
+            <div class="dict-item-kanji">八方美人</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">はっぽうびじん</div>
+              <div class="dict-item-meaning">誰にでも愛想よく振る舞い、八方に気を遣う人</div>
+            </div>
+            <div class="status-badge status-new">未学習</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">付和雷同</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">ふわらいどう</div>
+              <div class="dict-item-meaning">自分の意見を持たず、他人の意見にすぐ同調すること</div>
+            </div>
+            <div class="status-badge status-learn">学習中</div>
+          </div>
+
+          <!-- ま行〜 -->
+          <div class="dict-section-head">ま〜わ行</div>
+
+          <div class="dict-item">
+            <div class="dict-item-kanji">馬耳東風</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">ばじとうふう</div>
+              <div class="dict-item-meaning">人の意見や批評を聞き流して、全く気に留めないこと</div>
+            </div>
+            <div class="status-badge status-new">未学習</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">有言実行</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">ゆうげんじっこう</div>
+              <div class="dict-item-meaning">口にしたことは必ず実行すること</div>
+            </div>
+            <div class="status-badge status-master">マスター</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">和魂洋才</div>
+            <div class="dict-item-info">
+              <div class="dict-item-reading">わこんようさい</div>
+              <div class="dict-item-meaning">日本固有の精神を保ちながら西洋の知識・技術を取り入れること</div>
+            </div>
+            <div class="status-badge status-new">未学習</div>
+          </div>
+
+          <div style="height:var(--ma-xl)"></div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab-item" onclick="switchTab('home')">
+            <div class="tab-icon">⛩️</div>
+            <div class="tab-label">道場</div>
+          </div>
+          <div class="tab-item" onclick="switchTab('study')">
+            <div class="tab-icon">📇</div>
+            <div class="tab-label">学習</div>
+          </div>
+          <div class="tab-item" onclick="switchTab('quiz')">
+            <div class="tab-icon">⚔️</div>
+            <div class="tab-label">クイズ</div>
+          </div>
+          <div class="tab-item active" onclick="switchTab('dict')">
+            <div class="tab-icon">📖</div>
+            <div class="tab-label">辞典</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /screen -->
+  </div><!-- /iphone-frame -->
+</div><!-- /device-wrapper -->
+
+<script>
+// ═══════════════════════════════════════
+//  四字熟語 DATA (20語+)
+// ═══════════════════════════════════════
+const CARDS = [
+  { kanji:'一石二鳥', reading:'いっせきにちょう', level:'青帯・中級', meaning:'一つの行動で、二つの利益を得ること。一つの石を投げて二羽の鳥を同時に捕らえるという意から。', example:'勉強しながら英語も身につくなんて、一石二鳥だ。' },
+  { kanji:'臥薪嘗胆', reading:'がしんしょうたん', level:'茶帯・上級', meaning:'目的を達成するために長い間辛苦に耐えること。薪の上に臥し、苦い胆を嘗めて復讐の志を忘れまいとした故事から。', example:'大学受験に向けて三年間、臥薪嘗胆の日々を過ごした。' },
+  { kanji:'隔世之感', reading:'かくせいのかん', level:'青帯・中級', meaning:'時代の変化が激しく、まるで別世代のことのように感じられること。昔と今の隔たりの大きさを表す。', example:'スマートフォンの普及に隔世の感がある。' },
+  { kanji:'起死回生', reading:'きしかいせい', level:'緑帯・中級', meaning:'絶望的な状況から、再び立ち直って生き返ること。危機的局面を逆転する大きな一手。', example:'最終回で逆転ホームランを放ち、起死回生の一打となった。' },
+  { kanji:'七転八起', reading:'しちてんはっき', level:'白帯・初級', meaning:'何度失敗しても諦めずに立ち上がること。転んでも転んでも起き上がる不屈の精神。', example:'七転八起の精神で、挑戦を続けた。' },
+  { kanji:'付和雷同', reading:'ふわらいどう', level:'青帯・中級', meaning:'自分の意見を持たずに、他人の意見や行動にすぐ同調・迎合してしまうこと。', example:'付和雷同せず、自分の意見を持ち発言することが大切だ。' },
+  { kanji:'温故知新', reading:'おんこちしん', level:'黄帯・初級', meaning:'過去のことを研究し、そこから新しい知識や見解を導き出すこと。孔子の言葉から。', example:'温故知新の精神で、古典文学を現代に応用する。' },
+  { kanji:'四面楚歌', reading:'しめんそか', level:'茶帯・上級', meaning:'周りを敵に囲まれ、孤立無援の状態。誰からも助けが得られない窮地。', example:'交渉は四面楚歌となり、孤独な戦いが続いた。' },
+];
+
+let currentCard = 0;
+let isFlipped = false;
+
+// ═══════════════════════════════════════
+//  TAB NAVIGATION
+// ═══════════════════════════════════════
+function switchTab(tab) {
+  // Hide all screens
+  document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+  // Deactivate all tab items
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+
+  // Show target screen
+  const screen = document.getElementById('screen-' + tab);
+  if (screen) screen.classList.add('active');
+
+  // Activate matching tabs (each screen has its own tab bar)
+  document.querySelectorAll('#screen-' + tab + ' .tab-item').forEach((t, i) => {
+    const tabs = ['home','study','quiz','dict'];
+    if (tabs[i] === tab) t.classList.add('active');
+  });
+
+  // Reset quiz timer if entering quiz
+  if (tab === 'quiz') {
+    const timerBar = document.getElementById('quiz-timer');
+    if (timerBar) {
+      timerBar.style.animation = 'none';
+      void timerBar.offsetWidth;
+      timerBar.style.animation = 'timerCount 20s linear forwards';
+    }
+  }
+
+  // Reset flip card
+  if (tab === 'study') {
+    resetFlip();
+  }
+}
+
+// ═══════════════════════════════════════
+//  FLIP CARD
+// ═══════════════════════════════════════
+function resetFlip() {
+  isFlipped = false;
+  const scene = document.getElementById('flip-card');
+  scene.classList.remove('flipped');
+  document.getElementById('answer-buttons').style.display = 'none';
+  loadCard(currentCard);
+}
+
+function flipCard() {
+  if (!isFlipped) {
+    isFlipped = true;
+    document.getElementById('flip-card').classList.add('flipped');
+    document.getElementById('answer-buttons').style.display = 'flex';
+  }
+}
+
+function loadCard(idx) {
+  const card = CARDS[idx % CARDS.length];
+  document.getElementById('card-kanji').textContent   = card.kanji;
+  document.getElementById('card-kanji-back').textContent = card.kanji;
+  document.getElementById('card-reading').textContent = card.reading;
+  document.getElementById('card-level').textContent   = card.level;
+  document.getElementById('card-meaning').textContent = card.meaning;
+  document.getElementById('card-example').textContent = card.example;
+
+  const total = 24;
+  const done  = idx;
+  document.getElementById('card-counter').textContent = (done+1) + ' / ' + total;
+  document.getElementById('study-prog').style.width   = ((done / total) * 100) + '%';
+  document.getElementById('info-done').textContent    = done;
+}
+
+function nextCard(action) {
+  // Quick scale feedback
+  const btns = document.getElementById('answer-buttons');
+  btns.style.opacity = '0.5';
+  setTimeout(() => { btns.style.opacity = '1'; }, 200);
+
+  currentCard++;
+  isFlipped = false;
+  document.getElementById('flip-card').classList.remove('flipped');
+  document.getElementById('answer-buttons').style.display = 'none';
+  setTimeout(() => loadCard(currentCard), 150);
+}
+
+// ═══════════════════════════════════════
+//  QUIZ INTERACTIONS
+// ═══════════════════════════════════════
+let quizAnswered = false;
+
+function selectChoice(el, isCorrect) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+
+  // Disable all choices
+  document.querySelectorAll('.quiz-choice').forEach(c => {
+    c.style.pointerEvents = 'none';
+    c.style.opacity = '0.55';
+  });
+
+  // Mark selected
+  el.style.opacity = '1';
+  if (isCorrect) {
+    el.classList.add('correct');
+  } else {
+    el.classList.add('wrong');
+    // Show correct
+    document.querySelectorAll('.quiz-choice').forEach(c => {
+      if (c.querySelector('.quiz-choice-text').textContent === '隔世之感') {
+        c.classList.add('correct');
+        c.style.opacity = '1';
+      }
+    });
+  }
+
+  // Show explanation
+  const exp = document.getElementById('quiz-explanation');
+  exp.classList.add('show');
+  exp.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function nextQuiz() {
+  quizAnswered = false;
+
+  // Reset choices
+  document.querySelectorAll('.quiz-choice').forEach(c => {
+    c.classList.remove('correct','wrong');
+    c.style.pointerEvents = '';
+    c.style.opacity = '';
+  });
+
+  document.getElementById('quiz-explanation').classList.remove('show');
+
+  // Reset timer
+  const timerBar = document.getElementById('quiz-timer');
+  timerBar.style.animation = 'none';
+  void timerBar.offsetWidth;
+  timerBar.style.animation = 'timerCount 20s linear forwards';
+}
+
+// ═══════════════════════════════════════
+//  DICTIONARY FILTER
+// ═══════════════════════════════════════
+function setFilter(chip, filter) {
+  document.querySelectorAll('#screen-dict .filter-chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+}
+
+function filterDict(query) {
+  const items = document.querySelectorAll('#dict-list .dict-item');
+  items.forEach(item => {
+    const kanji   = item.querySelector('.dict-item-kanji').textContent;
+    const reading = item.querySelector('.dict-item-reading').textContent;
+    const meaning = item.querySelector('.dict-item-meaning').textContent;
+    const match   = !query || kanji.includes(query) || reading.includes(query) || meaning.includes(query);
+    item.style.display = match ? '' : 'none';
+  });
+}
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+loadCard(0);
+</script>
+</body>
+</html>

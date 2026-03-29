@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<!--
+  俳句帳 — Ma no Kozo Redesign
+  Philosophy: 枯山水の間 (Karesansui no Ma)
+  Tension: Structure 5 | Silence 2 | Precision 3 | Universal 4 | Permanence 3
+  Dominant Layers: MA (間) + KOKYU (呼吸)
+  Masters: Kenya Hara × Tadao Ando × Naoto Fukasawa × Wabi-sabi
+  Device: iPhone 15 Pro (390×844pt) with Dynamic Island
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>俳句帳 — 枯山水の間</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* 絹白系 — 和紙の白 */
+  --k0: #F7F5F0;
+  --k1: #EFEDE8;
+  --k2: #E5E1DA;
+  /* 墨系 */
+  --s0: #1A1A1C;
+  --s1: #3A3A3C;
+  --s2: #8A8A8E;
+  /* 藍鼠アクセント */
+  --ai: #3D4B6E;
+  --ai-l: rgba(61,75,110,0.10);
+  /* 四季 */
+  --haru: #C85A6F;
+  --haru-bg: #FAF5F1;
+  --natsu: #4A8C6E;
+  --natsu-bg: #F4F8F5;
+  --aki: #B87333;
+  --aki-bg: #F9F4EE;
+  --fuyu: #6B7FA0;
+  --fuyu-bg: #F5F6F9;
+  /* 線 */
+  --ln: rgba(26,26,28,0.07);
+  --ln2: rgba(26,26,28,0.12);
+  /* 5・7・5 空間律 */
+  --ma5: 20px;
+  --ma7: 28px;
+  --ma17: 68px;   /* 一句分の間 */
+  --maB: 48px;    /* 句間の呼吸 */
+  /* フォント */
+  --sr: 'Noto Serif JP', 'YuMincho', serif;
+  --ss: 'Noto Sans JP', 'Hiragino Sans', sans-serif;
+}
+
+body {
+  background: #18161400;
+  background-color: #1A1816;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 20px 60px;
+  min-height: 100vh;
+  font-family: var(--ss);
+}
+
+.pg-header {
+  color: var(--k0);
+  text-align: center;
+  margin-bottom: 28px;
+}
+.pg-header h1 {
+  font-family: var(--sr);
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: 0.28em;
+  margin-bottom: 5px;
+}
+.pg-header p {
+  font-size: 10px;
+  color: rgba(247,245,240,0.32);
+  letter-spacing: 0.18em;
+}
+
+/* ── iPhone ── */
+.iphone {
+  position: relative;
+  width: 390px;
+  height: 844px;
+  background: #0A0A0C;
+  border-radius: 55px;
+  box-shadow:
+    0 0 0 1.5px #4A4744,
+    0 0 0 3px #1A1816,
+    0 50px 100px rgba(0,0,0,0.8);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.iphone::before {
+  content: '';
+  position: absolute;
+  right: -2px; top: 158px;
+  width: 2.5px; height: 72px;
+  background: #3A3734;
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 104px 0 #3A3734;
+}
+.iphone::after {
+  content: '';
+  position: absolute;
+  left: -2px; top: 118px;
+  width: 2.5px; height: 36px;
+  background: #3A3734;
+  border-radius: 2px 0 0 2px;
+  box-shadow: 0 52px 0 #3A3734, 0 102px 0 #3A3734;
+}
+
+/* Washi texture — SVG noise overlay */
+.washi {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  border-radius: inherit;
+}
+
+/* Dynamic Island */
+.island {
+  position: absolute;
+  top: 14px; left: 50%;
+  transform: translateX(-50%);
+  width: 126px; height: 37px;
+  background: #050507;
+  border-radius: 20px;
+  z-index: 250;
+}
+
+/* ── Screen ── */
+.screen {
+  position: absolute;
+  inset: 0;
+  border-radius: 55px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--k0);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.32s cubic-bezier(0.4,0,0.2,1);
+}
+.screen.active { opacity: 1; pointer-events: all; }
+
+/* Status bar */
+.sb {
+  height: 59px;
+  padding: 16px 24px 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+.sb-time {
+  font-size: 15px; font-weight: 600;
+  color: var(--s0); letter-spacing: -0.3px;
+}
+.sb-icons { display: flex; align-items: center; gap: 5px; }
+
+/* Navigation */
+.nav {
+  padding: 10px 20px;
+  display: flex; align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.nav.lg {
+  padding: 4px 20px 14px;
+  flex-direction: column; align-items: flex-start; gap: 4px;
+}
+.nav-t {
+  font-family: var(--sr);
+  font-size: 17px; font-weight: 400;
+  color: var(--s0); letter-spacing: 0.08em;
+}
+.nav-lg-t {
+  font-family: var(--sr);
+  font-size: 30px; font-weight: 300;
+  color: var(--s0); letter-spacing: 0.1em;
+}
+.nav-sub {
+  font-size: 11px; color: var(--s2);
+  letter-spacing: 0.15em;
+}
+.nav-btn {
+  background: none; border: none; cursor: pointer;
+  padding: 6px; color: var(--ai);
+  font-family: var(--ss); font-size: 14px;
+  letter-spacing: 0.04em;
+  display: flex; align-items: center; gap: 3px;
+}
+.nav-btn:active { opacity: 0.5; }
+
+/* Scroll */
+.sc {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.sc::-webkit-scrollbar { display: none; }
+
+/* Tab bar */
+.tb {
+  height: 83px; padding: 8px 0 0;
+  display: flex; align-items: flex-start;
+  justify-content: space-around;
+  background: rgba(247,245,240,0.94);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--ln);
+  flex-shrink: 0;
+}
+.ti {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 3px; padding-top: 4px;
+  cursor: pointer; color: var(--s2);
+  font-size: 10px; font-family: var(--ss);
+  letter-spacing: 0.04em; border: none; background: none;
+  transition: color 0.2s;
+}
+.ti.on { color: var(--ai); }
+.ti svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ════════════════════════════════════════
+   SCREEN 1 — 俳句一覧
+════════════════════════════════════════ */
+.sf {
+  display: flex; gap: 6px;
+  padding: 0 20px 14px;
+  overflow-x: auto; scrollbar-width: none; flex-shrink: 0;
+}
+.sf::-webkit-scrollbar { display: none; }
+.sc-chip {
+  flex-shrink: 0; padding: 5px 14px; border-radius: 20px;
+  font-size: 12px; letter-spacing: 0.1em; cursor: pointer;
+  border: 1px solid var(--ln2); background: transparent;
+  color: var(--s1); transition: all 0.2s; font-family: var(--ss);
+}
+.sc-chip.on { background: var(--s0); border-color: var(--s0); color: var(--k0); }
+.sc-chip.on.h { background: var(--haru); border-color: var(--haru); }
+.sc-chip.on.n { background: var(--natsu); border-color: var(--natsu); }
+.sc-chip.on.a { background: var(--aki); border-color: var(--aki); }
+.sc-chip.on.f { background: var(--fuyu); border-color: var(--fuyu); }
+
+/* Featured card */
+.hf {
+  margin: 0 20px 14px;
+  background: var(--k1); border-radius: 16px;
+  padding: 28px 24px 22px;
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: transform 0.15s;
+  animation: su 0.5s ease 0.08s both;
+}
+.hf:active { transform: scale(0.98); }
+.sbar {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 3px; border-radius: 16px 16px 0 0;
+}
+.kbg {
+  position: absolute; right: -8px; top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--sr); font-size: 100px; font-weight: 300;
+  color: var(--s0); opacity: 0.026;
+  writing-mode: vertical-rl; line-height: 1;
+  pointer-events: none; user-select: none; letter-spacing: -0.05em;
+}
+.hv-wrap { display: flex; flex-direction: column; gap: 2px; position: relative; z-index: 1; }
+.hv {
+  font-family: var(--sr); font-size: 18px; font-weight: 300;
+  color: var(--s0); letter-spacing: 0.22em; line-height: 1.9;
+}
+.hm {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 14px; position: relative; z-index: 1;
+}
+.hkg {
+  font-size: 11px; letter-spacing: 0.12em;
+  font-family: var(--ss); display: flex; align-items: center; gap: 4px;
+}
+.hkg::before {
+  content: ''; display: inline-block; width: 5px; height: 5px;
+  border-radius: 50%; background: currentColor;
+}
+.hdt { font-size: 11px; color: var(--s2); letter-spacing: 0.05em; }
+
+/* 2-col grid */
+.hg {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; padding: 0 20px 100px;
+}
+.hc {
+  background: var(--k1); border-radius: 14px;
+  padding: 20px 14px 14px;
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: transform 0.15s;
+}
+.hc:nth-child(1) { animation: su 0.4s ease 0.12s both; }
+.hc:nth-child(2) { animation: su 0.4s ease 0.17s both; }
+.hc:nth-child(3) { animation: su 0.4s ease 0.22s both; }
+.hc:nth-child(4) { animation: su 0.4s ease 0.27s both; }
+.hc:nth-child(5) { animation: su 0.4s ease 0.32s both; }
+.hc:nth-child(6) { animation: su 0.4s ease 0.37s both; }
+.hc:active { transform: scale(0.97); }
+.sb3 { position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 14px 14px 0 0; }
+
+.hvt {
+  writing-mode: vertical-rl;
+  font-family: var(--sr); font-size: 14px; font-weight: 300;
+  color: var(--s0); letter-spacing: 0.2em; line-height: 2.0;
+  height: 116px; overflow: hidden; white-space: nowrap;
+}
+.hckg {
+  font-size: 10px; letter-spacing: 0.1em; font-family: var(--ss);
+  display: flex; align-items: center; gap: 3px; margin-top: 10px;
+}
+.hckg::before {
+  content: ''; display: inline-block; width: 4px; height: 4px;
+  border-radius: 50%; background: currentColor;
+}
+
+/* FAB */
+.fab {
+  position: absolute; right: 20px; bottom: 94px;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--s0); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 20px rgba(26,26,28,0.28);
+  z-index: 50; overflow: hidden; transition: transform 0.15s;
+}
+.fab:active { transform: scale(0.92); }
+.fab-glow {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle, rgba(247,245,240,0.14) 0%, transparent 70%);
+  animation: fabPulse 4s ease-in-out infinite;
+}
+.fab-ripple {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle, rgba(247,245,240,0.4) 0%, transparent 70%);
+  transform: scale(0); pointer-events: none;
+}
+.fab svg { position: relative; z-index: 1; }
+
+@keyframes fabPulse { 0%,100%{opacity:0.5;transform:scale(0.88)} 50%{opacity:1;transform:scale(1.12)} }
+@keyframes inkRip { from{transform:scale(0);opacity:1} to{transform:scale(2.8);opacity:0} }
+@keyframes su { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+/* ════════════════════════════════════════
+   SCREEN 2 — 創作
+════════════════════════════════════════ */
+.vb { padding: 15px 0; border-bottom: 1px solid var(--ln); }
+.vb:last-of-type { border-bottom: none; }
+.vh {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 9px;
+}
+.vl {
+  font-family: var(--sr); font-size: 13px; font-weight: 300;
+  color: var(--s2); letter-spacing: 0.2em;
+}
+.vc { font-family: var(--ss); font-size: 11px; color: var(--s2); }
+.vc .cur { color: var(--ai); font-weight: 500; }
+.vc.ok .cur { color: var(--natsu); }
+.vc.ov .cur { color: var(--haru); }
+.vi {
+  width: 100%; border: none; background: transparent;
+  font-family: var(--sr); font-size: 22px; font-weight: 300;
+  color: var(--s0); letter-spacing: 0.18em; outline: none;
+  caret-color: var(--ai); line-height: 1.4;
+}
+.vi::placeholder { color: rgba(26,26,28,0.18); }
+
+.pv-sec { padding: 24px 0 14px; }
+.pv-lbl {
+  font-size: 10px; color: var(--s2);
+  letter-spacing: 0.2em; margin-bottom: 18px; text-align: center;
+}
+.pv-haiku {
+  display: flex; flex-direction: row;
+  justify-content: center; align-items: center;
+  min-height: 130px; gap: 22px;
+}
+.pv-v {
+  writing-mode: vertical-rl;
+  font-family: var(--sr); font-size: 20px; font-weight: 300;
+  color: var(--s0); letter-spacing: 0.25em; line-height: 1.8;
+  min-height: 110px; display: flex; align-items: center;
+}
+.pv-v.emp { color: rgba(26,26,28,0.14); }
+.pv-div {
+  width: 1px; height: 72px;
+  background: linear-gradient(180deg, transparent, var(--ln2), transparent);
+  flex-shrink: 0;
+}
+
+.kg-sec { padding: 14px 0 22px; border-top: 1px solid var(--ln); }
+.kg-lbl { font-size: 10px; color: var(--s2); letter-spacing: 0.2em; margin-bottom: 10px; }
+.kg-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.kg-chip {
+  padding: 5px 12px; border-radius: 20px;
+  border: 1px solid var(--haru); background: transparent;
+  color: var(--haru); font-size: 12px;
+  font-family: var(--ss); letter-spacing: 0.08em;
+  cursor: pointer; transition: all 0.15s;
+}
+.kg-chip:active { background: var(--haru); color: #fff; }
+
+.save-btn {
+  margin: 14px 20px 0;
+  width: calc(100% - 40px); height: 52px;
+  background: var(--s0); border: none; border-radius: 14px;
+  color: var(--k0); font-family: var(--sr);
+  font-size: 16px; font-weight: 400; letter-spacing: 0.15em;
+  cursor: pointer; transition: transform 0.1s, opacity 0.15s;
+  flex-shrink: 0;
+}
+.save-btn:active { transform: scale(0.98); opacity: 0.85; }
+.cmp-wrap { padding: 0 20px; flex: 1; display: flex; flex-direction: column; }
+
+/* ════════════════════════════════════════
+   SCREEN 3 — 詳細（枯山水の間）
+════════════════════════════════════════ */
+/* 詳細画面は background でなく class で季節変化 */
+#s3.haru-bg { background: var(--haru-bg); }
+#s3.natsu-bg { background: var(--natsu-bg); }
+#s3.aki-bg  { background: var(--aki-bg); }
+#s3.fuyu-bg { background: var(--fuyu-bg); }
+
+/* 薄墨の装飾漢字 — opacity 2.2% — 余白を豊かにする */
+.d-wm {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--sr); font-size: 260px; font-weight: 300;
+  color: var(--s0); opacity: 0.022;
+  pointer-events: none; user-select: none;
+  writing-mode: vertical-rl; line-height: 1; letter-spacing: -0.08em;
+  z-index: 0;
+}
+
+/* 句のステージ — 画面の70%を余白に */
+.d-stage {
+  flex: 1; display: flex;
+  align-items: center; justify-content: center;
+  padding: var(--ma17) var(--ma17);
+  position: relative; z-index: 1;
+}
+
+/* Ando の光の切れ目 — 句の上下を区切る極細の線 */
+.ando-slit {
+  position: absolute; left: 48px; right: 48px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--ln) 25%, var(--ln) 75%, transparent 100%);
+  animation: slitIn 1.2s ease 0.4s both;
+}
+.ando-slit.top { top: 31%; }
+.ando-slit.bot { bottom: 31%; }
+@keyframes slitIn {
+  from { opacity: 0; transform: scaleX(0.3); }
+  to   { opacity: 1; transform: scaleX(1); }
+}
+
+.d-haiku {
+  display: flex; flex-direction: row;
+  gap: 28px; align-items: center;
+}
+.d-v {
+  writing-mode: vertical-rl;
+  font-family: var(--sr); font-size: 28px; font-weight: 300;
+  color: var(--s0); letter-spacing: 0.32em; line-height: 1.7;
+}
+.d-v:nth-child(1) { animation: dIn 0.9s cubic-bezier(0.4,0,0.2,1) 0.08s both; }
+.d-v:nth-child(2) { animation: dIn 0.9s cubic-bezier(0.4,0,0.2,1) 0.20s both; }
+.d-v:nth-child(3) { animation: dIn 0.9s cubic-bezier(0.4,0,0.2,1) 0.32s both; }
+@keyframes dIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+.d-foot {
+  padding: 0 36px 44px; position: relative; z-index: 1;
+}
+.d-rule {
+  width: 28px; height: 1px;
+  background: var(--ln2); margin-bottom: 14px;
+}
+.d-meta { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+.d-kg {
+  font-size: 12px; letter-spacing: 0.15em;
+  font-family: var(--ss); display: flex; align-items: center; gap: 5px;
+}
+.d-kg::before {
+  content: ''; display: inline-block; width: 5px; height: 5px;
+  border-radius: 50%; background: currentColor;
+}
+.d-date { font-size: 11px; color: var(--s2); letter-spacing: 0.06em; }
+.d-tags { display: flex; gap: 7px; flex-wrap: wrap; }
+.d-tag {
+  font-size: 10px; color: var(--s2);
+  border: 1px solid var(--ln); border-radius: 10px;
+  padding: 3px 8px; letter-spacing: 0.1em;
+}
+
+/* ════════════════════════════════════════
+   SCREEN 4 — 季語辞典
+════════════════════════════════════════ */
+.kg-srch {
+  margin: 0 20px 14px; position: relative; flex-shrink: 0;
+}
+.kg-srch input {
+  width: 100%; height: 40px; border-radius: 12px;
+  border: none; background: var(--k1);
+  padding: 0 16px 0 40px;
+  font-family: var(--ss); font-size: 15px;
+  color: var(--s0); outline: none; letter-spacing: 0.05em;
+}
+.kg-srch input::placeholder { color: var(--s2); }
+.kg-srch svg {
+  position: absolute; left: 12px; top: 50%;
+  transform: translateY(-50%); width: 18px; height: 18px;
+  stroke: var(--s2); fill: none; stroke-width: 1.5; stroke-linecap: round;
+}
+
+.ss-hd {
+  display: flex; align-items: center;
+  gap: 10px; padding: 14px 20px 8px;
+}
+.ss-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.ss-name {
+  font-family: var(--sr); font-size: 15px; font-weight: 400;
+  color: var(--s0); letter-spacing: 0.15em;
+}
+.ss-cnt { font-size: 11px; color: var(--s2); margin-left: auto; }
+
+.ki {
+  display: flex; align-items: flex-start; padding: 12px 20px;
+  gap: 14px; border-bottom: 1px solid var(--ln);
+  cursor: pointer; transition: background 0.15s;
+}
+.ki:active { background: var(--k1); }
+.ki-w { font-family: var(--sr); font-size: 17px; font-weight: 400; color: var(--s0); letter-spacing: 0.1em; margin-bottom: 3px; }
+.ki-r { font-size: 11px; color: var(--s2); letter-spacing: 0.1em; }
+.ki-ex {
+  flex: 1; font-family: var(--sr); font-size: 12px;
+  color: var(--s1); letter-spacing: 0.06em;
+  line-height: 2.0; text-align: right;
+  writing-mode: vertical-rl; max-height: 80px; overflow: hidden;
+}
+
+/* Bottom sheet */
+.bs-ov {
+  position: absolute; inset: 0;
+  background: rgba(26,26,28,0); z-index: 99;
+  pointer-events: none; transition: background 0.3s;
+}
+.bs-ov.on { background: rgba(26,26,28,0.28); pointer-events: all; }
+
+.bs {
+  position: absolute; bottom: -110%; left: 0; right: 0;
+  background: var(--k0); border-radius: 22px 22px 0 0;
+  z-index: 100; padding-bottom: 44px;
+  box-shadow: 0 -4px 32px rgba(26,26,28,0.14);
+  transition: bottom 0.35s cubic-bezier(0.32,0.72,0,1);
+}
+.bs.on { bottom: 0; }
+.bs-handle {
+  width: 36px; height: 5px; background: var(--ln2);
+  border-radius: 3px; margin: 12px auto 18px;
+}
+.bs-ttl {
+  font-family: var(--sr); font-size: 28px; font-weight: 300;
+  color: var(--s0); letter-spacing: 0.15em;
+  padding: 0 24px; margin-bottom: 5px;
+}
+.bs-rd { font-size: 13px; color: var(--s2); letter-spacing: 0.15em; padding: 0 24px; margin-bottom: 18px; }
+.bs-def {
+  font-size: 14px; color: var(--s1); line-height: 1.85;
+  margin: 0 24px 22px 36px; padding-left: 14px;
+  border-left: 2px solid var(--haru); letter-spacing: 0.04em;
+}
+.bs-exlbl { font-size: 10px; color: var(--s2); letter-spacing: 0.2em; padding: 0 24px; margin-bottom: 10px; }
+.bs-ex {
+  padding: 16px 20px; background: var(--k1);
+  margin: 0 20px; border-radius: 12px;
+}
+.bs-exv {
+  font-family: var(--sr); font-size: 16px; font-weight: 300;
+  color: var(--s0); letter-spacing: 0.18em; line-height: 2.0;
+}
+</style>
+</head>
+<body>
+
+<div class="pg-header">
+  <h1>俳句帳</h1>
+  <p>枯山水の間 — The Void of the Dry Garden</p>
+</div>
+
+<div class="iphone">
+  <div class="island"></div>
+
+  <!-- 和紙テクスチャ -->
+  <svg class="washi" xmlns="http://www.w3.org/2000/svg" width="390" height="844">
+    <filter id="w"><feTurbulence type="fractalNoise" baseFrequency="0.68" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+    <rect width="100%" height="100%" filter="url(#w)" opacity="0.026"/>
+  </svg>
+
+  <!-- ══ SCREEN 1: 俳句一覧 ══ -->
+  <div id="s1" class="screen active">
+    <div class="sb">
+      <span class="sb-time">9:41</span>
+      <div class="sb-icons">
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="#1A1A1C"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0.5" width="3" height="11.5" rx="1"/><rect x="13.5" y="0" width="3.5" height="12" rx="1.5"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="#1A1A1C"><path d="M8 2.4C10.5 2.4 12.7 3.5 14.2 5.2L15.5 3.8C13.6 1.7 11 0.4 8 0.4C5 0.4 2.4 1.7 0.5 3.8L1.8 5.2C3.3 3.5 5.5 2.4 8 2.4Z"/><path d="M8 5.6C9.6 5.6 11.1 6.3 12.1 7.4L13.4 6C12 4.6 10.1 3.6 8 3.6C5.9 3.6 4 4.6 2.6 6L3.9 7.4C4.9 6.3 6.4 5.6 8 5.6Z"/><circle cx="8" cy="10" r="1.5"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0" y="1" width="22" height="10" rx="2.5" stroke="#1A1A1C" stroke-width="1.2"/><rect x="1.5" y="2.5" width="17" height="7" rx="1.5" fill="#1A1A1C"/><rect x="23" y="4" width="2" height="4" rx="1" fill="#1A1A1C"/></svg>
+      </div>
+    </div>
+    <div class="nav lg">
+      <div>
+        <div class="nav-lg-t">俳句帳</div>
+        <div class="nav-sub">47句 収録</div>
+      </div>
+    </div>
+
+    <div class="sf">
+      <button class="sc-chip on" onclick="filterS(this,'all')">すべて</button>
+      <button class="sc-chip h" onclick="filterS(this,'h')">春</button>
+      <button class="sc-chip n" onclick="filterS(this,'n')">夏</button>
+      <button class="sc-chip a" onclick="filterS(this,'a')">秋</button>
+      <button class="sc-chip f" onclick="filterS(this,'f')">冬</button>
+    </div>
+
+    <div class="sc">
+      <!-- 注目句 全幅 -->
+      <div class="hf" data-s="h" onclick="showDet('h')">
+        <div class="sbar" style="background:var(--haru)"></div>
+        <div class="kbg">花</div>
+        <div class="hv-wrap">
+          <div class="hv">古池や</div>
+          <div class="hv">蛙飛び込む</div>
+          <div class="hv">水の音</div>
+        </div>
+        <div class="hm">
+          <span class="hkg" style="color:var(--haru)">蛙</span>
+          <span class="hdt">2026年3月22日</span>
+        </div>
+      </div>
+
+      <!-- 2列グリッド -->
+      <div class="hg">
+        <div class="hc" data-s="n" onclick="showDet('n')">
+          <div class="sb3" style="background:var(--natsu)"></div>
+          <div class="hvt">夏草や兵どもが夢の跡</div>
+          <div class="hckg" style="color:var(--natsu)">夏草</div>
+        </div>
+        <div class="hc" data-s="a" onclick="showDet('a')">
+          <div class="sb3" style="background:var(--aki)"></div>
+          <div class="hvt">秋深き隣は何をする人ぞ</div>
+          <div class="hckg" style="color:var(--aki)">秋深き</div>
+        </div>
+        <div class="hc" data-s="f" onclick="showDet('f')">
+          <div class="sb3" style="background:var(--fuyu)"></div>
+          <div class="hvt">旅に病んで夢は枯れ野をかけめぐる</div>
+          <div class="hckg" style="color:var(--fuyu)">枯れ野</div>
+        </div>
+        <div class="hc" data-s="n" onclick="showDet('n2')">
+          <div class="sb3" style="background:var(--natsu)"></div>
+          <div class="hvt">閑さや岩にしみ入る蝉の声</div>
+          <div class="hckg" style="color:var(--natsu)">蝉</div>
+        </div>
+        <div class="hc" data-s="f">
+          <div class="sb3" style="background:var(--fuyu)"></div>
+          <div class="hvt">雪とけて村いっぱいの子どもかな</div>
+          <div class="hckg" style="color:var(--fuyu)">雪</div>
+        </div>
+        <div class="hc" data-s="a">
+          <div class="sb3" style="background:var(--aki)"></div>
+          <div class="hvt">名月や池をめぐりて夜もすがら</div>
+          <div class="hckg" style="color:var(--aki)">名月</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <button class="fab" onclick="showSc('s2');ripFab(this)">
+      <div class="fab-glow"></div>
+      <div class="fab-ripple" id="fr"></div>
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#F7F5F0" stroke-width="1.6" stroke-linecap="round"><path d="M11 4v14M4 11h14"/></svg>
+    </button>
+
+    <div class="tb">
+      <button class="ti on" onclick="showSc('s1')">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>句帳
+      </button>
+      <button class="ti" onclick="showSc('s2')">
+        <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>創作
+      </button>
+      <button class="ti" onclick="showSc('s4')">
+        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>季語
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 2: 創作 ══ -->
+  <div id="s2" class="screen">
+    <div class="sb">
+      <span class="sb-time">9:41</span>
+      <div class="sb-icons">
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0" y="1" width="22" height="10" rx="2.5" stroke="#1A1A1C" stroke-width="1.2"/><rect x="1.5" y="2.5" width="17" height="7" rx="1.5" fill="#1A1A1C"/><rect x="23" y="4" width="2" height="4" rx="1" fill="#1A1A1C"/></svg>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="nav-btn" onclick="showSc('s1')">← 戻る</button>
+      <div class="nav-t">新しい句</div>
+      <div style="width:44px"></div>
+    </div>
+
+    <div class="sc">
+      <div class="cmp-wrap">
+        <div class="vb">
+          <div class="vh">
+            <span class="vl">上の句 · 五</span>
+            <span class="vc" id="c1"><span class="cur">0</span> / 5</span>
+          </div>
+          <input class="vi" id="v1" type="text" placeholder="五文字" oninput="cnt(this,'c1',5,'p1')">
+        </div>
+        <div class="vb">
+          <div class="vh">
+            <span class="vl">中の句 · 七</span>
+            <span class="vc" id="c2"><span class="cur">0</span> / 7</span>
+          </div>
+          <input class="vi" id="v2" type="text" placeholder="七文字" oninput="cnt(this,'c2',7,'p2')">
+        </div>
+        <div class="vb">
+          <div class="vh">
+            <span class="vl">下の句 · 五</span>
+            <span class="vc" id="c3"><span class="cur">0</span> / 5</span>
+          </div>
+          <input class="vi" id="v3" type="text" placeholder="五文字" oninput="cnt(this,'c3',5,'p3')">
+        </div>
+
+        <!-- 縦書きプレビュー — 5-7-5 リズムで右→中→左に展開 -->
+        <div class="pv-sec">
+          <div class="pv-lbl">縦書きプレビュー</div>
+          <div class="pv-haiku">
+            <!-- 右=上の句, 中=中の句, 左=下の句 -->
+            <span id="p3" class="pv-v emp">下の句</span>
+            <div class="pv-div"></div>
+            <span id="p2" class="pv-v emp">中の句</span>
+            <div class="pv-div"></div>
+            <span id="p1" class="pv-v emp">上の句</span>
+          </div>
+        </div>
+
+        <div class="kg-sec">
+          <div class="kg-lbl">季語の候補 · 春</div>
+          <div class="kg-chips">
+            <button class="kg-chip" onclick="insKigo(this.textContent)">桜</button>
+            <button class="kg-chip" onclick="insKigo(this.textContent)">春雨</button>
+            <button class="kg-chip" onclick="insKigo(this.textContent)">蛙</button>
+            <button class="kg-chip" onclick="insKigo(this.textContent)">霞</button>
+            <button class="kg-chip" onclick="insKigo(this.textContent)">梅</button>
+            <button class="kg-chip" onclick="insKigo(this.textContent)">燕</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="save-btn" id="sbtn" onclick="saveH()">句を保存する</button>
+      <div style="height:28px"></div>
+    </div>
+
+    <div class="tb">
+      <button class="ti" onclick="showSc('s1')">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>句帳
+      </button>
+      <button class="ti on" onclick="showSc('s2')">
+        <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>創作
+      </button>
+      <button class="ti" onclick="showSc('s4')">
+        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>季語
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 3: 詳細（枯山水の間） ══ -->
+  <div id="s3" class="screen">
+    <div class="sb">
+      <span class="sb-time">9:41</span>
+      <div class="sb-icons">
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0" y="1" width="22" height="10" rx="2.5" stroke="#1A1A1C" stroke-width="1.2"/><rect x="1.5" y="2.5" width="17" height="7" rx="1.5" fill="#1A1A1C"/><rect x="23" y="4" width="2" height="4" rx="1" fill="#1A1A1C"/></svg>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="nav-btn" onclick="showSc('s1')">← 一覧</button>
+      <div style="width:44px"></div>
+    </div>
+
+    <!-- 装飾漢字 — 余白の深みとなる存在 -->
+    <div class="d-wm" id="dwm">花</div>
+
+    <!-- Ando の光の切れ目 — 句を宙に浮かせる -->
+    <div class="ando-slit top"></div>
+    <div class="ando-slit bot"></div>
+
+    <!-- 句 — 唯一の主役、広大な静寂の中に -->
+    <div class="d-stage">
+      <div class="d-haiku">
+        <!-- 右から: 下の句, 中の句, 上の句 -->
+        <div class="d-v" id="d3">水の音</div>
+        <div class="d-v" id="d2">蛙飛び込む</div>
+        <div class="d-v" id="d1">古池や</div>
+      </div>
+    </div>
+
+    <div class="d-foot">
+      <div class="d-rule"></div>
+      <div class="d-meta">
+        <span class="d-kg" id="dkg" style="color:var(--haru)">蛙</span>
+        <span class="d-date">2026年3月22日</span>
+      </div>
+      <div class="d-tags" id="dtags">
+        <span class="d-tag">春</span>
+        <span class="d-tag">古池</span>
+        <span class="d-tag">芭蕉</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 4: 季語辞典 ══ -->
+  <div id="s4" class="screen">
+    <div class="sb">
+      <span class="sb-time">9:41</span>
+      <div class="sb-icons">
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="#1A1A1C"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0.5" width="3" height="11.5" rx="1"/><rect x="13.5" y="0" width="3.5" height="12" rx="1.5"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0" y="1" width="22" height="10" rx="2.5" stroke="#1A1A1C" stroke-width="1.2"/><rect x="1.5" y="2.5" width="17" height="7" rx="1.5" fill="#1A1A1C"/><rect x="23" y="4" width="2" height="4" rx="1" fill="#1A1A1C"/></svg>
+      </div>
+    </div>
+    <div class="nav lg">
+      <div>
+        <div class="nav-lg-t">季語辞典</div>
+        <div class="nav-sub">四季の言葉</div>
+      </div>
+    </div>
+
+    <div class="kg-srch">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" placeholder="季語を検索…">
+    </div>
+
+    <div class="sc">
+      <div class="ss-hd">
+        <div class="ss-dot" style="background:var(--haru)"></div>
+        <span class="ss-name">春</span><span class="ss-cnt">24語</span>
+      </div>
+      <div class="ki" onclick="openBS('kawazu')">
+        <div><div class="ki-w">蛙</div><div class="ki-r">かわず</div></div>
+        <div class="ki-ex">古池や蛙飛び込む水の音</div>
+      </div>
+      <div class="ki" onclick="openBS('sakura')">
+        <div><div class="ki-w">桜</div><div class="ki-r">さくら</div></div>
+        <div class="ki-ex">花の雲鐘は上野か浅草か</div>
+      </div>
+      <div class="ki">
+        <div><div class="ki-w">霞</div><div class="ki-r">かすみ</div></div>
+        <div class="ki-ex">春暁や霞のなかに富士の影</div>
+      </div>
+      <div class="ki">
+        <div><div class="ki-w">春雨</div><div class="ki-r">はるさめ</div></div>
+        <div class="ki-ex">春雨や小磯の小貝ぬるるほど</div>
+      </div>
+
+      <div class="ss-hd" style="margin-top:6px">
+        <div class="ss-dot" style="background:var(--natsu)"></div>
+        <span class="ss-name">夏</span><span class="ss-cnt">31語</span>
+      </div>
+      <div class="ki">
+        <div><div class="ki-w">蝉</div><div class="ki-r">せみ</div></div>
+        <div class="ki-ex">閑さや岩にしみ入る蝉の声</div>
+      </div>
+      <div class="ki">
+        <div><div class="ki-w">夏草</div><div class="ki-r">なつくさ</div></div>
+        <div class="ki-ex">夏草や兵どもが夢の跡</div>
+      </div>
+      <div class="ki">
+        <div><div class="ki-w">蛍</div><div class="ki-r">ほたる</div></div>
+        <div class="ki-ex">蛍の光の中に立ちぬれて</div>
+      </div>
+
+      <div class="ss-hd" style="margin-top:6px">
+        <div class="ss-dot" style="background:var(--aki)"></div>
+        <span class="ss-name">秋</span><span class="ss-cnt">28語</span>
+      </div>
+      <div class="ki" onclick="openBS('meigetu')">
+        <div><div class="ki-w">名月</div><div class="ki-r">めいげつ</div></div>
+        <div class="ki-ex">名月や池をめぐりて夜もすがら</div>
+      </div>
+      <div class="ki">
+        <div><div class="ki-w">紅葉</div><div class="ki-r">もみじ</div></div>
+        <div class="ki-ex">秋晴れや山の紅葉の遠くより</div>
+      </div>
+      <div class="ki">
+        <div><div class="ki-w">秋深き</div><div class="ki-r">あきふかき</div></div>
+        <div class="ki-ex">秋深き隣は何をする人ぞ</div>
+      </div>
+
+      <div class="ss-hd" style="margin-top:6px">
+        <div class="ss-dot" style="background:var(--fuyu)"></div>
+        <span class="ss-name">冬</span><span class="ss-cnt">19語</span>
+      </div>
+      <div class="ki">
+        <div><div class="ki-w">枯れ野</div><div class="ki-r">かれの</div></div>
+        <div class="ki-ex">旅に病んで夢は枯れ野をかけめぐる</div>
+      </div>
+      <div class="ki">
+        <div><div class="ki-w">雪</div><div class="ki-r">ゆき</div></div>
+        <div class="ki-ex">雪とけて村いっぱいの子どもかな</div>
+      </div>
+      <div style="height:100px"></div>
+    </div>
+
+    <!-- ボトムシートオーバーレイ -->
+    <div class="bs-ov" id="bsov" onclick="closeBS()"></div>
+
+    <!-- 季語詳細ボトムシート -->
+    <div class="bs" id="bsht">
+      <div class="bs-handle"></div>
+      <div class="bs-ttl" id="bsttl">蛙</div>
+      <div class="bs-rd" id="bsrd">かわず</div>
+      <div class="bs-def" id="bsdf">春を告げる季語。池や田んぼに現れる蛙の声は、長い冬の終わりを知らせる。生命の再生と静寂の中の動、という対比を内包する。</div>
+      <div class="bs-exlbl">古典句の用例</div>
+      <div class="bs-ex" id="bsex">
+        <div class="bs-exv">古池や</div>
+        <div class="bs-exv">蛙飛び込む</div>
+        <div class="bs-exv">水の音</div>
+      </div>
+    </div>
+
+    <div class="tb">
+      <button class="ti" onclick="showSc('s1')">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>句帳
+      </button>
+      <button class="ti" onclick="showSc('s2')">
+        <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>創作
+      </button>
+      <button class="ti on" onclick="showSc('s4')">
+        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>季語
+      </button>
+    </div>
+  </div>
+
+</div><!-- .iphone -->
+
+<script>
+// ── 句データ ──────────────────────────────
+const HD = {
+  h:  { v:['古池や','蛙飛び込む','水の音'], kg:'蛙', kgC:'var(--haru)', wm:'花', bg:'haru-bg', tags:['春','古池','芭蕉'] },
+  n:  { v:['夏草や','兵どもが','夢の跡'], kg:'夏草', kgC:'var(--natsu)', wm:'夏', bg:'natsu-bg', tags:['夏','奥の細道'] },
+  n2: { v:['閑さや','岩にしみ入る','蝉の声'], kg:'蝉', kgC:'var(--natsu)', wm:'蝉', bg:'natsu-bg', tags:['夏','山寺'] },
+  a:  { v:['秋深き','隣は何を','する人ぞ'], kg:'秋深き', kgC:'var(--aki)', wm:'秋', bg:'aki-bg', tags:['秋','芭蕉'] },
+  f:  { v:['旅に病んで','夢は枯れ野を','かけめぐる'], kg:'枯れ野', kgC:'var(--fuyu)', wm:'雪', bg:'fuyu-bg', tags:['冬','辞世'] },
+};
+
+// ── Screen Navigation ─────────────────────
+function showSc(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const tidx = {s1:0,s2:1,s3:0,s4:2};
+  document.querySelectorAll('.tb').forEach(tb => {
+    tb.querySelectorAll('.ti').forEach((ti,i) => {
+      ti.classList.toggle('on', i === (tidx[id]??0));
+    });
+  });
+}
+
+// ── Season Filter ─────────────────────────
+function filterS(btn, s) {
+  document.querySelectorAll('.sc-chip').forEach(c => c.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('[data-s]').forEach(el => {
+    el.style.display = (s==='all' || el.dataset.s===s) ? '' : 'none';
+  });
+}
+
+// ── Detail Screen ─────────────────────────
+function showDet(key) {
+  const d = HD[key] || HD.h;
+  document.getElementById('d1').textContent = d.v[0];
+  document.getElementById('d2').textContent = d.v[1];
+  document.getElementById('d3').textContent = d.v[2];
+  const kgEl = document.getElementById('dkg');
+  kgEl.textContent = d.kg; kgEl.style.color = d.kgC;
+  document.getElementById('dwm').textContent = d.wm;
+  const s3 = document.getElementById('s3');
+  s3.className = 'screen';
+  s3.classList.add(d.bg);
+  document.getElementById('dtags').innerHTML = d.tags.map(t=>`<span class="d-tag">${t}</span>`).join('');
+  // Re-trigger entrance animations
+  document.querySelectorAll('.d-v').forEach((v,i) => {
+    v.style.animation = 'none';
+    void v.offsetWidth;
+    v.style.animation = `dIn 0.9s cubic-bezier(0.4,0,0.2,1) ${(i+1)*0.12}s both`;
+  });
+  // Re-trigger Ando slits
+  document.querySelectorAll('.ando-slit').forEach(sl => {
+    sl.style.animation = 'none';
+    void sl.offsetWidth;
+    sl.style.animation = 'slitIn 1.2s ease 0.4s both';
+  });
+  showSc('s3');
+}
+
+// ── Syllable Counter ──────────────────────
+function cnt(inp, cid, target, pid) {
+  const n = mora(inp.value);
+  const cel = document.getElementById(cid);
+  cel.querySelector('.cur').textContent = n;
+  cel.className = 'vc' + (n===target?' ok':n>target?' ov':'');
+  const pv = document.getElementById(pid);
+  if (inp.value.trim()) {
+    pv.textContent = inp.value;
+    pv.classList.remove('emp');
+  } else {
+    const lb = {p1:'上の句',p2:'中の句',p3:'下の句'};
+    pv.textContent = lb[pid] || '';
+    pv.classList.add('emp');
+  }
+}
+function mora(s) {
+  let n = 0;
+  for (let c of s) {
+    if (/[ぁぃぅぇぉっゃゅょァィゥェォッャュョ]/.test(c)) continue;
+    if (/[ー〜]/.test(c)) { n++; continue; }
+    if (/[\u3041-\u3096\u30A1-\u30F6\u4E00-\u9FFF\uFF66-\uFF9F\u3400-\u4DBF]/.test(c) || /[a-zA-Z]/.test(c)) n++;
+  }
+  return n;
+}
+
+// ── Insert Kigo ───────────────────────────
+function insKigo(k) {
+  const f = document.activeElement;
+  const inp = (['v1','v2','v3'].includes(f?.id)) ? f : document.getElementById('v1');
+  inp.value += k;
+  const m = {v1:['c1',5,'p1'],v2:['c2',7,'p2'],v3:['c3',5,'p3']};
+  const [ci,t,pi] = m[inp.id]||['c1',5,'p1'];
+  cnt(inp,ci,t,pi);
+  inp.focus();
+}
+
+// ── Save Haiku ────────────────────────────
+function saveH() {
+  const b = document.getElementById('sbtn');
+  b.textContent = '句を保存しました'; b.style.background = 'var(--natsu)';
+  setTimeout(() => { b.textContent = '句を保存する'; b.style.background = ''; showSc('s1'); }, 1300);
+}
+
+// ── FAB Ink Ripple ────────────────────────
+function ripFab(btn) {
+  const r = document.getElementById('fr');
+  r.style.animation = 'none';
+  void r.offsetWidth;
+  r.style.animation = 'inkRip 0.65s ease-out forwards';
+}
+
+// ── Kigo Bottom Sheet ─────────────────────
+const KD = {
+  kawazu: {
+    t:'蛙', r:'かわず',
+    d:'春を告げる季語。池や田んぼに現れる蛙の声は、長い冬の終わりを知らせる。生命の再生と静寂の中の動、という対比を内包する。',
+    ex:['古池や','蛙飛び込む','水の音']
+  },
+  sakura: {
+    t:'桜', r:'さくら',
+    d:'春の花の象徴。一週間足らずで散る潔さが、日本人の美意識「もののあわれ」の核心にある。咲く瞬間より、散る瞬間に美を見る。',
+    ex:['花の雲','鐘は上野か','浅草か']
+  },
+  meigetu: {
+    t:'名月', r:'めいげつ',
+    d:'旧暦8月15日の月。芋名月とも呼ばれる。収穫の季節の豊かさと、一年で最も美しい月明かりを指す。月見の習慣と深く結びついている。',
+    ex:['名月や','池をめぐりて','夜もすがら']
+  }
+};
+function openBS(id) {
+  const d = KD[id]; if (!d) return;
+  document.getElementById('bsttl').textContent = d.t;
+  document.getElementById('bsrd').textContent = d.r;
+  document.getElementById('bsdf').textContent = d.d;
+  const vs = document.getElementById('bsex').querySelectorAll('.bs-exv');
+  d.ex.forEach((v,i) => { if(vs[i]) vs[i].textContent = v; });
+  document.getElementById('bsht').classList.add('on');
+  document.getElementById('bsov').classList.add('on');
+}
+function closeBS() {
+  document.getElementById('bsht').classList.remove('on');
+  document.getElementById('bsov').classList.remove('on');
+}
+</script>
+</body>
+</html>

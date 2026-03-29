@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<!--
+  ╔═══════════════════════════════════════════════════════════════════╗
+  ║  証明写真スタジオ — Ma no Kozo リデザイン                            ║
+  ║                                                                   ║
+  ║  哲学: 証の間 (Akashi no Ma) — The Interval of Proof              ║
+  ║  「証明」とは余白によって初めて成立する。不要なものをすべて削ぎ落とした  ║
+  ║  空白の中に、揺るぎない確信が宿る。                                    ║
+  ║                                                                   ║
+  ║  テンションプロファイル:                                              ║
+  ║  Structure  [■■□□□□□□□□] 2/10 — 厳密グリッド。曖昧さゼロ           ║
+  ║  Silence    [■■■■□□□□□□] 4/10 — ガイダンスは語る。装飾は語らない   ║
+  ║  Precision  [■□□□□□□□□□] 1/10 — 証明写真に「味」は不要             ║
+  ║  Universal  [■■□□□□□□□□] 2/10 — 誰でも使える普遍的UI              ║
+  ║  Permanence [■□□□□□□□□□] 1/10 — 完全な恒久性                      ║
+  ║                                                                   ║
+  ║  支配層: KOKKAKU（骨格）+ MA（間）                                   ║
+  ║  参照: Dieter Rams × Jony Ive × Kenya Hara × Müller-Brockmann    ║
+  ║  対象: iPhone 15 Pro (393×852px) / iOS 17+                       ║
+  ╚═══════════════════════════════════════════════════════════════════╝
+-->
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>証明写真スタジオ — Ma no Kozo</title>
+  <style>
+    /*
+      証の間 (Akashi no Ma) — Design System
+      KIKU: 本質は「揺るぎない確信」を与えること。
+      KEZURU: 装飾・テクスチャ・グラデーション・影は全て除去した。
+            残るのは比率・余白・精度だけ。
+      KUMU: KOKKAKU（骨格）を先に置く。MA（間）を設計してから要素を配置。
+      KOMERU: 紺青ひとつのアクセント。沈黙の中に光る。
+      TEBANASU: 使用後に「これで大丈夫」という確信だけが残る。
+    */
+
+    /* ── CSS Variables ─────────────────────────────── */
+    :root {
+      /* 和の色彩 — Precision 1/10: 値はすべて意図的 */
+      --kinpaku:   #F7F5F0;        /* 絹白: 主背景 */
+      --sumi:      #1A1A1C;        /* 墨: 主テキスト */
+      --s70:       rgba(26,26,28,.70);
+      --s45:       rgba(26,26,28,.45);
+      --s20:       rgba(26,26,28,.20);
+      --s10:       rgba(26,26,28,.10);
+      --s06:       rgba(26,26,28,.06);
+      --s03:       rgba(26,26,28,.03);
+      --blue:      #0A7AFF;        /* 紺青: 唯一のアクセント */
+      --blue-lt:   #EAF2FF;
+      --blue-dk:   #0062CC;
+      --green:     #34C759;
+      --red:       #FF3B30;
+      --white:     #FFFFFF;
+      --haihiro:   #EFEEEB;        /* 灰白: 二次背景 */
+      --ginnezu:   #C8C5BD;        /* 銀鼠: ボーダー */
+
+      /* モジュラーグリッド基準 (852 ÷ 1.618 ≈ 527 → base unit 8px) */
+      --u: 8px;
+      --r4: 4px; --r8: 8px; --r12: 12px;
+      --r16: 16px; --r20: 20px; --r24: 24px;
+
+      --shadow-sm: 0 1px 4px rgba(26,26,28,.07);
+      --shadow-md: 0 2px 12px rgba(26,26,28,.10);
+    }
+
+    *, *::before, *::after {
+      margin: 0; padding: 0; box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    button {
+      font: inherit; cursor: pointer;
+      border: none; background: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── Page ────────────────────────────────────────── */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+                   'Helvetica Neue', sans-serif;
+      background: #AFABA3;
+      background-image:
+        radial-gradient(ellipse 120% 70% at 15% 5%,  rgba(195,191,183,.9) 0%, transparent 55%),
+        radial-gradient(ellipse  80% 80% at 88% 95%, rgba(168,164,156,.8) 0%, transparent 50%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 44px 20px 60px;
+      gap: 28px;
+    }
+
+    /* ── Page Header ─────────────────────────────────── */
+    .pg-hd {
+      text-align: center;
+      color: rgba(26,26,28,.55);
+    }
+    .pg-hd h1 {
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 1.2px; text-transform: uppercase;
+    }
+    .pg-hd p {
+      font-size: 10px; margin-top: 3px;
+      letter-spacing: .4px; opacity: .7;
+    }
+
+    /* ── iPhone 15 Pro Frame ─────────────────────────── */
+    .iphone {
+      width: 393px; height: 852px;
+      border-radius: 55px;
+      background: linear-gradient(155deg,
+        #4C4845 0%, #2D2A27 45%, #3B3835 100%);
+      position: relative;
+      flex-shrink: 0;
+      box-shadow:
+        inset 0 0 0 .5px rgba(255,255,255,.11),
+        inset 0 0 0 1px rgba(0,0,0,.28),
+        0 0 0 .5px rgba(0,0,0,.55),
+        0 44px 130px rgba(0,0,0,.52),
+        0 18px 44px rgba(0,0,0,.28);
+    }
+    .iphone::before {
+      content: '';
+      position: absolute; left: -3px; top: 164px;
+      width: 3px; height: 30px;
+      background: #242120; border-radius: 2px 0 0 2px;
+      box-shadow: 0 44px 0 #242120, 0 88px 0 #242120;
+    }
+    .iphone::after {
+      content: '';
+      position: absolute; right: -3px; top: 198px;
+      width: 3px; height: 70px;
+      background: #242120; border-radius: 0 2px 2px 0;
+    }
+
+    .screen-wrap {
+      position: absolute; inset: 5px;
+      border-radius: 50px;
+      overflow: hidden;
+      background: var(--kinpaku);
+    }
+
+    /* Dynamic Island */
+    .dyn-island {
+      position: absolute;
+      top: 14px; left: 50%;
+      transform: translateX(-50%);
+      width: 126px; height: 36px;
+      background: #000; border-radius: 20px;
+      z-index: 300; pointer-events: none;
+    }
+
+    /* ── Screen Management ───────────────────────────── */
+    .screen {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      background: var(--kinpaku);
+      opacity: 0; pointer-events: none;
+      transform: translateX(100%);
+      transition: transform .38s cubic-bezier(.32,.72,0,1),
+                  opacity .38s cubic-bezier(.32,.72,0,1);
+      will-change: transform, opacity;
+    }
+    .screen.active {
+      opacity: 1; pointer-events: auto;
+      transform: translateX(0);
+    }
+    .screen.exit-l {
+      transform: translateX(-28%);
+      opacity: .55;
+    }
+
+    /* ── Status Bar ──────────────────────────────────── */
+    .sb {
+      height: 59px; flex-shrink: 0;
+      padding: 0 28px 10px;
+      display: flex; align-items: flex-end;
+      justify-content: space-between;
+      position: relative; z-index: 10;
+    }
+    .sb.dark { color: rgba(255,255,255,.9); }
+    .sb.light { color: var(--sumi); }
+    .sb-t { font-size: 15px; font-weight: 600; letter-spacing: -.3px; }
+    .sb-i { display: flex; align-items: center; gap: 7px; }
+
+    /* ── Nav Bar ─────────────────────────────────────── */
+    .nav {
+      height: 48px; flex-shrink: 0;
+      padding: 0 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: .5px solid var(--s10);
+      background: rgba(247,245,240,.94);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      position: relative; z-index: 10;
+    }
+    .nav.dark {
+      background: rgba(8,8,10,.92);
+      border-bottom-color: rgba(255,255,255,.08);
+    }
+    .nav-btn {
+      min-width: 44px; min-height: 44px;
+      display: flex; align-items: center;
+      gap: 3px; color: var(--blue);
+      font-size: 17px; font-weight: 400;
+    }
+    .nav-btn.w { color: rgba(255,255,255,.92); }
+    .nav-btn:active { opacity: .5; }
+    .nav-ttl {
+      font-size: 17px; font-weight: 600;
+      color: var(--sumi); letter-spacing: -.4px;
+    }
+    .nav-ttl.w { color: white; }
+
+    /* ── Step Progress ───────────────────────────────── */
+    .steps {
+      padding: 16px 20px 12px;
+      flex-shrink: 0;
+      background: var(--kinpaku);
+    }
+    .steps.dark { background: #080808; }
+    .steps-row {
+      display: flex; align-items: flex-start;
+      position: relative;
+    }
+    .step {
+      flex: 1; display: flex;
+      flex-direction: column; align-items: center;
+      gap: 6px; position: relative;
+    }
+    .step:not(:last-child)::after {
+      content: '';
+      position: absolute; top: 12px;
+      left: calc(50% + 14px);
+      right: calc(-50% + 14px);
+      height: 1.5px;
+      background: var(--s10);
+      transition: background .3s;
+    }
+    .step.done::after,
+    .step.act::after  { background: var(--blue); }
+    .steps.dark .step::after { background: rgba(255,255,255,.1); }
+    .steps.dark .step.done::after,
+    .steps.dark .step.act::after { background: var(--blue); }
+
+    .step-dot {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--haihiro);
+      border: 1.5px solid var(--s10);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600; color: var(--s45);
+      transition: all .25s; position: relative; z-index: 1;
+    }
+    .step.act  .step-dot { background: var(--blue); border-color: var(--blue); color: white; }
+    .step.done .step-dot { background: var(--blue); border-color: var(--blue); color: white; }
+    .step-lbl {
+      font-size: 10px; font-weight: 500;
+      color: var(--s45); letter-spacing: .15px; white-space: nowrap;
+    }
+    .step.act  .step-lbl { color: var(--blue); font-weight: 600; }
+    .step.done .step-lbl { color: var(--blue); }
+    .steps.dark .step-dot           { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.08); color: rgba(255,255,255,.3); }
+    .steps.dark .step.act  .step-dot { background: var(--blue); border-color: var(--blue); color: white; }
+    .steps.dark .step.done .step-dot { background: var(--blue); border-color: var(--blue); color: white; }
+    .steps.dark .step-lbl             { color: rgba(255,255,255,.28); }
+    .steps.dark .step.act  .step-lbl  { color: var(--blue); }
+    .steps.dark .step.done .step-lbl  { color: rgba(255,255,255,.5); }
+
+    /* ── Scroll ──────────────────────────────────────── */
+    .scroll {
+      flex: 1; overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .scroll::-webkit-scrollbar { display: none; }
+
+    /* ── Bottom Bar ──────────────────────────────────── */
+    .bottom {
+      padding: 14px 20px 20px;
+      flex-shrink: 0;
+      background: var(--kinpaku);
+      border-top: .5px solid var(--s06);
+    }
+    .btn-p {
+      width: 100%; height: 52px;
+      background: var(--blue); color: white;
+      border-radius: var(--r20);
+      font-size: 17px; font-weight: 600;
+      letter-spacing: -.3px;
+      display: flex; align-items: center;
+      justify-content: center; gap: 8px;
+      transition: all .15s;
+    }
+    .btn-p:active { transform: scale(.97); background: var(--blue-dk); }
+    .btn-p[disabled] {
+      background: var(--s10); color: var(--s45);
+      pointer-events: none;
+    }
+
+    /* ── Home Indicator ──────────────────────────────── */
+    .home-ind {
+      height: 34px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .home-ind span {
+      display: block; width: 134px; height: 5px;
+      border-radius: 3px;
+      background: var(--sumi); opacity: .14;
+    }
+    .home-ind.dark span { background: white; opacity: .25; }
+
+    /* ══════════════════════════════════════════════════
+       SCREEN 1 — サイズ選択
+       KOKKAKU支配: 精密グリッド。MA: 余白が判断を助ける
+    ══════════════════════════════════════════════════ */
+
+    .s1-hd { padding: 24px 20px 6px; }
+    .s1-ttl {
+      font-size: 28px; font-weight: 700;
+      color: var(--sumi); letter-spacing: -.8px; line-height: 1.15;
+    }
+    .s1-sub {
+      font-size: 14px; color: var(--s45);
+      margin-top: 6px; line-height: 1.5;
+    }
+
+    .s1-cat {
+      padding: 20px 20px 8px;
+      font-size: 11px; font-weight: 700;
+      color: var(--s45); letter-spacing: .8px;
+      text-transform: uppercase;
+    }
+
+    .s1-list {
+      padding: 0 16px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+
+    /* サイズカード — MA: 余白が選択を包む */
+    .sz-card {
+      background: var(--white);
+      border-radius: var(--r16);
+      padding: 14px 16px;
+      display: flex; align-items: center; gap: 14px;
+      border: 1.5px solid transparent;
+      box-shadow: var(--shadow-sm);
+      transition: all .18s cubic-bezier(.32,.72,0,1);
+      cursor: pointer;
+    }
+    .sz-card:active { transform: scale(.985); }
+    .sz-card.sel {
+      border-color: var(--blue); background: var(--blue-lt);
+      box-shadow: 0 0 0 3px rgba(10,122,255,.07), var(--shadow-sm);
+    }
+
+    /* アスペクト比プレビュー矩形 — Precision 1/10: 実寸比率を正確に表示 */
+    .sz-prev {
+      flex-shrink: 0; width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .sz-rect {
+      background: var(--s10); border: 1.5px solid var(--s20);
+      border-radius: 2px;
+      transition: background .18s, border-color .18s;
+    }
+    .sz-card.sel .sz-rect {
+      background: rgba(10,122,255,.18); border-color: var(--blue);
+    }
+
+    .sz-info { flex: 1; min-width: 0; }
+    .sz-nm {
+      font-size: 15px; font-weight: 600;
+      color: var(--sumi); letter-spacing: -.3px;
+    }
+    .sz-us {
+      font-size: 12px; color: var(--s45); margin-top: 2px;
+    }
+
+    .sz-rt {
+      flex-shrink: 0; display: flex;
+      flex-direction: column; align-items: flex-end; gap: 4px;
+    }
+    .sz-dm {
+      font-size: 13px; font-weight: 600;
+      color: var(--s45); font-variant-numeric: tabular-nums;
+      letter-spacing: -.1px;
+    }
+    .sz-px {
+      font-size: 10px; color: var(--s20); letter-spacing: .2px;
+    }
+    .sz-card.sel .sz-dm { color: var(--blue); }
+
+    .sz-chk {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--blue);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      opacity: 0; transform: scale(.55);
+      transition: all .2s cubic-bezier(.34,1.56,.64,1);
+    }
+    .sz-card.sel .sz-chk { opacity: 1; transform: scale(1); }
+
+    /* ══════════════════════════════════════════════════
+       SCREEN 2 — カメラビュー
+       MA支配: 暗闇の「間」に人物が収まる。沈黙が構図を語る。
+    ══════════════════════════════════════════════════ */
+
+    #s2 { background: #080808; }
+
+    .cam-view {
+      flex: 1; position: relative;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; background: #0D0B09;
+    }
+
+    /* 擬似カメラ映像（グラデーション） */
+    .cam-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(
+        ellipse 70% 90% at 50% 45%,
+        #1E1B17 0%, #111009 60%, #080808 100%
+      );
+    }
+
+    /* 三分割グリッド — Precision: 整列の補助線 */
+    .cam-grid-svg {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+
+    /* 顔枠ガイド呼吸アニメーション — Silence: 非圧迫的 */
+    @keyframes breath {
+      0%, 100% { transform: scale(1);     opacity: .62; }
+      50%       { transform: scale(1.01); opacity: .88; }
+    }
+
+    .face-guide {
+      position: relative; z-index: 10;
+    }
+    .face-oval-wrap {
+      width: 196px; height: 268px; position: relative;
+    }
+    .face-oval-svg {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      animation: breath 3.8s ease-in-out infinite;
+    }
+
+    /* ヒントピル */
+    .cam-pill {
+      position: absolute; top: 18px; left: 18px;
+      z-index: 20;
+      background: rgba(255,255,255,.09);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: .5px solid rgba(255,255,255,.13);
+      border-radius: 20px; padding: 6px 13px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    @keyframes dotblink {
+      0%,100% { opacity: 1; } 50% { opacity: .25; }
+    }
+    .cam-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+      animation: dotblink 2s ease-in-out infinite;
+    }
+    .cam-pill-t {
+      font-size: 12px; font-weight: 500;
+      color: rgba(255,255,255,.82); white-space: nowrap;
+    }
+
+    /* サイズバッジ（右上） */
+    .cam-badge {
+      position: absolute; top: 18px; right: 18px;
+      z-index: 20;
+      background: rgba(255,255,255,.07);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: .5px solid rgba(255,255,255,.1);
+      border-radius: var(--r8);
+      padding: 6px 11px; text-align: center;
+    }
+    .cam-badge-dim {
+      font-size: 11px; font-weight: 600;
+      color: rgba(255,255,255,.72); letter-spacing: .3px;
+      display: block;
+    }
+    .cam-badge-nm {
+      font-size: 10px; font-weight: 400;
+      color: rgba(255,255,255,.38); display: block; margin-top: 1px;
+    }
+
+    /* ガイドテキスト（下部） */
+    .cam-guide-t {
+      position: absolute; bottom: 20px;
+      left: 0; right: 0; text-align: center;
+      z-index: 20;
+      font-size: 13px; font-weight: 500;
+      color: rgba(255,255,255,.68); letter-spacing: .05px;
+    }
+
+    /* シャッターバー */
+    .cam-bar {
+      height: 116px; flex-shrink: 0;
+      background: rgba(8,8,8,.96);
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 0 36px;
+    }
+    .cam-side-btn {
+      width: 50px; height: 50px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.08);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cam-side-btn:active { opacity: .55; }
+    .cam-shutter {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: white; position: relative;
+      border: 3px solid rgba(255,255,255,.28);
+      transition: transform .12s;
+    }
+    .cam-shutter::before {
+      content: ''; position: absolute; inset: 4px;
+      border-radius: 50%; background: white;
+      transition: background .12s;
+    }
+    .cam-shutter:active { transform: scale(.88); }
+    .cam-shutter:active::before { background: rgba(255,255,255,.8); }
+
+    /* ══════════════════════════════════════════════════
+       SCREEN 3 — 編集・補正
+       MA + KOKKAKU: 余白が「補正の余地」を体現する
+    ══════════════════════════════════════════════════ */
+
+    /* 写真プレビューエリア — 「額縁の間」 */
+    .edit-area {
+      padding: 24px 20px 18px;
+      background: var(--haihiro);
+      display: flex; align-items: center; justify-content: center;
+      min-height: 200px; position: relative;
+      flex-shrink: 0;
+    }
+    .edit-photo {
+      border-radius: 3px;
+      box-shadow: 0 4px 22px rgba(26,26,28,.16);
+      overflow: hidden; position: relative;
+      background: linear-gradient(160deg, #D5D0C8 0%, #C8C3BB 100%);
+      transition: filter .08s;
+    }
+    /* 人物シルエット（CSS描画） */
+    .edit-photo::before {
+      content: '';
+      position: absolute; bottom: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 55%; height: 78%;
+      background: linear-gradient(180deg, #A8A39B 0%, #959088 100%);
+      border-radius: 50% 50% 0 0 / 55% 55% 0 0;
+    }
+    .edit-photo::after {
+      content: '';
+      position: absolute; bottom: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 80%; height: 44%;
+      background: linear-gradient(180deg, #8A8580 0%, #7B7670 100%);
+      border-radius: 40% 40% 0 0 / 30% 30% 0 0;
+    }
+
+    /* 背景色チップ（右側） */
+    .bg-chips {
+      position: absolute; right: 20px;
+      top: 50%; transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 9px;
+    }
+    .bg-chip {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid var(--s10); cursor: pointer;
+      transition: transform .14s, box-shadow .14s;
+    }
+    .bg-chip.on {
+      transform: scale(1.15);
+      box-shadow: 0 0 0 2px white, 0 0 0 4px var(--blue);
+    }
+    .bg-chip:active { transform: scale(.9); }
+
+    /* 補正セクション */
+    .adj-sec { padding: 18px 20px; }
+    .adj-lbl {
+      font-size: 11px; font-weight: 700;
+      color: var(--s45); letter-spacing: .7px;
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+    .adj-item { margin-bottom: 22px; }
+    .adj-row {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 9px;
+    }
+    .adj-nm { font-size: 14px; font-weight: 500; color: var(--s70); }
+    .adj-vl {
+      font-size: 13px; font-weight: 600; color: var(--blue);
+      font-variant-numeric: tabular-nums;
+      min-width: 36px; text-align: right;
+    }
+
+    /* スライダー */
+    .sl-track {
+      position: relative; height: 4px;
+      background: var(--s10); border-radius: 2px; cursor: pointer;
+    }
+    .sl-fill {
+      position: absolute; left: 0; top: 0; bottom: 0;
+      background: var(--blue); border-radius: 2px;
+    }
+    .sl-thumb {
+      position: absolute; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 22px; height: 22px; border-radius: 50%;
+      background: white;
+      box-shadow: 0 1px 6px rgba(26,26,28,.22);
+      transition: transform .08s; cursor: grab;
+    }
+    .sl-thumb:active { transform: translate(-50%, -50%) scale(1.15); }
+
+    /* AI 背景除去ボタン */
+    .bg-rm {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; width: 100%; height: 48px;
+      border-radius: var(--r16);
+      background: var(--haihiro);
+      border: 1.5px solid var(--s10);
+      font-size: 15px; font-weight: 500; color: var(--s70);
+      transition: all .15s;
+    }
+    .bg-rm.proc { border-color: var(--blue); color: var(--blue); }
+    .bg-rm:active { background: var(--s06); }
+
+    .prog-bar {
+      height: 3px; background: var(--s10); border-radius: 2px;
+      overflow: hidden; margin-top: 10px; display: none;
+    }
+    .prog-bar.on { display: block; }
+    .prog-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue), #34BAFF);
+      border-radius: 2px; width: 0;
+    }
+
+    /* ══════════════════════════════════════════════════
+       SCREEN 4 — 印刷プレビュー
+       YOIN支配: 「これが私の証明」という確信が余韻として残る
+    ══════════════════════════════════════════════════ */
+
+    /* セグメントコントロール */
+    .seg-ctrl {
+      margin: 16px 20px;
+      background: var(--s06); border-radius: var(--r12);
+      padding: 3px; display: flex; gap: 2px;
+    }
+    .seg-btn {
+      flex: 1; height: 32px;
+      border-radius: var(--r8);
+      font-size: 13px; font-weight: 500; color: var(--s45);
+      transition: all .2s;
+    }
+    .seg-btn.on {
+      background: white; color: var(--sumi);
+      font-weight: 600;
+      box-shadow: 0 1px 4px rgba(26,26,28,.09);
+    }
+
+    /* 印刷フレーム — 余白=品格 */
+    .print-frame {
+      margin: 0 20px;
+      background: white; border-radius: var(--r12);
+      padding: 18px;
+      box-shadow: var(--shadow-md);
+    }
+    .print-lbl {
+      font-size: 10px; font-weight: 600;
+      color: var(--s20); letter-spacing: .5px;
+      text-align: center; margin-bottom: 14px;
+    }
+    .print-grid { display: grid; gap: 4px; }
+    .print-cell {
+      background: linear-gradient(160deg, #D5D0C8 0%, #C8C3BB 100%);
+      border-radius: 2px; overflow: hidden;
+      position: relative;
+      outline: 1px dashed rgba(26,26,28,.1);
+    }
+    .print-cell::before {
+      content: '';
+      position: absolute; bottom: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 55%; height: 78%;
+      background: linear-gradient(180deg, #A8A39B 0%, #959088 100%);
+      border-radius: 50% 50% 0 0 / 55% 55% 0 0;
+    }
+    .print-cell::after {
+      content: '';
+      position: absolute; bottom: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 80%; height: 44%;
+      background: linear-gradient(180deg, #8A8580 0%, #7B7670 100%);
+      border-radius: 40% 40% 0 0 / 30% 30% 0 0;
+    }
+    .print-info {
+      margin-top: 14px; text-align: center;
+      font-size: 11px; color: var(--s45); letter-spacing: .15px;
+    }
+    .print-info strong { color: var(--s70); font-weight: 600; }
+
+    /* 保存ボタン群 */
+    .save-row {
+      display: flex; gap: 10px;
+      padding: 14px 20px 0;
+    }
+    .save-btn {
+      flex: 1; height: 50px; border-radius: var(--r16);
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; font-size: 15px; font-weight: 600;
+      transition: all .15s;
+    }
+    .save-btn.prim { background: var(--blue); color: white; }
+    .save-btn.prim:active { background: var(--blue-dk); transform: scale(.97); }
+    .save-btn.outl {
+      background: transparent; color: var(--blue);
+      border: 1.5px solid var(--s10);
+    }
+    .save-btn.outl:active { background: var(--s06); }
+
+    /* トースト */
+    .toast {
+      position: absolute;
+      bottom: 56px; left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: rgba(26,26,28,.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: white; font-size: 13px; font-weight: 500;
+      padding: 10px 20px; border-radius: 22px;
+      white-space: nowrap; opacity: 0;
+      transition: all .3s cubic-bezier(.32,.72,0,1);
+      z-index: 100; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── テンションカード（フレーム外） ──────────────── */
+    .tc {
+      background: var(--white);
+      border-radius: var(--r16);
+      padding: 20px; box-shadow: var(--shadow-sm);
+      max-width: 393px; width: 100%;
+    }
+    .tc-ttl {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: .9px; text-transform: uppercase;
+      color: var(--s45); margin-bottom: 16px;
+    }
+    .tc-row {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 10px;
+    }
+    .tc-k { font-size: 11px; font-weight: 500; color: var(--s45); width: 80px; flex-shrink: 0; }
+    .tc-bar { flex: 1; height: 3px; background: var(--s10); border-radius: 2px; overflow: hidden; }
+    .tc-fill { height: 100%; background: var(--blue); border-radius: 2px; }
+    .tc-v { font-size: 11px; font-weight: 600; color: var(--s20); width: 28px; text-align: right; flex-shrink: 0; }
+    .tc-note {
+      margin-top: 14px; padding-top: 14px;
+      border-top: 1px solid var(--s06);
+      font-size: 11px; color: var(--s45); line-height: 1.65;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── Page Header ───────────────────────────────── -->
+<div class="pg-hd">
+  <h1>証明写真スタジオ — Ma no Kozo</h1>
+  <p>証の間 (Akashi no Ma) — The Interval of Proof</p>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     iPhone 15 Pro Frame
+════════════════════════════════════════════════ -->
+<div class="iphone">
+  <div class="screen-wrap">
+    <div class="dyn-island"></div>
+
+    <!-- ───────────────────────────────────────────
+         SCREEN 1: サイズ選択
+    ─────────────────────────────────────────────── -->
+    <div class="screen active" id="s1">
+
+      <div class="sb light">
+        <span class="sb-t">9:41</span>
+        <div class="sb-i">
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor">
+            <rect x="0"   y="3" width="3" height="9"  rx="1" opacity=".4"/>
+            <rect x="4.5" y="2" width="3" height="10" rx="1" opacity=".6"/>
+            <rect x="9"   y="0" width="3" height="12" rx="1"/>
+            <rect x="13.5" y="0" width="3" height="12" rx="1"/>
+          </svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+            <path d="M8 2.4C10.8 2.4 13.3 3.6 15 5.5L16 4.4C14 2.2 11.2 .8 8 .8C4.8 .8 2 2.2 0 4.4L1 5.5C2.7 3.6 5.2 2.4 8 2.4Z" opacity=".3"/>
+            <path d="M8 5.2C9.8 5.2 11.5 5.9 12.8 7.1L13.8 6C12.2 4.6 10.2 3.8 8 3.8C5.8 3.8 3.8 4.6 2.2 6L3.2 7.1C4.5 5.9 6.2 5.2 8 5.2Z" opacity=".6"/>
+            <path d="M8 8C9 8 9.9 8.4 10.6 9L8 12L5.4 9C6.1 8.4 7 8 8 8Z"/>
+          </svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor">
+            <rect x="0" y="1" width="21" height="10" rx="3" stroke="currentColor" stroke-width="1" fill="none" opacity=".35"/>
+            <rect x="22" y="4" width="2" height="4" rx="1" opacity=".4"/>
+            <rect x="1.5" y="2.5" width="16" height="7" rx="2"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="nav">
+        <div class="nav-btn" style="min-width:44px"></div>
+        <div class="nav-ttl">証明写真スタジオ</div>
+        <div class="nav-btn" style="justify-content:flex-end">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="10" cy="10" r="8"/>
+            <path d="M10 9v5M10 7v.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="steps-row">
+          <div class="step act"><div class="step-dot">1</div><div class="step-lbl">サイズ</div></div>
+          <div class="step"><div class="step-dot">2</div><div class="step-lbl">撮影</div></div>
+          <div class="step"><div class="step-dot">3</div><div class="step-lbl">補正</div></div>
+          <div class="step"><div class="step-dot">4</div><div class="step-lbl">保存</div></div>
+        </div>
+      </div>
+
+      <div class="scroll">
+        <div class="s1-hd">
+          <div class="s1-ttl">サイズを選ぶ</div>
+          <div class="s1-sub">用途に合った証明写真のサイズをお選びください</div>
+        </div>
+
+        <!-- 国内標準 -->
+        <div class="s1-cat">国内標準</div>
+        <div class="s1-list">
+
+          <div class="sz-card sel" id="sz-0" onclick="selSize(0,'就活用','36 × 48 mm','413 × 551 px',36,48)">
+            <div class="sz-prev">
+              <!-- 36×48 → 3:4 → 27×36px -->
+              <div class="sz-rect" style="width:27px;height:36px"></div>
+            </div>
+            <div class="sz-info">
+              <div class="sz-nm">就活用</div>
+              <div class="sz-us">企業エントリーシート・履歴書</div>
+            </div>
+            <div class="sz-rt">
+              <div class="sz-dm">36 × 48 mm</div>
+              <div class="sz-px">413 × 551 px</div>
+            </div>
+            <div class="sz-chk"><svg width="12" height="9" viewBox="0 0 12 9" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4.5l3 3L11 1"/></svg></div>
+          </div>
+
+          <div class="sz-card" id="sz-1" onclick="selSize(1,'履歴書','30 × 40 mm','354 × 472 px',30,40)">
+            <div class="sz-prev">
+              <div class="sz-rect" style="width:27px;height:36px"></div>
+            </div>
+            <div class="sz-info">
+              <div class="sz-nm">履歴書</div>
+              <div class="sz-us">一般的な履歴書・WEB応募</div>
+            </div>
+            <div class="sz-rt">
+              <div class="sz-dm">30 × 40 mm</div>
+              <div class="sz-px">354 × 472 px</div>
+            </div>
+            <div class="sz-chk"><svg width="12" height="9" viewBox="0 0 12 9" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4.5l3 3L11 1"/></svg></div>
+          </div>
+
+          <div class="sz-card" id="sz-2" onclick="selSize(2,'マイナンバー','25 × 30 mm','295 × 354 px',25,30)">
+            <div class="sz-prev">
+              <!-- 25×30 → 5:6 → 30×36px -->
+              <div class="sz-rect" style="width:30px;height:36px"></div>
+            </div>
+            <div class="sz-info">
+              <div class="sz-nm">マイナンバー</div>
+              <div class="sz-us">マイナンバーカード申請</div>
+            </div>
+            <div class="sz-rt">
+              <div class="sz-dm">25 × 30 mm</div>
+              <div class="sz-px">295 × 354 px</div>
+            </div>
+            <div class="sz-chk"><svg width="12" height="9" viewBox="0 0 12 9" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4.5l3 3L11 1"/></svg></div>
+          </div>
+
+          <div class="sz-card" id="sz-3" onclick="selSize(3,'運転免許','24 × 30 mm','283 × 354 px',24,30)">
+            <div class="sz-prev">
+              <!-- 24×30 → 4:5 → 29×36px -->
+              <div class="sz-rect" style="width:29px;height:36px"></div>
+            </div>
+            <div class="sz-info">
+              <div class="sz-nm">運転免許</div>
+              <div class="sz-us">運転免許証更新・申請</div>
+            </div>
+            <div class="sz-rt">
+              <div class="sz-dm">24 × 30 mm</div>
+              <div class="sz-px">283 × 354 px</div>
+            </div>
+            <div class="sz-chk"><svg width="12" height="9" viewBox="0 0 12 9" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4.5l3 3L11 1"/></svg></div>
+          </div>
+        </div>
+
+        <!-- 海外渡航 -->
+        <div class="s1-cat">海外渡航</div>
+        <div class="s1-list">
+
+          <div class="sz-card" id="sz-4" onclick="selSize(4,'パスポート（日本）','35 × 45 mm','413 × 531 px',35,45)">
+            <div class="sz-prev">
+              <!-- 35×45 → 7:9 → 28×36px -->
+              <div class="sz-rect" style="width:28px;height:36px"></div>
+            </div>
+            <div class="sz-info">
+              <div class="sz-nm">パスポート（日本）</div>
+              <div class="sz-us">日本旅券・VISA申請</div>
+            </div>
+            <div class="sz-rt">
+              <div class="sz-dm">35 × 45 mm</div>
+              <div class="sz-px">413 × 531 px</div>
+            </div>
+            <div class="sz-chk"><svg width="12" height="9" viewBox="0 0 12 9" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4.5l3 3L11 1"/></svg></div>
+          </div>
+
+          <div class="sz-card" id="sz-5" onclick="selSize(5,'米国ビザ / ESTA','51 × 51 mm','600 × 600 px',51,51)">
+            <div class="sz-prev">
+              <!-- 1:1 → 36×36px -->
+              <div class="sz-rect" style="width:36px;height:36px"></div>
+            </div>
+            <div class="sz-info">
+              <div class="sz-nm">米国ビザ / ESTA</div>
+              <div class="sz-us">US VISA・グリーンカード申請</div>
+            </div>
+            <div class="sz-rt">
+              <div class="sz-dm">51 × 51 mm</div>
+              <div class="sz-px">600 × 600 px</div>
+            </div>
+            <div class="sz-chk"><svg width="12" height="9" viewBox="0 0 12 9" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4.5l3 3L11 1"/></svg></div>
+          </div>
+        </div>
+
+        <div style="padding:16px 20px 8px;font-size:12px;color:var(--s45);line-height:1.65">
+          ※ 解像度はすべて 300 dpi 相当。印刷用データとして使用できます。
+        </div>
+        <div style="height:16px"></div>
+      </div>
+
+      <div class="bottom">
+        <button class="btn-p" onclick="go(2)">
+          次へ — 撮影
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3.5 9h11M10 4l5 5-5 5"/>
+          </svg>
+        </button>
+      </div>
+      <div class="home-ind"><span></span></div>
+    </div>
+
+    <!-- ───────────────────────────────────────────
+         SCREEN 2: カメラビュー
+    ─────────────────────────────────────────────── -->
+    <div class="screen" id="s2">
+
+      <div class="sb dark">
+        <span class="sb-t">9:41</span>
+        <div class="sb-i">
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="white">
+            <rect x="0"   y="3" width="3" height="9"  rx="1" opacity=".4"/>
+            <rect x="4.5" y="2" width="3" height="10" rx="1" opacity=".6"/>
+            <rect x="9"   y="0" width="3" height="12" rx="1"/>
+            <rect x="13.5" y="0" width="3" height="12" rx="1"/>
+          </svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="white">
+            <path d="M8 2.4C10.8 2.4 13.3 3.6 15 5.5L16 4.4C14 2.2 11.2 .8 8 .8C4.8 .8 2 2.2 0 4.4L1 5.5C2.7 3.6 5.2 2.4 8 2.4Z" opacity=".3"/>
+            <path d="M8 5.2C9.8 5.2 11.5 5.9 12.8 7.1L13.8 6C12.2 4.6 10.2 3.8 8 3.8C5.8 3.8 3.8 4.6 2.2 6L3.2 7.1C4.5 5.9 6.2 5.2 8 5.2Z" opacity=".6"/>
+            <path d="M8 8C9 8 9.9 8.4 10.6 9L8 12L5.4 9C6.1 8.4 7 8 8 8Z"/>
+          </svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="white">
+            <rect x="0" y="1" width="21" height="10" rx="3" stroke="white" stroke-width="1" fill="none" opacity=".35"/>
+            <rect x="22" y="4" width="2" height="4" rx="1" opacity=".4"/>
+            <rect x="1.5" y="2.5" width="16" height="7" rx="2"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="nav dark">
+        <button class="nav-btn w" onclick="go(1)">
+          <svg width="10" height="17" viewBox="0 0 10 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 1L1.5 8.5L8.5 16"/></svg>
+          <span style="font-size:17px;font-weight:400">戻る</span>
+        </button>
+        <div class="nav-ttl w">撮影</div>
+        <button class="nav-btn w" style="justify-content:flex-end;font-size:13px;font-weight:500;color:rgba(255,255,255,.5)">ガイド</button>
+      </div>
+
+      <div class="steps dark">
+        <div class="steps-row">
+          <div class="step done">
+            <div class="step-dot"><svg width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4l2.5 2.5L9 1"/></svg></div>
+            <div class="step-lbl">サイズ</div>
+          </div>
+          <div class="step act"><div class="step-dot">2</div><div class="step-lbl">撮影</div></div>
+          <div class="step"><div class="step-dot">3</div><div class="step-lbl">補正</div></div>
+          <div class="step"><div class="step-dot">4</div><div class="step-lbl">保存</div></div>
+        </div>
+      </div>
+
+      <!-- カメラビュー -->
+      <div class="cam-view">
+        <div class="cam-bg"></div>
+
+        <!-- 三分割グリッド（6px opacity） -->
+        <svg class="cam-grid-svg">
+          <line x1="33.33%" y1="0" x2="33.33%" y2="100%" stroke="white" stroke-width=".5" opacity=".07"/>
+          <line x1="66.66%" y1="0" x2="66.66%" y2="100%" stroke="white" stroke-width=".5" opacity=".07"/>
+          <line x1="0" y1="33.33%" x2="100%" y2="33.33%" stroke="white" stroke-width=".5" opacity=".07"/>
+          <line x1="0" y1="66.66%" x2="100%" y2="66.66%" stroke="white" stroke-width=".5" opacity=".07"/>
+        </svg>
+
+        <!-- ヒントピル（左上） -->
+        <div class="cam-pill">
+          <div class="cam-dot"></div>
+          <div class="cam-pill-t">顔を枠内に合わせる</div>
+        </div>
+
+        <!-- サイズバッジ（右上） -->
+        <div class="cam-badge">
+          <span class="cam-badge-dim" id="c-dim">36 × 48 mm</span>
+          <span class="cam-badge-nm"  id="c-nm">就活用</span>
+        </div>
+
+        <!-- 顔枠ガイド -->
+        <div class="face-guide">
+          <div class="face-oval-wrap">
+            <svg class="face-oval-svg" viewBox="0 0 196 268" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- 外側薄い楕円 -->
+              <ellipse cx="98" cy="134" rx="90" ry="120" stroke="rgba(255,255,255,.14)" stroke-width="1" stroke-dasharray="4 5"/>
+              <!-- メイン顔枠 -->
+              <ellipse cx="98" cy="134" rx="78" ry="106" stroke="rgba(255,255,255,.78)" stroke-width="1.5" stroke-dasharray="6 4"/>
+              <!-- センターガイド線 4方向 -->
+              <line x1="98" y1="20"  x2="98" y2="30"  stroke="rgba(255,255,255,.55)" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="98" y1="238" x2="98" y2="248" stroke="rgba(255,255,255,.55)" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="12" y1="134" x2="22" y2="134" stroke="rgba(255,255,255,.55)" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="174" y1="134" x2="184" y2="134" stroke="rgba(255,255,255,.55)" stroke-width="1.5" stroke-linecap="round"/>
+              <!-- 目線ガイド（水平破線） -->
+              <line x1="28" y1="112" x2="168" y2="112" stroke="rgba(255,255,255,.1)" stroke-width=".8" stroke-dasharray="3 4"/>
+            </svg>
+
+            <!-- コーナーティック — 精度の表明 -->
+            <svg style="position:absolute;top:18px;left:8px;width:22px;height:22px" viewBox="0 0 22 22" fill="none">
+              <path d="M22 2H2V22" stroke="rgba(255,255,255,.88)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <svg style="position:absolute;top:18px;right:8px;width:22px;height:22px" viewBox="0 0 22 22" fill="none">
+              <path d="M0 2H20V22" stroke="rgba(255,255,255,.88)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <svg style="position:absolute;bottom:18px;left:8px;width:22px;height:22px" viewBox="0 0 22 22" fill="none">
+              <path d="M22 20H2V0" stroke="rgba(255,255,255,.88)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <svg style="position:absolute;bottom:18px;right:8px;width:22px;height:22px" viewBox="0 0 22 22" fill="none">
+              <path d="M0 20H20V0" stroke="rgba(255,255,255,.88)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="cam-guide-t">正面を向き、顔全体を枠内に収めてください</div>
+      </div>
+
+      <!-- シャッターバー -->
+      <div class="cam-bar">
+        <!-- ギャラリー -->
+        <button class="cam-side-btn" style="border-radius:var(--r8);width:52px;height:52px">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.5">
+            <rect x="2" y="4" width="18" height="14" rx="3"/>
+            <circle cx="8.5" cy="9.5" r="2"/>
+            <path d="M2 15l4.5-5 3.5 3.5 2.5-3 5 6"/>
+          </svg>
+        </button>
+
+        <!-- シャッター -->
+        <button class="cam-shutter" onclick="shoot()"></button>
+
+        <!-- カメラ切替 -->
+        <button class="cam-side-btn">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 7H3C2 7 1 8 1 9V18C1 19 2 20 3 20H19C20 20 21 19 21 18V9C21 8 20 7 19 7Z"/>
+            <path d="M15 7l-1.5-3h-5L7 7"/>
+            <circle cx="11" cy="13.5" r="3"/>
+            <path d="M16.5 4.5l1.5 1.5-1.5 1.5M5.5 4.5L4 6l1.5 1.5" stroke-width="1.3"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="home-ind dark"><span></span></div>
+    </div>
+
+    <!-- ───────────────────────────────────────────
+         SCREEN 3: 編集・補正
+    ─────────────────────────────────────────────── -->
+    <div class="screen" id="s3">
+
+      <div class="sb light">
+        <span class="sb-t">9:41</span>
+        <div class="sb-i">
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor">
+            <rect x="0"   y="3" width="3" height="9"  rx="1" opacity=".4"/>
+            <rect x="4.5" y="2" width="3" height="10" rx="1" opacity=".6"/>
+            <rect x="9"   y="0" width="3" height="12" rx="1"/>
+            <rect x="13.5" y="0" width="3" height="12" rx="1"/>
+          </svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+            <path d="M8 2.4C10.8 2.4 13.3 3.6 15 5.5L16 4.4C14 2.2 11.2 .8 8 .8C4.8 .8 2 2.2 0 4.4L1 5.5C2.7 3.6 5.2 2.4 8 2.4Z" opacity=".3"/>
+            <path d="M8 5.2C9.8 5.2 11.5 5.9 12.8 7.1L13.8 6C12.2 4.6 10.2 3.8 8 3.8C5.8 3.8 3.8 4.6 2.2 6L3.2 7.1C4.5 5.9 6.2 5.2 8 5.2Z" opacity=".6"/>
+            <path d="M8 8C9 8 9.9 8.4 10.6 9L8 12L5.4 9C6.1 8.4 7 8 8 8Z"/>
+          </svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor">
+            <rect x="0" y="1" width="21" height="10" rx="3" stroke="currentColor" stroke-width="1" fill="none" opacity=".35"/>
+            <rect x="22" y="4" width="2" height="4" rx="1" opacity=".4"/>
+            <rect x="1.5" y="2.5" width="16" height="7" rx="2"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="nav">
+        <button class="nav-btn" onclick="go(2)">
+          <svg width="10" height="17" viewBox="0 0 10 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 1L1.5 8.5L8.5 16"/></svg>
+          <span style="font-size:17px;font-weight:400">戻る</span>
+        </button>
+        <div class="nav-ttl">補正</div>
+        <button class="nav-btn" style="justify-content:flex-end;font-size:15px;color:var(--s20)" onclick="resetAdj()">リセット</button>
+      </div>
+
+      <div class="steps">
+        <div class="steps-row">
+          <div class="step done">
+            <div class="step-dot"><svg width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4l2.5 2.5L9 1"/></svg></div>
+            <div class="step-lbl">サイズ</div>
+          </div>
+          <div class="step done">
+            <div class="step-dot"><svg width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4l2.5 2.5L9 1"/></svg></div>
+            <div class="step-lbl">撮影</div>
+          </div>
+          <div class="step act"><div class="step-dot">3</div><div class="step-lbl">補正</div></div>
+          <div class="step"><div class="step-dot">4</div><div class="step-lbl">保存</div></div>
+        </div>
+      </div>
+
+      <div class="scroll">
+
+        <!-- 写真プレビュー「額縁の間」 -->
+        <div class="edit-area">
+          <div class="edit-photo" id="ep" style="width:114px;height:152px"></div>
+          <!-- 背景色チップ -->
+          <div class="bg-chips">
+            <div class="bg-chip on"  style="background:#FFFFFF" onclick="setBg(this,'#FFFFFF')"></div>
+            <div class="bg-chip"     style="background:#D4E8F5" onclick="setBg(this,'#D4E8F5')"></div>
+            <div class="bg-chip"     style="background:#F0EAE0" onclick="setBg(this,'#F0EAE0')"></div>
+          </div>
+        </div>
+
+        <!-- 補正スライダー -->
+        <div class="adj-sec">
+          <div class="adj-lbl">補正</div>
+
+          <div class="adj-item">
+            <div class="adj-row">
+              <span class="adj-nm">明るさ</span>
+              <span class="adj-vl" id="bv">0</span>
+            </div>
+            <div class="sl-track" onmousedown="dragStart(event,'b')" ontouchstart="dragStart(event,'b')">
+              <div class="sl-fill" id="bf" style="width:50%"></div>
+              <div class="sl-thumb" id="bt" style="left:50%"></div>
+            </div>
+          </div>
+
+          <div class="adj-item">
+            <div class="adj-row">
+              <span class="adj-nm">コントラスト</span>
+              <span class="adj-vl" id="cv">0</span>
+            </div>
+            <div class="sl-track" onmousedown="dragStart(event,'c')" ontouchstart="dragStart(event,'c')">
+              <div class="sl-fill" id="cf" style="width:50%"></div>
+              <div class="sl-thumb" id="ct" style="left:50%"></div>
+            </div>
+          </div>
+
+          <div class="adj-item">
+            <div class="adj-row">
+              <span class="adj-nm">肌色補正</span>
+              <span class="adj-vl" id="sv">0</span>
+            </div>
+            <div class="sl-track" onmousedown="dragStart(event,'s')" ontouchstart="dragStart(event,'s')">
+              <div class="sl-fill" id="sf" style="width:50%"></div>
+              <div class="sl-thumb" id="st" style="left:50%"></div>
+            </div>
+          </div>
+
+          <div style="height:4px"></div>
+          <div class="adj-lbl">AI 機能</div>
+
+          <button class="bg-rm" id="bg-rm" onclick="bgRemove()">
+            <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <rect x="1.5" y="1.5" width="14" height="14" rx="3"/>
+              <path d="M4 12l2.5-2.5L7.5 11l2.5-3.5 3 4"/>
+              <circle cx="5.5" cy="5.5" r="1.2" fill="currentColor" stroke="none"/>
+            </svg>
+            <span id="bg-rm-t">背景を自動除去（iOS 17+）</span>
+          </button>
+          <div class="prog-bar" id="pb"><div class="prog-fill" id="pf"></div></div>
+        </div>
+
+        <div style="height:16px"></div>
+      </div>
+
+      <div class="bottom">
+        <button class="btn-p" onclick="go(4)">
+          次へ — 印刷プレビュー
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3.5 9h11M10 4l5 5-5 5"/>
+          </svg>
+        </button>
+      </div>
+      <div class="home-ind"><span></span></div>
+    </div>
+
+    <!-- ───────────────────────────────────────────
+         SCREEN 4: 印刷プレビュー
+    ─────────────────────────────────────────────── -->
+    <div class="screen" id="s4">
+      <div class="toast" id="toast">写真ライブラリに保存しました</div>
+
+      <div class="sb light">
+        <span class="sb-t">9:41</span>
+        <div class="sb-i">
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor">
+            <rect x="0"   y="3" width="3" height="9"  rx="1" opacity=".4"/>
+            <rect x="4.5" y="2" width="3" height="10" rx="1" opacity=".6"/>
+            <rect x="9"   y="0" width="3" height="12" rx="1"/>
+            <rect x="13.5" y="0" width="3" height="12" rx="1"/>
+          </svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+            <path d="M8 2.4C10.8 2.4 13.3 3.6 15 5.5L16 4.4C14 2.2 11.2 .8 8 .8C4.8 .8 2 2.2 0 4.4L1 5.5C2.7 3.6 5.2 2.4 8 2.4Z" opacity=".3"/>
+            <path d="M8 5.2C9.8 5.2 11.5 5.9 12.8 7.1L13.8 6C12.2 4.6 10.2 3.8 8 3.8C5.8 3.8 3.8 4.6 2.2 6L3.2 7.1C4.5 5.9 6.2 5.2 8 5.2Z" opacity=".6"/>
+            <path d="M8 8C9 8 9.9 8.4 10.6 9L8 12L5.4 9C6.1 8.4 7 8 8 8Z"/>
+          </svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor">
+            <rect x="0" y="1" width="21" height="10" rx="3" stroke="currentColor" stroke-width="1" fill="none" opacity=".35"/>
+            <rect x="22" y="4" width="2" height="4" rx="1" opacity=".4"/>
+            <rect x="1.5" y="2.5" width="16" height="7" rx="2"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="nav">
+        <button class="nav-btn" onclick="go(3)">
+          <svg width="10" height="17" viewBox="0 0 10 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 1L1.5 8.5L8.5 16"/></svg>
+          <span style="font-size:17px;font-weight:400">戻る</span>
+        </button>
+        <div class="nav-ttl">印刷プレビュー</div>
+        <div class="nav-btn" style="min-width:44px"></div>
+      </div>
+
+      <div class="steps">
+        <div class="steps-row">
+          <div class="step done">
+            <div class="step-dot"><svg width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4l2.5 2.5L9 1"/></svg></div>
+            <div class="step-lbl">サイズ</div>
+          </div>
+          <div class="step done">
+            <div class="step-dot"><svg width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4l2.5 2.5L9 1"/></svg></div>
+            <div class="step-lbl">撮影</div>
+          </div>
+          <div class="step done">
+            <div class="step-dot"><svg width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4l2.5 2.5L9 1"/></svg></div>
+            <div class="step-lbl">補正</div>
+          </div>
+          <div class="step act"><div class="step-dot">4</div><div class="step-lbl">保存</div></div>
+        </div>
+      </div>
+
+      <div class="scroll">
+
+        <!-- 枚数セレクタ -->
+        <div class="seg-ctrl">
+          <button class="seg-btn" onclick="setPrint(4,this)">4 枚</button>
+          <button class="seg-btn on" onclick="setPrint(6,this)">6 枚</button>
+          <button class="seg-btn" onclick="setPrint(8,this)">8 枚</button>
+        </div>
+
+        <!-- 印刷フレーム -->
+        <div class="print-frame">
+          <div class="print-lbl">L 判  89 × 127 mm — 300 dpi 印刷用</div>
+          <div class="print-grid" id="pg" style="aspect-ratio:89/127"></div>
+          <div class="print-info">
+            <strong id="pct">6 枚</strong> 配置 &nbsp;·&nbsp; 切り取り線あり &nbsp;·&nbsp;
+            <strong id="psz">就活用 36 × 48 mm</strong>
+          </div>
+        </div>
+
+        <!-- 保存・共有 -->
+        <div class="save-row">
+          <button class="save-btn prim" onclick="savePhoto()">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 3v9M5 8l4 4 4-4"/><path d="M3 14h12"/>
+            </svg>
+            写真を保存
+          </button>
+          <button class="save-btn outl">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="13" cy="4" r="2"/><circle cx="4" cy="9" r="2"/><circle cx="13" cy="14" r="2"/>
+              <path d="M5.8 10L11.2 13M11.2 5L5.8 8"/>
+            </svg>
+            共有
+          </button>
+        </div>
+
+        <div style="padding:16px 20px 4px;text-align:center;font-size:12px;color:var(--s45);line-height:1.7">
+          JPEG・PDF 形式でご利用いただけます。<br>
+          データは端末内にのみ保存されます。
+        </div>
+        <div style="height:10px"></div>
+      </div>
+
+      <div class="home-ind"><span></span></div>
+    </div>
+
+  </div><!-- /screen-wrap -->
+</div><!-- /iphone -->
+
+<!-- テンションプロファイルカード -->
+<div class="tc">
+  <div class="tc-ttl">証の間 (Akashi no Ma) — Tension Profile</div>
+  <div class="tc-row"><div class="tc-k">Structure</div><div class="tc-bar"><div class="tc-fill" style="width:20%"></div></div><div class="tc-v">2/10</div></div>
+  <div class="tc-row"><div class="tc-k">Silence</div><div class="tc-bar"><div class="tc-fill" style="width:40%"></div></div><div class="tc-v">4/10</div></div>
+  <div class="tc-row"><div class="tc-k">Precision</div><div class="tc-bar"><div class="tc-fill" style="width:10%"></div></div><div class="tc-v">1/10</div></div>
+  <div class="tc-row"><div class="tc-k">Universal</div><div class="tc-bar"><div class="tc-fill" style="width:20%"></div></div><div class="tc-v">2/10</div></div>
+  <div class="tc-row"><div class="tc-k">Permanence</div><div class="tc-bar"><div class="tc-fill" style="width:10%"></div></div><div class="tc-v">1/10</div></div>
+  <div class="tc-note">
+    支配層: KOKKAKU（骨格）+ MA（間）<br>
+    参照: Dieter Rams × Jony Ive × Kenya Hara × Müller-Brockmann<br>
+    五段階: KIKU → KEZURU → KUMU → KOMERU → TEBANASU
+  </div>
+</div>
+
+<script>
+  /* ── 状態 ─────────────────────────────────────────── */
+  let cur = 1;
+  let sz = { name:'就活用', dim:'36 × 48 mm', w:36, h:48 };
+  let pcnt = 6;
+  let adj = { b:50, c:50, s:50 };
+  let dragging = null;
+
+  /* ── 画面遷移 ─────────────────────────────────────── */
+  function go(n) {
+    const prev = document.getElementById('s' + cur);
+    const next = document.getElementById('s' + n);
+    const fwd  = n > cur;
+
+    if (fwd) {
+      prev.classList.add('exit-l');
+      next.style.cssText = 'transform:translateX(100%);opacity:0';
+      next.classList.add('active');
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        next.style.cssText = 'transform:translateX(0);opacity:1';
+      }));
+      setTimeout(() => {
+        prev.classList.remove('active','exit-l');
+        prev.style.cssText = '';
+        next.style.cssText = '';
+      }, 420);
+    } else {
+      next.style.cssText = 'transform:translateX(-28%);opacity:.55';
+      next.classList.add('active');
+      prev.style.transition = 'transform .38s cubic-bezier(.32,.72,0,1),opacity .38s';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        prev.style.cssText  = 'transition:transform .38s cubic-bezier(.32,.72,0,1),opacity .38s;transform:translateX(100%);opacity:0';
+        next.style.cssText  = 'transition:transform .38s cubic-bezier(.32,.72,0,1),opacity .38s;transform:translateX(0);opacity:1';
+      }));
+      setTimeout(() => {
+        prev.classList.remove('active');
+        prev.style.cssText = ''; next.style.cssText = '';
+      }, 420);
+    }
+    cur = n;
+    if (n === 4) buildGrid();
+  }
+
+  /* ── サイズ選択 ───────────────────────────────────── */
+  function selSize(idx, name, dim, px, w, h) {
+    document.querySelectorAll('.sz-card').forEach(c => c.classList.remove('sel'));
+    document.getElementById('sz-'+idx).classList.add('sel');
+    sz = { name, dim, w, h };
+
+    // カメラバッジ更新
+    document.getElementById('c-dim').textContent = dim;
+    document.getElementById('c-nm').textContent  = name;
+
+    // 編集プレビューアスペクト比更新（max 120×160 box内でfitさせる）
+    const maxW = 120, maxH = 160;
+    let pw = maxW, ph = maxW * h / w;
+    if (ph > maxH) { ph = maxH; pw = maxH * w / h; }
+    const ep = document.getElementById('ep');
+    ep.style.width  = Math.round(pw) + 'px';
+    ep.style.height = Math.round(ph) + 'px';
+
+    // 保存画面テキスト更新
+    document.getElementById('psz').textContent = name + '  ' + dim;
+  }
+
+  /* ── 撮影 ─────────────────────────────────────────── */
+  function shoot() {
+    const sh = document.querySelector('.cam-shutter');
+    sh.style.transform = 'scale(.86)';
+    sh.style.opacity   = '.7';
+    const fl = document.createElement('div');
+    fl.style.cssText = 'position:absolute;inset:0;background:white;z-index:200;opacity:0;transition:opacity .14s;pointer-events:none';
+    document.querySelector('.cam-view').appendChild(fl);
+    requestAnimationFrame(() => {
+      fl.style.opacity = '.9';
+      setTimeout(() => {
+        fl.style.opacity = '0';
+        sh.style.transform = '';
+        sh.style.opacity = '';
+        setTimeout(() => { fl.remove(); go(3); }, 180);
+      }, 110);
+    });
+  }
+
+  /* ── 背景色 ───────────────────────────────────────── */
+  function setBg(chip, color) {
+    document.querySelectorAll('.bg-chip').forEach(c => c.classList.remove('on'));
+    chip.classList.add('on');
+    document.getElementById('ep').style.background = color;
+  }
+
+  /* ── スライダー ───────────────────────────────────── */
+  function dragStart(e, k) {
+    e.preventDefault();
+    dragging = k;
+    updateSlider(e, k);
+    const mm = ev => { if (dragging) updateSlider(ev, dragging); };
+    const up = () => { dragging = null; document.removeEventListener('mousemove', mm); document.removeEventListener('touchmove', mm); };
+    document.addEventListener('mousemove', mm);
+    document.addEventListener('touchmove', mm, { passive:false });
+    document.addEventListener('mouseup',  up, { once:true });
+    document.addEventListener('touchend', up, { once:true });
+  }
+
+  function updateSlider(e, k) {
+    const track = e.currentTarget || document.querySelector(`[onmousedown*="'${k}'"]`);
+    // find track by traversing
+    const fill  = document.getElementById(k+'f');
+    const thumb = document.getElementById(k+'t');
+    const valEl = document.getElementById(k+'v');
+    const allTracks = document.querySelectorAll('.sl-track');
+    let trackEl;
+    allTracks.forEach(t => {
+      const md = t.getAttribute('onmousedown') || '';
+      if (md.includes("'"+k+"'")) trackEl = t;
+    });
+    if (!trackEl) return;
+
+    const rect = trackEl.getBoundingClientRect();
+    const cx   = e.touches ? e.touches[0].clientX : e.clientX;
+    const pct  = Math.max(0, Math.min(1, (cx - rect.left) / rect.width));
+
+    adj[k] = pct * 100;
+    fill.style.width  = (pct * 100) + '%';
+    thumb.style.left  = (pct * 100) + '%';
+    const v = Math.round((pct - .5) * 100);
+    valEl.textContent = (v > 0 ? '+' : '') + v;
+
+    const br = .75 + (adj.b / 100) * .7;
+    const co = .6  + (adj.c / 100) * .9;
+    document.getElementById('ep').style.filter = `brightness(${br}) contrast(${co})`;
+  }
+
+  function resetAdj() {
+    ['b','c','s'].forEach(k => {
+      document.getElementById(k+'f').style.width = '50%';
+      document.getElementById(k+'t').style.left  = '50%';
+      document.getElementById(k+'v').textContent = '0';
+      adj[k] = 50;
+    });
+    document.getElementById('ep').style.filter = '';
+  }
+
+  /* ── 背景除去 ─────────────────────────────────────── */
+  function bgRemove() {
+    const btn = document.getElementById('bg-rm');
+    const bar = document.getElementById('pb');
+    const fill= document.getElementById('pf');
+    const txt = document.getElementById('bg-rm-t');
+    if (btn.classList.contains('proc')) return;
+    btn.classList.add('proc'); bar.classList.add('on');
+    txt.textContent = 'VisionKit 処理中…';
+    let p = 0;
+    const iv = setInterval(() => {
+      p += Math.random() * 14;
+      if (p >= 100) {
+        p = 100; clearInterval(iv);
+        fill.style.width = '100%';
+        setTimeout(() => {
+          btn.classList.remove('proc'); bar.classList.remove('on');
+          fill.style.width = '0'; txt.textContent = '背景除去 完了 ✓';
+          document.getElementById('ep').style.background = '#FFFFFF';
+          document.querySelectorAll('.bg-chip')[0].classList.add('on');
+        }, 340);
+      }
+      fill.style.width = p + '%';
+    }, 160);
+  }
+
+  /* ── 印刷グリッド生成 ─────────────────────────────── */
+  function buildGrid() {
+    const g = document.getElementById('pg');
+    g.innerHTML = '';
+    const cols = 2, rows = Math.ceil(pcnt / cols);
+    g.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+    g.style.gridTemplateRows    = `repeat(${rows},1fr)`;
+    for (let i = 0; i < pcnt; i++) {
+      const c = document.createElement('div');
+      c.className = 'print-cell';
+      c.style.aspectRatio = `${sz.w}/${sz.h}`;
+      g.appendChild(c);
+    }
+    document.getElementById('pct').textContent = pcnt + ' 枚';
+  }
+
+  function setPrint(n, btn) {
+    pcnt = n;
+    document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    buildGrid();
+  }
+
+  /* ── 保存 ─────────────────────────────────────────── */
+  function savePhoto() {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  /* ── 初期化 ───────────────────────────────────────── */
+  buildGrid();
+</script>
+</body>
+</html>

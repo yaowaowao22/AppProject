@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ワリカン名人 — iOS UI Prototype</title>
+  <!--
+    Design Concept: "飲み会の熱気 × 凛雅の静けさ"
+    =====================================================
+    アプリ: ワリカン名人 (88点 総合1位 / ¥160)
+    哲学: 凛雅 (Ringa) — 表現軸 5/10 (9アプリ中最も表現的)
+    Primary  : #FF6B35 (暖橙) — 飲み会の活気
+    Secondary: #FFB800 (黄金) — 乾杯の泡
+    Background: #FFFBF5 (生成り白)
+    間(Ma)システム: xs=4px / sm=8px / md=16px / lg=24px / xl=32px / breath=48px
+    スクリーン: 計算 / 傾斜設定 / 結果 / 履歴
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange: #FF6B35;
+      --orange-light: #FF8F61;
+      --orange-dark: #E5521E;
+      --gold: #FFB800;
+      --gold-light: #FFD060;
+      --cream: #FFFBF5;
+      --card-bg: #FFF8F0;
+      --warm-gray: #F5F0E8;
+      --separator: #E8E0D5;
+      --text-primary: #1C1C1E;
+      --text-secondary: #6C6C70;
+      --text-tertiary: #AEAEB2;
+      --green: #30D158;
+      --red: #FF453A;
+      --blue: #0A84FF;
+      --line-green: #06C755;
+      --ma-xs: 4px;
+      --ma-sm: 8px;
+      --ma-md: 16px;
+      --ma-lg: 24px;
+      --ma-xl: 32px;
+      --ma-breath: 48px;
+    }
+
+    body {
+      background: linear-gradient(145deg, #FFF3E0 0%, #FFFDE7 50%, #FFF8F0 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Noto Sans JP', -apple-system, sans-serif;
+      padding: 40px 20px;
+    }
+
+    /* ===== PHONE FRAME ===== */
+    .phone-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .phone-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: #8A8A8E;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .iphone-frame {
+      position: relative;
+      width: 393px;
+      height: 852px;
+      background: #1C1C1E;
+      border-radius: 54px;
+      padding: 12px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.12),
+        0 50px 140px rgba(0,0,0,0.4),
+        0 20px 60px rgba(0,0,0,0.25),
+        inset 0 0 0 1px rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+
+    /* Volume buttons (left) */
+    .iphone-frame::before {
+      content: '';
+      position: absolute;
+      left: -3px;
+      top: 124px;
+      width: 3px;
+      height: 32px;
+      background: #2C2C2E;
+      border-radius: 2px 0 0 2px;
+      box-shadow: 0 48px 0 #2C2C2E, 0 96px 0 #2C2C2E;
+    }
+
+    /* Power button (right) */
+    .iphone-frame::after {
+      content: '';
+      position: absolute;
+      right: -3px;
+      top: 170px;
+      width: 3px;
+      height: 76px;
+      background: #2C2C2E;
+      border-radius: 0 2px 2px 0;
+    }
+
+    .screen-container {
+      width: 100%;
+      height: 100%;
+      background: var(--cream);
+      border-radius: 44px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Dynamic Island */
+    .dynamic-island {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 126px;
+      height: 37px;
+      background: #000;
+      border-radius: 20px;
+      z-index: 30;
+      flex-shrink: 0;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      height: 59px;
+      padding: 16px 28px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--cream);
+      position: relative;
+      z-index: 10;
+      flex-shrink: 0;
+    }
+
+    .status-time {
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* App Content */
+    .app-content {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Screens */
+    .screen {
+      position: absolute;
+      inset: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: none;
+      flex-direction: column;
+      background: var(--cream);
+      scrollbar-width: none;
+    }
+    .screen::-webkit-scrollbar { display: none; }
+    .screen.active { display: flex; }
+
+    /* Nav bar */
+    .nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px 10px;
+      background: rgba(255,251,245,0.95);
+      backdrop-filter: blur(20px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 0.5px solid var(--separator);
+      flex-shrink: 0;
+    }
+
+    .nav-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .nav-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: var(--orange);
+      font-size: 13px;
+      font-weight: 700;
+      transition: background 0.15s;
+    }
+    .nav-btn:active { background: rgba(255,107,53,0.12); }
+
+    /* Tab Bar */
+    .tab-bar {
+      height: 83px;
+      background: rgba(255,251,245,0.95);
+      backdrop-filter: blur(20px);
+      border-top: 0.5px solid var(--separator);
+      display: flex;
+      align-items: flex-start;
+      padding-top: 10px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 20;
+    }
+
+    .tab-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      transition: transform 0.1s;
+    }
+    .tab-item:active { transform: scale(0.88); }
+
+    .tab-icon { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; }
+
+    .tab-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      transition: color 0.2s;
+    }
+    .tab-item.active .tab-label { color: var(--orange); }
+
+    /* ============================================================
+       SCREEN 1 — CALCULATOR
+    ============================================================ */
+
+    .calc-hero {
+      background: linear-gradient(155deg, #FF6B35 0%, #FF9800 60%, #FFB300 100%);
+      padding: 20px 20px 26px;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .calc-hero::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 140px; height: 140px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 50%;
+    }
+    .calc-hero::after {
+      content: '';
+      position: absolute;
+      bottom: -24px; left: 20px;
+      width: 90px; height: 90px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 50%;
+    }
+
+    .hero-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.75);
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .hero-amount-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .hero-currency {
+      font-family: 'Inter', sans-serif;
+      font-size: 30px;
+      font-weight: 800;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .hero-amount {
+      font-family: 'Inter', sans-serif;
+      font-size: 56px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1;
+      letter-spacing: -2px;
+      transition: all 0.1s;
+    }
+
+    .hero-amount.placeholder { color: rgba(255,255,255,0.35); }
+
+    .hero-cursor {
+      display: inline-block;
+      width: 3px;
+      height: 44px;
+      background: rgba(255,255,255,0.7);
+      border-radius: 2px;
+      margin-left: 2px;
+      vertical-align: middle;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* Controls row */
+    .controls-strip {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      flex-shrink: 0;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--cream);
+      border-bottom: 0.5px solid var(--separator);
+    }
+
+    .ctrl-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    /* Stepper */
+    .stepper {
+      display: flex;
+      align-items: center;
+      background: var(--warm-gray);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .stepper-btn {
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 22px;
+      font-weight: 300;
+      color: var(--orange);
+      transition: background 0.12s;
+    }
+    .stepper-btn:active { background: rgba(255,107,53,0.18); }
+
+    .stepper-val {
+      font-family: 'Inter', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-primary);
+      min-width: 38px;
+      text-align: center;
+    }
+
+    /* Mode toggle */
+    .mode-toggle {
+      display: flex;
+      background: var(--warm-gray);
+      border-radius: 9px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .mode-btn {
+      padding: 7px 14px;
+      border-radius: 7px;
+      border: none;
+      background: none;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .mode-btn.active {
+      background: #fff;
+      color: var(--orange);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    }
+
+    /* Per-person preview bar */
+    .preview-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px 11px;
+      background: #FFF3E0;
+      border-bottom: 0.5px solid #FFD580;
+      flex-shrink: 0;
+    }
+
+    .preview-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .preview-amount {
+      display: flex;
+      align-items: baseline;
+      gap: 2px;
+    }
+
+    .preview-yen {
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--orange);
+    }
+
+    .preview-num {
+      font-family: 'Inter', sans-serif;
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--orange);
+      letter-spacing: -0.5px;
+      transition: all 0.15s;
+    }
+
+    /* Keypad */
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5px;
+      background: var(--separator);
+      flex: 1;
+    }
+
+    .key {
+      background: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', sans-serif;
+      font-size: 28px;
+      font-weight: 400;
+      color: var(--text-primary);
+      cursor: pointer;
+      border: none;
+      transition: background 0.08s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      min-height: 72px;
+    }
+    .key:active { background: #EDE5D8; }
+    .key.key-secondary { background: #F0E8DC; font-size: 24px; }
+    .key.key-secondary:active { background: #E5D8C8; }
+
+    /* ============================================================
+       SCREEN 2 — SLOPE SETTINGS
+    ============================================================ */
+
+    .slope-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: 16px;
+    }
+    .slope-scroll::-webkit-scrollbar { display: none; }
+
+    .preset-section {
+      padding: 14px 16px;
+      border-bottom: 0.5px solid var(--separator);
+      background: var(--cream);
+    }
+
+    .section-header {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-tertiary);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .preset-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .preset-chip {
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--orange-light);
+      background: none;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--orange);
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .preset-chip.active, .preset-chip:active {
+      background: var(--orange);
+      border-color: var(--orange);
+      color: #fff;
+    }
+
+    .slope-summary-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: #FFF3E0;
+      border-bottom: 0.5px solid #FFD580;
+    }
+
+    .sum-label { font-size: 13px; color: var(--text-secondary); }
+
+    .sum-check {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--green);
+      transition: color 0.2s;
+    }
+    .sum-check.warn { color: var(--red); }
+
+    .member-item {
+      padding: 14px 16px;
+      border-bottom: 0.5px solid var(--separator);
+      background: var(--cream);
+    }
+
+    .member-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .member-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .member-name-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .member-role-text {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-top: 1px;
+    }
+
+    .member-calc-amt {
+      font-family: 'Inter', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--orange);
+    }
+    .member-calc-amt .u { font-size: 12px; font-weight: 600; }
+
+    .slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pct-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      min-width: 34px;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 4px;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+      cursor: pointer;
+    }
+
+    .add-member-btn {
+      margin: 12px 16px 0;
+      padding: 14px;
+      width: calc(100% - 32px);
+      background: none;
+      border: 1.5px dashed var(--orange-light);
+      border-radius: 12px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--orange);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+    .add-member-btn:active { background: rgba(255,107,53,0.06); }
+
+    /* ============================================================
+       SCREEN 3 — RESULT
+    ============================================================ */
+
+    .result-hero {
+      background: linear-gradient(155deg, #FF6B35 0%, #FF9800 60%, #FFB300 100%);
+      padding: 28px 20px 32px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .result-hero::before {
+      content: '¥';
+      position: absolute;
+      font-family: 'Inter', sans-serif;
+      font-size: 220px;
+      font-weight: 900;
+      color: rgba(255,255,255,0.05);
+      top: -40px; right: -20px;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .result-sub {
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 8px;
+    }
+
+    .result-big {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .result-big-yen {
+      font-family: 'Inter', sans-serif;
+      font-size: 36px;
+      font-weight: 800;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .result-big-num {
+      font-family: 'Inter', sans-serif;
+      font-size: 72px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1;
+      letter-spacing: -3px;
+      animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.75); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .result-detail {
+      font-size: 13px;
+      color: rgba(255,255,255,0.75);
+      margin-top: 6px;
+    }
+
+    .result-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.92);
+      margin-top: 10px;
+    }
+
+    .result-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .result-scroll::-webkit-scrollbar { display: none; }
+
+    .r-card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 14px 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+
+    .r-card-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-tertiary);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    /* Rounding */
+    .rounding-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    .round-btn {
+      flex: 1;
+      padding: 9px 4px;
+      border-radius: 10px;
+      border: 1.5px solid var(--separator);
+      background: none;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.18s;
+    }
+    .round-btn.active {
+      border-color: var(--orange);
+      background: #FFF3E0;
+      color: var(--orange);
+    }
+
+    /* Breakdown rows */
+    .b-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 0;
+      border-bottom: 0.5px solid var(--separator);
+    }
+    .b-row:last-child { border-bottom: none; }
+
+    .b-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .b-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .b-name { font-size: 14px; color: var(--text-primary); }
+
+    .b-amt {
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* Share preview card */
+    .share-card {
+      background: linear-gradient(135deg, #FF6B35 0%, #FFB300 100%);
+      border-radius: 14px;
+      padding: 18px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .share-card::before {
+      content: '🍺';
+      position: absolute;
+      font-size: 70px;
+      opacity: 0.12;
+      right: 8px; top: 8px;
+    }
+
+    .share-card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    .share-main-num {
+      font-family: 'Inter', sans-serif;
+      font-size: 46px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1;
+      letter-spacing: -2px;
+    }
+
+    .share-main-unit {
+      font-size: 18px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.9);
+      margin-left: 2px;
+    }
+
+    .share-rows {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .share-row {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .share-row-label { font-size: 12px; color: rgba(255,255,255,0.72); }
+    .share-row-val { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; color: #fff; }
+
+    /* Action buttons */
+    .action-row {
+      display: flex;
+      gap: 10px;
+      padding: 0 14px 4px;
+      flex-shrink: 0;
+    }
+
+    .btn-line {
+      flex: 1;
+      height: 52px;
+      background: var(--line-green);
+      border: none;
+      border-radius: 14px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity 0.15s;
+    }
+    .btn-line:active { opacity: 0.82; }
+
+    .btn-copy {
+      width: 52px;
+      height: 52px;
+      background: var(--warm-gray);
+      border: none;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .btn-copy:active { background: var(--separator); }
+
+    /* ============================================================
+       SCREEN 4 — HISTORY
+    ============================================================ */
+
+    .history-scroll {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .history-scroll::-webkit-scrollbar { display: none; }
+
+    .hist-group-header {
+      padding: 8px 16px 5px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-tertiary);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: var(--warm-gray);
+      border-top: 0.5px solid var(--separator);
+      border-bottom: 0.5px solid var(--separator);
+    }
+
+    .hist-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 0.5px solid var(--separator);
+      background: var(--cream);
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .hist-item:active { background: var(--warm-gray); }
+
+    .hist-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .hist-body { flex: 1; min-width: 0; }
+
+    .hist-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hist-meta { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+
+    .hist-right { text-align: right; flex-shrink: 0; }
+
+    .hist-pp {
+      font-family: 'Inter', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    .hist-total { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 32px;
+      gap: 12px;
+      text-align: center;
+    }
+
+    .empty-emoji { font-size: 52px; opacity: 0.45; }
+    .empty-title { font-size: 17px; font-weight: 700; color: var(--text-secondary); }
+    .empty-desc { font-size: 14px; color: var(--text-tertiary); line-height: 1.6; }
+
+    /* Toast */
+    .toast {
+      position: absolute;
+      bottom: 96px;
+      left: 50%;
+      transform: translateX(-50%) translateY(14px);
+      background: rgba(28,28,30,0.92);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 22px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      opacity: 0;
+      transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Misc animations */
+    @keyframes numPulse {
+      0% { transform: scale(1); }
+      30% { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
+
+    .num-pulse { animation: numPulse 0.18s ease-out; }
+  </style>
+</head>
+<body>
+
+<div class="phone-wrapper">
+  <div class="phone-label">iPhone 15 Pro — ワリカン名人 v1.0</div>
+
+  <div class="iphone-frame">
+    <div class="screen-container">
+
+      <!-- Dynamic Island -->
+      <div class="dynamic-island"></div>
+
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <!-- Signal bars -->
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
+            <rect x="0" y="7" width="3" height="5" rx="1" fill="#1C1C1E"/>
+            <rect x="4.5" y="5" width="3" height="7" rx="1" fill="#1C1C1E"/>
+            <rect x="9" y="3" width="3" height="9" rx="1" fill="#1C1C1E"/>
+            <rect x="13.5" y="0" width="3" height="12" rx="1" fill="#1C1C1E"/>
+          </svg>
+          <!-- WiFi -->
+          <svg width="15" height="11" viewBox="0 0 15 11" fill="none">
+            <path d="M7.5 8.5a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" fill="#1C1C1E"/>
+            <path d="M3.5 6.2A5.6 5.6 0 0111.5 6.2" stroke="#1C1C1E" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+            <path d="M1 3.8A8.9 8.9 0 0114 3.8" stroke="#1C1C1E" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+          </svg>
+          <!-- Battery -->
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+            <rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#1C1C1E" stroke-opacity="0.35"/>
+            <rect x="2" y="2" width="15" height="8" rx="2" fill="#1C1C1E"/>
+            <path d="M22.5 4v4c.8-.35 1.4-1.1 1.4-2S23.3 4.35 22.5 4z" fill="#1C1C1E" fill-opacity="0.4"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- App Content -->
+      <div class="app-content">
+
+        <!-- ==================== SCREEN 1: CALCULATOR ==================== -->
+        <div class="screen active" id="screen-calc">
+
+          <!-- Hero display -->
+          <div class="calc-hero">
+            <div class="hero-label">合計金額を入力</div>
+            <div class="hero-amount-row">
+              <span class="hero-currency">¥</span>
+              <span class="hero-amount placeholder" id="amt-display">0</span>
+              <span class="hero-cursor" id="hero-cursor"></span>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div class="controls-strip">
+            <div class="control-row">
+              <span class="ctrl-label">人数</span>
+              <div class="stepper">
+                <button class="stepper-btn" onclick="changePeople(-1)">−</button>
+                <span class="stepper-val" id="people-val">4</span>
+                <button class="stepper-btn" onclick="changePeople(1)">＋</button>
+              </div>
+            </div>
+            <div class="control-row">
+              <span class="ctrl-label">割り勘モード</span>
+              <div class="mode-toggle">
+                <button class="mode-btn active" id="mode-eq" onclick="setMode('equal')">均等割り</button>
+                <button class="mode-btn" id="mode-sl" onclick="setMode('slope')">傾斜割り</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Per-person preview -->
+          <div class="preview-bar">
+            <span class="preview-label">1人あたり（概算）</span>
+            <div class="preview-amount">
+              <span class="preview-yen">¥</span>
+              <span class="preview-num" id="preview-num">—</span>
+            </div>
+          </div>
+
+          <!-- Keypad -->
+          <div class="keypad">
+            <button class="key" onclick="kp('1')">1</button>
+            <button class="key" onclick="kp('2')">2</button>
+            <button class="key" onclick="kp('3')">3</button>
+            <button class="key" onclick="kp('4')">4</button>
+            <button class="key" onclick="kp('5')">5</button>
+            <button class="key" onclick="kp('6')">6</button>
+            <button class="key" onclick="kp('7')">7</button>
+            <button class="key" onclick="kp('8')">8</button>
+            <button class="key" onclick="kp('9')">9</button>
+            <button class="key key-secondary" onclick="kp('00')">00</button>
+            <button class="key" onclick="kp('0')">0</button>
+            <button class="key key-secondary" onclick="kd()">⌫</button>
+          </div>
+
+        </div>
+
+        <!-- ==================== SCREEN 2: SLOPE SETTINGS ==================== -->
+        <div class="screen" id="screen-slope">
+
+          <div class="nav-bar">
+            <span></span>
+            <span class="nav-title">傾斜設定</span>
+            <button class="nav-btn" onclick="applyAndGoCalc()">完了</button>
+          </div>
+
+          <div class="slope-scroll">
+            <!-- Presets -->
+            <div class="preset-section">
+              <div class="section-header">プリセット</div>
+              <div class="preset-chips">
+                <button class="preset-chip" id="chip-boss" onclick="applyPreset('boss', this)">上司多め</button>
+                <button class="preset-chip" id="chip-gender" onclick="applyPreset('gender', this)">男女別</button>
+                <button class="preset-chip" id="chip-org" onclick="applyPreset('organizer', this)">幹事無料</button>
+                <button class="preset-chip" id="chip-eq" onclick="applyPreset('equal', this)">均等にリセット</button>
+              </div>
+            </div>
+
+            <!-- Total ratio summary -->
+            <div class="slope-summary-bar">
+              <span class="sum-label">合計比率</span>
+              <span class="sum-check" id="sum-check">100% ✓</span>
+            </div>
+
+            <!-- Member list -->
+            <div id="member-list"></div>
+
+            <button class="add-member-btn" onclick="addOneMember()">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              メンバーを追加
+            </button>
+          </div>
+
+        </div>
+
+        <!-- ==================== SCREEN 3: RESULT ==================== -->
+        <div class="screen" id="screen-result">
+
+          <!-- Hero -->
+          <div class="result-hero">
+            <div class="result-sub">1人あたりの金額</div>
+            <div class="result-big">
+              <span class="result-big-yen">¥</span>
+              <span class="result-big-num" id="r-big-num">—</span>
+            </div>
+            <div class="result-detail" id="r-detail">— 円 ÷ —人</div>
+            <div class="result-badge" id="r-badge">均等割り</div>
+          </div>
+
+          <!-- Action buttons (above scroll content) -->
+          <div class="action-row" style="padding-top:14px;">
+            <button class="btn-line" onclick="doShare()">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M9 2C5.13 2 2 4.8 2 8.25c0 2.06 1.1 3.88 2.8 5.05-.1.4-.35 1.42-.4 1.63-.06.27.1.27.21.2.1-.07 1.32-.9 1.85-1.27.5.07 1.01.1 1.54.1 3.87 0 7-2.8 7-6.25C16 4.8 12.87 2 9 2Z" fill="white"/>
+              </svg>
+              LINEで送る
+            </button>
+            <button class="btn-copy" onclick="doCopy()">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <rect x="6" y="6" width="9" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M4 12H3a1 1 0 01-1-1V3a1 1 0 011-1h7a1 1 0 011 1v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="result-scroll">
+
+            <!-- Rounding -->
+            <div class="r-card">
+              <div class="r-card-title">端数処理</div>
+              <div class="rounding-btns">
+                <button class="round-btn active" id="round-none" onclick="setRound('none')">そのまま</button>
+                <button class="round-btn" id="round-100" onclick="setRound('100')">100円単位</button>
+                <button class="round-btn" id="round-1000" onclick="setRound('1000')">1,000円単位</button>
+              </div>
+            </div>
+
+            <!-- Breakdown -->
+            <div class="r-card">
+              <div class="r-card-title">内訳</div>
+              <div id="breakdown-list"></div>
+            </div>
+
+            <!-- Share preview -->
+            <div class="r-card">
+              <div class="r-card-title">共有プレビュー</div>
+              <div class="share-card">
+                <div class="share-card-title">🍺 今日の割り勘結果</div>
+                <div>
+                  <span class="share-main-num" id="share-main-num">—</span>
+                  <span class="share-main-unit">円/人</span>
+                </div>
+                <div class="share-rows">
+                  <div class="share-row">
+                    <span class="share-row-label">合計金額</span>
+                    <span class="share-row-val" id="share-total">¥—</span>
+                  </div>
+                  <div class="share-row">
+                    <span class="share-row-label">人数</span>
+                    <span class="share-row-val" id="share-ppl">—人</span>
+                  </div>
+                  <div class="share-row">
+                    <span class="share-row-label">割り勘モード</span>
+                    <span class="share-row-val" id="share-mode">均等割り</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ==================== SCREEN 4: HISTORY ==================== -->
+        <div class="screen" id="screen-history">
+
+          <div class="nav-bar">
+            <span></span>
+            <span class="nav-title">計算履歴</span>
+            <button class="nav-btn" onclick="clearHistory()">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M2 3.5h10M5 3.5V2.5a.5.5 0 01.5-.5h3a.5.5 0 01.5.5v1M11.5 3.5l-.5 8a1 1 0 01-1 1H4a1 1 0 01-1-1l-.5-8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="history-scroll">
+            <div id="history-list"></div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Tab Bar -->
+      <div class="tab-bar">
+
+        <button class="tab-item active" id="tab-calc" onclick="switchTab('calc')">
+          <div class="tab-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="9" fill="#FF6B35"/>
+              <text x="12" y="16.5" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" font-weight="900" fill="white">¥</text>
+            </svg>
+          </div>
+          <span class="tab-label" style="color:var(--orange)">計算</span>
+        </button>
+
+        <button class="tab-item" id="tab-slope" onclick="switchTab('slope')">
+          <div class="tab-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="14" width="3.5" height="6" rx="1" fill="#AEAEB2"/>
+              <rect x="8" y="10" width="3.5" height="10" rx="1" fill="#AEAEB2"/>
+              <rect x="13" y="7" width="3.5" height="13" rx="1" fill="#AEAEB2"/>
+              <rect x="18" y="4" width="3.5" height="16" rx="1" fill="#AEAEB2"/>
+            </svg>
+          </div>
+          <span class="tab-label">傾斜</span>
+        </button>
+
+        <button class="tab-item" id="tab-result" onclick="switchTab('result')">
+          <div class="tab-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="9" stroke="#AEAEB2" stroke-width="2"/>
+              <path d="M12 7.5l2 4h4l-3 2.5 1.5 4L12 15.5l-4.5 2.5 1.5-4L6 11.5h4z" fill="#AEAEB2"/>
+            </svg>
+          </div>
+          <span class="tab-label">結果</span>
+        </button>
+
+        <button class="tab-item" id="tab-history" onclick="switchTab('history')">
+          <div class="tab-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <rect x="3.5" y="4" width="17" height="16" rx="3" stroke="#AEAEB2" stroke-width="2"/>
+              <path d="M7.5 9h9M7.5 13h6M7.5 17h4" stroke="#AEAEB2" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="tab-label">履歴</span>
+        </button>
+
+      </div>
+
+      <!-- Toast -->
+      <div class="toast" id="toast"></div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   STATE
+================================================================ */
+const COLORS = ['#FF6B35','#FFB800','#0A84FF','#FF2D55','#30D158','#BF5AF2','#5E5CE6','#FF9F0A'];
+const MEMBER_DEFAULTS = [
+  { name: '田中（幹事）', role: '幹事' },
+  { name: '鈴木部長',    role: '上司' },
+  { name: '佐藤さん',   role: '男性' },
+  { name: '山田さん',   role: '女性' },
+  { name: '高橋さん',   role: '男性' },
+  { name: '伊藤さん',   role: '女性' },
+  { name: '渡辺さん',   role: '男性' },
+  { name: '小林さん',   role: '女性' },
+];
+
+let S = {
+  amtStr: '',
+  people: 4,
+  mode: 'equal',
+  rounding: 'none',
+  members: [],
+  history: [
+    { name: '忘年会 2025', emoji: '🎉', date: '2025年12月20日', people: 12, total: 72000, mode: '均等割り' },
+    { name: '歓迎会',     emoji: '🍺', date: '2025年4月3日',  people:  8, total: 48000, mode: '傾斜割り' },
+    { name: '花見',       emoji: '🌸', date: '2025年4月7日',  people: 15, total: 45000, mode: '均等割り' },
+    { name: 'チーム打ち上げ', emoji: '🥂', date: '2025年3月28日', people: 6, total: 36000, mode: '傾斜割り' },
+  ]
+};
+
+/* ================================================================
+   HELPERS
+================================================================ */
+const fmt = n => n.toLocaleString('ja-JP');
+
+function getAmt() { return parseInt(S.amtStr || '0', 10); }
+
+function ensureMembers() {
+  while (S.members.length < Math.max(S.people, 8)) {
+    const i = S.members.length;
+    const d = MEMBER_DEFAULTS[i] || { name: `メンバー${i+1}`, role: '' };
+    S.members.push({ name: d.name, role: d.role, ratio: 25, color: COLORS[i % COLORS.length] });
+  }
+}
+
+function equalizeRatios(n) {
+  const base = Math.floor(100 / n);
+  const rem  = 100 - base * n;
+  S.members.slice(0, n).forEach((m, i) => { m.ratio = base + (i === 0 ? rem : 0); });
+}
+
+function calcPerPerson() {
+  const total = getAmt();
+  if (total === 0) return null;
+
+  if (S.mode === 'equal') {
+    let pp = Math.ceil(total / S.people);
+    if (S.rounding === '100')  pp = Math.ceil(pp / 100) * 100;
+    if (S.rounding === '1000') pp = Math.ceil(pp / 1000) * 1000;
+    return pp;
+  }
+  // slope: return array
+  const members = S.members.slice(0, S.people);
+  const totalR  = members.reduce((s, m) => s + m.ratio, 0) || 1;
+  return members.map(m => {
+    let a = Math.ceil(total * m.ratio / totalR);
+    if (S.rounding === '100')  a = Math.ceil(a / 100) * 100;
+    if (S.rounding === '1000') a = Math.ceil(a / 1000) * 1000;
+    return { ...m, amount: a };
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ================================================================
+   KEYPAD
+================================================================ */
+function kp(v) {
+  if (S.amtStr.length >= 8) return;
+  if ((v === '0' || v === '00') && S.amtStr === '') return;
+  S.amtStr += v;
+  updateCalcUI();
+}
+
+function kd() {
+  if (!S.amtStr) return;
+  S.amtStr = S.amtStr.slice(0, -1);
+  updateCalcUI();
+}
+
+function updateCalcUI() {
+  const total = getAmt();
+  const el    = document.getElementById('amt-display');
+
+  if (total === 0) {
+    el.textContent = '0';
+    el.classList.add('placeholder');
+  } else {
+    el.textContent = fmt(total);
+    el.classList.remove('placeholder');
+    el.classList.remove('num-pulse');
+    void el.offsetWidth; // reflow for re-trigger
+    el.classList.add('num-pulse');
+  }
+
+  // Preview
+  const pp = calcPerPerson();
+  const pEl = document.getElementById('preview-num');
+  if (pp === null) {
+    pEl.textContent = '—';
+  } else if (Array.isArray(pp)) {
+    const amts = pp.map(r => r.amount);
+    const mn = Math.min(...amts), mx = Math.max(...amts);
+    pEl.textContent = mn === mx ? fmt(mn) : `${fmt(mn)}〜${fmt(mx)}`;
+  } else {
+    pEl.textContent = fmt(pp);
+  }
+}
+
+/* ================================================================
+   PEOPLE
+================================================================ */
+function changePeople(d) {
+  const n = S.people + d;
+  if (n < 1 || n > 20) return;
+  S.people = n;
+  document.getElementById('people-val').textContent = n;
+  equalizeRatios(n);
+  updateCalcUI();
+  if (document.getElementById('screen-slope').classList.contains('active')) renderSlope();
+}
+
+/* ================================================================
+   MODE
+================================================================ */
+function setMode(m) {
+  S.mode = m;
+  document.getElementById('mode-eq').classList.toggle('active', m === 'equal');
+  document.getElementById('mode-sl').classList.toggle('active', m === 'slope');
+  updateCalcUI();
+}
+
+/* ================================================================
+   SLOPE SCREEN
+================================================================ */
+function renderSlope() {
+  ensureMembers();
+  const members = S.members.slice(0, S.people);
+  const total   = members.reduce((s, m) => s + m.ratio, 0);
+  const amt     = getAmt();
+
+  // Total indicator
+  const ind = document.getElementById('sum-check');
+  ind.textContent = `${total}% ${total === 100 ? '✓' : '⚠'}`;
+  ind.className   = 'sum-check' + (total !== 100 ? ' warn' : '');
+
+  const list = document.getElementById('member-list');
+  list.innerHTML = members.map((m, i) => {
+    const pct     = m.ratio;
+    const calcAmt = amt > 0 && total > 0 ? Math.ceil(amt * pct / total) : 0;
+    const grad    = `linear-gradient(to right, ${m.color} 0%, ${m.color} ${pct}%, #E8E0D5 ${pct}%, #E8E0D5 100%)`;
+    return `
+      <div class="member-item">
+        <div class="member-top">
+          <div class="member-info">
+            <div class="avatar" style="background:${m.color}">${m.name.charAt(0)}</div>
+            <div>
+              <div class="member-name-text">${m.name}</div>
+              <div class="member-role-text">${m.role}</div>
+            </div>
+          </div>
+          <div class="member-calc-amt">
+            <span class="u">¥</span>${calcAmt > 0 ? fmt(calcAmt) : '—'}
+          </div>
+        </div>
+        <div class="slider-wrap">
+          <span class="pct-label" style="color:${m.color}">${pct}%</span>
+          <input type="range" min="0" max="100" value="${pct}"
+            style="background:${grad}"
+            oninput="updateRatio(${i}, this.value, this)">
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateRatio(idx, val, el) {
+  S.members[idx].ratio = parseInt(val);
+  const m = S.members[idx];
+  const pct = m.ratio;
+  el.style.background = `linear-gradient(to right, ${m.color} 0%, ${m.color} ${pct}%, #E8E0D5 ${pct}%, #E8E0D5 100%)`;
+  // Update just the pct label (closest sibling)
+  el.closest('.slider-wrap').querySelector('.pct-label').textContent = pct + '%';
+  // Update member amount
+  const amt = getAmt();
+  const total = S.members.slice(0, S.people).reduce((s, m2) => s + m2.ratio, 0) || 1;
+  const calcAmt = amt > 0 ? Math.ceil(amt * pct / total) : 0;
+  el.closest('.member-item').querySelector('.member-calc-amt').innerHTML =
+    `<span class="u">¥</span>${calcAmt > 0 ? fmt(calcAmt) : '—'}`;
+  // Update sum indicator
+  const sum = S.members.slice(0, S.people).reduce((s, m2) => s + m2.ratio, 0);
+  const ind = document.getElementById('sum-check');
+  ind.textContent = `${sum}% ${sum === 100 ? '✓' : '⚠'}`;
+  ind.className = 'sum-check' + (sum !== 100 ? ' warn' : '');
+  updateCalcUI();
+}
+
+function applyPreset(preset, chip) {
+  ensureMembers();
+  document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  const n = S.people;
+
+  if (preset === 'equal') {
+    equalizeRatios(n);
+  } else if (preset === 'boss') {
+    // Index 1 = 上司 gets 1.6x share
+    const bossRatio = Math.floor(100 * 1.6 / (n + 0.6));
+    const rest = Math.floor((100 - bossRatio) / Math.max(1, n - 1));
+    S.members.slice(0, n).forEach((m, i) => { m.ratio = i === 1 ? bossRatio : rest; });
+    const diff = 100 - S.members.slice(0, n).reduce((s, m) => s + m.ratio, 0);
+    S.members[0].ratio += diff;
+  } else if (preset === 'gender') {
+    // Males ~30/pp, females ~20/pp scaled to 100
+    const males   = S.members.slice(0, n).filter(m => m.role === '男性' || m.role === '上司');
+    const females = S.members.slice(0, n).filter(m => m.role === '女性');
+    const mShare  = males.length   > 0 ? Math.floor(60 / males.length)   : 0;
+    const fShare  = females.length > 0 ? Math.floor(40 / females.length) : 0;
+    S.members.slice(0, n).forEach(m => {
+      if (m.role === '男性' || m.role === '上司') m.ratio = mShare;
+      else if (m.role === '女性') m.ratio = fShare;
+      else m.ratio = Math.floor(100 / n);
+    });
+    const diff = 100 - S.members.slice(0, n).reduce((s, m) => s + m.ratio, 0);
+    S.members[0].ratio += diff;
+  } else if (preset === 'organizer') {
+    // Index 0 (幹事) = 0, rest equal
+    const share = Math.floor(100 / Math.max(1, n - 1));
+    S.members.slice(0, n).forEach((m, i) => { m.ratio = i === 0 ? 0 : share; });
+    if (n > 1) {
+      const diff = 100 - S.members.slice(0, n).reduce((s, m) => s + m.ratio, 0);
+      S.members[1].ratio += diff;
+    }
+  }
+
+  renderSlope();
+  updateCalcUI();
+}
+
+function addOneMember() {
+  if (S.people >= 20) { showToast('最大20人まで追加できます'); return; }
+  changePeople(1);
+}
+
+function applyAndGoCalc() {
+  setMode('slope');
+  showToast('傾斜設定を適用しました ✓');
+  switchTab('calc');
+}
+
+/* ================================================================
+   RESULT SCREEN
+================================================================ */
+function refreshResult() {
+  const total = getAmt();
+  const pp    = calcPerPerson();
+
+  // Badge & detail
+  document.getElementById('r-detail').textContent = `${fmt(total)}円 ÷ ${S.people}人`;
+  document.getElementById('r-badge').textContent   = S.mode === 'equal' ? '均等割り' : '傾斜割り';
+  document.getElementById('share-total').textContent = `¥${fmt(total)}`;
+  document.getElementById('share-ppl').textContent   = `${S.people}人`;
+  document.getElementById('share-mode').textContent  = S.mode === 'equal' ? '均等割り' : '傾斜割り';
+
+  // Big number
+  let mainAmt = 0;
+  if (pp !== null) {
+    mainAmt = Array.isArray(pp)
+      ? Math.round(pp.reduce((s, r) => s + r.amount, 0) / pp.length)
+      : pp;
+  }
+  document.getElementById('r-big-num').textContent    = mainAmt > 0 ? fmt(mainAmt) : '—';
+  document.getElementById('share-main-num').textContent = mainAmt > 0 ? fmt(mainAmt) : '—';
+
+  // Breakdown
+  const bl = document.getElementById('breakdown-list');
+  if (pp === null || total === 0) {
+    bl.innerHTML = '<div style="padding:12px 0;color:var(--text-tertiary);font-size:13px;text-align:center">金額を入力してください</div>';
+    return;
+  }
+
+  let rows;
+  if (Array.isArray(pp)) {
+    rows = pp.map(r => ({ name: r.name, color: r.color, amount: r.amount }));
+  } else {
+    rows = S.members.slice(0, S.people).map(m => ({ name: m.name, color: m.color, amount: pp }));
+  }
+
+  bl.innerHTML = rows.map(r => `
+    <div class="b-row">
+      <div class="b-left">
+        <div class="b-dot" style="background:${r.color}"></div>
+        <span class="b-name">${r.name}</span>
+      </div>
+      <span class="b-amt">¥${fmt(r.amount)}</span>
+    </div>
+  `).join('');
+}
+
+function setRound(t) {
+  S.rounding = t;
+  ['none','100','1000'].forEach(k => {
+    document.getElementById(`round-${k}`).classList.toggle('active', k === t);
+  });
+  refreshResult();
+}
+
+/* ================================================================
+   SHARE / COPY
+================================================================ */
+function doShare() {
+  const total = getAmt();
+  if (total > 0) {
+    const tags = ['🍺 飲み会','🎉 打ち上げ','🌸 花見','🥂 宴会'];
+    const emojis = ['🍺','🎉','🌸','🥂'];
+    const i = Math.floor(Math.random() * 4);
+    S.history.unshift({
+      name:   tags[i],
+      emoji:  emojis[i],
+      date:   '2026年3月28日',
+      people: S.people,
+      total:  total,
+      mode:   S.mode === 'equal' ? '均等割り' : '傾斜割り'
+    });
+  }
+  showToast('LINEを起動中...');
+}
+
+function doCopy() {
+  const pp = calcPerPerson();
+  const amt = Array.isArray(pp) ? pp[0].amount : (pp || 0);
+  showToast(`¥${fmt(amt)} をコピーしました`);
+}
+
+/* ================================================================
+   HISTORY SCREEN
+================================================================ */
+function renderHistory() {
+  const c = document.getElementById('history-list');
+
+  if (S.history.length === 0) {
+    c.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-emoji">🍺</div>
+        <div class="empty-title">履歴はまだありません</div>
+        <div class="empty-desc">計算を実行してLINEで送ると<br>ここに記録が残ります</div>
+      </div>`;
+    return;
+  }
+
+  // Group by year-month
+  const groups = {};
+  S.history.forEach(h => {
+    const key = h.date.slice(0, h.date.indexOf('日') - 2); // "2025年12月"
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(h);
+  });
+
+  c.innerHTML = Object.entries(groups).map(([month, items]) => `
+    <div class="hist-group-header">${month}</div>
+    ${items.map(h => `
+      <div class="hist-item" onclick='loadHist(${JSON.stringify(h)})'>
+        <div class="hist-icon" style="background:${h.mode === '均等割り' ? '#FFF3E0' : '#FFF0F5'}">
+          <span>${h.emoji}</span>
+        </div>
+        <div class="hist-body">
+          <div class="hist-name">${h.name}</div>
+          <div class="hist-meta">${h.date} · ${h.people}人 · ${h.mode}</div>
+        </div>
+        <div class="hist-right">
+          <div class="hist-pp">¥${fmt(Math.ceil(h.total / h.people))}</div>
+          <div class="hist-total">計 ¥${fmt(h.total)}</div>
+        </div>
+      </div>
+    `).join('')}
+  `).join('');
+}
+
+function loadHist(h) {
+  S.amtStr  = String(h.total);
+  S.people  = h.people;
+  document.getElementById('people-val').textContent = h.people;
+  setMode(h.mode === '均等割り' ? 'equal' : 'slope');
+  updateCalcUI();
+  switchTab('calc');
+  showToast('履歴を読み込みました');
+}
+
+function clearHistory() {
+  if (S.history.length === 0) return;
+  S.history = [];
+  renderHistory();
+  showToast('履歴を削除しました');
+}
+
+/* ================================================================
+   TAB NAVIGATION
+================================================================ */
+const TAB_IDS = ['calc', 'slope', 'result', 'history'];
+const SCREEN_IDS = { calc: 'screen-calc', slope: 'screen-slope', result: 'screen-result', history: 'screen-history' };
+const ACTIVE_ICONS = {
+  calc: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="#FF6B35"/><text x="12" y="16.5" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" font-weight="900" fill="white">¥</text></svg>`,
+  slope: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="14" width="3.5" height="6" rx="1" fill="#FF6B35"/><rect x="8" y="10" width="3.5" height="10" rx="1" fill="#FF6B35"/><rect x="13" y="7" width="3.5" height="13" rx="1" fill="#FF6B35"/><rect x="18" y="4" width="3.5" height="16" rx="1" fill="#FF6B35"/></svg>`,
+  result: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="#FF6B35"/><path d="M12 7.5l2 4h4l-3 2.5 1.5 4L12 15.5l-4.5 2.5 1.5-4L6 11.5h4z" fill="white"/></svg>`,
+  history: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3.5" y="4" width="17" height="16" rx="3" fill="#FF6B35"/><path d="M7.5 9h9M7.5 13h6M7.5 17h4" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>`
+};
+const INACTIVE_ICONS = {
+  calc: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#AEAEB2" stroke-width="2"/><text x="12" y="16.5" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" font-weight="700" fill="#AEAEB2">¥</text></svg>`,
+  slope: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="14" width="3.5" height="6" rx="1" fill="#AEAEB2"/><rect x="8" y="10" width="3.5" height="10" rx="1" fill="#AEAEB2"/><rect x="13" y="7" width="3.5" height="13" rx="1" fill="#AEAEB2"/><rect x="18" y="4" width="3.5" height="16" rx="1" fill="#AEAEB2"/></svg>`,
+  result: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#AEAEB2" stroke-width="2"/><path d="M12 7.5l2 4h4l-3 2.5 1.5 4L12 15.5l-4.5 2.5 1.5-4L6 11.5h4z" fill="#AEAEB2"/></svg>`,
+  history: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3.5" y="4" width="17" height="16" rx="3" stroke="#AEAEB2" stroke-width="2"/><path d="M7.5 9h9M7.5 13h6M7.5 17h4" stroke="#AEAEB2" stroke-width="1.6" stroke-linecap="round"/></svg>`
+};
+
+function switchTab(tab) {
+  // Hide all
+  TAB_IDS.forEach(id => {
+    document.getElementById(SCREEN_IDS[id]).classList.remove('active');
+    const tabEl = document.getElementById(`tab-${id}`);
+    tabEl.classList.remove('active');
+    tabEl.querySelector('.tab-icon').innerHTML = INACTIVE_ICONS[id];
+    tabEl.querySelector('.tab-label').style.color = '';
+  });
+
+  // Show target
+  document.getElementById(SCREEN_IDS[tab]).classList.add('active');
+  const activeTabEl = document.getElementById(`tab-${tab}`);
+  activeTabEl.classList.add('active');
+  activeTabEl.querySelector('.tab-icon').innerHTML = ACTIVE_ICONS[tab];
+  activeTabEl.querySelector('.tab-label').style.color = 'var(--orange)';
+
+  // Side effects
+  if (tab === 'slope')   renderSlope();
+  if (tab === 'result')  refreshResult();
+  if (tab === 'history') renderHistory();
+}
+
+/* ================================================================
+   INIT
+================================================================ */
+ensureMembers();
+equalizeRatios(S.people);
+updateCalcUI();
+
+// Slight delay so the result screen animation fires on first visit
+document.getElementById('screen-result').addEventListener('transitionend', () => {});
+</script>
+</body>
+</html>

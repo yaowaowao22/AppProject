@@ -1,0 +1,2019 @@
+<!DOCTYPE html>
+<!--
+  四字熟語道場 — iOS UI/UX Prototype
+  Design: Apple HIG準拠 × 凛雅 (Ringa) × 武道道場モチーフ
+  Concept: 「鍛の静寂」— 墨黒×臙脂×金 / 朱印スタンプ正解演出
+  iPhone 15 Pro (393×852) / Dynamic Island / Safe Area準拠
+  Author: Claude Code (ios-uiux skill) | 2026-03-28
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>四字熟語道場 — iOS UI/UX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500;600;700;900&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════
+   DESIGN TOKENS — 四字熟語道場
+   墨黒 × 臙脂 × 金 × 絹白
+   ════════════════════════════════════════════ */
+:root {
+  --sumi:      #1A1A1C;  /* 墨黒 */
+  --sumi-90:   #252528;
+  --sumi-80:   #2E2E32;
+  --sumi-60:   #3C3C42;
+  --sumi-40:   #5A5A62;
+  --enji:      #8B0000;  /* 臙脂 */
+  --enji-l:    #A31515;
+  --enji-xl:   #C41E1E;
+  --enji-glow: rgba(139,0,0,0.35);
+  --kin:       #C8973A;  /* 金 */
+  --kin-l:     #DBA84A;
+  --kin-glow:  rgba(200,151,58,0.4);
+  --shiroi:    #F7F5F0;  /* 絹白 */
+  --shiroi-d:  #EDE9E0;
+  --gin:       #8A8A8E;  /* 銀 */
+  --gin-l:     #B0B0B4;
+  --gin-xl:    #D8D8DC;
+
+  /* Belt Colors */
+  --belt-white:  #F0EDE8;
+  --belt-yellow: #E8C840;
+  --belt-orange: #E87820;
+  --belt-green:  #2D7A3A;
+  --belt-blue:   #1A4A8B;
+  --belt-brown:  #6B3A1A;
+  --belt-black:  #1A1A1C;
+
+  /* Spacing — 8pt Grid */
+  --s4:  4px;
+  --s8:  8px;
+  --s12: 12px;
+  --s16: 16px;
+  --s20: 20px;
+  --s24: 24px;
+  --s32: 32px;
+  --s40: 40px;
+  --s48: 48px;
+
+  /* Type */
+  --serif: 'Noto Serif JP', 'Hiragino Mincho ProN', serif;
+  --sans:  'Noto Sans JP', 'Hiragino Sans', sans-serif;
+
+  /* Radius */
+  --r8:  8px;
+  --r12: 12px;
+  --r16: 16px;
+  --r20: 20px;
+  --r24: 24px;
+
+  /* Shadows */
+  --card-shadow: 0 2px 16px rgba(26,26,28,0.12), 0 1px 4px rgba(26,26,28,0.08);
+  --raised:      0 8px 32px rgba(26,26,28,0.24), 0 2px 8px rgba(26,26,28,0.12);
+
+  /* Animation */
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease:   cubic-bezier(0.0, 0.0, 0.2, 1);
+}
+
+/* ════════════════════════════════════════════
+   RESET & HOST
+   ════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  font-family: var(--sans);
+  background: #0D0D0F;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+/* ════════════════════════════════════════════
+   DEVICE FRAME — iPhone 15 Pro
+   ════════════════════════════════════════════ */
+.device-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.device-label {
+  color: #404040;
+  font-size: 11px;
+  font-family: var(--sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.iphone {
+  position: relative;
+  width: 393px;
+  height: 852px;
+  background: #18181A;
+  border-radius: 54px;
+  box-shadow:
+    0 0 0 1px #3A3A3E,
+    0 0 0 2.5px #242428,
+    inset 0 0 0 1px #404044,
+    0 48px 120px rgba(0,0,0,0.9),
+    0 24px 64px rgba(0,0,0,0.7);
+  overflow: hidden;
+}
+/* Titanium edge glint */
+.iphone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 54px;
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.09) 0%,
+    transparent 25%,
+    transparent 75%,
+    rgba(255,255,255,0.04) 100%);
+  pointer-events: none;
+  z-index: 999;
+}
+/* Physical buttons */
+.btn-silent     { position:absolute; left:-3px; top:116px;  width:3px; height:28px; background:#2A2A2E; border-radius:2px; }
+.btn-vol-up     { position:absolute; left:-3px; top:164px;  width:3px; height:52px; background:#2A2A2E; border-radius:2px; }
+.btn-vol-down   { position:absolute; left:-3px; top:228px;  width:3px; height:52px; background:#2A2A2E; border-radius:2px; }
+.btn-power      { position:absolute; right:-3px;top:176px; width:3px; height:80px; background:#2A2A2E; border-radius:2px; }
+
+/* Screen */
+.screen {
+  position: absolute;
+  inset: 0;
+  border-radius: 54px;
+  overflow: hidden;
+  background: var(--shiroi);
+}
+
+/* ════════════════════════════════════════════
+   DYNAMIC ISLAND
+   ════════════════════════════════════════════ */
+.dynamic-island {
+  position: absolute;
+  top: 12px; left: 50%;
+  transform: translateX(-50%);
+  width: 126px; height: 37px;
+  background: #000;
+  border-radius: 20px;
+  z-index: 500;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.07);
+}
+
+/* ════════════════════════════════════════════
+   STATUS BAR
+   ════════════════════════════════════════════ */
+.status-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 59px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 28px 10px;
+  z-index: 400;
+  pointer-events: none;
+}
+.status-time {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sumi);
+  letter-spacing: -0.3px;
+}
+.status-time.light { color: var(--shiroi); }
+.status-icons {
+  display: flex; align-items: center; gap: 6px;
+}
+.status-icons svg { display: block; }
+
+/* ════════════════════════════════════════════
+   APP SCREENS
+   ════════════════════════════════════════════ */
+.app-screen {
+  position: absolute;
+  inset: 0;
+  background: var(--shiroi);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.app-screen.active { display: flex; }
+
+/* ════════════════════════════════════════════
+   TAB BAR — Apple HIG: 83px, Safe Area
+   ════════════════════════════════════════════ */
+.tab-bar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 83px;
+  background: rgba(247,245,240,0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 0.5px solid rgba(26,26,28,0.08);
+  display: flex;
+  align-items: flex-start;
+  padding-top: 10px;
+  z-index: 300;
+}
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 6px 0;
+  transition: transform 0.18s var(--spring);
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px; /* HIG: 44pt minimum */
+}
+.tab-item:active { transform: scale(0.88); }
+.tab-icon {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  line-height: 1;
+}
+.tab-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--gin);
+}
+.tab-item.active .tab-label { color: var(--enji); font-weight: 600; }
+.tab-item.active .tab-icon  { filter: drop-shadow(0 0 5px var(--enji-glow)); }
+
+/* Dark tab bar variant */
+.tab-bar.dark {
+  background: rgba(26,26,28,0.94);
+  border-top-color: rgba(255,255,255,0.08);
+}
+.tab-bar.dark .tab-label { color: rgba(255,255,255,0.4); }
+.tab-bar.dark .tab-item.active .tab-label { color: var(--kin); }
+
+/* ════════════════════════════════════════════
+   SCROLL CONTENT
+   ════════════════════════════════════════════ */
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 59px 0 83px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll::-webkit-scrollbar { display: none; }
+
+/* ════════════════════════════════════════════
+   NOISE TEXTURE
+   ════════════════════════════════════════════ */
+.noise {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 998;
+  border-radius: inherit;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+/* ════════════════════════════════════════════
+   SCREEN 1: 道場 (HOME)
+   ════════════════════════════════════════════ */
+#screen-dojo .scroll { background: var(--shiroi); }
+
+/* Hero banner */
+.hero {
+  position: relative;
+  margin: var(--s16);
+  border-radius: var(--r20);
+  overflow: hidden;
+  min-height: 188px;
+  background: var(--sumi);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--s24) var(--s20);
+}
+.hero-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 85% 15%, rgba(139,0,0,0.45) 0%, transparent 55%),
+    radial-gradient(ellipse at 15% 85%, rgba(200,151,58,0.22) 0%, transparent 50%),
+    var(--sumi);
+}
+.hero-grid {
+  position: absolute; inset: 0; opacity: 0.035;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.5) 0px, rgba(255,255,255,0.5) 1px, transparent 1px, transparent 24px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.5) 0px, rgba(255,255,255,0.5) 1px, transparent 1px, transparent 24px);
+}
+.hero-kanji {
+  position: absolute; right: 16px; top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--serif);
+  font-size: 88px; font-weight: 900;
+  color: rgba(255,255,255,0.05);
+  writing-mode: vertical-rl;
+  line-height: 1; letter-spacing: -4px;
+  pointer-events: none;
+}
+.hero-content { position: relative; z-index: 1; }
+.hero-subtitle {
+  font-size: 12px; font-weight: 400;
+  color: rgba(247,245,240,0.55);
+  letter-spacing: 0.18em;
+  margin-bottom: 4px;
+}
+.hero-rank {
+  font-family: var(--serif);
+  font-size: 26px; font-weight: 700;
+  color: var(--shiroi);
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 10px;
+}
+.belt-badge {
+  display: inline-flex; align-items: center;
+  background: var(--kin);
+  color: var(--sumi);
+  font-size: 11px; font-weight: 700;
+  padding: 3px 8px; border-radius: 6px;
+  letter-spacing: 0.05em;
+}
+.belt-bar-wrap {
+  position: relative;
+  height: 6px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 3px;
+  margin-bottom: 6px;
+  overflow: visible;
+}
+.belt-bar-fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 62%;
+  background: linear-gradient(90deg, var(--kin-l), var(--kin));
+  border-radius: 3px;
+  box-shadow: 0 0 10px var(--kin-glow);
+  animation: barGrow 1.2s var(--ease) both;
+}
+@keyframes barGrow { from { width: 0; } }
+.belt-bar-text {
+  font-size: 11px; color: rgba(247,245,240,0.45);
+}
+
+/* Streak widget */
+.streak {
+  margin: 0 var(--s16) var(--s8);
+  background: var(--sumi);
+  border-radius: var(--r16);
+  padding: var(--s16) var(--s20);
+  display: flex; align-items: center; gap: var(--s16);
+  position: relative; overflow: hidden;
+}
+.streak::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 0% 50%, rgba(200,151,58,0.18) 0%, transparent 60%);
+}
+.streak-fire {
+  font-size: 40px; line-height: 1;
+  filter: drop-shadow(0 0 10px rgba(255,140,0,0.65));
+  animation: flame 2.2s ease-in-out infinite;
+  position: relative;
+}
+@keyframes flame {
+  0%,100% { transform: scale(1) rotate(-2deg); }
+  50%      { transform: scale(1.1) rotate(2deg); }
+}
+.streak-info { flex: 1; position: relative; }
+.streak-num {
+  font-family: var(--serif);
+  font-size: 38px; font-weight: 700;
+  color: var(--kin); line-height: 1;
+}
+.streak-sub {
+  font-size: 12px;
+  color: rgba(247,245,240,0.55);
+  margin-top: 2px;
+}
+.streak-dots {
+  display: flex; gap: 6px; align-items: center;
+}
+.sdot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+}
+.sdot.done  { background: var(--kin); box-shadow: 0 0 5px var(--kin-glow); }
+.sdot.today { background: var(--enji-xl); box-shadow: 0 0 7px rgba(196,30,30,0.7); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+/* Stats row */
+.stats {
+  display: flex; gap: var(--s8);
+  margin: 0 var(--s16) var(--s8);
+}
+.stat {
+  flex: 1;
+  background: #fff;
+  border-radius: var(--r12);
+  padding: var(--s16) var(--s8);
+  text-align: center;
+  box-shadow: var(--card-shadow);
+  border: 0.5px solid rgba(26,26,28,0.05);
+  cursor: pointer;
+  transition: transform 0.18s var(--spring);
+  min-height: 44px;
+}
+.stat:active { transform: scale(0.95); }
+.stat-val {
+  font-family: var(--serif);
+  font-size: 26px; font-weight: 700;
+  color: var(--sumi); line-height: 1;
+}
+.stat-val.red  { color: var(--enji); }
+.stat-val.gold { color: var(--kin); }
+.stat-lbl {
+  font-size: 11px; color: var(--gin);
+  margin-top: 3px; font-weight: 500;
+}
+
+/* Section header */
+.sec-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: var(--s24) var(--s16) var(--s12);
+}
+.sec-title {
+  font-family: var(--serif);
+  font-size: 17px; font-weight: 700;
+  color: var(--sumi);
+  display: flex; align-items: center; gap: 8px;
+}
+.sec-title::before {
+  content: '';
+  display: inline-block; width: 3px; height: 17px;
+  background: var(--enji); border-radius: 2px;
+}
+.sec-more {
+  font-size: 13px; color: var(--enji); font-weight: 500;
+  cursor: pointer; padding: 8px;
+  min-width: 44px; min-height: 44px;
+  display: flex; align-items: center; justify-content: flex-end;
+}
+
+/* Today cards */
+.today-cards {
+  display: flex; flex-direction: column; gap: var(--s8);
+  padding: 0 var(--s16);
+}
+.today-card {
+  background: #fff;
+  border-radius: var(--r16);
+  padding: var(--s16) var(--s20);
+  display: flex; align-items: center; gap: var(--s16);
+  box-shadow: var(--card-shadow);
+  border: 0.5px solid rgba(26,26,28,0.05);
+  cursor: pointer;
+  transition: transform 0.18s var(--spring);
+  min-height: 72px;
+}
+.today-card:active { transform: scale(0.97); }
+.today-card-kanji {
+  font-family: var(--serif);
+  font-size: 28px; font-weight: 700;
+  color: var(--sumi); width: 56px; text-align: center;
+  flex-shrink: 0;
+}
+.today-card-info { flex: 1; }
+.today-card-reading {
+  font-size: 12px; color: var(--gin); margin-bottom: 3px;
+}
+.today-card-meaning {
+  font-size: 14px; color: var(--sumi-40); font-weight: 400;
+}
+.today-card-status {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.today-card-status.done   { background: rgba(139,0,0,0.1); }
+.today-card-status.todo   { background: var(--shiroi-d); border: 1.5px dashed var(--gin-xl); }
+
+/* Goal progress */
+.goal-card {
+  margin: var(--s8) var(--s16);
+  background: linear-gradient(135deg, var(--sumi) 0%, var(--sumi-80) 100%);
+  border-radius: var(--r16);
+  padding: var(--s20);
+  position: relative; overflow: hidden;
+}
+.goal-card-title {
+  font-size: 13px; color: rgba(247,245,240,0.6);
+  letter-spacing: 0.1em; margin-bottom: var(--s8);
+}
+.goal-progress-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--s8);
+}
+.goal-num {
+  font-family: var(--serif);
+  font-size: 22px; font-weight: 700; color: var(--shiroi);
+}
+.goal-num span { color: var(--kin); }
+.goal-bar {
+  height: 8px; background: rgba(255,255,255,0.1);
+  border-radius: 4px; overflow: hidden;
+}
+.goal-fill {
+  height: 100%; width: 70%;
+  background: linear-gradient(90deg, var(--enji-l), var(--kin));
+  border-radius: 4px;
+  animation: barGrow 1.4s var(--ease) both 0.3s;
+}
+
+/* Calendar mini */
+.cal-card {
+  margin: var(--s8) var(--s16) var(--s32);
+  background: #fff;
+  border-radius: var(--r16);
+  padding: var(--s16) var(--s20);
+  box-shadow: var(--card-shadow);
+}
+.cal-title {
+  font-family: var(--serif);
+  font-size: 15px; font-weight: 700;
+  color: var(--sumi); margin-bottom: var(--s12);
+  display: flex; align-items: center; gap: 8px;
+}
+.cal-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.cal-day-name {
+  text-align: center; font-size: 10px; font-weight: 600;
+  color: var(--gin); padding: 4px 0;
+}
+.cal-day {
+  text-align: center; font-size: 12px;
+  padding: 5px 0; border-radius: 50%;
+  min-width: 28px; min-height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--sumi-40);
+}
+.cal-day.streak-day { background: var(--enji); color: #fff; font-weight: 600; border-radius: 50%; }
+.cal-day.today-d    { background: var(--kin); color: var(--sumi); font-weight: 700; }
+.cal-day.sun        { color: #c0392b; }
+.cal-day.sat        { color: #1a4a8b; }
+.cal-day.empty      { visibility: hidden; }
+
+/* ════════════════════════════════════════════
+   SCREEN 2: 稽古 (FLASHCARD)
+   ════════════════════════════════════════════ */
+#screen-keiko {
+  background: var(--sumi);
+}
+#screen-keiko .scroll {
+  background: var(--sumi);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 72px var(--s16) 83px;
+}
+
+.keiko-header {
+  width: 100%; display: flex;
+  align-items: center; justify-content: space-between;
+  margin-bottom: var(--s24);
+  padding: 0 var(--s4);
+}
+.keiko-header-title {
+  font-family: var(--serif);
+  font-size: 20px; font-weight: 700; color: var(--shiroi);
+}
+.keiko-counter {
+  font-size: 13px; color: rgba(247,245,240,0.5);
+}
+.keiko-progress-dots {
+  display: flex; gap: 6px; margin-bottom: var(--s24);
+}
+.kdot {
+  width: 28px; height: 4px; border-radius: 2px;
+  background: rgba(255,255,255,0.12);
+  transition: background 0.3s ease;
+}
+.kdot.done    { background: var(--enji); }
+.kdot.correct { background: var(--kin); }
+.kdot.current { background: rgba(255,255,255,0.5); }
+
+/* Flashcard deck area */
+.card-area {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: var(--s24);
+}
+
+.flash-card {
+  position: absolute;
+  width: 100%; height: 100%;
+  background: linear-gradient(160deg, var(--sumi-80) 0%, var(--sumi-90) 100%);
+  border-radius: var(--r24);
+  border: 1px solid rgba(255,255,255,0.08);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: var(--s32);
+  cursor: grab;
+  transition: box-shadow 0.3s ease;
+  box-shadow: 0 16px 56px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3);
+  user-select: none;
+  will-change: transform;
+}
+.flash-card:active { cursor: grabbing; }
+
+/* 朱印フレーム */
+.hanko-frame {
+  position: absolute;
+  top: var(--s16); left: var(--s16);
+  width: 56px; height: 56px;
+  border: 2px solid rgba(139,0,0,0.3);
+  border-radius: var(--r8);
+  transform: rotate(-3deg);
+  display: flex; align-items: center; justify-content: center;
+}
+.hanko-frame::before {
+  content: '道';
+  font-family: var(--serif); font-size: 16px; font-weight: 900;
+  color: rgba(139,0,0,0.25);
+}
+.flash-kanji {
+  font-family: var(--serif);
+  font-size: 54px; font-weight: 900;
+  color: var(--shiroi);
+  letter-spacing: -2px;
+  margin-bottom: var(--s8);
+  text-shadow: 0 0 40px rgba(139,0,0,0.3);
+}
+.flash-reading {
+  font-size: 15px; color: rgba(247,245,240,0.5);
+  margin-bottom: var(--s4);
+  opacity: 0; transition: opacity 0.3s ease;
+}
+.flash-reading.show { opacity: 1; }
+.flash-meaning {
+  font-size: 13px; color: rgba(247,245,240,0.35);
+  text-align: center; line-height: 1.6;
+  opacity: 0; transition: opacity 0.4s ease 0.1s;
+  max-width: 260px;
+}
+.flash-meaning.show { opacity: 1; }
+.flash-hint {
+  position: absolute; bottom: var(--s16);
+  font-size: 11px; color: rgba(247,245,240,0.3);
+  letter-spacing: 0.08em;
+}
+.flash-swipe-hint {
+  display: flex; align-items: center; gap: var(--s24);
+  margin-bottom: var(--s16);
+}
+.swipe-hint-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: rgba(247,245,240,0.4);
+}
+.swipe-arrow {
+  font-size: 16px;
+}
+
+/* Answer buttons (HIG: 44pt min) */
+.answer-btns {
+  display: flex; gap: var(--s16); width: 100%;
+}
+.btn-incorrect, .btn-correct {
+  flex: 1; height: 52px;
+  border: none; border-radius: var(--r16);
+  font-family: var(--sans); font-size: 16px; font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.18s var(--spring), box-shadow 0.18s ease;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-incorrect:active { transform: scale(0.95); }
+.btn-correct:active   { transform: scale(0.95); }
+.btn-incorrect {
+  background: rgba(196,30,30,0.12);
+  border: 1.5px solid rgba(196,30,30,0.3);
+  color: #ff6b6b;
+}
+.btn-correct {
+  background: rgba(200,151,58,0.15);
+  border: 1.5px solid rgba(200,151,58,0.4);
+  color: var(--kin-l);
+}
+.reveal-btn {
+  width: 100%; height: 52px;
+  background: rgba(255,255,255,0.06);
+  border: 1.5px solid rgba(255,255,255,0.12);
+  border-radius: var(--r16);
+  color: rgba(247,245,240,0.7);
+  font-size: 15px; font-weight: 500;
+  cursor: pointer; margin-bottom: var(--s12);
+  transition: transform 0.18s var(--spring);
+  display: flex; align-items: center; justify-content: center;
+}
+.reveal-btn:active { transform: scale(0.97); }
+
+/* Swipe overlay labels */
+.swipe-label {
+  position: absolute;
+  top: var(--s20); padding: 6px 12px;
+  border-radius: var(--r8); font-size: 18px; font-weight: 800;
+  pointer-events: none; opacity: 0;
+  letter-spacing: 0.08em;
+  transition: opacity 0.1s ease;
+}
+.swipe-label.nope {
+  left: var(--s16);
+  background: rgba(196,30,30,0.85); color: #fff;
+  border: 2px solid #ff4444;
+  transform: rotate(-8deg);
+}
+.swipe-label.yep {
+  right: var(--s16);
+  background: rgba(200,151,58,0.85); color: var(--sumi);
+  border: 2px solid var(--kin-l);
+  transform: rotate(8deg);
+}
+
+/* 朱印スタンプ演出 */
+.hanko-stamp {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none; z-index: 200;
+  opacity: 0;
+}
+.hanko-stamp-inner {
+  width: 100px; height: 100px;
+  border: 4px solid var(--enji);
+  border-radius: var(--r16);
+  display: flex; align-items: center; justify-content: center;
+  transform: rotate(-12deg);
+  background: rgba(139,0,0,0.08);
+}
+.hanko-stamp-inner span {
+  font-family: var(--serif); font-size: 36px; font-weight: 900;
+  color: var(--enji); letter-spacing: -2px;
+}
+
+/* ════════════════════════════════════════════
+   SCREEN 3: 辞典 (DICTIONARY)
+   ════════════════════════════════════════════ */
+#screen-jiten .scroll { background: var(--shiroi); }
+
+.jiten-search-wrap {
+  position: sticky; top: 59px;
+  background: rgba(247,245,240,0.94);
+  backdrop-filter: blur(16px);
+  padding: var(--s8) var(--s16) var(--s12);
+  z-index: 200;
+  border-bottom: 0.5px solid rgba(26,26,28,0.06);
+}
+.jiten-search {
+  display: flex; align-items: center;
+  background: rgba(26,26,28,0.07);
+  border-radius: var(--r12);
+  padding: 0 var(--s12);
+  height: 44px; /* HIG: 44pt */
+  gap: 8px;
+}
+.jiten-search-icon { font-size: 16px; color: var(--gin); }
+.jiten-search input {
+  flex: 1; border: none; background: transparent;
+  font-family: var(--sans); font-size: 15px; color: var(--sumi);
+  outline: none;
+}
+.jiten-search input::placeholder { color: var(--gin-l); }
+
+.jiten-filters {
+  display: flex; gap: var(--s8);
+  padding: var(--s12) var(--s16);
+  overflow-x: auto; scrollbar-width: none;
+}
+.jiten-filters::-webkit-scrollbar { display: none; }
+.filter-chip {
+  flex-shrink: 0;
+  height: 32px; padding: 0 var(--s12);
+  border-radius: 16px;
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  background: rgba(26,26,28,0.06);
+  color: var(--sumi-40);
+  border: none;
+  transition: all 0.18s ease;
+  display: flex; align-items: center;
+}
+.filter-chip.active {
+  background: var(--enji); color: #fff;
+}
+
+.jiten-list {
+  padding: 0 var(--s16) var(--s8);
+  display: flex; flex-direction: column; gap: var(--s8);
+}
+.jiten-entry {
+  background: #fff;
+  border-radius: var(--r16);
+  padding: var(--s16) var(--s20);
+  box-shadow: var(--card-shadow);
+  border: 0.5px solid rgba(26,26,28,0.04);
+  cursor: pointer;
+  transition: transform 0.18s var(--spring);
+  display: flex; align-items: flex-start; gap: var(--s16);
+  min-height: 44px;
+}
+.jiten-entry:active { transform: scale(0.98); }
+.jiten-kanji {
+  font-family: var(--serif);
+  font-size: 28px; font-weight: 700;
+  color: var(--sumi); width: 64px; text-align: center;
+  flex-shrink: 0; line-height: 1.2;
+}
+.jiten-info { flex: 1; }
+.jiten-reading {
+  font-size: 12px; color: var(--gin);
+  margin-bottom: 4px;
+}
+.jiten-meaning {
+  font-size: 14px; color: var(--sumi-40);
+  line-height: 1.5;
+}
+.jiten-cat {
+  font-size: 10px; color: var(--enji);
+  font-weight: 600; letter-spacing: 0.08em;
+  margin-top: 4px;
+}
+
+/* ════════════════════════════════════════════
+   SCREEN 4: 成績 (RESULTS / TROPHIES)
+   ════════════════════════════════════════════ */
+#screen-seiseki .scroll { background: var(--shiroi); }
+
+.seiseki-hero {
+  background: var(--sumi);
+  padding: var(--s32) var(--s24) var(--s48);
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center;
+}
+.seiseki-hero::after {
+  content: '';
+  position: absolute; bottom: -24px; left: 0; right: 0; height: 48px;
+  background: var(--shiroi);
+  border-radius: 24px 24px 0 0;
+}
+.seiseki-hero-sub {
+  font-size: 12px; color: rgba(247,245,240,0.5);
+  letter-spacing: 0.15em; margin-bottom: var(--s8);
+}
+.seiseki-rank-big {
+  font-family: var(--serif); font-size: 32px; font-weight: 700;
+  color: var(--shiroi); margin-bottom: var(--s24);
+}
+.seiseki-rank-big span { color: var(--kin); }
+
+/* Donut chart */
+.donut-wrap {
+  position: relative; width: 140px; height: 140px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: var(--s8);
+}
+.donut-svg { transform: rotate(-90deg); }
+.donut-track { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 12; }
+.donut-fill {
+  fill: none; stroke: var(--kin); stroke-width: 12;
+  stroke-linecap: round;
+  stroke-dasharray: 351.86;
+  stroke-dashoffset: 351.86;
+  animation: donutAnim 1.6s var(--ease) 0.5s forwards;
+}
+@keyframes donutAnim { to { stroke-dashoffset: 133.71; } } /* 62% */
+.donut-center {
+  position: absolute; text-align: center;
+}
+.donut-pct {
+  font-family: var(--serif); font-size: 30px; font-weight: 700;
+  color: var(--shiroi); line-height: 1; display: block;
+}
+.donut-sub { font-size: 11px; color: rgba(247,245,240,0.5); }
+
+/* Level progress */
+.level-progress-cards {
+  padding: var(--s24) var(--s16) var(--s8);
+  display: flex; flex-direction: column; gap: var(--s8);
+}
+.level-card {
+  background: #fff;
+  border-radius: var(--r12);
+  padding: var(--s12) var(--s16);
+  box-shadow: var(--card-shadow);
+  display: flex; align-items: center; gap: var(--s12);
+}
+.level-belt {
+  width: 40px; height: 20px; border-radius: 4px;
+  flex-shrink: 0;
+}
+.level-name {
+  font-size: 14px; font-weight: 600;
+  color: var(--sumi); flex: 1;
+}
+.level-bar-wrap {
+  width: 80px; height: 6px;
+  background: var(--shiroi-d); border-radius: 3px; overflow: hidden;
+}
+.level-bar-inner {
+  height: 100%; border-radius: 3px;
+  background: var(--enji);
+}
+.level-pct {
+  font-size: 12px; color: var(--gin); width: 36px; text-align: right;
+}
+
+/* Trophy badges */
+.badges-grid {
+  padding: 0 var(--s16) var(--s32);
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: var(--s12);
+}
+.badge {
+  background: #fff;
+  border-radius: var(--r16);
+  padding: var(--s16) var(--s8);
+  text-align: center;
+  box-shadow: var(--card-shadow);
+  border: 0.5px solid rgba(26,26,28,0.04);
+}
+.badge-icon { font-size: 32px; margin-bottom: 6px; line-height: 1; }
+.badge-name { font-size: 11px; font-weight: 600; color: var(--sumi); margin-bottom: 2px; }
+.badge-desc { font-size: 10px; color: var(--gin); line-height: 1.4; }
+.badge.locked { opacity: 0.4; filter: grayscale(1); }
+
+/* ════════════════════════════════════════════
+   SCREEN 5: 設定 (SETTINGS)
+   ════════════════════════════════════════════ */
+#screen-settings .scroll { background: var(--shiroi-d); }
+
+.settings-group {
+  margin: var(--s24) var(--s16) 0;
+  background: #fff;
+  border-radius: var(--r16);
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+}
+.settings-group-title {
+  font-size: 12px; font-weight: 600;
+  color: var(--gin); letter-spacing: 0.1em;
+  padding: var(--s12) var(--s16) var(--s4);
+  background: var(--shiroi-d);
+  text-transform: uppercase;
+}
+.settings-row {
+  display: flex; align-items: center;
+  padding: var(--s16) var(--s16);
+  border-bottom: 0.5px solid rgba(26,26,28,0.06);
+  cursor: pointer; min-height: 52px;
+  transition: background 0.15s ease;
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row:active { background: rgba(26,26,28,0.03); }
+.settings-icon { font-size: 20px; width: 32px; }
+.settings-label {
+  flex: 1; font-size: 16px; color: var(--sumi); margin-left: var(--s8);
+}
+.settings-value { font-size: 14px; color: var(--gin); }
+.settings-arrow { font-size: 14px; color: var(--gin-xl); margin-left: 4px; }
+
+/* Toggle */
+.toggle {
+  width: 51px; height: 31px; position: relative;
+  cursor: pointer;
+}
+.toggle input { display: none; }
+.toggle-track {
+  position: absolute; inset: 0;
+  background: rgba(26,26,28,0.15); border-radius: 15.5px;
+  transition: background 0.25s ease;
+}
+.toggle input:checked ~ .toggle-track { background: var(--enji); }
+.toggle-thumb {
+  position: absolute; top: 2px; left: 2px;
+  width: 27px; height: 27px; border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: transform 0.25s var(--spring);
+}
+.toggle input:checked ~ .toggle-thumb { transform: translateX(20px); }
+
+/* Profile card (settings top) */
+.profile-card {
+  margin: var(--s16) var(--s16) 0;
+  background: var(--sumi);
+  border-radius: var(--r20);
+  padding: var(--s24);
+  display: flex; align-items: center; gap: var(--s16);
+  position: relative; overflow: hidden;
+}
+.profile-avatar {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--enji), var(--kin));
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif); font-size: 24px; font-weight: 900; color: #fff;
+  flex-shrink: 0;
+}
+.profile-info { flex: 1; }
+.profile-name {
+  font-family: var(--serif); font-size: 20px; font-weight: 700;
+  color: var(--shiroi);
+}
+.profile-rank-tag {
+  font-size: 13px; color: var(--kin); margin-top: 3px;
+}
+
+/* ════════════════════════════════════════════
+   NAVIGATION BAR (Large Title)
+   ════════════════════════════════════════════ */
+.nav-bar {
+  position: absolute; top: 59px; left: 0; right: 0;
+  background: rgba(247,245,240,0.94);
+  backdrop-filter: blur(20px);
+  padding: var(--s8) var(--s16) var(--s12);
+  z-index: 200;
+  border-bottom: 0.5px solid rgba(26,26,28,0.08);
+}
+.nav-large-title {
+  font-family: var(--serif); font-size: 30px; font-weight: 700;
+  color: var(--sumi); letter-spacing: -0.5px;
+}
+
+/* Dark nav */
+.nav-bar.dark {
+  background: rgba(26,26,28,0.96);
+  border-bottom-color: rgba(255,255,255,0.06);
+}
+.nav-bar.dark .nav-large-title { color: var(--shiroi); }
+
+/* ════════════════════════════════════════════
+   XP FLOAT ANIMATION
+   ════════════════════════════════════════════ */
+.xp-float {
+  position: fixed;
+  top: 120px; right: 40px;
+  font-family: var(--serif);
+  font-size: 22px; font-weight: 700;
+  color: var(--kin);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 9999;
+  text-shadow: 0 2px 8px rgba(200,151,58,0.5);
+}
+@keyframes xpFloat {
+  0%   { opacity: 0; transform: translateY(0) scale(0.6); }
+  20%  { opacity: 1; transform: translateY(-8px) scale(1.1); }
+  70%  { opacity: 1; transform: translateY(-40px) scale(1); }
+  100% { opacity: 0; transform: translateY(-60px) scale(0.9); }
+}
+
+/* ════════════════════════════════════════════
+   STAMP OVERLAY (全画面)
+   ════════════════════════════════════════════ */
+.stamp-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none; z-index: 800;
+  opacity: 0;
+}
+.stamp-inner {
+  width: 140px; height: 140px;
+  border: 6px solid var(--enji);
+  border-radius: var(--r20);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: rgba(139,0,0,0.06);
+  transform: rotate(-15deg) scale(0);
+}
+.stamp-kanji-big {
+  font-family: var(--serif); font-size: 52px; font-weight: 900;
+  color: var(--enji); line-height: 1;
+}
+.stamp-text {
+  font-size: 10px; font-weight: 700;
+  color: var(--enji); letter-spacing: 0.3em;
+  margin-top: 2px;
+}
+@keyframes stampIn {
+  0%   { opacity: 0; transform: rotate(-15deg) scale(2); }
+  30%  { opacity: 0.9; transform: rotate(-12deg) scale(0.85); }
+  50%  { opacity: 1; transform: rotate(-12deg) scale(1.05); }
+  70%  { opacity: 1; transform: rotate(-12deg) scale(1); }
+  100% { opacity: 0; transform: rotate(-12deg) scale(0.95); }
+}
+</style>
+</head>
+<body>
+
+<div class="device-wrap">
+  <div class="device-label">iPhone 15 Pro · iOS UI/UX · 四字熟語道場</div>
+
+  <div class="iphone">
+    <div class="btn-silent"></div>
+    <div class="btn-vol-up"></div>
+    <div class="btn-vol-down"></div>
+    <div class="btn-power"></div>
+
+    <div class="screen">
+      <div class="noise"></div>
+      <div class="dynamic-island"></div>
+
+      <!-- STATUS BAR -->
+      <div class="status-bar" id="statusBar">
+        <div class="status-time" id="statusTime">9:41</div>
+        <div class="status-icons">
+          <!-- Signal -->
+          <svg width="17" height="12" viewBox="0 0 17 12">
+            <rect x="0" y="7" width="3" height="5" rx="1" fill="currentColor" opacity="0.4"/>
+            <rect x="4.5" y="5" width="3" height="7" rx="1" fill="currentColor" opacity="0.6"/>
+            <rect x="9" y="2.5" width="3" height="9.5" rx="1" fill="currentColor" opacity="0.8"/>
+            <rect x="13.5" y="0" width="3" height="12" rx="1" fill="currentColor"/>
+          </svg>
+          <!-- WiFi -->
+          <svg width="16" height="12" viewBox="0 0 16 12">
+            <path d="M8 9.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" fill="currentColor"/>
+            <path d="M3.7 6.3a6.1 6.1 0 018.6 0l1.4-1.4a8.3 8.3 0 00-11.4 0l1.4 1.4z" fill="currentColor" opacity="0.8"/>
+            <path d="M1.1 3.7a9.9 9.9 0 0113.8 0l1.4-1.4a12.1 12.1 0 00-16.6 0l1.4 1.4z" fill="currentColor" opacity="0.5"/>
+          </svg>
+          <!-- Battery -->
+          <svg width="25" height="12" viewBox="0 0 25 12">
+            <rect x="0" y="1" width="21" height="10" rx="3" stroke="currentColor" stroke-width="1" fill="none" opacity="0.35"/>
+            <rect x="1.5" y="2.5" width="16" height="7" rx="2" fill="currentColor"/>
+            <path d="M22 4v4a2 2 0 000-4z" fill="currentColor" opacity="0.4"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- ═══ SCREEN 1: 道場 HOME ═══ -->
+      <div class="app-screen active" id="screen-dojo">
+        <!-- Nav -->
+        <div class="nav-bar">
+          <div class="nav-large-title">四字熟語道場</div>
+        </div>
+
+        <div class="scroll" id="scroll-dojo">
+          <!-- Hero -->
+          <div class="hero">
+            <div class="hero-bg"></div>
+            <div class="hero-grid"></div>
+            <div class="hero-kanji">道場鍛錬</div>
+            <div class="hero-content">
+              <div class="hero-subtitle">現在の段位</div>
+              <div class="hero-rank">
+                青帯・第三段
+                <span class="belt-badge">🟦 青帯</span>
+              </div>
+              <div class="belt-bar-wrap">
+                <div class="belt-bar-fill"></div>
+              </div>
+              <div class="belt-bar-text">次の段まで 140 XP</div>
+            </div>
+          </div>
+
+          <!-- Streak -->
+          <div class="streak">
+            <div class="streak-fire">🔥</div>
+            <div class="streak-info">
+              <div class="streak-num">12</div>
+              <div class="streak-sub">日連続稽古中</div>
+            </div>
+            <div class="streak-dots">
+              <div class="sdot done"></div>
+              <div class="sdot done"></div>
+              <div class="sdot done"></div>
+              <div class="sdot done"></div>
+              <div class="sdot done"></div>
+              <div class="sdot today"></div>
+              <div class="sdot"></div>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-val">248</div>
+              <div class="stat-lbl">習得語数</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val red">3</div>
+              <div class="stat-lbl">要復習</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val gold">1,840</div>
+              <div class="stat-lbl">総 XP</div>
+            </div>
+          </div>
+
+          <!-- Today goal -->
+          <div class="goal-card">
+            <div class="goal-card-title">今日の目標</div>
+            <div class="goal-progress-row">
+              <div class="goal-num"><span>7</span> / 10問</div>
+              <div style="font-size:12px;color:rgba(247,245,240,0.5)">70%</div>
+            </div>
+            <div class="goal-bar"><div class="goal-fill"></div></div>
+          </div>
+
+          <!-- Today practice -->
+          <div class="sec-head">
+            <div class="sec-title">今日の稽古</div>
+            <div class="sec-more">全て見る</div>
+          </div>
+          <div class="today-cards">
+            <div class="today-card">
+              <div class="today-card-kanji">一石二鳥</div>
+              <div class="today-card-info">
+                <div class="today-card-reading">いっせきにちょう</div>
+                <div class="today-card-meaning">一つの行動で二つの利益を得る</div>
+              </div>
+              <div class="today-card-status done">✓</div>
+            </div>
+            <div class="today-card">
+              <div class="today-card-kanji">温故知新</div>
+              <div class="today-card-info">
+                <div class="today-card-reading">おんこちしん</div>
+                <div class="today-card-meaning">古きを学び新しい知識を得る</div>
+              </div>
+              <div class="today-card-status done">✓</div>
+            </div>
+            <div class="today-card">
+              <div class="today-card-kanji">臥薪嘗胆</div>
+              <div class="today-card-info">
+                <div class="today-card-reading">がしんしょうたん</div>
+                <div class="today-card-meaning">目的のために苦労に耐え忍ぶ</div>
+              </div>
+              <div class="today-card-status todo"></div>
+            </div>
+          </div>
+
+          <!-- Calendar -->
+          <div class="sec-head">
+            <div class="sec-title">稽古カレンダー</div>
+          </div>
+          <div class="cal-card">
+            <div class="cal-title">📅 2026年 3月</div>
+            <div class="cal-grid" id="calGrid"></div>
+          </div>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="tab-bar" id="tb-dojo">
+          <div class="tab-item active" onclick="switchTab('dojo')" aria-label="道場">
+            <div class="tab-icon">🏯</div>
+            <div class="tab-label">道場</div>
+          </div>
+          <div class="tab-item" onclick="switchTab('keiko')" aria-label="稽古">
+            <div class="tab-icon">📚</div>
+            <div class="tab-label">稽古</div>
+          </div>
+          <div class="tab-item" onclick="switchTab('jiten')" aria-label="辞典">
+            <div class="tab-icon">📖</div>
+            <div class="tab-label">辞典</div>
+          </div>
+          <div class="tab-item" onclick="switchTab('seiseki')" aria-label="成績">
+            <div class="tab-icon">🏆</div>
+            <div class="tab-label">成績</div>
+          </div>
+          <div class="tab-item" onclick="switchTab('settings')" aria-label="設定">
+            <div class="tab-icon">⚙️</div>
+            <div class="tab-label">設定</div>
+          </div>
+        </div>
+      </div><!-- /screen-dojo -->
+
+      <!-- ═══ SCREEN 2: 稽古 FLASHCARD ═══ -->
+      <div class="app-screen" id="screen-keiko">
+        <div class="nav-bar dark">
+          <div class="nav-large-title">稽古</div>
+        </div>
+
+        <div class="scroll">
+          <div class="keiko-header">
+            <div class="keiko-header-title">フラッシュカード</div>
+            <div class="keiko-counter" id="keiko-counter">1 / 10</div>
+          </div>
+
+          <!-- Progress dots -->
+          <div class="keiko-progress-dots" id="kDots"></div>
+
+          <!-- Card area -->
+          <div class="card-area">
+            <div class="flash-card" id="flashCard"
+                 aria-label="フラッシュカード">
+              <div class="hanko-frame"></div>
+              <div class="swipe-label nope" id="nopeLabel">✗ もう一度</div>
+              <div class="swipe-label yep" id="yepLabel">✓ 覚えた！</div>
+              <div class="flash-kanji" id="fcKanji">一石二鳥</div>
+              <div class="flash-reading" id="fcReading">いっせきにちょう</div>
+              <div class="flash-meaning" id="fcMeaning">
+                一つの行為で<br>二つの利益を得ること
+              </div>
+              <div class="flash-hint" id="fcHint">タップで読みを表示</div>
+            </div>
+
+            <!-- Stamp overlay -->
+            <div class="stamp-overlay" id="stampOverlay">
+              <div class="stamp-inner" id="stampInner">
+                <div class="stamp-kanji-big">正</div>
+                <div class="stamp-text">覚えた！</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Swipe hints -->
+          <div class="swipe-hint-row" style="display:flex;align-items:center;justify-content:center;gap:32px;margin-bottom:16px;">
+            <div class="swipe-hint-item">
+              <span class="swipe-arrow" style="color:#ff6b6b">←</span>
+              <span style="font-size:12px;color:rgba(247,245,240,0.4)">もう一度</span>
+            </div>
+            <div class="swipe-hint-item">
+              <span style="font-size:12px;color:rgba(247,245,240,0.4)">覚えた！</span>
+              <span class="swipe-arrow" style="color:#C8973A">→</span>
+            </div>
+          </div>
+
+          <!-- Buttons -->
+          <div style="padding:0 16px;">
+            <button class="reveal-btn" id="revealBtn" onclick="revealCard()"
+                    aria-label="答えを見る">
+              💡 答えを見る
+            </button>
+            <div class="answer-btns" id="answerBtns" style="display:none;">
+              <button class="btn-incorrect" onclick="answerCard(false)"
+                      aria-label="もう一度練習する">
+                ✗ もう一度
+              </button>
+              <button class="btn-correct" onclick="answerCard(true)"
+                      aria-label="覚えた">
+                ✓ 覚えた！
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab bar dark -->
+        <div class="tab-bar dark" id="tb-keiko">
+          <div class="tab-item" onclick="switchTab('dojo')" aria-label="道場">
+            <div class="tab-icon">🏯</div>
+            <div class="tab-label">道場</div>
+          </div>
+          <div class="tab-item active" onclick="switchTab('keiko')" aria-label="稽古">
+            <div class="tab-icon">📚</div>
+            <div class="tab-label">稽古</div>
+          </div>
+          <div class="tab-item" onclick="switchTab('jiten')" aria-label="辞典">
+            <div class="tab-icon">📖</div>
+            <div class="tab-label">辞典</div>
+          </div>
+          <div class="tab-item" onclick="switchTab('seiseki')" aria-label="成績">
+            <div class="tab-icon">🏆</div>
+            <div class="tab-label">成績</div>
+          </div>
+          <div class="tab-item" onclick="switchTab('settings')" aria-label="設定">
+            <div class="tab-icon">⚙️</div>
+            <div class="tab-label">設定</div>
+          </div>
+        </div>
+      </div><!-- /screen-keiko -->
+
+      <!-- ═══ SCREEN 3: 辞典 DICTIONARY ═══ -->
+      <div class="app-screen" id="screen-jiten">
+        <div class="nav-bar">
+          <div class="nav-large-title">辞典</div>
+        </div>
+        <div class="scroll">
+          <div class="jiten-search-wrap">
+            <div class="jiten-search">
+              <div class="jiten-search-icon">🔍</div>
+              <input type="text" placeholder="四字熟語を検索…" aria-label="四字熟語を検索">
+            </div>
+          </div>
+          <div class="jiten-filters">
+            <button class="filter-chip active">すべて</button>
+            <button class="filter-chip">人生・処世</button>
+            <button class="filter-chip">自然・情景</button>
+            <button class="filter-chip">努力・忍耐</button>
+            <button class="filter-chip">感情・心理</button>
+            <button class="filter-chip">行動・勇気</button>
+          </div>
+          <div class="jiten-list">
+            <div class="jiten-entry">
+              <div class="jiten-kanji">一石<br>二鳥</div>
+              <div class="jiten-info">
+                <div class="jiten-reading">いっせきにちょう</div>
+                <div class="jiten-meaning">一つの行為で二つの利益を得ること。効率よく物事をこなす様子。</div>
+                <div class="jiten-cat">処世術</div>
+              </div>
+            </div>
+            <div class="jiten-entry">
+              <div class="jiten-kanji">七転<br>八倒</div>
+              <div class="jiten-info">
+                <div class="jiten-reading">しちてんばっとう</div>
+                <div class="jiten-meaning">激しく苦しみ、のたうち回ること。</div>
+                <div class="jiten-cat">感情・心理</div>
+              </div>
+            </div>
+            <div class="jiten-entry">
+              <div class="jiten-kanji">以心<br>伝心</div>
+              <div class="jiten-info">
+                <div class="jiten-reading">いしんでんしん</div>
+                <div class="jiten-meaning">言葉を使わずに気持ちや考えが伝わること。</div>
+                <div class="jiten-cat">人間関係</div>
+              </div>
+            </div>
+            <div class="jiten-entry">
+              <div class="jiten-kanji">臥薪<br>嘗胆</div>
+              <div class="jiten-info">
+                <div class="jiten-reading">がしんしょうたん</div>
+                <div class="jiten-meaning">目的を果たすために苦労を耐え忍ぶこと。</div>
+                <div class="jiten-cat">努力・忍耐</div>
+              </div>
+            </div>
+            <div class="jiten-entry">
+              <div class="jiten-kanji">温故<br>知新</div>
+              <div class="jiten-info">
+                <div class="jiten-reading">おんこちしん</div>
+                <div class="jiten-meaning">昔のことをよく調べ、新しい知識や見解を得ること。</div>
+                <div class="jiten-cat">学問・知識</div>
+              </div>
+            </div>
+            <div class="jiten-entry">
+              <div class="jiten-kanji">花鳥<br>風月</div>
+              <div class="jiten-info">
+                <div class="jiten-reading">かちょうふうげつ</div>
+                <div class="jiten-meaning">自然界の美しい風物。風雅な趣を楽しむこと。</div>
+                <div class="jiten-cat">自然・情景</div>
+              </div>
+            </div>
+            <div class="jiten-entry">
+              <div class="jiten-kanji">起死<br>回生</div>
+              <div class="jiten-info">
+                <div class="jiten-reading">きしかいせい</div>
+                <div class="jiten-meaning">絶望的な状況から生き返るほどの回復をすること。</div>
+                <div class="jiten-cat">行動・勇気</div>
+              </div>
+            </div>
+            <div class="jiten-entry">
+              <div class="jiten-kanji">不撓<br>不屈</div>
+              <div class="jiten-info">
+                <div class="jiten-reading">ふとうふくつ</div>
+                <div class="jiten-meaning">どんな困難にも決してくじけないこと。</div>
+                <div class="jiten-cat">努力・忍耐</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="tab-bar">
+          <div class="tab-item" onclick="switchTab('dojo')" aria-label="道場"><div class="tab-icon">🏯</div><div class="tab-label">道場</div></div>
+          <div class="tab-item" onclick="switchTab('keiko')" aria-label="稽古"><div class="tab-icon">📚</div><div class="tab-label">稽古</div></div>
+          <div class="tab-item active" onclick="switchTab('jiten')" aria-label="辞典"><div class="tab-icon">📖</div><div class="tab-label">辞典</div></div>
+          <div class="tab-item" onclick="switchTab('seiseki')" aria-label="成績"><div class="tab-icon">🏆</div><div class="tab-label">成績</div></div>
+          <div class="tab-item" onclick="switchTab('settings')" aria-label="設定"><div class="tab-icon">⚙️</div><div class="tab-label">設定</div></div>
+        </div>
+      </div><!-- /screen-jiten -->
+
+      <!-- ═══ SCREEN 4: 成績 RESULTS ═══ -->
+      <div class="app-screen" id="screen-seiseki">
+        <div class="scroll">
+          <!-- Hero with donut -->
+          <div class="seiseki-hero" style="padding-top:80px;">
+            <div class="seiseki-hero-sub">総合正答率</div>
+            <div class="donut-wrap">
+              <svg class="donut-svg" width="140" height="140" viewBox="0 0 140 140">
+                <circle class="donut-track" cx="70" cy="70" r="56"/>
+                <circle class="donut-fill" id="donutFill" cx="70" cy="70" r="56"/>
+              </svg>
+              <div class="donut-center">
+                <span class="donut-pct" id="donutPct">0%</span>
+                <span class="donut-sub">正答率</span>
+              </div>
+            </div>
+            <div class="seiseki-rank-big">
+              青帯 <span>第三段</span>
+            </div>
+          </div>
+
+          <!-- Level breakdown -->
+          <div class="sec-head" style="margin-top:32px;">
+            <div class="sec-title">帯別 習得率</div>
+          </div>
+          <div class="level-progress-cards">
+            <div class="level-card">
+              <div class="level-belt" style="background:#F0EDE8;border:1px solid #ccc;"></div>
+              <div class="level-name">白帯</div>
+              <div class="level-bar-wrap"><div class="level-bar-inner" style="width:100%;background:#2D7A3A;"></div></div>
+              <div class="level-pct">100%</div>
+            </div>
+            <div class="level-card">
+              <div class="level-belt" style="background:#E8C840;"></div>
+              <div class="level-name">黄帯</div>
+              <div class="level-bar-wrap"><div class="level-bar-inner" style="width:100%;background:#2D7A3A;"></div></div>
+              <div class="level-pct">100%</div>
+            </div>
+            <div class="level-card">
+              <div class="level-belt" style="background:#E87820;"></div>
+              <div class="level-name">橙帯</div>
+              <div class="level-bar-wrap"><div class="level-bar-inner" style="width:80%;background:#E87820;"></div></div>
+              <div class="level-pct">80%</div>
+            </div>
+            <div class="level-card">
+              <div class="level-belt" style="background:#2D7A3A;"></div>
+              <div class="level-name">緑帯</div>
+              <div class="level-bar-wrap"><div class="level-bar-inner" style="width:65%;background:#2D7A3A;"></div></div>
+              <div class="level-pct">65%</div>
+            </div>
+            <div class="level-card">
+              <div class="level-belt" style="background:#1A4A8B;"></div>
+              <div class="level-name">青帯</div>
+              <div class="level-bar-wrap"><div class="level-bar-inner" style="width:42%;background:#1A4A8B;"></div></div>
+              <div class="level-pct">42%</div>
+            </div>
+            <div class="level-card" style="opacity:0.4;">
+              <div class="level-belt" style="background:#6B3A1A;"></div>
+              <div class="level-name">茶帯</div>
+              <div class="level-bar-wrap"><div class="level-bar-inner" style="width:0;"></div></div>
+              <div class="level-pct">0%</div>
+            </div>
+          </div>
+
+          <!-- Badges -->
+          <div class="sec-head">
+            <div class="sec-title">実績バッジ</div>
+          </div>
+          <div class="badges-grid">
+            <div class="badge">
+              <div class="badge-icon">🔥</div>
+              <div class="badge-name">12日連続</div>
+              <div class="badge-desc">連続稽古記録達成</div>
+            </div>
+            <div class="badge">
+              <div class="badge-icon">⭐</div>
+              <div class="badge-name">100問突破</div>
+              <div class="badge-desc">習得語数100以上</div>
+            </div>
+            <div class="badge">
+              <div class="badge-icon">🥋</div>
+              <div class="badge-name">青帯昇段</div>
+              <div class="badge-desc">青帯に昇段</div>
+            </div>
+            <div class="badge">
+              <div class="badge-icon">📖</div>
+              <div class="badge-name">辞典博士</div>
+              <div class="badge-desc">辞典100回参照</div>
+            </div>
+            <div class="badge locked">
+              <div class="badge-icon">🏆</div>
+              <div class="badge-name">黒帯達人</div>
+              <div class="badge-desc">黒帯に昇段</div>
+            </div>
+            <div class="badge locked">
+              <div class="badge-icon">💎</div>
+              <div class="badge-name">完全制覇</div>
+              <div class="badge-desc">全熟語習得</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab-item" onclick="switchTab('dojo')" aria-label="道場"><div class="tab-icon">🏯</div><div class="tab-label">道場</div></div>
+          <div class="tab-item" onclick="switchTab('keiko')" aria-label="稽古"><div class="tab-icon">📚</div><div class="tab-label">稽古</div></div>
+          <div class="tab-item" onclick="switchTab('jiten')" aria-label="辞典"><div class="tab-icon">📖</div><div class="tab-label">辞典</div></div>
+          <div class="tab-item active" onclick="switchTab('seiseki')" aria-label="成績"><div class="tab-icon">🏆</div><div class="tab-label">成績</div></div>
+          <div class="tab-item" onclick="switchTab('settings')" aria-label="設定"><div class="tab-icon">⚙️</div><div class="tab-label">設定</div></div>
+        </div>
+      </div><!-- /screen-seiseki -->
+
+      <!-- ═══ SCREEN 5: 設定 SETTINGS ═══ -->
+      <div class="app-screen" id="screen-settings">
+        <div class="nav-bar">
+          <div class="nav-large-title">設定</div>
+        </div>
+        <div class="scroll">
+          <!-- Profile -->
+          <div class="profile-card" style="margin-top:80px;">
+            <div class="profile-avatar">道</div>
+            <div class="profile-info">
+              <div class="profile-name">道場 修行者</div>
+              <div class="profile-rank-tag">🥋 青帯・第三段 | 1,840 XP</div>
+            </div>
+          </div>
+
+          <!-- Learning settings -->
+          <div class="settings-group" style="margin-top:16px;">
+            <div class="settings-group-title">学習設定</div>
+            <div class="settings-row">
+              <div class="settings-icon">🎯</div>
+              <div class="settings-label">1日の目標問題数</div>
+              <div class="settings-value">10問</div>
+              <div class="settings-arrow">›</div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-icon">🔔</div>
+              <div class="settings-label">リマインダー通知</div>
+              <label class="toggle">
+                <input type="checkbox" checked onchange="">
+                <div class="toggle-track"></div>
+                <div class="toggle-thumb"></div>
+              </label>
+            </div>
+            <div class="settings-row">
+              <div class="settings-icon">⏰</div>
+              <div class="settings-label">通知時間</div>
+              <div class="settings-value">21:00</div>
+              <div class="settings-arrow">›</div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-icon">🔊</div>
+              <div class="settings-label">効果音</div>
+              <label class="toggle">
+                <input type="checkbox" checked>
+                <div class="toggle-track"></div>
+                <div class="toggle-thumb"></div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Display settings -->
+          <div class="settings-group">
+            <div class="settings-group-title">表示設定</div>
+            <div class="settings-row">
+              <div class="settings-icon">🌙</div>
+              <div class="settings-label">ダークモード</div>
+              <label class="toggle">
+                <input type="checkbox">
+                <div class="toggle-track"></div>
+                <div class="toggle-thumb"></div>
+              </label>
+            </div>
+            <div class="settings-row">
+              <div class="settings-icon">🔤</div>
+              <div class="settings-label">フォントサイズ</div>
+              <div class="settings-value">標準</div>
+              <div class="settings-arrow">›</div>
+            </div>
+          </div>
+
+          <!-- Other -->
+          <div class="settings-group" style="margin-bottom:40px;">
+            <div class="settings-group-title">その他</div>
+            <div class="settings-row">
+              <div class="settings-icon">📊</div>
+              <div class="settings-label">学習データをリセット</div>
+              <div class="settings-arrow" style="color:#ff453a">›</div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-icon">❓</div>
+              <div class="settings-label">ヘルプ・使い方</div>
+              <div class="settings-arrow">›</div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-icon">⭐</div>
+              <div class="settings-label">App Storeでレビュー</div>
+              <div class="settings-arrow">›</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab-item" onclick="switchTab('dojo')" aria-label="道場"><div class="tab-icon">🏯</div><div class="tab-label">道場</div></div>
+          <div class="tab-item" onclick="switchTab('keiko')" aria-label="稽古"><div class="tab-icon">📚</div><div class="tab-label">稽古</div></div>
+          <div class="tab-item" onclick="switchTab('jiten')" aria-label="辞典"><div class="tab-icon">📖</div><div class="tab-label">辞典</div></div>
+          <div class="tab-item" onclick="switchTab('seiseki')" aria-label="成績"><div class="tab-icon">🏆</div><div class="tab-label">成績</div></div>
+          <div class="tab-item active" onclick="switchTab('settings')" aria-label="設定"><div class="tab-icon">⚙️</div><div class="tab-label">設定</div></div>
+        </div>
+      </div><!-- /screen-settings -->
+
+      <!-- XP Float -->
+      <div class="xp-float" id="xpFloat">＋10 XP ✦</div>
+
+    </div><!-- /screen -->
+  </div><!-- /iphone -->
+</div><!-- /device-wrap -->
+
+<script>
+/* ════════════════════════════════════════════
+   四字熟語データ (10問)
+   ════════════════════════════════════════════ */
+const cards = [
+  { kanji: '一石二鳥', reading: 'いっせきにちょう',    meaning: '一つの行為で二つの利益を得ること' },
+  { kanji: '七転八倒', reading: 'しちてんばっとう',    meaning: '激しく苦しみもがくこと' },
+  { kanji: '以心伝心', reading: 'いしんでんしん',      meaning: '言葉なしに心と心が通じ合うこと' },
+  { kanji: '臥薪嘗胆', reading: 'がしんしょうたん',    meaning: '目的のために辛苦に耐え忍ぶこと' },
+  { kanji: '温故知新', reading: 'おんこちしん',        meaning: '古きを学び新しい知識を得ること' },
+  { kanji: '花鳥風月', reading: 'かちょうふうげつ',    meaning: '自然の美しい風物・風雅を楽しむこと' },
+  { kanji: '起死回生', reading: 'きしかいせい',        meaning: '絶望的状況から立ち直ること' },
+  { kanji: '自由自在', reading: 'じゆうじざい',        meaning: '思い通りに振る舞えること' },
+  { kanji: '天変地異', reading: 'てんぺんちい',        meaning: '自然界の異常な変動・災害' },
+  { kanji: '不撓不屈', reading: 'ふとうふくつ',        meaning: 'いかなる困難にも屈しないこと' },
+];
+
+let currentCard = 0;
+let revealed = false;
+const cardStates = new Array(cards.length).fill(null); // null / 'correct' / 'incorrect'
+
+/* ════════════════════════════════════════════
+   TAB SWITCHING
+   ════════════════════════════════════════════ */
+const tabIds = ['dojo','keiko','jiten','seiseki','settings'];
+const statusBar = document.getElementById('statusBar');
+const statusTime = document.getElementById('statusTime');
+
+function switchTab(id) {
+  tabIds.forEach(t => {
+    const s = document.getElementById('screen-'+t);
+    if (s) s.classList.remove('active');
+    // Update all tab bars
+    document.querySelectorAll('.tab-item').forEach(el => {
+      const label = el.querySelector('.tab-label');
+      if (label) {
+        const tabName = {'道場':'dojo','稽古':'keiko','辞典':'jiten','成績':'seiseki','設定':'settings'}[label.textContent];
+        if (tabName === id) el.classList.add('active');
+        else el.classList.remove('active');
+      }
+    });
+  });
+  const target = document.getElementById('screen-'+id);
+  if (target) target.classList.add('active');
+
+  // Status bar color
+  if (id === 'keiko') {
+    statusTime.classList.add('light');
+  } else {
+    statusTime.classList.remove('light');
+  }
+
+  // Donut animation re-trigger on seiseki
+  if (id === 'seiseki') animateDonut();
+}
+
+/* ════════════════════════════════════════════
+   CALENDAR — March 2026
+   ════════════════════════════════════════════ */
+function buildCalendar() {
+  const grid = document.getElementById('calGrid');
+  if (!grid) return;
+  const days = ['日','月','火','水','木','金','土'];
+  days.forEach((d, i) => {
+    const el = document.createElement('div');
+    el.className = 'cal-day-name';
+    if (i === 0) el.style.color = '#c0392b';
+    if (i === 6) el.style.color = '#1a4a8b';
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+  // March 2026 starts on Sunday (0)
+  const startDay = 0;
+  const totalDays = 31;
+  const streakDays = [17,18,19,20,21,22,23,24,25,26,27,28]; // 12-day streak ending today(28)
+  const today = 28;
+
+  for (let i = 0; i < startDay; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day empty';
+    grid.appendChild(el);
+  }
+  for (let d = 1; d <= totalDays; d++) {
+    const el = document.createElement('div');
+    const dow = (startDay + d - 1) % 7;
+    let cls = 'cal-day';
+    if (dow === 0) cls += ' sun';
+    if (dow === 6) cls += ' sat';
+    if (d === today) cls += ' today-d';
+    else if (streakDays.includes(d)) cls += ' streak-day';
+    el.className = cls;
+    el.textContent = d;
+    grid.appendChild(el);
+  }
+}
+buildCalendar();
+
+/* ════════════════════════════════════════════
+   FLASHCARD LOGIC
+   ════════════════════════════════════════════ */
+function buildDots() {
+  const dots = document.getElementById('kDots');
+  if (!dots) return;
+  dots.innerHTML = '';
+  cards.forEach((_, i) => {
+    const d = document.createElement('div');
+    let cls = 'kdot';
+    if (cardStates[i] === 'correct') cls += ' correct';
+    else if (cardStates[i] === 'incorrect') cls += ' done';
+    else if (i === currentCard) cls += ' current';
+    d.className = cls;
+    dots.appendChild(d);
+  });
+}
+
+function loadCard(idx) {
+  const c = cards[idx];
+  document.getElementById('fcKanji').textContent   = c.kanji;
+  document.getElementById('fcReading').textContent = c.reading;
+  document.getElementById('fcMeaning').innerHTML   = c.meaning;
+  document.getElementById('fcReading').classList.remove('show');
+  document.getElementById('fcMeaning').classList.remove('show');
+  document.getElementById('fcHint').style.opacity = '1';
+  document.getElementById('revealBtn').style.display = 'flex';
+  document.getElementById('answerBtns').style.display = 'none';
+  document.getElementById('keiko-counter').textContent = `${idx + 1} / ${cards.length}`;
+
+  const card = document.getElementById('flashCard');
+  card.style.transform = '';
+  card.style.opacity   = '1';
+  card.style.transition = '';
+
+  revealed = false;
+  document.getElementById('nopeLabel').style.opacity = '0';
+  document.getElementById('yepLabel').style.opacity  = '0';
+  buildDots();
+}
+
+function revealCard() {
+  document.getElementById('fcReading').classList.add('show');
+  document.getElementById('fcMeaning').classList.add('show');
+  document.getElementById('fcHint').style.opacity = '0';
+  document.getElementById('revealBtn').style.display = 'none';
+  document.getElementById('answerBtns').style.display = 'flex';
+  revealed = true;
+}
+
+function answerCard(correct) {
+  cardStates[currentCard] = correct ? 'correct' : 'incorrect';
+
+  const card = document.getElementById('flashCard');
+  const dx = correct ? 350 : -350;
+  const rot = correct ? 20 : -20;
+
+  card.style.transition = 'transform 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.4s ease';
+  card.style.transform  = `translateX(${dx}px) rotate(${rot}deg)`;
+  card.style.opacity    = '0';
+
+  if (correct) {
+    triggerStamp();
+    triggerXP();
+  }
+
+  setTimeout(() => {
+    if (currentCard < cards.length - 1) {
+      currentCard++;
+      loadCard(currentCard);
+    } else {
+      // Session complete
+      card.style.transition = '';
+      card.style.transform  = '';
+      card.style.opacity    = '1';
+      document.getElementById('fcKanji').textContent  = '完了！';
+      document.getElementById('fcReading').textContent = 'よく頑張りました';
+      document.getElementById('fcReading').classList.add('show');
+      document.getElementById('fcMeaning').innerHTML  = `正解: ${cardStates.filter(s=>s==='correct').length} / ${cards.length}`;
+      document.getElementById('fcMeaning').classList.add('show');
+      document.getElementById('revealBtn').style.display = 'none';
+      document.getElementById('answerBtns').style.display = 'none';
+      buildDots();
+    }
+  }, 400);
+}
+
+/* ════════════════════════════════════════════
+   SWIPE GESTURE
+   ════════════════════════════════════════════ */
+(function() {
+  const card = document.getElementById('flashCard');
+  let startX = 0, startY = 0, isDragging = false, currentX = 0;
+
+  function onStart(e) {
+    const pt = e.touches ? e.touches[0] : e;
+    startX = pt.clientX; startY = pt.clientY;
+    isDragging = true;
+    card.style.transition = '';
+  }
+  function onMove(e) {
+    if (!isDragging) return;
+    const pt = e.touches ? e.touches[0] : e;
+    currentX = pt.clientX - startX;
+    const rot = currentX * 0.08;
+    card.style.transform = `translateX(${currentX}px) rotate(${rot}deg)`;
+
+    const nopeLabel = document.getElementById('nopeLabel');
+    const yepLabel  = document.getElementById('yepLabel');
+    if (currentX < -30) { nopeLabel.style.opacity = Math.min((-currentX - 30) / 80, 1); yepLabel.style.opacity = '0'; }
+    else if (currentX > 30) { yepLabel.style.opacity = Math.min((currentX - 30) / 80, 1); nopeLabel.style.opacity = '0'; }
+    else { nopeLabel.style.opacity = '0'; yepLabel.style.opacity = '0'; }
+  }
+  function onEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    if (!revealed) {
+      card.style.transition = 'transform 0.35s var(--spring)';
+      card.style.transform  = '';
+      document.getElementById('nopeLabel').style.opacity = '0';
+      document.getElementById('yepLabel').style.opacity  = '0';
+      return;
+    }
+    if (currentX > 100)       answerCard(true);
+    else if (currentX < -100) answerCard(false);
+    else {
+      card.style.transition = 'transform 0.35s var(--spring)';
+      card.style.transform  = '';
+      document.getElementById('nopeLabel').style.opacity = '0';
+      document.getElementById('yepLabel').style.opacity  = '0';
+    }
+    currentX = 0;
+  }
+
+  card.addEventListener('mousedown',  onStart);
+  card.addEventListener('touchstart', onStart, { passive: true });
+  document.addEventListener('mousemove',  onMove);
+  document.addEventListener('touchmove',  onMove, { passive: true });
+  document.addEventListener('mouseup',    onEnd);
+  document.addEventListener('touchend',   onEnd);
+
+  // Tap to reveal
+  card.addEventListener('click', () => { if (!revealed) revealCard(); });
+})();
+
+/* ════════════════════════════════════════════
+   朱印スタンプ演出
+   ════════════════════════════════════════════ */
+function triggerStamp() {
+  const overlay = document.getElementById('stampOverlay');
+  const inner   = document.getElementById('stampInner');
+  overlay.style.opacity = '1';
+  inner.style.animation = 'none';
+  inner.offsetHeight; // reflow
+  inner.style.animation = 'stampIn 0.9s cubic-bezier(0.34,1.56,0.64,1) forwards';
+  setTimeout(() => { overlay.style.opacity = '0'; }, 1000);
+}
+
+/* ════════════════════════════════════════════
+   XP FLOAT
+   ════════════════════════════════════════════ */
+function triggerXP() {
+  const el = document.getElementById('xpFloat');
+  el.style.animation = 'none';
+  el.offsetHeight;
+  el.style.animation = 'xpFloat 1.2s ease forwards';
+}
+
+/* ════════════════════════════════════════════
+   DONUT CHART ANIMATION
+   ════════════════════════════════════════════ */
+let donutAnimated = false;
+function animateDonut() {
+  const pctEl = document.getElementById('donutPct');
+  const fill  = document.getElementById('donutFill');
+  if (!pctEl || !fill) return;
+
+  // Reset
+  fill.style.strokeDashoffset = '351.86';
+  pctEl.textContent = '0%';
+  donutAnimated = false;
+
+  setTimeout(() => {
+    fill.style.transition = 'stroke-dashoffset 1.6s cubic-bezier(0.0,0.0,0.2,1)';
+    fill.style.strokeDashoffset = '133.71'; // 62%
+    let n = 0;
+    const interval = setInterval(() => {
+      n += 2;
+      if (n >= 62) { n = 62; clearInterval(interval); }
+      pctEl.textContent = n + '%';
+    }, 26);
+    donutAnimated = true;
+  }, 300);
+}
+
+/* ════════════════════════════════════════════
+   FILTER CHIPS (辞典)
+   ════════════════════════════════════════════ */
+document.querySelectorAll('.filter-chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+/* ════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════ */
+loadCard(0);
+</script>
+</body>
+</html>

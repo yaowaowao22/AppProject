@@ -79,6 +79,23 @@ export interface ExerciseHistoryEntry {
   weight: number | null;    // null = 自重
 }
 
+// ── ワークアウトテンプレート ────────────────────────────────────────────────
+export interface WorkoutTemplate {
+  id: string;
+  name: string;
+  exerciseIds: string[];
+  createdAt: string; // ISO timestamp
+}
+
+// ── ワークアウト完了レポート行 ────────────────────────────────────────────────
+export interface ReportItem {
+  name: string;
+  sets: number;
+  maxWeight: number | null;
+  prevBest: number | null;
+  isPR: boolean;
+}
+
 // ── 部位設定（UI表示用） ──────────────────────────────────────────────────────
 export interface BodyPartConfig {
   id: BodyPart;
@@ -86,4 +103,21 @@ export interface BodyPartConfig {
   labelEn: string;   // 英語名
   icon: string;      // Ionicons アイコン名
   exerciseCount: number;
+}
+
+// ── 履歴画面タブ種別 ──────────────────────────────────────────────────────────
+export type HistoryTabType = 'daily' | 'bodyPart' | 'exercise';
+
+// ── アプリ設定 ────────────────────────────────────────────────────────────────
+export interface AppSettings {
+  showCalendar: boolean;   // ホーム画面カレンダー表示ON/OFF
+  showQuickStart: boolean; // ホーム画面クイックスタート表示ON/OFF
+}
+
+// ── カレンダー日付データ ──────────────────────────────────────────────────────
+export interface CalendarDayData {
+  date: string;          // ISO date 'YYYY-MM-DD'
+  hasWorkout: boolean;
+  bodyParts: BodyPart[]; // その日に鍛えた部位
+  totalVolume: number;
 }

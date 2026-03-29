@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE_KEYS } from '../config';
-import type { DailyWorkout, PersonalRecord } from '../types';
+import { STORAGE_KEYS, APP } from '../config';
+import type { DailyWorkout, PersonalRecord, WorkoutTemplate, AppSettings } from '../types';
 
 export async function saveWorkouts(workouts: DailyWorkout[]): Promise<void> {
   try {
@@ -37,5 +37,48 @@ export async function loadPersonalRecords(): Promise<PersonalRecord[]> {
   } catch (e) {
     console.warn('[storage] loadPersonalRecords failed:', e);
     return [];
+  }
+}
+
+export async function saveTemplates(templates: WorkoutTemplate[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify(templates));
+  } catch (e) {
+    console.warn('[storage] saveTemplates failed:', e);
+  }
+}
+
+export async function loadTemplates(): Promise<WorkoutTemplate[]> {
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEYS.TEMPLATES);
+    if (!raw) return [];
+    return JSON.parse(raw) as WorkoutTemplate[];
+  } catch (e) {
+    console.warn('[storage] loadTemplates failed:', e);
+    return [];
+  }
+}
+
+export async function saveAppSettings(settings: AppSettings): Promise<void> {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.APP_SETTINGS, JSON.stringify(settings));
+  } catch (e) {
+    console.warn('[storage] saveAppSettings failed:', e);
+  }
+}
+
+export async function loadAppSettings(): Promise<AppSettings> {
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEYS.APP_SETTINGS);
+    if (!raw) return { ...APP.DEFAULT_APP_SETTINGS };
+    const saved = JSON.parse(raw) as Partial<AppSettings>;
+    // マイグレーション: 既存データに未定義のキーをデフォルト値で補完
+    return {
+      ...APP.DEFAULT_APP_SETTINGS,
+      ...saved,
+    };
+  } catch (e) {
+    console.warn('[storage] loadAppSettings failed:', e);
+    return { ...APP.DEFAULT_APP_SETTINGS };
   }
 }

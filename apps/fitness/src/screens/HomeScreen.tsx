@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,78 +6,173 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '../theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { DrawerNavigationProp } from '@react-navigation/drawer';
+import { Ionicons } from '@expo/vector-icons';
+import { SwipeableRow } from '../components/SwipeableRow';
+import { ScreenHeader } from '../components/ScreenHeader';
+import { SectionLabel } from '../components/SectionLabel';
+import { SPACING, TYPOGRAPHY, RADIUS } from '../theme';
+import type { TanrenThemeColors } from '../theme';
+import { useTheme } from '../ThemeContext';
 import { useWorkout } from '../WorkoutContext';
-import { EXERCISES } from '../exerciseDB';
-import type { RootTabParamList } from '../navigation/RootNavigator';
+import { EXERCISES, BODY_PARTS } from '../exerciseDB';
+import type { RootDrawerParamList } from '../navigation/RootNavigator';
+import { CALENDAR } from '../config';
+import type { BodyPart } from '../types';
+import { loadAppSettings } from '../utils/storage';
 
 // ── 型 ────────────────────────────────────────────────────────────────────────
 
-type HomeNavProp = BottomTabNavigationProp<RootTabParamList, 'Home'>;
+type HomeNavProp = DrawerNavigationProp<RootDrawerParamList, 'Home'>;
 
-// ── クイックスタート定義 ──────────────────────────────────────────────────────
+// ── 定数 ──────────────────────────────────────────────────────────────────────
 
 const QUICK_START_IDS = [
   'chest_001', // ベンチプレス
   'legs_001',  // スクワット
   'back_001',  // デッドリフト
-  'shoulders_001', // ショルダープレス（推定）
+  'shoulders_001', // ショルダープレス
   'back_003',  // 懸垂
 ] as const;
 
+const DAY_LABELS = ['月', '火', '水', '木', '金', '土', '日'];
+
 // ── ヘルパー ──────────────────────────────────────────────────────────────────
+
+function toDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function buildCalendarWeeks(year: number, month: number): Date[][] {
+  const firstDay = new Date(year, month, 1);
+  const dow = firstDay.getDay(); // 0=Sun
+  const daysToMonday = dow === 0 ? 6 : dow - 1;
+  const start = new Date(firstDay);
+  start.setDate(firstDay.getDate() - daysToMonday);
+
+  const weeks: Date[][] = [];
+  for (let w = 0; w < CALENDAR.WEEKS_TO_SHOW; w++) {
+    const week: Date[] = [];
+    for (let d = 0; d < 7; d++) {
+      const date = new Date(start);
+      date.setDate(start.getDate() + w * 7 + d);
+      week.push(date);
+    }
+    weeks.push(week);
+  }
+  return weeks;
+}
 
 function formatVolume(v: number): string {
   if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
   return String(v);
 }
 
-function formatDate(): string {
-  return new Date().toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long',
-  });
+function formatSectionDate(dateStr: string, todayStr: string): string {
+  if (dateStr === todayStr) return '今日';
+  const d = new Date(dateStr + 'T00:00:00');
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeNavProp>();
-  const { workouts, personalRecords, weeklyStats } = useWorkout();
+  const { workouts, personalRecords, deleteSessionFromWorkout } = useWorkout();
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const today = useMemo(() => formatDate(), []);
+  const todayStr = useMemo(() => toDateStr(new Date()), []);
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const [calendarMonth, setCalendarMonth] = useState<Date>(
+    () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+  );
+  const [showCalendar, setShowCalendar] = useState(true);
+  const [showQuickStart, setShowQuickStart] = useState(true);
 
-  // 本日のメニュー: 最近のワークアウトから頻出種目を最大3件
-  const todayMenu = useMemo(() => {
-    const sorted = [...workouts].sort((a, b) => b.date.localeCompare(a.date));
+  useFocusEffect(
+    useCallback(() => {
+      loadAppSettings().then(s => {
+        setShowCalendar(s.showCalendar);
+        setShowQuickStart(s.showQuickStart);
+      });
+    }, []),
+  );
+
+  // workouts を日付でインデックス
+  const workoutByDate = useMemo(() => {
+    const map = new Map<string, typeof workouts[0]>();
+    for (const w of workouts) map.set(w.date, w);
+    return map;
+  }, [workouts]);
+
+  // カレンダーグリッド
+  const calendarWeeks = useMemo(
+    () => buildCalendarWeeks(calendarMonth.getFullYear(), calendarMonth.getMonth()),
+    [calendarMonth],
+  );
+
+  // 選択日のワークアウト
+  const selectedDayWorkout = useMemo(
+    () => workoutByDate.get(selectedDate) ?? null,
+    [workoutByDate, selectedDate],
+  );
+
+  // 選択日の鍛えた部位
+  const selectedDayBodyParts = useMemo<BodyPart[]>(() => {
+    if (!selectedDayWorkout) return [];
+    const parts = new Set<BodyPart>();
+    for (const s of selectedDayWorkout.sessions) {
+      const ex = EXERCISES.find(e => e.id === s.exerciseId);
+      if (ex) parts.add(ex.bodyPart);
+    }
+    return [...parts];
+  }, [selectedDayWorkout]);
+
+  // 本日のメニュー（最新ワークアウトから）
+  const { latestWorkoutId, todayMenu } = useMemo(() => {
+    if (workouts.length === 0) return { latestWorkoutId: null, todayMenu: [] };
+    const latest = [...workouts].sort((a, b) => b.date.localeCompare(a.date))[0];
     const seen = new Set<string>();
     const ids: string[] = [];
-
-    for (const workout of sorted) {
-      for (const session of workout.sessions) {
-        if (!seen.has(session.exerciseId)) {
-          seen.add(session.exerciseId);
-          ids.push(session.exerciseId);
-        }
-        if (ids.length >= 3) break;
+    for (const session of latest.sessions) {
+      if (!seen.has(session.exerciseId)) {
+        seen.add(session.exerciseId);
+        ids.push(session.exerciseId);
       }
-      if (ids.length >= 3) break;
     }
-
-    return ids
-      .map(id => ({
-        exercise: EXERCISES.find(e => e.id === id),
-        pr: personalRecords.find(r => r.exerciseId === id),
-      }))
-      .filter((item): item is { exercise: typeof EXERCISES[0]; pr: typeof personalRecords[0] | undefined } =>
-        item.exercise != null,
+    const items = ids
+      .map(id => {
+        const exercise = EXERCISES.find(e => e.id === id);
+        const pr = personalRecords.find(r => r.exerciseId === id);
+        const session = latest.sessions.find(s => s.exerciseId === id);
+        const lastSets = session?.sets.length ?? 0;
+        const lastMaxWeight =
+          session?.sets.reduce<number | null>((max, s) => {
+            if (s.weight === null) return max;
+            return max === null ? s.weight : Math.max(max, s.weight);
+          }, null) ?? null;
+        return { exercise, pr, lastSets, lastMaxWeight };
+      })
+      .filter(
+        (item): item is {
+          exercise: typeof EXERCISES[0];
+          pr: typeof personalRecords[0] | undefined;
+          lastSets: number;
+          lastMaxWeight: number | null;
+        } => item.exercise != null,
       );
+    return { latestWorkoutId: latest.id, todayMenu: items };
   }, [workouts, personalRecords]);
+
+  // ボタンコンテナの高さ（スクロール余白算出用）
+  const btnContainerHeight = 50 + Math.max(insets.bottom, SPACING.md) + SPACING.md;
 
   function handleStartWorkout() {
     navigation.navigate('WorkoutStack');
@@ -90,17 +185,264 @@ export default function HomeScreen() {
     });
   }
 
+  const monthLabel = calendarMonth.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+  });
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
+      <ScreenHeader
+        title={new Date().toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })}
+        showHamburger
+      />
+
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: btnContainerHeight + SPACING.md }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* 日付 */}
-        <Text style={styles.date}>{today}</Text>
+        {/* ── カレンダー ─────────────────────────────────────────────────── */}
+        {showCalendar && (
+          <View style={styles.calendarCard}>
+            {/* 月ナビゲーション */}
+            <View style={styles.calHeader}>
+              <TouchableOpacity
+                style={styles.calNavBtn}
+                onPress={() =>
+                  setCalendarMonth(
+                    prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1),
+                  )
+                }
+                accessibilityRole="button"
+                accessibilityLabel="前の月"
+              >
+                <Ionicons name="chevron-back" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+              <Text style={styles.calMonthLabel}>{monthLabel}</Text>
+              <TouchableOpacity
+                style={styles.calNavBtn}
+                onPress={() =>
+                  setCalendarMonth(
+                    prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1),
+                  )
+                }
+                accessibilityRole="button"
+                accessibilityLabel="次の月"
+              >
+                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
 
-        {/* ワークアウト開始 — オレンジ CTA（唯一の accent 使用箇所） */}
+            {/* 曜日ラベル */}
+            <View style={styles.calDayRow}>
+              {DAY_LABELS.map(d => (
+                <Text key={d} style={styles.calDayLabel}>
+                  {d}
+                </Text>
+              ))}
+            </View>
+
+            {/* 週グリッド */}
+            {calendarWeeks.map((week, wi) => (
+              <View key={wi} style={styles.calWeekRow}>
+                {week.map(date => {
+                  const dateStr = toDateStr(date);
+                  const isCurrentMonth = date.getMonth() === calendarMonth.getMonth();
+                  const isToday = dateStr === todayStr;
+                  const isSelected = dateStr === selectedDate;
+                  const hasWorkout = workoutByDate.has(dateStr);
+
+                  return (
+                    <TouchableOpacity
+                      key={dateStr}
+                      style={[
+                        styles.calDayCell,
+                        isSelected && { backgroundColor: colors.accent },
+                        isToday && !isSelected && {
+                          borderWidth: 1,
+                          borderColor: colors.accent,
+                        },
+                      ]}
+                      onPress={() => setSelectedDate(dateStr)}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={dateStr}
+                    >
+                      <Text
+                        style={[
+                          styles.calDayNum,
+                          !isCurrentMonth && { color: colors.textTertiary },
+                          isSelected && { color: colors.onAccent },
+                          isToday &&
+                            !isSelected && {
+                              color: colors.accent,
+                              fontWeight: TYPOGRAPHY.bold,
+                            },
+                        ]}
+                      >
+                        {date.getDate()}
+                      </Text>
+                      {hasWorkout ? (
+                        <View
+                          style={[
+                            styles.calDot,
+                            {
+                              backgroundColor: isSelected
+                                ? colors.onAccent
+                                : colors.accent,
+                            },
+                          ]}
+                        />
+                      ) : (
+                        <View style={styles.calDotPlaceholder} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* ── 今日のサマリー ─────────────────────────────────────────────── */}
+        <SectionLabel>{formatSectionDate(selectedDate, todayStr)}</SectionLabel>
+        {selectedDayWorkout != null ? (
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNum}>{selectedDayWorkout.sessions.length}</Text>
+              <Text style={styles.statKey}>セッション</Text>
+            </View>
+            <View style={[styles.statItem, styles.statBorder]}>
+              <Text style={styles.statNum}>
+                {formatVolume(selectedDayWorkout.totalVolume)}
+              </Text>
+              <Text style={styles.statKey}>kg ボリューム</Text>
+            </View>
+            <View style={[styles.statItem, styles.statBorder]}>
+              <View style={styles.bodyPartIcons}>
+                {selectedDayBodyParts.map(bp => {
+                  const bpConfig = BODY_PARTS.find(b => b.id === bp);
+                  if (!bpConfig) return null;
+                  return (
+                    <Ionicons
+                      key={bp}
+                      name={bpConfig.icon as any}
+                      size={16}
+                      color={colors.accent}
+                    />
+                  );
+                })}
+              </View>
+              <Text style={styles.statKey}>鍛えた部位</Text>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.emptyDayContainer}>
+            <Text style={styles.emptyDayText}>トレーニング記録なし</Text>
+          </View>
+        )}
+
+        {/* ── クイックスタート ───────────────────────────────────────────── */}
+        {showQuickStart && (
+          <>
+            <SectionLabel style={{ marginTop: SPACING.sectionGap }}>クイックスタート</SectionLabel>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chips}
+            >
+              {QUICK_START_IDS.map(id => {
+                const ex = EXERCISES.find(e => e.id === id);
+                if (!ex) return null;
+                return (
+                  <TouchableOpacity
+                    key={id}
+                    style={styles.chip}
+                    onPress={() => handleChipPress(id)}
+                    activeOpacity={0.75}
+                    accessibilityRole="button"
+                    accessibilityLabel={ex.name}
+                  >
+                    <Text style={styles.chipText}>{ex.name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </>
+        )}
+
+        {/* ── 本日のメニュー ─────────────────────────────────────────────── */}
+        <SectionLabel style={{ marginTop: SPACING.sectionGap }}>本日のメニュー</SectionLabel>
+        {todayMenu.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>本日のメニューが設定されていません</Text>
+            <Text style={styles.emptySubText}>種目を選択してワークアウトを開始しましょう</Text>
+          </View>
+        ) : (
+          <View style={styles.menuList}>
+            {todayMenu.map(({ exercise, pr, lastSets, lastMaxWeight }) => {
+              const bodyPartLabel =
+                BODY_PARTS.find(b => b.id === exercise.bodyPart)?.label ?? '';
+              return (
+                <View key={exercise.id} style={styles.menuCardWrapper}>
+                  <SwipeableRow
+                    onDelete={() =>
+                      latestWorkoutId &&
+                      deleteSessionFromWorkout(latestWorkoutId, exercise.id)
+                    }
+                  >
+                    <TouchableOpacity
+                      style={styles.menuCard}
+                      onPress={() => handleChipPress(exercise.id)}
+                      activeOpacity={0.72}
+                      accessibilityRole="button"
+                      accessibilityLabel={exercise.name}
+                    >
+                      <View style={styles.menuCardRow}>
+                        <Text style={styles.menuName} numberOfLines={1}>{exercise.name}</Text>
+                        <View style={styles.menuBadges}>
+                          {bodyPartLabel !== '' && (
+                            <View style={styles.menuChip}>
+                              <Text style={styles.menuChipText}>{bodyPartLabel}</Text>
+                            </View>
+                          )}
+                          {lastMaxWeight !== null && (
+                            <View style={styles.menuChip}>
+                              <Text style={styles.menuChipText}>前回 {lastMaxWeight}kg</Text>
+                            </View>
+                          )}
+                          {lastSets > 0 && (
+                            <View style={styles.menuChip}>
+                              <Text style={styles.menuChipText}>{lastSets}セット</Text>
+                            </View>
+                          )}
+                          {pr?.maxWeight != null && (
+                            <View style={[styles.menuChip, styles.menuChipPR]}>
+                              <Text style={[styles.menuChipText, styles.menuChipTextPR]}>
+                                PR {pr.maxWeight}kg
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.chevron}>›</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </SwipeableRow>
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* ── 固定ワークアウト開始ボタン ─────────────────────────────────── */}
+      <View
+        style={[
+          styles.fixedBtnWrapper,
+          { paddingBottom: Math.max(insets.bottom, SPACING.md) },
+        ]}
+      >
         <TouchableOpacity
           style={styles.ctaButton}
           onPress={handleStartWorkout}
@@ -110,231 +452,249 @@ export default function HomeScreen() {
         >
           <Text style={styles.ctaText}>ワークアウト開始</Text>
         </TouchableOpacity>
-
-        {/* 今週 — 統計（数値は t1、accent なし） */}
-        <Text style={styles.sectionLabel}>今週</Text>
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNum}>{weeklyStats.workoutCount}</Text>
-            <Text style={styles.statKey}>トレーニング</Text>
-          </View>
-          <View style={[styles.statItem, styles.statBorder]}>
-            <Text style={styles.statNum}>{formatVolume(weeklyStats.totalVolume)}</Text>
-            <Text style={styles.statKey}>kg ボリューム</Text>
-          </View>
-          <View style={[styles.statItem, styles.statBorder]}>
-            <Text style={styles.statNum}>{weeklyStats.streakDays}</Text>
-            <Text style={styles.statKey}>日連続</Text>
-          </View>
-        </View>
-
-        {/* クイックスタート */}
-        <Text style={styles.sectionLabel}>クイックスタート</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chips}
-        >
-          {QUICK_START_IDS.map(id => {
-            const ex = EXERCISES.find(e => e.id === id);
-            if (!ex) return null;
-            return (
-              <TouchableOpacity
-                key={id}
-                style={styles.chip}
-                onPress={() => handleChipPress(id)}
-                activeOpacity={0.75}
-                accessibilityRole="button"
-                accessibilityLabel={ex.name}
-              >
-                <Text style={styles.chipText}>{ex.name}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {/* 本日のメニュー */}
-        <Text style={[styles.sectionLabel, styles.sectionGapTop]}>本日のメニュー</Text>
-        {todayMenu.length === 0 ? (
-          <Text style={styles.emptyText}>記録なし</Text>
-        ) : (
-          <View style={styles.menuList}>
-            {todayMenu.map(({ exercise, pr }) => (
-              <TouchableOpacity
-                key={exercise.id}
-                style={styles.menuRow}
-                onPress={() => handleChipPress(exercise.id)}
-                activeOpacity={0.72}
-                accessibilityRole="button"
-                accessibilityLabel={exercise.name}
-              >
-                <View style={styles.menuLeft}>
-                  <Text style={styles.menuName}>{exercise.name}</Text>
-                  <Text style={styles.menuSub}>
-                    {pr?.maxWeight != null
-                      ? `前回 ${pr.maxWeight}kg`
-                      : exercise.muscleDetail ?? exercise.nameEn}
-                  </Text>
-                </View>
-                <Text style={styles.chevron}>›</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        <View style={styles.bottomPad} />
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+    </View>
   );
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingTop: SPACING.sm,
-  },
+function makeStyles(c: TanrenThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    scroll: {
+      flex: 1,
+    },
+    content: {
+      paddingTop: SPACING.sm,
+    },
 
-  // 日付
-  date: {
-    fontSize: 13,
-    fontWeight: TYPOGRAPHY.regular,
-    color: COLORS.textTertiary,
-    paddingHorizontal: SPACING.contentMargin,
-    paddingTop: 4,
-    paddingBottom: 22,
-  },
+    // ── カレンダー ──────────────────────────────────────────────────────────
+    calendarCard: {
+      marginHorizontal: SPACING.contentMargin,
+      marginBottom: SPACING.sectionGap,
+      backgroundColor: c.surface1,
+      borderRadius: RADIUS.card,
+      padding: SPACING.cardPadding,
+    },
+    calHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: SPACING.sm,
+    },
+    calNavBtn: {
+      width: 36,
+      height: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    calMonthLabel: {
+      fontSize: TYPOGRAPHY.bodySmall,
+      fontWeight: TYPOGRAPHY.semiBold,
+      color: c.textPrimary,
+    },
+    calDayRow: {
+      flexDirection: 'row',
+      marginBottom: SPACING.xs,
+    },
+    calDayLabel: {
+      flex: 1,
+      textAlign: 'center',
+      fontSize: TYPOGRAPHY.captionSmall,
+      fontWeight: TYPOGRAPHY.regular,
+      color: c.textTertiary,
+    },
+    calWeekRow: {
+      flexDirection: 'row',
+    },
+    calDayCell: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: SPACING.xs,
+      borderRadius: RADIUS.badge + 2,
+      marginVertical: 1,
+    },
+    calDayNum: {
+      fontSize: TYPOGRAPHY.captionSmall,
+      fontWeight: TYPOGRAPHY.regular,
+      color: c.textPrimary,
+    },
+    calDot: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      marginTop: 2,
+    },
+    calDotPlaceholder: {
+      width: 4,
+      height: 4,
+      marginTop: 2,
+    },
 
-  // CTA ボタン（accent 使用: 1箇所目）
-  ctaButton: {
-    marginHorizontal: SPACING.contentMargin,
-    height: 60,
-    backgroundColor: COLORS.accent,
-    borderRadius: RADIUS.btnCTA,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaText: {
-    fontSize: 17,
-    fontWeight: TYPOGRAPHY.bold,
-    color: '#FFFFFF',
-    letterSpacing: -0.2,
-  },
+    // ── 日次サマリー ────────────────────────────────────────────────────────
+    statsRow: {
+      flexDirection: 'row',
+      paddingHorizontal: SPACING.contentMargin,
+      marginBottom: SPACING.md,
+    },
+    statItem: {
+      flex: 1,
+      gap: SPACING.xs,
+    },
+    statBorder: {
+      borderLeftWidth: 1,
+      borderLeftColor: c.separator,
+      paddingLeft: SPACING.md,
+    },
+    statNum: {
+      fontSize: 24,
+      fontWeight: TYPOGRAPHY.heavy,
+      color: c.textPrimary,
+      letterSpacing: -1,
+      fontVariant: ['tabular-nums'],
+      lineHeight: 24,
+    },
+    statKey: {
+      fontSize: 10,
+      fontWeight: TYPOGRAPHY.regular,
+      color: c.textTertiary,
+    },
+    bodyPartIcons: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 4,
+      minHeight: 20,
+      alignItems: 'center',
+    },
+    emptyDayContainer: {
+      paddingHorizontal: SPACING.contentMargin,
+      paddingVertical: SPACING.sm,
+      marginBottom: SPACING.md,
+    },
+    emptyDayText: {
+      fontSize: TYPOGRAPHY.bodySmall,
+      fontWeight: TYPOGRAPHY.regular,
+      color: c.textTertiary,
+    },
 
-  // セクションラベル
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: TYPOGRAPHY.semiBold,
-    color: COLORS.textTertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.9,
-    paddingHorizontal: SPACING.contentMargin,
-    marginTop: 28,
-    marginBottom: 10,
-  },
-  sectionGapTop: {
-    marginTop: 22,
-  },
+    // ── クイックスタート ────────────────────────────────────────────────────
+    chips: {
+      paddingHorizontal: SPACING.contentMargin,
+      gap: SPACING.sm,
+    },
+    chip: {
+      backgroundColor: c.surface1,
+      borderRadius: RADIUS.chip,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.cardPadding,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    chipText: {
+      fontSize: 13,
+      fontWeight: TYPOGRAPHY.regular,
+      color: c.textSecondary,
+    },
 
-  // 統計行（数値に accent 不使用）
-  statsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: SPACING.contentMargin,
-    marginBottom: SPACING.md,
-  },
-  statItem: {
-    flex: 1,
-    gap: 3,
-  },
-  statBorder: {
-    borderLeftWidth: 1,
-    borderLeftColor: COLORS.separator,
-    paddingLeft: SPACING.md,
-  },
-  statNum: {
-    fontSize: 24,
-    fontWeight: TYPOGRAPHY.heavy,
-    color: COLORS.textPrimary,
-    letterSpacing: -1,
-    fontVariant: ['tabular-nums'],
-    lineHeight: 24,
-  },
-  statKey: {
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.regular,
-    color: COLORS.textTertiary,
-  },
+    // ── 本日のメニュー ──────────────────────────────────────────────────────
+    menuList: {
+      paddingHorizontal: SPACING.contentMargin,
+    },
+    menuCardWrapper: {
+      marginBottom: SPACING.cardGap,
+    },
+    menuCard: {
+      backgroundColor: c.surface1,
+      borderRadius: RADIUS.card,
+      padding: SPACING.cardPadding,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    menuCardRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.sm,
+    },
+    menuName: {
+      fontSize: TYPOGRAPHY.body,
+      fontWeight: TYPOGRAPHY.semiBold,
+      color: c.textPrimary,
+      letterSpacing: -0.2,
+      flex: 1,
+    },
+    menuBadges: {
+      flexDirection: 'row',
+      gap: 4,
+      alignItems: 'center',
+      flexShrink: 1,
+      flexWrap: 'wrap',
+    },
+    menuChip: {
+      backgroundColor: c.surface2,
+      borderRadius: RADIUS.badge,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    menuChipPR: {
+      backgroundColor: c.accentDim,
+    },
+    menuChipText: {
+      fontSize: 11,
+      fontWeight: TYPOGRAPHY.regular,
+      color: c.textSecondary,
+    },
+    menuChipTextPR: {
+      color: c.accent,
+      fontWeight: TYPOGRAPHY.heavy,
+    },
+    chevron: {
+      fontSize: 20,
+      color: c.textTertiary,
+      marginLeft: SPACING.sm,
+    },
+    emptyContainer: {
+      paddingHorizontal: SPACING.contentMargin,
+      paddingVertical: SPACING.md,
+      gap: SPACING.xs,
+    },
+    emptyText: {
+      fontSize: TYPOGRAPHY.bodySmall,
+      fontWeight: TYPOGRAPHY.semiBold,
+      color: c.textSecondary,
+    },
+    emptySubText: {
+      fontSize: TYPOGRAPHY.captionSmall,
+      fontWeight: TYPOGRAPHY.regular,
+      color: c.textTertiary,
+    },
 
-  // チップ
-  chips: {
-    paddingHorizontal: SPACING.contentMargin,
-    gap: 7,
-  },
-  chip: {
-    backgroundColor: COLORS.surface1,
-    borderRadius: RADIUS.chip,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chipText: {
-    fontSize: 13,
-    fontWeight: TYPOGRAPHY.regular,
-    color: COLORS.textSecondary,
-  },
-
-  // 本日のメニュー
-  menuList: {
-    paddingHorizontal: SPACING.contentMargin,
-  },
-  menuRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.separator,
-    minHeight: 52,
-  },
-  menuLeft: {
-    gap: 3,
-    flex: 1,
-  },
-  menuName: {
-    fontSize: TYPOGRAPHY.body,
-    fontWeight: TYPOGRAPHY.semiBold,
-    color: COLORS.textPrimary,
-    letterSpacing: -0.2,
-  },
-  menuSub: {
-    fontSize: 11,
-    fontWeight: TYPOGRAPHY.regular,
-    color: COLORS.textTertiary,
-    marginTop: 2,
-  },
-  chevron: {
-    fontSize: 20,
-    color: COLORS.textTertiary,
-    marginLeft: SPACING.sm,
-  },
-
-  // 空状態
-  emptyText: {
-    fontSize: TYPOGRAPHY.bodySmall,
-    color: COLORS.textTertiary,
-    paddingHorizontal: SPACING.contentMargin,
-  },
-
-  bottomPad: {
-    height: 20,
-  },
-});
+    // ── 固定CTAボタン ───────────────────────────────────────────────────────
+    fixedBtnWrapper: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      paddingHorizontal: SPACING.contentMargin,
+      paddingTop: SPACING.md,
+      backgroundColor: c.background,
+    },
+    ctaButton: {
+      height: 50,
+      backgroundColor: c.accent,
+      borderRadius: RADIUS.btnCTA,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ctaText: {
+      fontSize: 17,
+      fontWeight: TYPOGRAPHY.bold,
+      color: c.onAccent,
+      letterSpacing: -0.2,
+    },
+  });
+}

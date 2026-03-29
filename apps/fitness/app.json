@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "extra": {
       "eas": {
         "projectId": ""
@@ -36,14 +36,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "updates": {
-      "url": ""
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
     "plugins": [
-      "expo-updates",
       [
         "expo-build-properties",
         {

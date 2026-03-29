@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  証明写真スタジオ — UIプロトタイプ v2 (frontend-design)        ║
+  ║  哲学: 凛雅 (Ringa) — Poised Refinement                      ║
+  ║                                                              ║
+  ║  「証明」という言葉が持つ揺るぎない確信感。                       ║
+  ║  余白は沈黙ではなく、信頼の証である。                            ║
+  ║  精度 1/10 — 証明写真に「味」は不要。                           ║
+  ║                                                              ║
+  ║  Tension: Structure 2 · Silence 4 · Precision 1             ║
+  ║  Target: iPhone 15 Pro (393×852px) / iOS 17+                ║
+  ╚══════════════════════════════════════════════════════════════╝
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>証明写真スタジオ</title>
+<style>
+/* ── Variables ──────────────────────────────────────────────── */
+:root {
+  --kinpaku:    #F7F5F0;
+  --sumi:       #1A1A1C;
+  --sumi-80:    rgba(26,26,28,.80);
+  --sumi-55:    rgba(26,26,28,.55);
+  --sumi-30:    rgba(26,26,28,.30);
+  --sumi-12:    rgba(26,26,28,.12);
+  --sumi-06:    rgba(26,26,28,.06);
+  --card:       #FFFFFF;
+  --bg2:        #EFEEEB;
+  --blue:       #0A7AFF;
+  --blue-lt:    #E3EFFF;
+  --blue-dk:    #005FCC;
+  --green:      #34C759;
+  --red:        #FF3B30;
+  --orange:     #FF9500;
+  --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-xl: 28px;
+  --shadow-sm: 0 1px 6px rgba(26,26,28,.07);
+  --shadow:    0 2px 14px rgba(26,26,28,.09);
+  --shadow-lg: 0 8px 36px rgba(26,26,28,.14);
+}
+
+/* ── Reset ──────────────────────────────────────────────────── */
+*,*::before,*::after {
+  margin:0; padding:0; box-sizing:border-box;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+button { font:inherit; cursor:pointer; border:none; background:none; -webkit-tap-highlight-color:transparent; }
+input[type=range] { -webkit-appearance:none; appearance:none; }
+
+/* ── Page ───────────────────────────────────────────────────── */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+  background: #B8B4AC;
+  background-image:
+    radial-gradient(ellipse 130% 70% at 15% 5%,  rgba(220,217,210,.95) 0%, transparent 55%),
+    radial-gradient(ellipse 110% 80% at 85% 95%, rgba(185,181,173,.90) 0%, transparent 55%),
+    radial-gradient(ellipse  80% 60% at 50% 50%, rgba(200,197,190,.50) 0%, transparent 70%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px 64px;
+  gap: 24px;
+}
+
+/* ── iPhone 15 Pro Frame ────────────────────────────────────── */
+.iphone {
+  width: 393px;
+  height: 852px;
+  border-radius: 56px;
+  background: #3C3835;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow:
+    inset 0 0 0 .5px rgba(255,255,255,.12),
+    inset 0 0 0 1px rgba(0,0,0,.3),
+    0 0 0 .5px rgba(0,0,0,.6),
+    0 4px 6px rgba(0,0,0,.2),
+    0 20px 60px rgba(0,0,0,.45),
+    0 48px 120px rgba(0,0,0,.35);
+}
+/* Left buttons */
+.iphone::before {
+  content:'';
+  position:absolute; left:-3.5px; top:154px;
+  width:3.5px; height:30px;
+  background:#28251F; border-radius:2px 0 0 2px;
+  box-shadow: 0 44px 0 #28251F, 0 88px 0 #28251F;
+}
+/* Right button */
+.iphone::after {
+  content:'';
+  position:absolute; right:-3.5px; top:190px;
+  width:3.5px; height:74px;
+  background:#28251F; border-radius:0 2px 2px 0;
+}
+
+.iphone-screen {
+  position: absolute;
+  inset: 5px;
+  border-radius: 52px;
+  overflow: hidden;
+  background: var(--kinpaku);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Dynamic Island */
+.dyn-island {
+  position: absolute;
+  top: 13px; left: 50%;
+  transform: translateX(-50%);
+  width: 126px; height: 36px;
+  background: #000;
+  border-radius: 20px;
+  z-index: 300;
+  pointer-events: none;
+}
+
+/* ── Status Bar ─────────────────────────────────────────────── */
+.status-bar {
+  height: 59px;
+  flex-shrink: 0;
+  padding: 0 28px 10px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  position: relative;
+  z-index: 10;
+  transition: color .3s;
+}
+.status-bar.on-dark { color: rgba(255,255,255,.9); }
+.sb-time { font-size: 15px; font-weight: 600; letter-spacing: -.3px; }
+.sb-icons { display: flex; align-items: center; gap: 7px; }
+.sb-icons svg { display:block; }
+
+/* ── Screens Wrap ───────────────────────────────────────────── */
+.screens-wrap { flex: 1; position: relative; overflow: hidden; }
+.screen {
+  position: absolute; inset: 0;
+  background: var(--kinpaku);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.screen.active { display: flex; }
+
+@keyframes slideInR  { from { transform:translateX(100%) } to { transform:translateX(0) } }
+@keyframes slideOutL { from { transform:translateX(0) opacity:1 } to { transform:translateX(-26%) opacity:.65 } }
+@keyframes slideInL  { from { transform:translateX(-26%) opacity:.65 } to { transform:translateX(0) opacity:1 } }
+@keyframes slideOutR { from { transform:translateX(0) opacity:1 } to { transform:translateX(100%) opacity:.9 } }
+
+.screen.slide-in-r  { animation: slideInR  .32s cubic-bezier(.3,.0,.1,1) both; }
+.screen.slide-out-l { animation: slideOutL .28s cubic-bezier(.3,.0,.1,1) both; }
+.screen.slide-in-l  { animation: slideInL  .32s cubic-bezier(.3,.0,.1,1) both; }
+.screen.slide-out-r { animation: slideOutR .28s cubic-bezier(.3,.0,.1,1) both; }
+
+/* ── Home Indicator ─────────────────────────────────────────── */
+.home-ind {
+  height: 34px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .3s;
+}
+.home-ind.on-dark { background: #080A0E; }
+.home-ind span {
+  display: block; width: 134px; height: 5px;
+  border-radius: 3px;
+  transition: background .3s, opacity .3s;
+}
+.home-ind:not(.on-dark) span { background: var(--sumi); opacity: .18; }
+.home-ind.on-dark span { background: rgba(255,255,255,.5); opacity: 1; }
+
+/* ── Nav Bar ────────────────────────────────────────────────── */
+.nav {
+  padding: 10px 16px 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+  border-bottom: .5px solid var(--sumi-12);
+  background: rgba(247,245,240,.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  position: relative; z-index: 20;
+}
+.nav.on-dark {
+  background: rgba(8,10,14,.90);
+  border-bottom-color: rgba(255,255,255,.08);
+}
+.nav-back {
+  display: flex; align-items: center; gap: 3px;
+  color: var(--blue); font-size: 17px; font-weight: 400;
+  min-width: 60px; min-height: 44px;
+  padding-right: 8px;
+}
+.nav-back.on-dark { color: rgba(255,255,255,.85); }
+.nav-back:active { opacity: .5; }
+.nav-title {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  font-size: 17px; font-weight: 600;
+  color: var(--sumi); letter-spacing: -.4px;
+  white-space: nowrap;
+}
+.nav-title.on-dark { color: #fff; }
+.nav-action {
+  color: var(--blue); font-size: 15px; font-weight: 500;
+  min-width: 60px; min-height: 44px;
+  display: flex; align-items: center; justify-content: flex-end;
+}
+.nav-action.on-dark { color: rgba(255,255,255,.80); }
+.nav-action:active { opacity: .5; }
+
+/* ── Step Progress ──────────────────────────────────────────── */
+.steps {
+  padding: 14px 20px 12px;
+  flex-shrink: 0;
+  background: var(--kinpaku);
+  transition: background .3s;
+}
+.steps.on-dark { background: #080A0E; }
+.steps-row { display: flex; align-items: flex-start; }
+.step-item {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  position: relative;
+}
+.step-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 13px;
+  left: calc(50% + 14px);
+  right: calc(-50% + 14px);
+  height: 1.5px;
+  background: var(--sumi-12);
+  transition: background .3s;
+}
+.step-item.done::after,
+.step-item.act::after { background: var(--blue); }
+
+.step-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--bg2);
+  border: 1.5px solid var(--sumi-12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  color: var(--sumi-30);
+  transition: all .25s cubic-bezier(.3,0,.1,1);
+  position: relative; z-index: 1;
+  flex-shrink: 0;
+}
+.step-item.act  .step-dot { background: var(--blue); border-color: var(--blue); color: #fff; }
+.step-item.done .step-dot { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+.step-lbl {
+  font-size: 10px; font-weight: 500;
+  color: var(--sumi-30);
+  letter-spacing: .1px; text-align: center;
+  white-space: nowrap;
+}
+.step-item.act  .step-lbl { color: var(--blue); font-weight: 600; }
+.step-item.done .step-lbl { color: var(--blue); }
+
+.steps.on-dark .step-dot       { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.1); color:rgba(255,255,255,.25); }
+.steps.on-dark .step-item.act  .step-dot,
+.steps.on-dark .step-item.done .step-dot  { background:var(--blue); border-color:var(--blue); color:#fff; }
+.steps.on-dark .step-lbl       { color:rgba(255,255,255,.25); }
+.steps.on-dark .step-item.act  .step-lbl,
+.steps.on-dark .step-item.done .step-lbl  { color:var(--blue); }
+.steps.on-dark .step-item::after          { background:rgba(255,255,255,.12); }
+.steps.on-dark .step-item.done::after,
+.steps.on-dark .step-item.act::after      { background:var(--blue); }
+
+/* ── Scroll ─────────────────────────────────────────────────── */
+.scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.scroll::-webkit-scrollbar { display: none; }
+
+/* ── Bottom Bar ─────────────────────────────────────────────── */
+.bottom-bar {
+  padding: 12px 20px 16px;
+  flex-shrink: 0;
+  background: var(--kinpaku);
+  border-top: .5px solid var(--sumi-12);
+}
+.btn-primary {
+  width: 100%; height: 52px;
+  background: var(--blue); color: #fff;
+  border-radius: var(--r-lg);
+  font-size: 17px; font-weight: 600; letter-spacing: -.3px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all .15s cubic-bezier(.3,0,.1,1);
+}
+.btn-primary:active { transform: scale(.975); background: var(--blue-dk); }
+.btn-primary:disabled {
+  background: var(--sumi-12); color: var(--sumi-30);
+  pointer-events: none;
+}
+.btn-secondary {
+  width: 100%; height: 50px;
+  background: transparent; color: var(--blue);
+  border: 1.5px solid var(--blue);
+  border-radius: var(--r-lg);
+  font-size: 16px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 10px;
+}
+.btn-secondary:active { opacity: .6; }
+
+/* ════════════════════════════════════════════════════════════
+   SCREEN 1 — Size Selection
+════════════════════════════════════════════════════════════ */
+.screen-hd { padding: 22px 20px 8px; }
+.screen-ttl {
+  font-size: 28px; font-weight: 700;
+  color: var(--sumi); letter-spacing: -.8px; line-height: 1.2;
+}
+.screen-sub { font-size: 15px; color: var(--sumi-55); margin-top: 5px; line-height: 1.45; }
+
+.size-list { padding: 10px 16px 24px; display: flex; flex-direction: column; gap: 9px; }
+
+.sz-card {
+  background: var(--card);
+  border-radius: var(--r-md);
+  padding: 13px 14px;
+  display: flex; align-items: center; gap: 14px;
+  border: 1.5px solid transparent;
+  box-shadow: var(--shadow-sm);
+  transition: all .18s cubic-bezier(.3,0,.1,1);
+  cursor: pointer;
+}
+.sz-card:active { transform: scale(.984); }
+.sz-card.sel {
+  border-color: var(--blue);
+  background: var(--blue-lt);
+  box-shadow: 0 2px 16px rgba(10,122,255,.12);
+}
+
+/* Photo ratio preview */
+.sz-photo-prev {
+  width: 44px; height: 52px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg2);
+  border-radius: 6px;
+  padding: 4px;
+}
+.sz-photo-prev .ph-rect {
+  background: linear-gradient(145deg, #E0DEDA 0%, #C8C5BE 100%);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+.sz-photo-prev .ph-rect::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 40%;
+  background: linear-gradient(to top, rgba(150,140,130,.25), transparent);
+}
+.sz-card.sel .sz-photo-prev { background: rgba(10,122,255,.12); }
+.sz-card.sel .ph-rect {
+  background: linear-gradient(145deg, #BDD5FF 0%, #8BBFFF 100%);
+}
+
+.sz-info { flex: 1; min-width: 0; }
+.sz-name { font-size: 15px; font-weight: 600; color: var(--sumi); letter-spacing: -.25px; }
+.sz-desc { font-size: 12px; color: var(--sumi-55); margin-top: 2px; line-height: 1.4; }
+.sz-meta { display: flex; align-items: center; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
+
+.badge {
+  display: inline-flex; padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 10px; font-weight: 700; letter-spacing: .1px;
+}
+.badge-blue   { background: var(--blue);   color: #fff; }
+.badge-orange { background: var(--orange); color: #fff; }
+.badge-green  { background: var(--green);  color: #fff; }
+.badge-ghost  { background: var(--blue-lt); color: var(--blue); }
+.badge-gray   { background: var(--bg2); color: var(--sumi-55); }
+
+.sz-dim {
+  font-size: 12px; font-weight: 600;
+  color: var(--sumi-55);
+  font-variant-numeric: tabular-nums;
+}
+
+.sz-check {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 1.5px solid var(--sumi-30);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all .18s;
+}
+.sz-card.sel .sz-check {
+  background: var(--blue); border-color: var(--blue);
+}
+
+/* ════════════════════════════════════════════════════════════
+   SCREEN 2 — Camera
+════════════════════════════════════════════════════════════ */
+.camera-wrap {
+  flex: 1;
+  position: relative;
+  background: #080A0E;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Simulated camera background */
+.cam-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(170deg, #141720 0%, #06080D 50%, #0A0B10 100%);
+}
+.cam-bg::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(ellipse 60% 55% at 50% 35%, rgba(30,35,55,.8) 0%, transparent 65%),
+    radial-gradient(ellipse 80% 40% at 50% 90%, rgba(15,18,30,.9) 0%, transparent 60%);
+}
+/* Subtle grid overlay */
+.cam-bg::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Vignette */
+.cam-vig {
+  position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  background: radial-gradient(ellipse 68% 58% at 50% 40%, transparent 30%, rgba(0,0,0,.72) 100%);
+}
+
+/* Person silhouette area */
+.cam-person-area {
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Face guide */
+.face-guide-wrap {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -54%);
+  z-index: 10;
+  pointer-events: none;
+}
+
+@keyframes guideBreath {
+  0%, 100% { transform: scale(1.0); opacity: .85; }
+  50%       { transform: scale(1.03); opacity: 1; }
+}
+.face-guide-svg {
+  animation: guideBreath 3.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,.15));
+}
+
+/* Corner marks for guide */
+@keyframes cornerPulse {
+  0%, 100% { opacity: .6; }
+  50%       { opacity: 1; }
+}
+.guide-corner { animation: cornerPulse 3.5s ease-in-out infinite; }
+
+/* Guide hint text */
+.cam-hint {
+  position: absolute;
+  bottom: 120px; left: 0; right: 0;
+  z-index: 15;
+  text-align: center;
+}
+.cam-hint-inner {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: .5px solid rgba(255,255,255,.1);
+}
+.cam-hint-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #34C759;
+  flex-shrink: 0;
+}
+@keyframes blink { 0%,100% { opacity:1 } 50% { opacity:.3 } }
+.cam-hint-dot { animation: blink 2s ease-in-out infinite; }
+.cam-hint-text { font-size: 13px; color: rgba(255,255,255,.88); font-weight: 500; letter-spacing: -.1px; }
+
+/* Controls row */
+.cam-controls {
+  position: absolute;
+  bottom: 32px; left: 0; right: 0;
+  z-index: 20;
+  display: flex; align-items: center; justify-content: center; gap: 0;
+  padding: 0 28px;
+}
+.cam-side-btn {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  height: 80px;
+}
+.cam-icon-btn {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(255,255,255,.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: .5px solid rgba(255,255,255,.18);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.cam-icon-btn:active { background: rgba(255,255,255,.22); transform: scale(.93); }
+.cam-icon-btn svg { display: block; }
+
+/* Shutter button */
+.shutter {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: transparent;
+  border: 3px solid rgba(255,255,255,.9);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .12s;
+  position: relative;
+}
+.shutter::before {
+  content: '';
+  width: 68px; height: 68px; border-radius: 50%;
+  background: rgba(255,255,255,.93);
+  transition: all .12s;
+}
+.shutter:active { transform: scale(.92); }
+.shutter:active::before { width: 60px; height: 60px; }
+
+/* Flash indicator */
+.flash-badge {
+  position: absolute;
+  top: 10px; right: 16px;
+  background: rgba(0,0,0,.5);
+  backdrop-filter: blur(8px);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px; font-weight: 600;
+  color: rgba(255,255,255,.7);
+  letter-spacing: .2px;
+  z-index: 25;
+  border: .5px solid rgba(255,255,255,.1);
+}
+.flash-badge.on { color: #FFD60A; }
+
+/* ════════════════════════════════════════════════════════════
+   SCREEN 3 — Edit / Adjust
+════════════════════════════════════════════════════════════ */
+.edit-preview-area {
+  padding: 16px 20px 12px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg2);
+  position: relative;
+}
+.edit-photo-frame {
+  width: 120px;
+  background: #D4D1CB;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,.15), 0 1px 4px rgba(0,0,0,.1);
+}
+.edit-photo-inner {
+  width: 100%;
+  background: linear-gradient(160deg, #C8C5BF 0%, #B8B5AF 40%, #A8A5A0 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.edit-photo-inner svg { opacity: .4; }
+
+/* bg color chips */
+.bg-chips {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 0;
+  justify-content: center;
+}
+.bg-chip {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all .18s;
+  position: relative;
+  flex-shrink: 0;
+}
+.bg-chip::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: border-color .18s;
+}
+.bg-chip.sel::after { border-color: var(--blue); }
+.bg-chip-white { background: #FFFFFF; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+.bg-chip-gray  { background: #D0CEC9; }
+.bg-chip-blue  { background: #B8D4F0; }
+
+.edit-section { padding: 0 20px; }
+.edit-section-title {
+  font-size: 13px; font-weight: 600;
+  color: var(--sumi-55); letter-spacing: .3px;
+  text-transform: uppercase;
+  padding: 12px 0 10px;
+  border-bottom: .5px solid var(--sumi-12);
+}
+
+/* Sliders */
+.slider-list { padding: 4px 0; }
+.slider-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 0;
+  border-bottom: .5px solid var(--sumi-06);
+}
+.slider-row:last-child { border-bottom: none; }
+.slider-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--bg2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+.slider-label { font-size: 14px; font-weight: 500; color: var(--sumi); min-width: 48px; flex-shrink: 0; }
+.slider-wrap { flex: 1; position: relative; }
+input[type=range] {
+  width: 100%; height: 4px;
+  background: linear-gradient(to right, var(--blue) var(--pct, 50%), var(--sumi-12) var(--pct, 50%));
+  border-radius: 2px;
+  cursor: pointer;
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2), 0 0 0 1.5px rgba(10,122,255,.3);
+  transition: transform .1s;
+}
+input[type=range]:active::-webkit-slider-thumb { transform: scale(1.15); }
+input[type=range]::-moz-range-thumb {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
+.slider-val {
+  font-size: 12px; font-weight: 600;
+  color: var(--sumi-55);
+  min-width: 30px; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* AI button */
+.ai-btn {
+  margin: 14px 20px 0;
+  width: calc(100% - 40px);
+  height: 46px;
+  background: linear-gradient(135deg, #1B1B2F 0%, #0A0A1E 100%);
+  color: rgba(255,255,255,.9);
+  border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  font-size: 15px; font-weight: 600;
+  position: relative;
+  overflow: hidden;
+  transition: all .2s;
+}
+.ai-btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(100,80,255,.25) 0%, rgba(0,200,150,.15) 100%);
+}
+.ai-btn:active { transform: scale(.975); opacity: .88; }
+.ai-btn-text { position: relative; z-index: 1; }
+.ai-badge {
+  position: relative; z-index: 1;
+  background: rgba(255,255,255,.15);
+  padding: 2px 7px; border-radius: 8px;
+  font-size: 10px; font-weight: 700;
+  color: rgba(255,255,255,.7);
+  letter-spacing: .2px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   SCREEN 4 — Preview & Save
+════════════════════════════════════════════════════════════ */
+.preview-label {
+  padding: 16px 20px 10px;
+  font-size: 13px; font-weight: 600;
+  color: var(--sumi-55); letter-spacing: .3px; text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* L-ban print layout */
+.print-area {
+  margin: 0 20px;
+  background: #F0EDE7;
+  border-radius: var(--r-md);
+  padding: 12px;
+  box-shadow: var(--shadow);
+  flex-shrink: 0;
+  position: relative;
+}
+.print-label {
+  position: absolute;
+  top: -9px; left: 14px;
+  background: var(--bg2);
+  padding: 1px 8px;
+  border-radius: 8px;
+  font-size: 10px; font-weight: 600;
+  color: var(--sumi-55); letter-spacing: .2px;
+}
+.print-grid {
+  display: grid;
+  gap: 6px;
+}
+.print-photo {
+  background: linear-gradient(145deg, #C0BDBA 0%, #A8A5A2 100%);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,.12);
+}
+.print-photo::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; top: 0;
+  background: linear-gradient(160deg, rgba(255,255,255,.08) 0%, transparent 60%);
+}
+
+/* Count badge overlay */
+.print-count-badge {
+  position: absolute;
+  bottom: 8px; right: 8px;
+  background: rgba(0,0,0,.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 3px 8px; border-radius: 10px;
+  font-size: 11px; font-weight: 600;
+  color: rgba(255,255,255,.85);
+  pointer-events: none;
+}
+
+/* Segment control */
+.segment-wrap {
+  padding: 12px 20px 8px;
+  flex-shrink: 0;
+}
+.segment {
+  display: flex;
+  background: var(--bg2);
+  border-radius: 10px;
+  padding: 2px;
+  gap: 2px;
+}
+.seg-btn {
+  flex: 1; height: 32px;
+  border-radius: 8px;
+  font-size: 14px; font-weight: 600;
+  color: var(--sumi-55);
+  transition: all .2s;
+}
+.seg-btn.active {
+  background: var(--card);
+  color: var(--sumi);
+  box-shadow: 0 1px 6px rgba(0,0,0,.1), 0 .5px 2px rgba(0,0,0,.06);
+}
+
+/* Action buttons row */
+.action-row {
+  padding: 12px 20px 10px;
+  display: flex; gap: 10px;
+  flex-shrink: 0;
+}
+.action-btn {
+  flex: 1; height: 52px;
+  border-radius: var(--r-md);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  transition: all .15s;
+}
+.action-btn:active { transform: scale(.95); opacity: .8; }
+.action-btn-icon { font-size: 20px; line-height: 1; }
+.action-btn-label { font-size: 11px; font-weight: 600; letter-spacing: .1px; }
+.action-save   { background: var(--blue); color: #fff; }
+.action-print  { background: var(--bg2); color: var(--sumi); }
+.action-share  { background: var(--bg2); color: var(--sumi); }
+
+/* Quality info */
+.quality-row {
+  margin: 0 20px 10px;
+  padding: 10px 14px;
+  background: var(--card);
+  border-radius: var(--r-md);
+  border: 1px solid var(--sumi-06);
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+}
+.quality-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+.quality-text { font-size: 13px; color: var(--sumi-80); line-height: 1.35; }
+.quality-text strong { color: var(--sumi); font-weight: 600; }
+
+/* ── Toast ──────────────────────────────────────────────────── */
+.toast-wrap {
+  position: absolute;
+  bottom: 48px; left: 50%; transform: translateX(-50%);
+  z-index: 500;
+  pointer-events: none;
+}
+.toast {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(26,26,28,.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 22px;
+  font-size: 14px; font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity .22s, transform .22s cubic-bezier(.3,0,.1,1);
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast-icon { font-size: 16px; }
+</style>
+</head>
+<body>
+
+<!-- ── Page label ─────────────────────────────────────────── -->
+<div style="text-align:center; color:rgba(80,75,70,.7); font-family:-apple-system,sans-serif; font-size:13px; font-weight:500; letter-spacing:.3px; text-transform:uppercase; margin-bottom:-4px;">
+  証明写真スタジオ — UIプロトタイプ
+</div>
+
+<!-- ══════════ iPhone Frame ═════════════════════════════════ -->
+<div class="iphone" id="iphone">
+  <div class="dyn-island"></div>
+
+  <div class="iphone-screen">
+
+    <!-- Status Bar -->
+    <div class="status-bar" id="statusBar">
+      <span class="sb-time">9:41</span>
+      <div class="sb-icons">
+        <!-- Signal -->
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor">
+          <rect x="0"  y="7" width="3" height="5" rx="1" opacity=".4"/>
+          <rect x="4"  y="5" width="3" height="7" rx="1" opacity=".6"/>
+          <rect x="8"  y="2" width="3" height="10" rx="1" opacity=".8"/>
+          <rect x="12" y="0" width="3" height="12" rx="1"/>
+        </svg>
+        <!-- Wifi -->
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+          <path d="M8 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z"/>
+          <path d="M4.5 7C5.8 5.7 6.8 5 8 5s2.2.7 3.5 2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M1.5 4C3.5 2 5.6 1 8 1s4.5 1 6.5 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".6"/>
+        </svg>
+        <!-- Battery -->
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor">
+          <rect x="0" y="1" width="21" height="10" rx="3" stroke="currentColor" stroke-width="1" fill="none"/>
+          <rect x="22" y="4" width="2" height="4" rx="1"/>
+          <rect x="1.5" y="2.5" width="16" height="7" rx="2"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Screens container -->
+    <div class="screens-wrap">
+
+      <!-- ════════════════════════════════
+           SCREEN 1 — Size Selection
+      ════════════════════════════════ -->
+      <div class="screen active" id="s1">
+
+        <!-- Nav -->
+        <div class="nav">
+          <span style="min-width:60px;"></span>
+          <span class="nav-title">証明写真スタジオ</span>
+          <button class="nav-action" onclick="alert('ヘルプ')">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle cx="11" cy="11" r="9.5" stroke="#0A7AFF" stroke-width="1.5"/>
+              <text x="11" y="16" text-anchor="middle" fill="#0A7AFF" font-size="13" font-weight="700" font-family="-apple-system,sans-serif">?</text>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Steps -->
+        <div class="steps" id="steps1">
+          <div class="steps-row">
+            <div class="step-item act">
+              <div class="step-dot">1</div>
+              <span class="step-lbl">サイズ</span>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">2</div>
+              <span class="step-lbl">撮影</span>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">3</div>
+              <span class="step-lbl">編集</span>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">4</div>
+              <span class="step-lbl">保存</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="scroll">
+          <div class="screen-hd">
+            <div class="screen-ttl">サイズを選ぶ</div>
+            <div class="screen-sub">用途に合ったフォーマットを選択してください</div>
+          </div>
+          <div class="size-list" id="sizeList">
+
+            <!-- Card 1 -->
+            <div class="sz-card" onclick="selectSize(this,0)" data-idx="0">
+              <div class="sz-photo-prev">
+                <div class="ph-rect" style="width:28px;height:37px;"></div>
+              </div>
+              <div class="sz-info">
+                <div class="sz-name">就活・転職用</div>
+                <div class="sz-desc">日本国内の履歴書・エントリーシート</div>
+                <div class="sz-meta">
+                  <span class="badge badge-blue">最も人気</span>
+                  <span class="sz-dim">30×40 mm</span>
+                </div>
+              </div>
+              <div class="sz-check">
+                <svg width="12" height="9" viewBox="0 0 12 9" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="1,4.5 4.5,8 11,1"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="sz-card" onclick="selectSize(this,1)" data-idx="1">
+              <div class="sz-photo-prev">
+                <div class="ph-rect" style="width:28px;height:36px;"></div>
+              </div>
+              <div class="sz-info">
+                <div class="sz-name">パスポート</div>
+                <div class="sz-desc">国際旅券・査証共通規格</div>
+                <div class="sz-meta">
+                  <span class="badge badge-orange">国際標準</span>
+                  <span class="sz-dim">35×45 mm</span>
+                </div>
+              </div>
+              <div class="sz-check">
+                <svg width="12" height="9" viewBox="0 0 12 9" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="1,4.5 4.5,8 11,1"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="sz-card" onclick="selectSize(this,2)" data-idx="2">
+              <div class="sz-photo-prev">
+                <div class="ph-rect" style="width:28px;height:36px;"></div>
+              </div>
+              <div class="sz-info">
+                <div class="sz-name">マイナンバーカード</div>
+                <div class="sz-desc">個人番号カード申請用</div>
+                <div class="sz-meta">
+                  <span class="badge badge-gray">35×45 mm</span>
+                </div>
+              </div>
+              <div class="sz-check">
+                <svg width="12" height="9" viewBox="0 0 12 9" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="1,4.5 4.5,8 11,1"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="sz-card" onclick="selectSize(this,3)" data-idx="3">
+              <div class="sz-photo-prev">
+                <div class="ph-rect" style="width:30px;height:24px;"></div>
+              </div>
+              <div class="sz-info">
+                <div class="sz-name">運転免許証</div>
+                <div class="sz-desc">更新時の申請用写真</div>
+                <div class="sz-meta">
+                  <span class="badge badge-gray">24×30 mm</span>
+                </div>
+              </div>
+              <div class="sz-check">
+                <svg width="12" height="9" viewBox="0 0 12 9" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="1,4.5 4.5,8 11,1"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Card 5 -->
+            <div class="sz-card" onclick="selectSize(this,4)" data-idx="4">
+              <div class="sz-photo-prev">
+                <div class="ph-rect" style="width:28px;height:37px;"></div>
+              </div>
+              <div class="sz-info">
+                <div class="sz-name">履歴書（JIS規格）</div>
+                <div class="sz-desc">JIS B4・A4縦型履歴書用</div>
+                <div class="sz-meta">
+                  <span class="badge badge-gray">30×40 mm</span>
+                </div>
+              </div>
+              <div class="sz-check">
+                <svg width="12" height="9" viewBox="0 0 12 9" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="1,4.5 4.5,8 11,1"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Card 6 -->
+            <div class="sz-card" onclick="selectSize(this,5)" data-idx="5">
+              <div class="sz-photo-prev">
+                <div class="ph-rect" style="width:34px;height:34px;"></div>
+              </div>
+              <div class="sz-info">
+                <div class="sz-name">ビザ申請用</div>
+                <div class="sz-desc">米国・シェンゲン協定国等</div>
+                <div class="sz-meta">
+                  <span class="badge badge-green">51×51 mm</span>
+                </div>
+              </div>
+              <div class="sz-check">
+                <svg width="12" height="9" viewBox="0 0 12 9" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="1,4.5 4.5,8 11,1"/>
+                </svg>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Bottom bar -->
+        <div class="bottom-bar">
+          <button class="btn-primary" id="btnNext1" disabled onclick="goScreen(2)">
+            撮影へ進む
+            <svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="2" y1="7" x2="14" y2="7"/>
+              <polyline points="9,2 14,7 9,12"/>
+            </svg>
+          </button>
+        </div>
+
+      </div>
+      <!-- /Screen 1 -->
+
+      <!-- ════════════════════════════════
+           SCREEN 2 — Camera
+      ════════════════════════════════ -->
+      <div class="screen" id="s2">
+
+        <!-- Dark nav overlay -->
+        <div class="nav on-dark">
+          <button class="nav-back on-dark" onclick="goScreen(1)">
+            <svg width="10" height="17" viewBox="0 0 10 17" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9,1 1,8.5 9,16"/>
+            </svg>
+            <span style="font-size:17px;">戻る</span>
+          </button>
+          <span class="nav-title on-dark">撮影</span>
+          <span class="nav-action on-dark" style="font-size:13px;font-weight:500;">ガイド</span>
+        </div>
+
+        <!-- Steps (dark) -->
+        <div class="steps on-dark">
+          <div class="steps-row">
+            <div class="step-item done">
+              <div class="step-dot">
+                <svg width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="1,4 3.5,6.5 9,1"/>
+                </svg>
+              </div>
+              <span class="step-lbl">サイズ</span>
+            </div>
+            <div class="step-item act">
+              <div class="step-dot">2</div>
+              <span class="step-lbl">撮影</span>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">3</div>
+              <span class="step-lbl">編集</span>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">4</div>
+              <span class="step-lbl">保存</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Camera view — fills remaining space -->
+        <div class="camera-wrap">
+          <div class="cam-bg"></div>
+          <div class="cam-vig"></div>
+
+          <!-- Flash badge -->
+          <div class="flash-badge" id="flashBadge">⚡ OFF</div>
+
+          <!-- Person silhouette -->
+          <div class="cam-person-area">
+            <svg viewBox="0 0 220 310" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Torso silhouette -->
+              <path d="M60 310 C55 260 42 230 38 200 C32 165 28 140 30 120
+                       C32 100 40 90 60 85 C72 82 80 80 90 76
+                       C95 74 100 72 110 72 C120 72 125 74 130 76
+                       C140 80 148 82 160 85 C180 90 188 100 190 120
+                       C192 140 188 165 182 200 C178 230 165 260 160 310Z"
+                    fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.04)" stroke-width="1"/>
+              <!-- Neck -->
+              <path d="M97 72 C97 60 100 52 110 50 C120 52 123 60 123 72"
+                    fill="rgba(255,255,255,.06)"/>
+              <!-- Head -->
+              <ellipse cx="110" cy="32" rx="28" ry="32" fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.04)" stroke-width="1"/>
+            </svg>
+          </div>
+
+          <!-- Face guide overlay -->
+          <div class="face-guide-wrap">
+            <svg class="face-guide-svg" width="196" height="262" viewBox="0 0 196 262" fill="none">
+              <!-- Oval dashed border -->
+              <ellipse cx="98" cy="118" rx="88" ry="108"
+                stroke="rgba(255,255,255,.75)"
+                stroke-width="1.5"
+                stroke-dasharray="8 5"
+                fill="none"/>
+              <!-- Corner tick marks -->
+              <g class="guide-corner" stroke="rgba(255,255,255,.9)" stroke-width="2" stroke-linecap="round">
+                <!-- top-left area -->
+                <line x1="22" y1="82" x2="22" y2="72"/>
+                <line x1="22" y1="72" x2="32" y2="72"/>
+                <!-- top-right area -->
+                <line x1="174" y1="82" x2="174" y2="72"/>
+                <line x1="174" y1="72" x2="164" y2="72"/>
+                <!-- bottom-left area -->
+                <line x1="22" y1="154" x2="22" y2="164"/>
+                <line x1="22" y1="164" x2="32" y2="164"/>
+                <!-- bottom-right area -->
+                <line x1="174" y1="154" x2="174" y2="164"/>
+                <line x1="174" y1="164" x2="164" y2="164"/>
+              </g>
+              <!-- Horizontal reference lines -->
+              <line x1="10" y1="92" x2="186" y2="92" stroke="rgba(255,255,255,.12)" stroke-width=".5" stroke-dasharray="3 4"/>
+              <line x1="10" y1="144" x2="186" y2="144" stroke="rgba(255,255,255,.12)" stroke-width=".5" stroke-dasharray="3 4"/>
+              <!-- Center crosshair -->
+              <line x1="94" y1="118" x2="102" y2="118" stroke="rgba(255,255,255,.4)" stroke-width=".8"/>
+              <line x1="98" y1="114" x2="98" y2="122" stroke="rgba(255,255,255,.4)" stroke-width=".8"/>
+
+              <!-- Bottom text area -->
+              <text x="98" y="244" text-anchor="middle"
+                font-family="-apple-system,BlinkMacSystemFont,sans-serif"
+                font-size="12" font-weight="500"
+                fill="rgba(255,255,255,.55)" letter-spacing=".5">
+                顔を枠に合わせてください
+              </text>
+            </svg>
+          </div>
+
+          <!-- Bottom hint -->
+          <div class="cam-hint">
+            <div class="cam-hint-inner">
+              <div class="cam-hint-dot"></div>
+              <span class="cam-hint-text">明るい場所で正面を向いてください</span>
+            </div>
+          </div>
+
+          <!-- Shutter controls -->
+          <div class="cam-controls">
+            <!-- Flash -->
+            <div class="cam-side-btn">
+              <button class="cam-icon-btn" onclick="toggleFlash()" aria-label="フラッシュ切替">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                  <path d="M13 1L4 13h7l-2 8L18 9h-7l2-8z"
+                    stroke="rgba(255,255,255,.85)" stroke-width="1.5"
+                    stroke-linejoin="round" fill="none" id="flashIcon"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Shutter -->
+            <button class="shutter" onclick="goScreen(3)" aria-label="撮影"></button>
+
+            <!-- Flip camera -->
+            <div class="cam-side-btn">
+              <button class="cam-icon-btn" aria-label="カメラ切替">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                  <path d="M3 8a8 8 0 0115 0" stroke="rgba(255,255,255,.85)" stroke-width="1.5" stroke-linecap="round"/>
+                  <polyline points="18,5 21,8 18,11" stroke="rgba(255,255,255,.85)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M19 14a8 8 0 01-15 0" stroke="rgba(255,255,255,.85)" stroke-width="1.5" stroke-linecap="round"/>
+                  <polyline points="4,17 1,14 4,11" stroke="rgba(255,255,255,.85)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+        </div>
+        <!-- /camera-wrap -->
+
+      </div>
+      <!-- /Screen 2 -->
+
+      <!-- ════════════════════════════════
+           SCREEN 3 — Edit
+      ════════════════════════════════ -->
+      <div class="screen" id="s3">
+
+        <div class="nav">
+          <button class="nav-back" onclick="goScreen(2)">
+            <svg width="10" height="17" viewBox="0 0 10 17" fill="none" stroke="#0A7AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9,1 1,8.5 9,16"/>
+            </svg>
+            <span style="font-size:17px;">撮影</span>
+          </button>
+          <span class="nav-title">補正・編集</span>
+          <button class="nav-action" onclick="goScreen(2)" style="font-size:13px;font-weight:500;color:var(--sumi-55);">リセット</button>
+        </div>
+
+        <div class="steps">
+          <div class="steps-row">
+            <div class="step-item done">
+              <div class="step-dot">
+                <svg width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,4 3.5,6.5 9,1"/></svg>
+              </div>
+              <span class="step-lbl">サイズ</span>
+            </div>
+            <div class="step-item done">
+              <div class="step-dot">
+                <svg width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,4 3.5,6.5 9,1"/></svg>
+              </div>
+              <span class="step-lbl">撮影</span>
+            </div>
+            <div class="step-item act">
+              <div class="step-dot">3</div>
+              <span class="step-lbl">編集</span>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">4</div>
+              <span class="step-lbl">保存</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="scroll">
+
+          <!-- Photo preview -->
+          <div class="edit-preview-area">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+              <!-- Photo placeholder -->
+              <div class="edit-photo-frame" id="editPhotoFrame" style="height:140px;">
+                <div class="edit-photo-inner" style="height:140px;">
+                  <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                    <circle cx="20" cy="15" r="8" stroke="rgba(100,95,88,.6)" stroke-width="1.5" fill="none"/>
+                    <path d="M5 35 C5 27 10 22 20 22s15 5 15 13" stroke="rgba(100,95,88,.6)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                  </svg>
+                </div>
+              </div>
+              <!-- BG chips -->
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                <span style="font-size:11px;font-weight:600;color:var(--sumi-55);letter-spacing:.3px;text-transform:uppercase;">背景色</span>
+                <div class="bg-chips">
+                  <div class="bg-chip bg-chip-white sel" onclick="selectBg(this,'#FFFFFF')" title="白"></div>
+                  <div class="bg-chip bg-chip-gray" onclick="selectBg(this,'#D0CEC9')" title="グレー"></div>
+                  <div class="bg-chip bg-chip-blue" onclick="selectBg(this,'#B8D4F0')" title="水色"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI BG removal -->
+          <div style="padding:0 20px;margin-top:14px;">
+            <button class="ai-btn" onclick="triggerAI()">
+              <span class="ai-btn-text">
+                <svg style="display:inline;vertical-align:middle;margin-right:4px;" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 1l1.5 4.5L14 7l-4.5 1.5L8 13l-1.5-4.5L2 7l4.5-1.5Z" fill="rgba(200,180,255,.8)"/>
+                </svg>
+                AI 背景除去
+              </span>
+              <span class="ai-badge">iOS 17+</span>
+            </button>
+          </div>
+
+          <!-- Sliders -->
+          <div class="edit-section">
+            <div class="edit-section-title">明るさ・補正</div>
+            <div class="slider-list">
+              <div class="slider-row">
+                <div class="slider-icon">☀️</div>
+                <span class="slider-label">明るさ</span>
+                <div class="slider-wrap">
+                  <input type="range" id="sl-bright" min="-50" max="50" value="0"
+                    oninput="updateSlider(this,'vb')"
+                    style="--pct:50%;">
+                </div>
+                <span class="slider-val" id="vb">0</span>
+              </div>
+              <div class="slider-row">
+                <div class="slider-icon" style="font-size:16px;">◑</div>
+                <span class="slider-label">コントラスト</span>
+                <div class="slider-wrap">
+                  <input type="range" id="sl-contrast" min="-50" max="50" value="0"
+                    oninput="updateSlider(this,'vc')"
+                    style="--pct:50%;">
+                </div>
+                <span class="slider-val" id="vc">0</span>
+              </div>
+              <div class="slider-row">
+                <div class="slider-icon">✦</div>
+                <span class="slider-label">鮮明度</span>
+                <div class="slider-wrap">
+                  <input type="range" id="sl-sharp" min="0" max="100" value="50"
+                    oninput="updateSlider(this,'vs')"
+                    style="--pct:50%;">
+                </div>
+                <span class="slider-val" id="vs">50</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:20px;"></div>
+        </div>
+
+        <div class="bottom-bar">
+          <button class="btn-primary" onclick="goScreen(4)">
+            プレビューへ進む
+            <svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="2" y1="7" x2="14" y2="7"/>
+              <polyline points="9,2 14,7 9,12"/>
+            </svg>
+          </button>
+        </div>
+
+      </div>
+      <!-- /Screen 3 -->
+
+      <!-- ════════════════════════════════
+           SCREEN 4 — Preview & Save
+      ════════════════════════════════ -->
+      <div class="screen" id="s4">
+
+        <div class="nav">
+          <button class="nav-back" onclick="goScreen(3)">
+            <svg width="10" height="17" viewBox="0 0 10 17" fill="none" stroke="#0A7AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9,1 1,8.5 9,16"/>
+            </svg>
+            <span style="font-size:17px;">編集</span>
+          </button>
+          <span class="nav-title">プレビュー</span>
+          <button class="nav-action" style="font-size:13px;font-weight:500;">完了</button>
+        </div>
+
+        <div class="steps">
+          <div class="steps-row">
+            <div class="step-item done">
+              <div class="step-dot">
+                <svg width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,4 3.5,6.5 9,1"/></svg>
+              </div>
+              <span class="step-lbl">サイズ</span>
+            </div>
+            <div class="step-item done">
+              <div class="step-dot">
+                <svg width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,4 3.5,6.5 9,1"/></svg>
+              </div>
+              <span class="step-lbl">撮影</span>
+            </div>
+            <div class="step-item done">
+              <div class="step-dot">
+                <svg width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,4 3.5,6.5 9,1"/></svg>
+              </div>
+              <span class="step-lbl">編集</span>
+            </div>
+            <div class="step-item act">
+              <div class="step-dot">4</div>
+              <span class="step-lbl">保存</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="scroll">
+
+          <!-- Segment -->
+          <div class="segment-wrap">
+            <div class="segment">
+              <button class="seg-btn active" onclick="setPrintCount(4,this)">4枚</button>
+              <button class="seg-btn" onclick="setPrintCount(6,this)">6枚</button>
+              <button class="seg-btn" onclick="setPrintCount(8,this)">8枚</button>
+            </div>
+          </div>
+
+          <!-- Print area -->
+          <div style="position:relative; margin:4px 0 0;">
+            <div class="print-area" id="printArea">
+              <div class="print-label">L判 127×89 mm</div>
+              <!-- Grid populated by JS -->
+              <div class="print-grid" id="printGrid"></div>
+              <div class="print-count-badge" id="printCountBadge">4枚</div>
+            </div>
+          </div>
+
+          <!-- Quality info -->
+          <div class="quality-row" style="margin-top:12px;">
+            <div class="quality-dot"></div>
+            <div class="quality-text">
+              <strong>印刷品質: 高精細</strong><br>
+              解像度 600dpi・RGB最適化済み
+            </div>
+          </div>
+
+          <div style="height:8px;"></div>
+        </div>
+
+        <!-- Actions -->
+        <div class="action-row">
+          <button class="action-btn action-save" onclick="saveToCameraRoll()">
+            <span class="action-btn-icon">⬇️</span>
+            <span class="action-btn-label">保存</span>
+          </button>
+          <button class="action-btn action-print">
+            <span class="action-btn-icon">🖨️</span>
+            <span class="action-btn-label">印刷</span>
+          </button>
+          <button class="action-btn action-share">
+            <span class="action-btn-icon">↑</span>
+            <span class="action-btn-label">シェア</span>
+          </button>
+        </div>
+
+        <!-- Toast -->
+        <div class="toast-wrap">
+          <div class="toast" id="toast">
+            <span class="toast-icon">✓</span>
+            カメラロールに保存しました
+          </div>
+        </div>
+
+      </div>
+      <!-- /Screen 4 -->
+
+    </div>
+    <!-- /screens-wrap -->
+
+    <!-- Home indicator -->
+    <div class="home-ind" id="homeInd">
+      <span></span>
+    </div>
+
+  </div>
+  <!-- /iphone-screen -->
+</div>
+<!-- /iPhone -->
+
+<script>
+/* ── State ──────────────────────────────────────────────── */
+let currentScreen = 1;
+let selectedSize  = -1;
+let flashOn       = false;
+let printCount    = 4;
+let flashTimeout  = null;
+
+/* ── Screen transition ──────────────────────────────────── */
+function goScreen(n) {
+  const from = document.getElementById('s' + currentScreen);
+  const to   = document.getElementById('s' + n);
+  if (!from || !to || n === currentScreen) return;
+
+  const forward = n > currentScreen;
+
+  // Animate out
+  from.style.display = 'flex';
+  from.classList.add(forward ? 'slide-out-l' : 'slide-out-r');
+
+  // Animate in
+  to.style.display = 'flex';
+  to.classList.add(forward ? 'slide-in-r' : 'slide-in-l');
+  to.classList.remove('active');
+
+  // Status bar + home indicator adjustments
+  const isDark = (n === 2);
+  const sb = document.getElementById('statusBar');
+  const hi = document.getElementById('homeInd');
+  sb.classList.toggle('on-dark', isDark);
+  hi.classList.toggle('on-dark', isDark);
+
+  setTimeout(() => {
+    from.classList.remove('active', 'slide-out-l', 'slide-out-r');
+    from.style.display = '';
+    to.classList.remove('slide-in-r', 'slide-in-l');
+    to.classList.add('active');
+    currentScreen = n;
+  }, 320);
+}
+
+/* ── Size selection ─────────────────────────────────────── */
+function selectSize(card, idx) {
+  document.querySelectorAll('.sz-card').forEach(c => c.classList.remove('sel'));
+  card.classList.add('sel');
+  selectedSize = idx;
+  const btn = document.getElementById('btnNext1');
+  btn.disabled = false;
+
+  // Adjust edit preview photo ratio based on selected size
+  const ratios = [
+    {w:30,h:40},{w:35,h:45},{w:35,h:45},{w:24,h:30},{w:30,h:40},{w:51,h:51}
+  ];
+  const r = ratios[idx];
+  const maxH = 140;
+  const maxW = 110;
+  let pw, ph;
+  if (r.w/r.h > maxW/maxH) {
+    pw = maxW; ph = Math.round(maxW * r.h / r.w);
+  } else {
+    ph = maxH; pw = Math.round(maxH * r.w / r.h);
+  }
+  const frame = document.getElementById('editPhotoFrame');
+  if (frame) {
+    frame.style.width = pw + 'px';
+    frame.style.height = ph + 'px';
+    frame.querySelector('.edit-photo-inner').style.height = ph + 'px';
+  }
+}
+
+/* ── Flash toggle ───────────────────────────────────────── */
+function toggleFlash() {
+  flashOn = !flashOn;
+  const badge = document.getElementById('flashBadge');
+  const icon  = document.getElementById('flashIcon');
+  badge.textContent = flashOn ? '⚡ ON' : '⚡ OFF';
+  badge.classList.toggle('on', flashOn);
+  icon.style.fill = flashOn ? '#FFD60A' : 'none';
+  icon.style.stroke = flashOn ? '#FFD60A' : 'rgba(255,255,255,.85)';
+}
+
+/* ── Slider update ──────────────────────────────────────── */
+function updateSlider(input, valId) {
+  document.getElementById(valId).textContent = input.value;
+  const min = parseFloat(input.min);
+  const max = parseFloat(input.max);
+  const val = parseFloat(input.value);
+  const pct = ((val - min) / (max - min) * 100).toFixed(1) + '%';
+  input.style.setProperty('--pct', pct);
+}
+
+/* ── Background chip ────────────────────────────────────── */
+function selectBg(chip, color) {
+  document.querySelectorAll('.bg-chip').forEach(c => c.classList.remove('sel'));
+  chip.classList.add('sel');
+  const inner = document.querySelector('.edit-photo-inner');
+  if (inner) {
+    inner.style.background = color === '#FFFFFF'
+      ? 'linear-gradient(160deg, #C8C5BF 0%, #B8B5AF 40%, #A8A5A0 100%)'
+      : color === '#D0CEC9'
+      ? 'linear-gradient(160deg, #C0BDB8 0%, #ABA8A2 100%)'
+      : 'linear-gradient(160deg, #BDD4F0 0%, #9ABCE0 100%)';
+  }
+}
+
+/* ── AI BG removal ──────────────────────────────────────── */
+function triggerAI() {
+  const btn = document.querySelector('.ai-btn');
+  btn.style.opacity = '.65';
+  btn.querySelector('.ai-btn-text').textContent = '処理中… ';
+  const progress = document.createElement('span');
+  progress.className = 'ai-badge';
+  progress.textContent = '0%';
+  btn.appendChild(progress);
+
+  let p = 0;
+  const iv = setInterval(() => {
+    p += Math.floor(Math.random() * 15) + 5;
+    if (p >= 100) { p = 100; clearInterval(iv); }
+    progress.textContent = p + '%';
+    if (p >= 100) {
+      setTimeout(() => {
+        btn.style.opacity = '1';
+        btn.querySelector('.ai-btn-text').textContent = '✓ 背景除去完了';
+        progress.textContent = 'Done';
+        progress.style.background = 'rgba(52,199,89,.2)';
+        progress.style.color = '#34C759';
+      }, 200);
+    }
+  }, 180);
+}
+
+/* ── Print grid ─────────────────────────────────────────── */
+function buildPrintGrid(count) {
+  const grid  = document.getElementById('printGrid');
+  const badge = document.getElementById('printCountBadge');
+  if (!grid) return;
+
+  // L-ban ratio: 127×89mm → ~1.427 landscape
+  // We display it in portrait orientation to fit phone width
+  // Grid area: 383-40=343px wide, pad 12px each side → 319px inner
+  const gridW = 319;
+
+  // Layout: 2 columns always, rows vary
+  const cols = 2;
+  const rows = Math.ceil(count / cols);
+  const gapPx = 5;
+  const photoW = Math.floor((gridW - gapPx * (cols - 1)) / cols);
+
+  // Photo ratio from selected size (default 3:4)
+  const ratios = [
+    {w:30,h:40},{w:35,h:45},{w:35,h:45},{w:24,h:30},{w:30,h:40},{w:51,h:51}
+  ];
+  const r = selectedSize >= 0 ? ratios[selectedSize] : {w:30,h:40};
+  const photoH = Math.round(photoW * r.h / r.w);
+
+  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  grid.style.gap = gapPx + 'px';
+  grid.innerHTML = '';
+
+  for (let i = 0; i < count; i++) {
+    const ph = document.createElement('div');
+    ph.className = 'print-photo';
+    ph.style.height = photoH + 'px';
+    grid.appendChild(ph);
+  }
+
+  badge.textContent = count + '枚';
+  printCount = count;
+}
+
+function setPrintCount(n, btn) {
+  document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildPrintGrid(n);
+}
+
+/* ── Toast ──────────────────────────────────────────────── */
+function saveToCameraRoll() {
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  clearTimeout(flashTimeout);
+  flashTimeout = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ── Init ───────────────────────────────────────────────── */
+(function init() {
+  // Init slider pct
+  document.querySelectorAll('input[type=range]').forEach(inp => {
+    const min = parseFloat(inp.min);
+    const max = parseFloat(inp.max);
+    const val = parseFloat(inp.value);
+    const pct = ((val - min) / (max - min) * 100).toFixed(1) + '%';
+    inp.style.setProperty('--pct', pct);
+  });
+
+  // Build default print grid
+  buildPrintGrid(4);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1889 @@
+<!DOCTYPE html>
+<!--
+  俳句帳 — Redesign: 枯山水の間 (Karesansui no Ma)
+  Design Philosophy: 句は広大な余白の中に浮かぶ。UIは無言の額縁
+  Concept: "Ink drop in still water" — each haiku arrives like a stone in a garden
+  Tension: Structure 5/10 · Silence 2/10 · Precision 5/10 · Personal 6/10 · Impermanence 5/10
+  Device: iPhone 15 Pro (390×844pt)
+  Screens: コレクション / 新規作成 / 詳細 / 季語辞典
+  Typography: Noto Serif JP (poetric display) + Noto Sans JP (UI)
+  Palette: 絹白 × 墨 × 季節四色（紅/翠/黄金/灰）
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>俳句帳</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@200;300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+
+/* ═══════════════════════════════════════════
+   RESET & CUSTOM PROPERTIES
+═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+button { font: inherit; cursor: pointer; border: none; background: none; }
+input, textarea { font: inherit; border: none; outline: none; background: none; }
+
+:root {
+  /* 和の色彩システム */
+  --kinushiro:  #F7F5F0;  /* 絹白 — 主背景 */
+  --kinushiro2: #F0EDE6;  /* 絹白２ — カード */
+  --kinushiro3: #E8E4DB;  /* 絹白３ — ホバー */
+  --sumi:       #1A1A1C;  /* 墨 — 主テキスト */
+  --sumi2:      #3A3A3C;  /* 墨２ — 副テキスト */
+  --sumi3:      #8A8A8E;  /* 墨３ — 三次 */
+  --usuzumi:    #A39B8B;  /* 薄墨 — アクセント */
+  --ainzu:      #3D4B6E;  /* 藍鼠 — アクセント強 */
+
+  /* 季節四色 */
+  --haru:   #C85A6F;   /* 紅梅 — 春 */
+  --natsu:  #3D7A5C;   /* 翠 — 夏 */
+  --aki:    #B87333;   /* 黄金 — 秋 */
+  --fuyu:   #6B7FA0;   /* 灰 — 冬 */
+
+  /* 季節背景微調整 */
+  --haru-bg:  #FAF4F6;
+  --natsu-bg: #F3F8F5;
+  --aki-bg:   #FAF6EF;
+  --fuyu-bg:  #F4F6FA;
+
+  /* スペーシング (間 / Ma) */
+  --ma-2:   2px;
+  --ma-4:   4px;
+  --ma-8:   8px;
+  --ma-12:  12px;
+  --ma-16:  16px;
+  --ma-24:  24px;
+  --ma-32:  32px;
+  --ma-48:  48px;
+  --ma-64:  64px;
+
+  /* タイポグラフィ */
+  --serif: 'Noto Serif JP', 'YuMincho', 'Hiragino Mincho ProN', serif;
+  --sans:  'Noto Sans JP', 'Hiragino Sans', sans-serif;
+
+  /* ボーダー */
+  --sep: rgba(26,26,28,0.07);
+  --sep2: rgba(26,26,28,0.12);
+
+  /* アクティブ季節 */
+  --season-color: var(--ainzu);
+  --season-bg: var(--kinushiro);
+}
+
+/* ═══════════════════════════════════════════
+   BROWSER WRAPPER (展示用)
+═══════════════════════════════════════════ */
+body {
+  background: #1C1C1E;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px 80px;
+  min-height: 100vh;
+  font-family: var(--sans);
+}
+
+.exhibit-label {
+  color: #8A8A8E;
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  margin-bottom: 28px;
+  text-align: center;
+}
+.exhibit-label span {
+  color: #F7F5F0;
+  font-weight: 400;
+}
+
+/* ═══════════════════════════════════════════
+   iPHONE FRAME
+═══════════════════════════════════════════ */
+.iphone-frame {
+  position: relative;
+  width: 390px;
+  height: 844px;
+  background: var(--sumi);
+  border-radius: 54px;
+  box-shadow:
+    0 0 0 1.5px #4A4A4C,
+    0 0 0 3.5px #1C1C1E,
+    0 50px 100px rgba(0,0,0,0.8),
+    0 12px 30px rgba(0,0,0,0.4);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+/* 電源ボタン */
+.iphone-frame::before {
+  content: '';
+  position: absolute;
+  right: -2.5px; top: 165px;
+  width: 3px; height: 68px;
+  background: #3A3A3C;
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 108px 0 #3A3A3C;
+}
+/* 音量ボタン */
+.iphone-frame::after {
+  content: '';
+  position: absolute;
+  left: -2.5px; top: 125px;
+  width: 3px; height: 32px;
+  background: #3A3A3C;
+  border-radius: 2px 0 0 2px;
+  box-shadow: 0 48px 0 #3A3A3C, 0 96px 0 #3A3A3C;
+}
+
+/* ═══════════════════════════════════════════
+   SCREEN BASE
+═══════════════════════════════════════════ */
+.screen {
+  position: absolute;
+  inset: 0;
+  background: var(--kinushiro);
+  border-radius: 54px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+.screen.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* 和紙ノイズテクスチャ */
+.screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 54px;
+  opacity: 0.028;
+  pointer-events: none;
+  z-index: 200;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px;
+}
+
+/* ═══════════════════════════════════════════
+   DYNAMIC ISLAND
+═══════════════════════════════════════════ */
+.dynamic-island {
+  position: absolute;
+  top: 13px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 124px;
+  height: 36px;
+  background: #000;
+  border-radius: 20px;
+  z-index: 150;
+}
+
+/* ═══════════════════════════════════════════
+   STATUS BAR
+═══════════════════════════════════════════ */
+.status-bar {
+  height: 58px;
+  padding: 16px var(--ma-16) 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+.status-time {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sumi);
+  letter-spacing: -0.3px;
+}
+.status-icons { display: flex; align-items: center; gap: 5px; }
+.status-icons svg { fill: var(--sumi); }
+
+/* ═══════════════════════════════════════════
+   TAB BAR
+═══════════════════════════════════════════ */
+.tab-bar {
+  height: 82px;
+  padding: 8px 0 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-around;
+  background: rgba(247,245,240,0.94);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 0.5px solid var(--sep2);
+  flex-shrink: 0;
+}
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 0;
+  transition: transform 0.12s ease;
+}
+.tab-item:active { transform: scale(0.88); }
+.tab-icon { font-size: 23px; line-height: 1; }
+.tab-label {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color: var(--sumi3);
+}
+.tab-item.active .tab-label {
+  color: var(--season-color);
+  font-weight: 500;
+}
+.tab-item .tab-icon { filter: grayscale(1) opacity(0.45); }
+.tab-item.active .tab-icon { filter: none; }
+
+/* ═══════════════════════════════════════════
+   FAB (浮動アクションボタン)
+═══════════════════════════════════════════ */
+.fab {
+  position: absolute;
+  right: 20px;
+  bottom: 96px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--sumi);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(26,26,28,0.28), 0 1px 6px rgba(26,26,28,0.15);
+  z-index: 50;
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s ease;
+  cursor: pointer;
+}
+.fab:active {
+  transform: scale(0.9);
+  box-shadow: 0 2px 10px rgba(26,26,28,0.2);
+}
+.fab::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: var(--sumi);
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  transform: scale(0.8);
+}
+.fab:hover::before {
+  opacity: 0.06;
+  transform: scale(1);
+}
+.fab-icon {
+  font-size: 28px;
+  color: var(--kinushiro);
+  font-weight: 200;
+  line-height: 1;
+  margin-top: -2px;
+}
+
+/* 墨汁リップルアニメ */
+@keyframes inkDrop {
+  0%   { transform: scale(0); opacity: 0.6; }
+  100% { transform: scale(3); opacity: 0; }
+}
+.ink-ripple {
+  position: absolute;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: rgba(163,155,139,0.3);
+  animation: inkDrop 0.6s ease-out forwards;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════
+   スクロールエリア
+═══════════════════════════════════════════ */
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-area::-webkit-scrollbar { display: none; }
+
+
+/* ╔═══════════════════════════════════════════╗
+   ║  SCREEN 1: 俳句コレクション               ║
+   ╚═══════════════════════════════════════════╝ */
+
+.home-screen { background: var(--kinushiro); }
+
+/* ヘッダーエリア */
+.home-header {
+  padding: var(--ma-12) var(--ma-16) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ma-4);
+  flex-shrink: 0;
+}
+.home-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.home-title {
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 300;
+  color: var(--sumi);
+  letter-spacing: 0.1em;
+}
+.home-count {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--sumi3);
+  letter-spacing: 0.08em;
+}
+
+/* 季節フィルター */
+.season-filter {
+  display: flex;
+  gap: var(--ma-8);
+  padding: var(--ma-12) var(--ma-16) var(--ma-8);
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.season-filter::-webkit-scrollbar { display: none; }
+
+.s-chip {
+  flex-shrink: 0;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 15px;
+  border: 1px solid var(--sep2);
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--sumi3);
+  letter-spacing: 0.06em;
+  transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.s-chip .chip-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.s-chip.active .chip-dot { opacity: 1; }
+
+.s-chip.active {
+  color: white;
+  border-color: transparent;
+  font-weight: 500;
+}
+.s-chip[data-season="all"].active   { background: var(--sumi); }
+.s-chip[data-season="haru"].active  { background: var(--haru); }
+.s-chip[data-season="natsu"].active { background: var(--natsu); }
+.s-chip[data-season="aki"].active   { background: var(--aki); }
+.s-chip[data-season="fuyu"].active  { background: var(--fuyu); }
+
+/* ─── 俳句カードグリッド ─── */
+.haiku-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: var(--ma-4) var(--ma-16) var(--ma-16);
+}
+
+/* カード: 書軸スタイル */
+.h-card {
+  background: var(--kinushiro2);
+  border-radius: 18px;
+  padding: var(--ma-16) var(--ma-12) var(--ma-12);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  min-height: 172px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.18s cubic-bezier(0.4,0,0.2,1), box-shadow 0.18s ease;
+  box-shadow: 0 1px 6px rgba(26,26,28,0.05);
+}
+.h-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2.5px;
+  border-radius: 18px 18px 0 0;
+  transition: opacity 0.2s;
+}
+.h-card.haru::after  { background: linear-gradient(90deg, var(--haru), #E87A9A); }
+.h-card.natsu::after { background: linear-gradient(90deg, var(--natsu), #5AAF8A); }
+.h-card.aki::after   { background: linear-gradient(90deg, var(--aki), #D4923C); }
+.h-card.fuyu::after  { background: linear-gradient(90deg, var(--fuyu), #8A9FCC); }
+
+.h-card:active {
+  transform: scale(0.964);
+  box-shadow: 0 0 3px rgba(26,26,28,0.05);
+}
+
+/* 縦書き俳句テキスト */
+.h-text {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: var(--serif);
+  font-size: 15.5px;
+  font-weight: 300;
+  color: var(--sumi);
+  line-height: 2.1;
+  letter-spacing: 0.14em;
+  align-self: center;
+  max-height: 116px;
+  overflow: hidden;
+}
+
+/* カードのメタ情報 */
+.h-meta {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: var(--ma-8);
+}
+.h-kigo {
+  font-size: 10px;
+  font-weight: 400;
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 9px;
+  letter-spacing: 0.04em;
+  font-family: var(--sans);
+}
+.h-kigo.haru  { background: var(--haru); }
+.h-kigo.natsu { background: var(--natsu); }
+.h-kigo.aki   { background: var(--aki); }
+.h-kigo.fuyu  { background: var(--fuyu); }
+.h-date {
+  font-size: 10px;
+  color: var(--sumi3);
+  font-family: var(--sans);
+  letter-spacing: 0.02em;
+}
+
+/* 背景の薄墨模様 (全カード共通) */
+.h-card .card-ornament {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--serif);
+  font-size: 56px;
+  font-weight: 200;
+  color: var(--sumi);
+  opacity: 0.025;
+  letter-spacing: -0.1em;
+  pointer-events: none;
+  line-height: 1;
+  user-select: none;
+}
+
+/* ワイドカード (1列跨ぎ) */
+.h-card.wide {
+  grid-column: span 2;
+  min-height: 120px;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--ma-24);
+  padding: var(--ma-24) var(--ma-24);
+}
+.h-card.wide .h-text {
+  font-size: 18px;
+  max-height: 72px;
+}
+.h-card.wide .h-meta {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ma-8);
+  margin-top: 0;
+}
+
+/* ─── 空状態 ─── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: var(--ma-64) var(--ma-32);
+  gap: var(--ma-16);
+  text-align: center;
+}
+.empty-kanji {
+  font-family: var(--serif);
+  font-size: 72px;
+  font-weight: 200;
+  color: var(--sumi);
+  opacity: 0.12;
+  line-height: 1;
+  writing-mode: vertical-rl;
+  letter-spacing: 0.1em;
+}
+.empty-msg {
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--sumi3);
+  line-height: 2.0;
+  letter-spacing: 0.08em;
+}
+
+
+/* ╔═══════════════════════════════════════════╗
+   ║  SCREEN 2: 新規作成                       ║
+   ╚═══════════════════════════════════════════╝ */
+
+.create-screen { background: var(--kinushiro); }
+
+.create-nav {
+  height: 50px;
+  padding: 0 var(--ma-16);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  border-bottom: 0.5px solid var(--sep);
+}
+.create-nav-title {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--sumi);
+  letter-spacing: 0.08em;
+}
+.nav-btn {
+  font-family: var(--sans);
+  font-size: 15px;
+  color: var(--ainzu);
+  padding: 6px 2px;
+}
+.nav-btn-done {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ainzu);
+}
+
+/* 五七五 入力 */
+.create-body {
+  padding: var(--ma-24) var(--ma-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ma-20);
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: none;
+}
+.create-body::-webkit-scrollbar { display: none; }
+
+.ku-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ma-4);
+}
+.ku-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.ku-label {
+  font-family: var(--serif);
+  font-size: 11px;
+  font-weight: 300;
+  color: var(--sumi3);
+  letter-spacing: 0.16em;
+}
+.ku-counter {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+.ku-num {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 200;
+  color: var(--ainzu);
+  line-height: 1;
+  transition: color 0.2s;
+}
+.ku-num.ok { color: var(--natsu); }
+.ku-num.over { color: var(--haru); }
+.ku-slash {
+  font-family: var(--serif);
+  font-size: 14px;
+  color: var(--sumi3);
+}
+.ku-total {
+  font-family: var(--sans);
+  font-size: 11px;
+  color: var(--sumi3);
+}
+.ku-input {
+  width: 100%;
+  border-bottom: 1px solid var(--sep2);
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 300;
+  color: var(--sumi);
+  padding: var(--ma-8) 0 var(--ma-8);
+  letter-spacing: 0.12em;
+  transition: border-color 0.25s ease;
+  background: transparent;
+}
+.ku-input:focus {
+  border-bottom-color: var(--ainzu);
+}
+.ku-input::placeholder {
+  font-family: var(--serif);
+  font-size: 14px;
+  color: var(--kinushiro3);
+  letter-spacing: 0.08em;
+}
+
+/* 区切り点 */
+.ku-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--ma-8);
+  padding: 0 var(--ma-8);
+}
+.ku-divider::before, .ku-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--sep);
+}
+.ku-divider span {
+  font-family: var(--serif);
+  font-size: 10px;
+  color: var(--sumi3);
+  letter-spacing: 0.2em;
+}
+
+/* 縦書きプレビュー */
+.preview-area {
+  background: var(--kinushiro2);
+  border-radius: 20px;
+  padding: var(--ma-32) var(--ma-24);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 130px;
+  position: relative;
+  overflow: hidden;
+}
+/* 季節ライン装飾 */
+.preview-area::before {
+  content: '';
+  position: absolute;
+  top: 0; left: var(--ma-24); right: var(--ma-24);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--usuzumi), transparent);
+  opacity: 0.4;
+}
+.preview-area::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: var(--ma-24); right: var(--ma-24);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--usuzumi), transparent);
+  opacity: 0.4;
+}
+.preview-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 300;
+  color: var(--sumi);
+  line-height: 2.3;
+  letter-spacing: 0.18em;
+  white-space: nowrap;
+  transition: opacity 0.3s ease;
+}
+.preview-placeholder {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--sumi3);
+  letter-spacing: 0.12em;
+  text-align: center;
+  line-height: 2.0;
+}
+
+/* 季語サジェスト */
+.kigo-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ma-8);
+}
+.kigo-section-title {
+  font-family: var(--serif);
+  font-size: 11px;
+  font-weight: 300;
+  color: var(--sumi3);
+  letter-spacing: 0.18em;
+}
+.kigo-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ma-8);
+}
+.kigo-chip {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: var(--kinushiro2);
+  border: 1px solid var(--sep2);
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--sumi2);
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.kigo-chip:active {
+  background: var(--kinushiro3);
+}
+.kigo-chip .kigo-season-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+}
+
+/* メモ・タグ入力 */
+.note-input {
+  width: 100%;
+  border: 1px solid var(--sep2);
+  border-radius: 12px;
+  padding: var(--ma-12) var(--ma-12);
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--sumi);
+  line-height: 1.7;
+  resize: none;
+  height: 72px;
+  background: var(--kinushiro2);
+  transition: border-color 0.2s;
+  letter-spacing: 0.04em;
+}
+.note-input:focus { border-color: var(--ainzu); }
+.note-input::placeholder { color: var(--sumi3); }
+
+.field-label {
+  font-family: var(--serif);
+  font-size: 11px;
+  font-weight: 300;
+  color: var(--sumi3);
+  letter-spacing: 0.16em;
+  margin-bottom: var(--ma-8);
+  display: block;
+}
+
+
+/* ╔═══════════════════════════════════════════╗
+   ║  SCREEN 3: 俳句詳細                       ║
+   ╚═══════════════════════════════════════════╝ */
+
+.detail-screen { background: var(--kinushiro); }
+.detail-screen.haru  { background: var(--haru-bg); }
+.detail-screen.natsu { background: var(--natsu-bg); }
+.detail-screen.aki   { background: var(--aki-bg); }
+.detail-screen.fuyu  { background: var(--fuyu-bg); }
+
+.detail-nav {
+  height: 50px;
+  padding: 0 var(--ma-16);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.detail-nav-action {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--sumi3);
+  padding: 6px 2px;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 主句表示エリア — 枯山水の間 */
+.detail-haiku-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ma-48) var(--ma-32);
+  position: relative;
+  min-height: 380px;
+}
+
+/* 背景・装飾文字（幽玄） */
+.detail-bg-kanji {
+  position: absolute;
+  font-family: var(--serif);
+  font-size: 180px;
+  font-weight: 200;
+  color: var(--sumi);
+  opacity: 0.025;
+  pointer-events: none;
+  user-select: none;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -54%);
+  letter-spacing: -0.05em;
+  line-height: 1;
+  writing-mode: vertical-rl;
+  white-space: nowrap;
+}
+
+/* 句本体 */
+.detail-haiku-main {
+  position: relative;
+  z-index: 2;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 300;
+  color: var(--sumi);
+  line-height: 2.4;
+  letter-spacing: 0.2em;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* 俳号・作者 */
+.detail-author {
+  position: relative;
+  z-index: 2;
+  font-family: var(--serif);
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--sumi3);
+  letter-spacing: 0.18em;
+  writing-mode: vertical-rl;
+  margin-left: var(--ma-32);
+  align-self: flex-end;
+  padding-bottom: var(--ma-4);
+}
+
+/* メタ情報パネル (下部) */
+.detail-meta-panel {
+  background: rgba(247,245,240,0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 0.5px solid var(--sep2);
+  padding: var(--ma-16) var(--ma-16) var(--ma-24);
+  flex-shrink: 0;
+}
+.detail-kigo-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ma-8);
+  margin-bottom: var(--ma-12);
+}
+.detail-kigo-badge {
+  font-size: 11px;
+  font-family: var(--sans);
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 11px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+.detail-kigo-badge.haru  { background: var(--haru); }
+.detail-kigo-badge.natsu { background: var(--natsu); }
+.detail-kigo-badge.aki   { background: var(--aki); }
+.detail-kigo-badge.fuyu  { background: var(--fuyu); }
+.detail-season-label {
+  font-family: var(--serif);
+  font-size: 11px;
+  font-weight: 300;
+  color: var(--sumi3);
+  letter-spacing: 0.1em;
+}
+
+.detail-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--ma-8);
+  margin-bottom: var(--ma-12);
+}
+.detail-info-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.detail-info-key {
+  font-family: var(--sans);
+  font-size: 10px;
+  color: var(--sumi3);
+  letter-spacing: 0.1em;
+}
+.detail-info-val {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--sumi2);
+  letter-spacing: 0.05em;
+}
+
+.detail-note {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--sumi2);
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+  border-top: 0.5px solid var(--sep);
+  padding-top: var(--ma-12);
+}
+
+
+/* ╔═══════════════════════════════════════════╗
+   ║  SCREEN 4: 季語辞典                       ║
+   ╚═══════════════════════════════════════════╝ */
+
+.kigo-screen { background: var(--kinushiro); }
+
+.kigo-nav {
+  height: 50px;
+  padding: 0 var(--ma-16);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  border-bottom: 0.5px solid var(--sep);
+}
+.kigo-nav-title {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--sumi);
+  letter-spacing: 0.08em;
+}
+
+/* 検索バー */
+.kigo-search {
+  margin: var(--ma-12) var(--ma-16) 0;
+  position: relative;
+  flex-shrink: 0;
+}
+.kigo-search-input {
+  width: 100%;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--kinushiro2);
+  padding: 0 var(--ma-12) 0 36px;
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--sumi);
+  letter-spacing: 0.04em;
+}
+.kigo-search-input::placeholder { color: var(--sumi3); }
+.kigo-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 15px;
+  opacity: 0.4;
+}
+
+/* 季節タブ */
+.kigo-tabs {
+  display: flex;
+  padding: var(--ma-12) var(--ma-16) 0;
+  gap: var(--ma-4);
+  flex-shrink: 0;
+}
+.kigo-tab {
+  flex: 1;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--sumi3);
+  letter-spacing: 0.04em;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.kigo-tab.active {
+  font-weight: 500;
+  border-color: currentColor;
+}
+.kigo-tab[data-tab="all"].active   { color: var(--sumi); border-color: var(--sep2); }
+.kigo-tab[data-tab="haru"].active  { color: var(--haru); }
+.kigo-tab[data-tab="natsu"].active { color: var(--natsu); }
+.kigo-tab[data-tab="aki"].active   { color: var(--aki); }
+.kigo-tab[data-tab="fuyu"].active  { color: var(--fuyu); }
+
+/* 季語リスト */
+.kigo-list {
+  padding: var(--ma-8) var(--ma-16) var(--ma-16);
+}
+.kigo-group-header {
+  font-family: var(--serif);
+  font-size: 11px;
+  font-weight: 300;
+  color: var(--sumi3);
+  letter-spacing: 0.2em;
+  padding: var(--ma-12) 0 var(--ma-8);
+  border-bottom: 0.5px solid var(--sep);
+  margin-bottom: var(--ma-4);
+}
+.kigo-entry {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--ma-12) 0;
+  border-bottom: 0.5px solid var(--sep);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.kigo-entry:active { opacity: 0.6; }
+.kigo-entry-main {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ma-8);
+}
+.kigo-word {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--sumi);
+  letter-spacing: 0.08em;
+}
+.kigo-reading {
+  font-family: var(--sans);
+  font-size: 11px;
+  color: var(--sumi3);
+  letter-spacing: 0.04em;
+}
+.kigo-category {
+  font-family: var(--sans);
+  font-size: 10px;
+  color: var(--sumi3);
+  letter-spacing: 0.08em;
+}
+.kigo-arrow {
+  font-size: 14px;
+  color: var(--sumi3);
+  opacity: 0.4;
+}
+
+/* 季語詳細ポップアップ */
+.kigo-detail-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(26,26,28,0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.kigo-detail-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+.kigo-detail-sheet {
+  width: 100%;
+  background: var(--kinushiro);
+  border-radius: 24px 24px 0 0;
+  padding: var(--ma-24) var(--ma-24) var(--ma-32);
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+.kigo-detail-overlay.open .kigo-detail-sheet {
+  transform: translateY(0);
+}
+.kigo-sheet-handle {
+  width: 36px; height: 4px;
+  border-radius: 2px;
+  background: var(--sumi3);
+  opacity: 0.3;
+  margin: 0 auto var(--ma-20);
+}
+.kigo-sheet-word {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 300;
+  color: var(--sumi);
+  letter-spacing: 0.1em;
+  margin-bottom: var(--ma-4);
+}
+.kigo-sheet-reading {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--sumi3);
+  letter-spacing: 0.08em;
+  margin-bottom: var(--ma-16);
+}
+.kigo-sheet-desc {
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--sumi2);
+  line-height: 1.8;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--ma-16);
+}
+.kigo-sheet-example {
+  background: var(--kinushiro2);
+  border-radius: 14px;
+  padding: var(--ma-16) var(--ma-16);
+}
+.kigo-sheet-ex-label {
+  font-size: 10px;
+  font-family: var(--sans);
+  color: var(--sumi3);
+  letter-spacing: 0.12em;
+  margin-bottom: var(--ma-8);
+}
+.kigo-sheet-ex-haiku {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 300;
+  color: var(--sumi);
+  letter-spacing: 0.1em;
+  line-height: 2.0;
+}
+.kigo-sheet-ex-author {
+  font-family: var(--serif);
+  font-size: 11px;
+  color: var(--sumi3);
+  text-align: right;
+  margin-top: var(--ma-4);
+  letter-spacing: 0.08em;
+}
+
+
+/* ═══════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════ */
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes inkFade {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.screen.active .h-card {
+  animation: fadeUp 0.4s cubic-bezier(0.4,0,0.2,1) both;
+}
+.screen.active .h-card:nth-child(1) { animation-delay: 0.05s; }
+.screen.active .h-card:nth-child(2) { animation-delay: 0.10s; }
+.screen.active .h-card:nth-child(3) { animation-delay: 0.15s; }
+.screen.active .h-card:nth-child(4) { animation-delay: 0.20s; }
+.screen.active .h-card:nth-child(5) { animation-delay: 0.25s; }
+.screen.active .h-card:nth-child(6) { animation-delay: 0.30s; }
+
+.screen.active .detail-haiku-main {
+  animation: inkFade 0.5s cubic-bezier(0.4,0,0.2,1) 0.1s both;
+}
+
+</style>
+</head>
+<body>
+
+<p class="exhibit-label">
+  <span>俳句帳</span> — Haiku Note · iPhone 15 Pro Prototype
+</p>
+
+<div class="iphone-frame">
+
+  <!-- ─── DYNAMIC ISLAND ─── -->
+  <div class="dynamic-island"></div>
+
+  <!-- ════════════════════════════
+       SCREEN 1: ホーム (俳句一覧)
+  ════════════════════════════ -->
+  <div class="screen home-screen active" id="screen-home">
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <svg width="17" height="12" viewBox="0 0 17 12"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1" opacity="0.3"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 2.4C10.2 2.4 12.2 3.3 13.6 4.8L15 3.3C13.2 1.3 10.7 0 8 0S2.8 1.3 1 3.3L2.4 4.8C3.8 3.3 5.8 2.4 8 2.4z" opacity="0.3"/><path d="M8 5.5c1.4 0 2.6.6 3.5 1.6L12.9 5.6C11.6 4.1 9.9 3.1 8 3.1S4.4 4.1 3.1 5.6L4.5 7.1C5.4 6.1 6.6 5.5 8 5.5z"/><circle cx="8" cy="10" r="1.8"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="22" height="10" rx="3" stroke="currentColor" stroke-width="1" fill="none" opacity="0.35"/><rect x="1" y="2" width="18" height="8" rx="2" fill="currentColor"/><rect x="23" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.4"/></svg>
+      </div>
+    </div>
+
+    <!-- ヘッダー -->
+    <div class="home-header">
+      <div class="home-title-row">
+        <h1 class="home-title">俳句帳</h1>
+        <span class="home-count">7句</span>
+      </div>
+    </div>
+
+    <!-- 季節フィルター -->
+    <div class="season-filter">
+      <button class="s-chip active" data-season="all" onclick="filterSeason('all', this)">
+        <span class="chip-dot"></span>すべて
+      </button>
+      <button class="s-chip" data-season="haru" onclick="filterSeason('haru', this)">
+        <span class="chip-dot"></span>春
+      </button>
+      <button class="s-chip" data-season="natsu" onclick="filterSeason('natsu', this)">
+        <span class="chip-dot"></span>夏
+      </button>
+      <button class="s-chip" data-season="aki" onclick="filterSeason('aki', this)">
+        <span class="chip-dot"></span>秋
+      </button>
+      <button class="s-chip" data-season="fuyu" onclick="filterSeason('fuyu', this)">
+        <span class="chip-dot"></span>冬
+      </button>
+    </div>
+
+    <!-- 俳句グリッド -->
+    <div class="scroll-area">
+      <div class="haiku-grid" id="haiku-grid">
+
+        <!-- Wide card: 注目句 -->
+        <div class="h-card wide haru" data-season="haru" onclick="goDetail('haru')">
+          <div>
+            <div class="h-text">古池や蛙飛び込む水の音</div>
+          </div>
+          <div class="h-meta" style="flex-direction:column; align-items:flex-start; gap:6px; margin-top:0;">
+            <span class="h-kigo haru">蛙 (かわず)</span>
+            <span class="h-date">2024.3.15</span>
+          </div>
+          <div class="card-ornament">句</div>
+        </div>
+
+        <!-- Standard cards -->
+        <div class="h-card natsu" data-season="natsu" onclick="goDetail('natsu')">
+          <div class="h-text">夏草や兵どもが夢の跡</div>
+          <div class="h-meta">
+            <span class="h-kigo natsu">夏草</span>
+            <span class="h-date">7.12</span>
+          </div>
+          <div class="card-ornament">夢</div>
+        </div>
+
+        <div class="h-card aki" data-season="aki" onclick="goDetail('aki')">
+          <div class="h-text">柿くへば鐘が鳴るなり法隆寺</div>
+          <div class="h-meta">
+            <span class="h-kigo aki">柿</span>
+            <span class="h-date">10.8</span>
+          </div>
+          <div class="card-ornament">鐘</div>
+        </div>
+
+        <div class="h-card fuyu" data-season="fuyu" onclick="goDetail('fuyu')">
+          <div class="h-text">雪国や灯の消えたる里の暮</div>
+          <div class="h-meta">
+            <span class="h-kigo fuyu">雪</span>
+            <span class="h-date">1.3</span>
+          </div>
+          <div class="card-ornament">雪</div>
+        </div>
+
+        <div class="h-card haru" data-season="haru">
+          <div class="h-text">春暁や花びら落つる縁先に</div>
+          <div class="h-meta">
+            <span class="h-kigo haru">春暁</span>
+            <span class="h-date">3.20</span>
+          </div>
+          <div class="card-ornament">花</div>
+        </div>
+
+        <div class="h-card natsu" data-season="natsu">
+          <div class="h-text">向日葵の高さよ空の蒼さかな</div>
+          <div class="h-meta">
+            <span class="h-kigo natsu">向日葵</span>
+            <span class="h-date">8.5</span>
+          </div>
+          <div class="card-ornament">日</div>
+        </div>
+
+        <div class="h-card aki" data-season="aki">
+          <div class="h-text">虫の音や静けき秋の夜長かな</div>
+          <div class="h-meta">
+            <span class="h-kigo aki">虫の音</span>
+            <span class="h-date">9.22</span>
+          </div>
+          <div class="card-ornament">秋</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <button class="fab" onclick="goScreen('screen-create')" aria-label="新しい俳句を作る">
+      <span class="fab-icon">＋</span>
+    </button>
+
+    <!-- TAB BAR -->
+    <div class="tab-bar">
+      <button class="tab-item active" onclick="goScreen('screen-home')">
+        <span class="tab-icon">📖</span>
+        <span class="tab-label">俳句帳</span>
+      </button>
+      <button class="tab-item" onclick="goScreen('screen-create')">
+        <span class="tab-icon">✍️</span>
+        <span class="tab-label">作句</span>
+      </button>
+      <button class="tab-item" onclick="goScreen('screen-kigo')">
+        <span class="tab-icon">🌸</span>
+        <span class="tab-label">季語辞典</span>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════
+       SCREEN 2: 新規作成
+  ════════════════════════════ -->
+  <div class="screen create-screen" id="screen-create">
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <svg width="17" height="12" viewBox="0 0 17 12"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1" opacity="0.3"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="22" height="10" rx="3" stroke="currentColor" stroke-width="1" fill="none" opacity="0.35"/><rect x="1" y="2" width="18" height="8" rx="2" fill="currentColor"/><rect x="23" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.4"/></svg>
+      </div>
+    </div>
+    <div class="create-nav">
+      <button class="nav-btn" onclick="goScreen('screen-home')">＜ 戻る</button>
+      <span class="create-nav-title">新しい句</span>
+      <button class="nav-btn-done" onclick="goScreen('screen-home')">完了</button>
+    </div>
+
+    <div class="create-body">
+
+      <!-- 上五 -->
+      <div class="ku-block">
+        <div class="ku-header">
+          <span class="ku-label">上五</span>
+          <div class="ku-counter">
+            <span class="ku-num" id="c1">0</span>
+            <span class="ku-slash">/</span>
+            <span class="ku-total">5音</span>
+          </div>
+        </div>
+        <input class="ku-input" type="text" id="ku1" placeholder="五音のことば…" oninput="updateCount('ku1','c1',5);updatePreview()">
+      </div>
+
+      <div class="ku-divider"><span>○</span></div>
+
+      <!-- 中七 -->
+      <div class="ku-block">
+        <div class="ku-header">
+          <span class="ku-label">中七</span>
+          <div class="ku-counter">
+            <span class="ku-num" id="c2">0</span>
+            <span class="ku-slash">/</span>
+            <span class="ku-total">7音</span>
+          </div>
+        </div>
+        <input class="ku-input" type="text" id="ku2" placeholder="七音のことば…" oninput="updateCount('ku2','c2',7);updatePreview()">
+      </div>
+
+      <div class="ku-divider"><span>○</span></div>
+
+      <!-- 下五 -->
+      <div class="ku-block">
+        <div class="ku-header">
+          <span class="ku-label">下五</span>
+          <div class="ku-counter">
+            <span class="ku-num" id="c3">0</span>
+            <span class="ku-slash">/</span>
+            <span class="ku-total">5音</span>
+          </div>
+        </div>
+        <input class="ku-input" type="text" id="ku3" placeholder="五音のことば…" oninput="updateCount('ku3','c3',5);updatePreview()">
+      </div>
+
+      <!-- 縦書きプレビュー -->
+      <div class="preview-area">
+        <div class="preview-vertical" id="preview-text" style="display:none"></div>
+        <div class="preview-placeholder" id="preview-placeholder">
+          句を入力すると<br>縦書きで表示されます
+        </div>
+      </div>
+
+      <!-- 季語サジェスト -->
+      <div class="kigo-section">
+        <span class="kigo-section-title">— 季語サジェスト —</span>
+        <div class="kigo-chips">
+          <button class="kigo-chip" onclick="insertKigo('春霞')">
+            <span class="kigo-season-dot" style="background:var(--haru)"></span>春霞
+          </button>
+          <button class="kigo-chip" onclick="insertKigo('花曇')">
+            <span class="kigo-season-dot" style="background:var(--haru)"></span>花曇
+          </button>
+          <button class="kigo-chip" onclick="insertKigo('蛙')">
+            <span class="kigo-season-dot" style="background:var(--haru)"></span>蛙
+          </button>
+          <button class="kigo-chip" onclick="insertKigo('夏霞')">
+            <span class="kigo-season-dot" style="background:var(--natsu)"></span>夏霞
+          </button>
+          <button class="kigo-chip" onclick="insertKigo('向日葵')">
+            <span class="kigo-season-dot" style="background:var(--natsu)"></span>向日葵
+          </button>
+        </div>
+      </div>
+
+      <!-- メモ -->
+      <div>
+        <label class="field-label" for="haiku-note">制作メモ</label>
+        <textarea class="note-input" id="haiku-note" placeholder="この句を詠んだ状況や思いを記録…"></textarea>
+      </div>
+
+    </div>
+
+    <!-- TAB BAR -->
+    <div class="tab-bar">
+      <button class="tab-item" onclick="goScreen('screen-home')">
+        <span class="tab-icon">📖</span>
+        <span class="tab-label">俳句帳</span>
+      </button>
+      <button class="tab-item active" onclick="goScreen('screen-create')">
+        <span class="tab-icon">✍️</span>
+        <span class="tab-label">作句</span>
+      </button>
+      <button class="tab-item" onclick="goScreen('screen-kigo')">
+        <span class="tab-icon">🌸</span>
+        <span class="tab-label">季語辞典</span>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════
+       SCREEN 3: 俳句詳細
+  ════════════════════════════ -->
+  <div class="screen detail-screen" id="screen-detail">
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <svg width="17" height="12" viewBox="0 0 17 12"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1" opacity="0.3"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="22" height="10" rx="3" stroke="currentColor" stroke-width="1" fill="none" opacity="0.35"/><rect x="1" y="2" width="18" height="8" rx="2" fill="currentColor"/><rect x="23" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.4"/></svg>
+      </div>
+    </div>
+    <div class="detail-nav">
+      <button class="detail-nav-action" onclick="goScreen('screen-home')">＜ 俳句帳</button>
+      <button class="detail-nav-action">編集</button>
+    </div>
+
+    <!-- 主句表示エリア — 枯山水の間 -->
+    <div class="detail-haiku-stage">
+      <div class="detail-bg-kanji" id="detail-bg-kanji">句</div>
+      <div class="detail-haiku-main" id="detail-haiku-main">
+        古池や蛙飛び込む水の音
+      </div>
+      <div class="detail-author">松尾芭蕉</div>
+    </div>
+
+    <!-- メタ情報 -->
+    <div class="detail-meta-panel">
+      <div class="detail-kigo-row">
+        <span class="detail-kigo-badge haru" id="detail-kigo-badge">蛙 (かわず)</span>
+        <span class="detail-season-label" id="detail-season-label">春 · 三春</span>
+      </div>
+      <div class="detail-info-grid">
+        <div class="detail-info-cell">
+          <span class="detail-info-key">詠んだ日</span>
+          <span class="detail-info-val">2024.3.15</span>
+        </div>
+        <div class="detail-info-cell">
+          <span class="detail-info-key">音数</span>
+          <span class="detail-info-val">5-7-5</span>
+        </div>
+        <div class="detail-info-cell">
+          <span class="detail-info-key">タグ</span>
+          <span class="detail-info-val">#水音 #春</span>
+        </div>
+      </div>
+      <div class="detail-note">
+        静寂の中に突如響く水音。空間の広がりと時間の一点を同時に描いた句。
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════
+       SCREEN 4: 季語辞典
+  ════════════════════════════ -->
+  <div class="screen kigo-screen" id="screen-kigo">
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <svg width="17" height="12" viewBox="0 0 17 12"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1" opacity="0.3"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="22" height="10" rx="3" stroke="currentColor" stroke-width="1" fill="none" opacity="0.35"/><rect x="1" y="2" width="18" height="8" rx="2" fill="currentColor"/><rect x="23" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.4"/></svg>
+      </div>
+    </div>
+    <div class="kigo-nav">
+      <span class="kigo-nav-title">季語辞典</span>
+      <button style="font-size:13px; color:var(--sumi3); font-family:var(--sans);">絞込み</button>
+    </div>
+
+    <!-- 検索 -->
+    <div class="kigo-search">
+      <span class="kigo-search-icon">🔍</span>
+      <input class="kigo-search-input" type="search" placeholder="季語を検索…">
+    </div>
+
+    <!-- 季節タブ -->
+    <div class="kigo-tabs">
+      <button class="kigo-tab active" data-tab="all">すべて</button>
+      <button class="kigo-tab" data-tab="haru" onclick="selectKigoTab(this)">春</button>
+      <button class="kigo-tab" data-tab="natsu" onclick="selectKigoTab(this)">夏</button>
+      <button class="kigo-tab" data-tab="aki" onclick="selectKigoTab(this)">秋</button>
+      <button class="kigo-tab" data-tab="fuyu" onclick="selectKigoTab(this)">冬</button>
+    </div>
+
+    <!-- 季語リスト -->
+    <div class="scroll-area">
+      <div class="kigo-list">
+
+        <div class="kigo-group-header">春 — 三春</div>
+        <div class="kigo-entry" onclick="openKigoDetail('蛙','かわず','春 · 三春','水辺や田んぼで鳴く蛙。春の到来を告げる生命の声。','古池や蛙飛び込む水の音','松尾芭蕉')">
+          <div class="kigo-entry-main">
+            <span class="kigo-word">蛙</span>
+            <span class="kigo-reading">かわず</span>
+          </div>
+          <span class="kigo-category">生き物</span>
+          <span class="kigo-arrow">›</span>
+        </div>
+        <div class="kigo-entry" onclick="openKigoDetail('春霞','はるかすみ','春 · 三春','春に空がかすんで見える現象。遠景がやわらかく霞む様子。','春霞棚引く空の夕暮れに','—')">
+          <div class="kigo-entry-main">
+            <span class="kigo-word">春霞</span>
+            <span class="kigo-reading">はるかすみ</span>
+          </div>
+          <span class="kigo-category">天象</span>
+          <span class="kigo-arrow">›</span>
+        </div>
+        <div class="kigo-entry" onclick="openKigoDetail('花曇','はなぐもり','春 · 晩春','桜の咲く頃に空が曇ること。花を包む灰色の優しい空。','花曇りとなりてよりの静けさよ','高浜虚子')">
+          <div class="kigo-entry-main">
+            <span class="kigo-word">花曇</span>
+            <span class="kigo-reading">はなぐもり</span>
+          </div>
+          <span class="kigo-category">天象</span>
+          <span class="kigo-arrow">›</span>
+        </div>
+        <div class="kigo-entry">
+          <div class="kigo-entry-main">
+            <span class="kigo-word">春暁</span>
+            <span class="kigo-reading">しゅんぎょう</span>
+          </div>
+          <span class="kigo-category">時候</span>
+          <span class="kigo-arrow">›</span>
+        </div>
+
+        <div class="kigo-group-header">夏 — 三夏</div>
+        <div class="kigo-entry" onclick="openKigoDetail('向日葵','ひまわり','夏 · 晩夏','太陽に向かって回る大輪の花。強烈な夏の象徴。','向日葵の高さよ空の蒼さかな','—')">
+          <div class="kigo-entry-main">
+            <span class="kigo-word">向日葵</span>
+            <span class="kigo-reading">ひまわり</span>
+          </div>
+          <span class="kigo-category">植物</span>
+          <span class="kigo-arrow">›</span>
+        </div>
+        <div class="kigo-entry">
+          <div class="kigo-entry-main">
+            <span class="kigo-word">夏草</span>
+            <span class="kigo-reading">なつくさ</span>
+          </div>
+          <span class="kigo-category">植物</span>
+          <span class="kigo-arrow">›</span>
+        </div>
+        <div class="kigo-entry">
+          <div class="kigo-entry-main">
+            <span class="kigo-word">蝉</span>
+            <span class="kigo-reading">せみ</span>
+          </div>
+          <span class="kigo-category">生き物</span>
+          <span class="kigo-arrow">›</span>
+        </div>
+
+        <div class="kigo-group-header">秋 — 三秋</div>
+        <div class="kigo-entry">
+          <div class="kigo-entry-main">
+            <span class="kigo-word">柿</span>
+            <span class="kigo-reading">かき</span>
+          </div>
+          <span class="kigo-category">植物</span>
+          <span class="kigo-arrow">›</span>
+        </div>
+        <div class="kigo-entry">
+          <div class="kigo-entry-main">
+            <span class="kigo-word">虫の音</span>
+            <span class="kigo-reading">むしのね</span>
+          </div>
+          <span class="kigo-category">生き物</span>
+          <span class="kigo-arrow">›</span>
+        </div>
+        <div class="kigo-entry">
+          <div class="kigo-entry-main">
+            <span class="kigo-word">月</span>
+            <span class="kigo-reading">つき</span>
+          </div>
+          <span class="kigo-category">天象</span>
+          <span class="kigo-arrow">›</span>
+        </div>
+
+        <div class="kigo-group-header">冬 — 三冬</div>
+        <div class="kigo-entry">
+          <div class="kigo-entry-main">
+            <span class="kigo-word">雪</span>
+            <span class="kigo-reading">ゆき</span>
+          </div>
+          <span class="kigo-category">天象</span>
+          <span class="kigo-arrow">›</span>
+        </div>
+        <div class="kigo-entry">
+          <div class="kigo-entry-main">
+            <span class="kigo-word">枯野</span>
+            <span class="kigo-reading">かれの</span>
+          </div>
+          <span class="kigo-category">地理</span>
+          <span class="kigo-arrow">›</span>
+        </div>
+        <div class="kigo-entry">
+          <div class="kigo-entry-main">
+            <span class="kigo-word">冬枯</span>
+            <span class="kigo-reading">ふゆがれ</span>
+          </div>
+          <span class="kigo-category">植物</span>
+          <span class="kigo-arrow">›</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 季語詳細シート -->
+    <div class="kigo-detail-overlay" id="kigo-overlay" onclick="closeKigoDetail(event)">
+      <div class="kigo-detail-sheet" onclick="event.stopPropagation()">
+        <div class="kigo-sheet-handle"></div>
+        <div class="kigo-sheet-word" id="ks-word">蛙</div>
+        <div class="kigo-sheet-reading" id="ks-reading">かわず · 春 · 三春</div>
+        <div class="kigo-sheet-desc" id="ks-desc">
+          水辺や田んぼで鳴く蛙。春の到来を告げる生命の声。
+        </div>
+        <div class="kigo-sheet-example">
+          <div class="kigo-sheet-ex-label">用例</div>
+          <div class="kigo-sheet-ex-haiku" id="ks-haiku">古池や蛙飛び込む水の音</div>
+          <div class="kigo-sheet-ex-author" id="ks-author">— 松尾芭蕉</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB BAR -->
+    <div class="tab-bar">
+      <button class="tab-item" onclick="goScreen('screen-home')">
+        <span class="tab-icon">📖</span>
+        <span class="tab-label">俳句帳</span>
+      </button>
+      <button class="tab-item" onclick="goScreen('screen-create')">
+        <span class="tab-icon">✍️</span>
+        <span class="tab-label">作句</span>
+      </button>
+      <button class="tab-item active">
+        <span class="tab-icon">🌸</span>
+        <span class="tab-label">季語辞典</span>
+      </button>
+    </div>
+  </div>
+
+</div><!-- /iphone-frame -->
+
+
+<script>
+/* ── Screen Navigation ── */
+function goScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(id);
+  if (target) target.classList.add('active');
+  if (id === 'screen-home') rippleFab();
+}
+
+function rippleFab() {
+  const fab = document.querySelector('.fab');
+  if (!fab) return;
+  const r = document.createElement('div');
+  r.className = 'ink-ripple';
+  fab.appendChild(r);
+  setTimeout(() => r.remove(), 700);
+}
+
+/* ── 詳細画面遷移 ── */
+const detailData = {
+  haru:  { haiku:'古池や蛙飛び込む水の音', kigo:'蛙 (かわず)', season:'春 · 三春', bgKanji:'蛙', cls:'haru' },
+  natsu: { haiku:'夏草や兵どもが夢の跡',   kigo:'夏草 (なつくさ)', season:'夏 · 三夏', bgKanji:'夢', cls:'natsu' },
+  aki:   { haiku:'柿くへば鐘が鳴るなり法隆寺', kigo:'柿 (かき)', season:'秋 · 三秋', bgKanji:'鐘', cls:'aki' },
+  fuyu:  { haiku:'雪国や灯の消えたる里の暮', kigo:'雪 (ゆき)', season:'冬 · 三冬', bgKanji:'雪', cls:'fuyu' },
+};
+
+function goDetail(season) {
+  const d = detailData[season];
+  if (!d) return;
+
+  const screen = document.getElementById('screen-detail');
+  screen.className = 'screen detail-screen ' + d.cls;
+
+  document.getElementById('detail-haiku-main').textContent = d.haiku;
+  document.getElementById('detail-bg-kanji').textContent = d.bgKanji;
+  document.getElementById('detail-kigo-badge').textContent = d.kigo;
+  document.getElementById('detail-kigo-badge').className = 'detail-kigo-badge ' + d.cls;
+  document.getElementById('detail-season-label').textContent = d.season;
+
+  goScreen('screen-detail');
+}
+
+/* ── 季節フィルター ── */
+function filterSeason(season, btn) {
+  document.querySelectorAll('.s-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+
+  document.querySelectorAll('.h-card').forEach(card => {
+    if (season === 'all') {
+      card.style.display = '';
+    } else {
+      card.style.display = card.dataset.season === season ? '' : 'none';
+    }
+  });
+
+  // ワイドカードの幅調整
+  document.querySelectorAll('.h-card.wide').forEach(card => {
+    if (card.style.display !== 'none') card.style.gridColumn = 'span 2';
+  });
+}
+
+/* ── 音節カウンター ── */
+function countMora(text) {
+  // 簡易音節カウント（ひらがな/カタカナ/漢字それぞれ1音として近似）
+  let count = 0;
+  for (const ch of text) {
+    if (ch.match(/[ぁぃぅぇぉっゃゅょァィゥェォッャュョ]/)) {
+      // 小文字は直前の文字と合わせて1音（ここでは0として処理）
+      continue;
+    }
+    if (ch.match(/[\u3041-\u30FF\u4E00-\u9FFF\u3400-\u4DBF]/)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+function updateCount(inputId, counterId, target) {
+  const val = document.getElementById(inputId).value;
+  const n = countMora(val);
+  const el = document.getElementById(counterId);
+  el.textContent = n;
+  el.className = 'ku-num';
+  if (n === target) el.classList.add('ok');
+  else if (n > target) el.classList.add('over');
+}
+
+/* ── プレビュー縦書き更新 ── */
+function updatePreview() {
+  const k1 = document.getElementById('ku1').value;
+  const k2 = document.getElementById('ku2').value;
+  const k3 = document.getElementById('ku3').value;
+  const combined = (k1 || '') + (k2 || '') + (k3 || '');
+  const pvEl = document.getElementById('preview-text');
+  const phEl = document.getElementById('preview-placeholder');
+
+  if (combined.trim()) {
+    pvEl.textContent = combined;
+    pvEl.style.display = '';
+    phEl.style.display = 'none';
+  } else {
+    pvEl.style.display = 'none';
+    phEl.style.display = '';
+  }
+}
+
+/* ── 季語挿入 ── */
+function insertKigo(word) {
+  // アクティブな入力欄に季語を挿入（最初の空欄に）
+  const inputs = ['ku1','ku2','ku3'];
+  for (const id of inputs) {
+    const el = document.getElementById(id);
+    if (!el.value) {
+      el.value = word;
+      el.focus();
+      const idx = inputs.indexOf(id);
+      const targets = [5,7,5];
+      const cids = ['c1','c2','c3'];
+      updateCount(id, cids[idx], targets[idx]);
+      updatePreview();
+      return;
+    }
+  }
+}
+
+/* ── 季語辞典タブ ── */
+function selectKigoTab(btn) {
+  document.querySelectorAll('.kigo-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+/* ── 季語詳細シート ── */
+function openKigoDetail(word, reading, season, desc, haiku, author) {
+  document.getElementById('ks-word').textContent = word;
+  document.getElementById('ks-reading').textContent = reading + ' · ' + season;
+  document.getElementById('ks-desc').textContent = desc;
+  document.getElementById('ks-haiku').textContent = haiku;
+  document.getElementById('ks-author').textContent = '— ' + author;
+
+  const overlay = document.getElementById('kigo-overlay');
+  overlay.classList.add('open');
+}
+
+function closeKigoDetail(e) {
+  document.getElementById('kigo-overlay').classList.remove('open');
+}
+
+/* ── 初期FABアニメ ── */
+window.addEventListener('load', () => {
+  setTimeout(rippleFab, 600);
+});
+</script>
+
+</body>
+</html>

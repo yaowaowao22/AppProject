@@ -1,0 +1,1911 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ワリカン名人 — 琥珀夜 Redesign</title>
+  <!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  Design: "琥珀夜 / Amber Night"                              ║
+  ║  居酒屋の闇に灯る暖かい勘定 — 飲み会の熱気 × 凛雅の静けさ      ║
+  ╟──────────────────────────────────────────────────────────────╢
+  ║  vs 原版 sample.html との差分:                                ║
+  ║  · 計算入力: 明るいオレンジ hero → 深琥珀ダーク入力ゾーン        ║
+  ║    数字が闇の中で灯台のように輝く                               ║
+  ║  · 人数: plain stepper → 視覚的ピップス（人アイコン行）+±ボタン ║
+  ║  · 結果: テキスト hero → 金コイン演出（shimmer+coinReveal）     ║
+  ║    + 紙吹雪アニメーション（CSS particle system）               ║
+  ║  · キーパッド: フラット → 内影付きセラミック質感キー              ║
+  ║  · タブバー: 標準下線 → オレンジドット（提灯インジケーター）      ║
+  ║  · ステータスバー: スクリーンに応じてdark/light切替             ║
+  ╟──────────────────────────────────────────────────────────────╢
+  ║  Colors: #FF6B35(暖橙) × #FFB800(金) × #FFFBF5(クリーム)      ║
+  ║          × #0F0700(深琥珀・居酒屋の闇)                        ║
+  ╚══════════════════════════════════════════════════════════════╝
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Inter:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --amber-dark:   #0A0500;
+      --amber-deep:   #1A0A00;
+      --amber-mid:    #3D1F00;
+      --orange:       #FF6B35;
+      --orange-lt:    #FF8F61;
+      --orange-dk:    #E5521E;
+      --gold:         #FFB800;
+      --gold-lt:      #FFD060;
+      --cream:        #FFFBF5;
+      --warm-white:   #FFF8F0;
+      --warm-gray:    #F0EBE2;
+      --separator:    #E8E0D5;
+      --text-dark:    #1C1009;
+      --text-sec:     #6B5E52;
+      --text-ter:     #ADA09A;
+      --green:        #30D158;
+      --red:          #FF453A;
+      --line-green:   #06C755;
+      --ma-xs: 4px; --ma-sm: 8px; --ma-md: 16px;
+      --ma-lg: 24px; --ma-xl: 32px;
+    }
+
+    body {
+      background: #E8DDD0;
+      background-image:
+        radial-gradient(ellipse at 15% 60%, rgba(255,107,53,0.15) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 20%, rgba(255,184,0,0.1) 0%, transparent 50%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Noto Sans JP', -apple-system, sans-serif;
+      padding: 40px 20px;
+    }
+
+    /* ───────────────────────────────────────
+       PHONE FRAME
+    ─────────────────────────────────────── */
+    .phone-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .phone-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #9A7A5A;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .iphone-frame {
+      position: relative;
+      width: 393px;
+      height: 852px;
+      background: #1C1C1E;
+      border-radius: 54px;
+      padding: 12px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.12),
+        0 60px 160px rgba(0,0,0,0.5),
+        0 24px 70px rgba(0,0,0,0.3),
+        inset 0 0 0 1px rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+
+    .iphone-frame::before {
+      content: '';
+      position: absolute;
+      left: -3px; top: 124px;
+      width: 3px; height: 32px;
+      background: #2C2C2E;
+      border-radius: 2px 0 0 2px;
+      box-shadow: 0 48px 0 #2C2C2E, 0 96px 0 #2C2C2E;
+    }
+
+    .iphone-frame::after {
+      content: '';
+      position: absolute;
+      right: -3px; top: 170px;
+      width: 3px; height: 76px;
+      background: #2C2C2E;
+      border-radius: 0 2px 2px 0;
+    }
+
+    .screen-container {
+      width: 100%;
+      height: 100%;
+      background: var(--cream);
+      border-radius: 44px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dynamic-island {
+      position: absolute;
+      top: 12px; left: 50%;
+      transform: translateX(-50%);
+      width: 126px; height: 37px;
+      background: #000;
+      border-radius: 20px;
+      z-index: 50;
+      pointer-events: none;
+    }
+
+    /* ───────────────────────────────────────
+       STATUS BAR — adapts to screen theme
+    ─────────────────────────────────────── */
+    .status-bar {
+      height: 59px;
+      padding: 16px 28px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 10;
+      flex-shrink: 0;
+      background: var(--amber-dark);
+      transition: background 0.25s;
+    }
+
+    .status-bar.light {
+      background: var(--cream);
+    }
+
+    .status-time {
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.9);
+      transition: color 0.25s;
+    }
+
+    .status-bar.light .status-time {
+      color: var(--text-dark);
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: rgba(255,255,255,0.85);
+      transition: color 0.25s;
+    }
+
+    .status-bar.light .status-icons {
+      color: var(--text-dark);
+    }
+
+    /* ───────────────────────────────────────
+       APP CONTENT + SCREENS
+    ─────────────────────────────────────── */
+    .app-content {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: none;
+      flex-direction: column;
+      background: var(--cream);
+      scrollbar-width: none;
+    }
+    .screen::-webkit-scrollbar { display: none; }
+    .screen.active { display: flex; }
+
+    /* ───────────────────────────────────────
+       NAV BAR (screens 2, 4)
+    ─────────────────────────────────────── */
+    .nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px 10px;
+      background: rgba(255,251,245,0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 0.5px solid var(--separator);
+      flex-shrink: 0;
+    }
+
+    .nav-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    .nav-btn {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: var(--orange);
+      font-size: 12px;
+      font-weight: 700;
+      transition: background 0.15s;
+    }
+    .nav-btn:active { background: rgba(255,107,53,0.12); }
+
+    /* ───────────────────────────────────────
+       TAB BAR
+    ─────────────────────────────────────── */
+    .tab-bar {
+      height: 83px;
+      background: rgba(255,251,245,0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 0.5px solid var(--separator);
+      display: flex;
+      align-items: flex-start;
+      padding-top: 10px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 20;
+    }
+
+    .tab-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      position: relative;
+      transition: transform 0.1s;
+    }
+    .tab-item:active { transform: scale(0.86); }
+
+    .tab-icon-wrap {
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      transition: transform 0.2s;
+      filter: grayscale(1) opacity(0.45);
+    }
+    .tab-item.active .tab-icon-wrap {
+      filter: none;
+      transform: scale(1.08);
+    }
+
+    .tab-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-ter);
+      transition: color 0.2s;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .tab-item.active .tab-label { color: var(--orange); }
+
+    /* Lantern dot indicator */
+    .tab-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--orange);
+      position: absolute;
+      bottom: -6px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      box-shadow: 0 0 6px rgba(255,107,53,0.7);
+    }
+    .tab-item.active .tab-dot { opacity: 1; }
+
+    /* ═══════════════════════════════════════════════
+       SCREEN 1 — CALCULATOR
+    ═══════════════════════════════════════════════ */
+
+    /* Dark izakaya input zone */
+    .calc-input-zone {
+      background: linear-gradient(160deg, var(--amber-dark) 0%, var(--amber-deep) 100%);
+      padding: 20px 22px 28px;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    /* Ambient ember glow at bottom edge */
+    .calc-input-zone::after {
+      content: '';
+      position: absolute;
+      bottom: -50px; left: 50%;
+      transform: translateX(-50%);
+      width: 280px; height: 100px;
+      background: radial-gradient(ellipse, rgba(255,107,53,0.4) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Concentric lantern rings in background */
+    .calc-input-zone::before {
+      content: '';
+      position: absolute;
+      top: -70px; right: -50px;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,184,0,0.07);
+      box-shadow:
+        0 0 0 40px rgba(255,184,0,0.04),
+        0 0 0 80px rgba(255,184,0,0.02);
+      pointer-events: none;
+    }
+
+    .input-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,184,0,0.65);
+      letter-spacing: 0.12em;
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .amount-display-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .amount-currency {
+      font-family: 'Inter', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--gold);
+      line-height: 1;
+      align-self: flex-end;
+      margin-bottom: 6px;
+    }
+
+    .amount-number {
+      font-family: 'Inter', sans-serif;
+      font-size: 62px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1;
+      letter-spacing: -3px;
+      transition: all 0.08s;
+      text-shadow: 0 0 40px rgba(255,184,0,0.3);
+    }
+    .amount-number.placeholder {
+      color: rgba(255,255,255,0.18);
+      text-shadow: none;
+    }
+
+    .amount-cursor {
+      display: inline-block;
+      width: 3px; height: 48px;
+      background: var(--gold);
+      border-radius: 2px;
+      margin-left: 3px;
+      vertical-align: middle;
+      animation: blinkCursor 1s step-end infinite;
+    }
+
+    @keyframes blinkCursor {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* Controls area */
+    .controls-section {
+      background: var(--cream);
+      flex-shrink: 0;
+    }
+
+    /* People row with pips */
+    .people-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 16px;
+      border-bottom: 0.5px solid var(--separator);
+    }
+
+    .ctrl-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-dark);
+      flex-shrink: 0;
+    }
+
+    .people-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .people-pips {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pip {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      border: 1.5px solid var(--separator);
+      color: var(--text-ter);
+      background: var(--warm-gray);
+      transition: all 0.18s;
+      cursor: pointer;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .pip.filled {
+      background: var(--orange);
+      border-color: var(--orange);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(255,107,53,0.3);
+    }
+
+    .pip-count {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-sec);
+      min-width: 28px;
+      text-align: center;
+    }
+
+    .pip-btn {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      border: 1.5px solid var(--separator);
+      background: var(--warm-gray);
+      font-size: 17px;
+      font-weight: 300;
+      color: var(--orange);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      line-height: 1;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .pip-btn.plus {
+      background: var(--orange);
+      border-color: var(--orange);
+      color: #fff;
+    }
+    .pip-btn:active { opacity: 0.7; }
+
+    /* Preset chips */
+    .preset-row {
+      padding: 9px 16px;
+      border-bottom: 0.5px solid var(--separator);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .preset-row::-webkit-scrollbar { display: none; }
+
+    .preset-chips {
+      display: flex;
+      gap: 7px;
+      white-space: nowrap;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 13px;
+      border-radius: 18px;
+      border: 1.5px solid var(--orange-lt);
+      background: none;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--orange);
+      cursor: pointer;
+      transition: all 0.18s;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .chip.active {
+      background: linear-gradient(135deg, var(--orange), #FF9800);
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 3px 10px rgba(255,107,53,0.3);
+    }
+    .chip:active { opacity: 0.75; }
+
+    /* Mode toggle */
+    .mode-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 16px;
+      border-bottom: 0.5px solid var(--separator);
+    }
+
+    .mode-toggle {
+      display: flex;
+      background: var(--warm-gray);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .mode-btn {
+      padding: 6px 13px;
+      border-radius: 7px;
+      border: none;
+      background: none;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sec);
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .mode-btn.active {
+      background: #fff;
+      color: var(--orange);
+      box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+    }
+
+    /* Per-person preview strip */
+    .preview-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 16px;
+      background: linear-gradient(90deg, #FFF3E0 0%, #FFFDE7 100%);
+      border-bottom: 0.5px solid #FFD898;
+      flex-shrink: 0;
+    }
+
+    .preview-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-sec);
+    }
+
+    .preview-amount {
+      font-family: 'Inter', sans-serif;
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--orange);
+      letter-spacing: -0.5px;
+      transition: all 0.15s;
+    }
+    .preview-amount .unit {
+      font-size: 13px;
+      font-weight: 700;
+      margin-right: 1px;
+    }
+
+    /* Keypad */
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--separator);
+      flex: 1;
+    }
+
+    .key {
+      background: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      font-family: 'Inter', sans-serif;
+      font-size: 26px;
+      font-weight: 400;
+      color: var(--text-dark);
+      cursor: pointer;
+      border: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      min-height: 65px;
+      transition: background 0.07s;
+      position: relative;
+      /* Subtle ceramic depth */
+      box-shadow: inset 0 -1px 0 rgba(0,0,0,0.04);
+    }
+    .key:active { background: #EAE2D6; }
+
+    .key-sub {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--text-ter);
+      letter-spacing: 0.06em;
+      margin-top: 2px;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+
+    .key.util {
+      background: var(--warm-gray);
+      font-size: 20px;
+    }
+    .key.util:active { background: #DDD5C8; }
+
+    .key.calc-key {
+      grid-column: 1 / -1;
+      min-height: 56px;
+      background: linear-gradient(135deg, var(--orange) 0%, #FF8C00 100%);
+      color: #fff;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.2),
+        0 -2px 0 rgba(0,0,0,0.08);
+      letter-spacing: 0.04em;
+    }
+    .key.calc-key:active {
+      background: linear-gradient(135deg, #E55C20 0%, #CC7700 100%);
+    }
+
+    /* ═══════════════════════════════════════════════
+       SCREEN 2 — SLOPE / MEMBERS
+    ═══════════════════════════════════════════════ */
+
+    .slope-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: 20px;
+    }
+    .slope-scroll::-webkit-scrollbar { display: none; }
+
+    .sum-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: #FFF3E0;
+      border-bottom: 0.5px solid #FFD898;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .sum-label { font-size: 13px; color: var(--text-sec); }
+
+    .sum-check {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--green);
+      transition: color 0.2s;
+    }
+    .sum-check.warn { color: var(--red); }
+
+    .member-row {
+      padding: 14px 16px;
+      border-bottom: 0.5px solid var(--separator);
+      background: var(--cream);
+    }
+
+    .member-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .member-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .member-name-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    .role-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .role-host     { background: #FFF3E0; color: var(--orange); }
+    .role-normal   { background: var(--warm-gray); color: var(--text-sec); }
+    .role-discount { background: #E8F5E9; color: #2E7D32; }
+
+    .member-amt {
+      font-family: 'Inter', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--orange);
+    }
+    .member-amt .unit { font-size: 12px; font-weight: 600; }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pct-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      min-width: 36px;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 4px;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+      background: var(--warm-gray);
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 4px;
+      border-radius: 2px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+      cursor: pointer;
+      margin-top: -8px;
+    }
+
+    .add-member-btn {
+      margin: 12px 16px 0;
+      width: calc(100% - 32px);
+      padding: 13px;
+      background: none;
+      border: 1.5px dashed var(--orange-lt);
+      border-radius: 12px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--orange);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+    .add-member-btn:active { background: rgba(255,107,53,0.06); }
+
+    .slope-calc-btn {
+      margin: 14px 16px 4px;
+      width: calc(100% - 32px);
+      height: 52px;
+      background: linear-gradient(135deg, var(--orange), #FF8C00);
+      border: none;
+      border-radius: 14px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(255,107,53,0.3);
+      transition: opacity 0.15s;
+    }
+    .slope-calc-btn:active { opacity: 0.85; }
+
+    /* ═══════════════════════════════════════════════
+       SCREEN 3 — RESULT
+    ═══════════════════════════════════════════════ */
+
+    .result-hero {
+      background: linear-gradient(180deg, var(--amber-dark) 0%, var(--amber-deep) 65%, rgba(26,10,0,0.85) 85%, transparent 100%);
+      padding: 24px 20px 36px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .result-subtitle {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,184,0,0.65);
+      letter-spacing: 0.14em;
+      margin-bottom: 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Confetti container */
+    .confetti-wrap {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .confetti-piece {
+      position: absolute;
+      animation: confettiFall linear forwards;
+    }
+
+    @keyframes confettiFall {
+      0%   { transform: translateY(0) rotate(0deg);    opacity: 1; }
+      80%  { opacity: 1; }
+      100% { transform: translateY(200px) rotate(540deg); opacity: 0; }
+    }
+
+    /* Golden coin */
+    .result-coin {
+      width: 148px; height: 148px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 28%, rgba(255,255,200,0.65) 0%, transparent 45%),
+        radial-gradient(circle at 68% 72%, rgba(160,80,0,0.5) 0%, transparent 48%),
+        linear-gradient(140deg, #FFE066 0%, #FFB800 40%, #CC8800 70%, #FFB800 100%);
+      border: 2.5px solid rgba(255,215,50,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+      box-shadow:
+        0 0 0 8px rgba(255,184,0,0.1),
+        0 0 50px rgba(255,184,0,0.55),
+        0 14px 45px rgba(0,0,0,0.65),
+        inset 0 2px 0 rgba(255,255,255,0.45),
+        inset 0 -2px 0 rgba(0,0,0,0.2);
+      animation: coinReveal 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    @keyframes coinReveal {
+      from { transform: scale(0.4) rotate(-15deg); opacity: 0; }
+      to   { transform: scale(1)   rotate(0deg);   opacity: 1; }
+    }
+
+    /* Shimmer sweep */
+    .result-coin::after {
+      content: '';
+      position: absolute;
+      top: -10%; left: -80%;
+      width: 55%; height: 120%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      border-radius: 50%;
+      transform: skewX(-15deg);
+      animation: coinShimmer 3s ease 0.7s infinite;
+    }
+
+    @keyframes coinShimmer {
+      0%   { left: -80%; }
+      45%, 100% { left: 130%; }
+    }
+
+    .coin-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: rgba(70,35,0,0.7);
+      letter-spacing: 0.12em;
+      margin-bottom: 2px;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+
+    .coin-yen {
+      font-family: 'Inter', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: rgba(60,28,0,0.95);
+      line-height: 1;
+    }
+
+    .coin-amount {
+      font-family: 'Inter', sans-serif;
+      font-size: 40px;
+      font-weight: 900;
+      color: rgba(50,22,0,0.95);
+      line-height: 1;
+      letter-spacing: -2px;
+    }
+
+    .result-meta {
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .result-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 13px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,184,0,0.28);
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.82);
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Result scroll content */
+    .result-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 14px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .result-scroll::-webkit-scrollbar { display: none; }
+
+    .r-card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 14px 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+
+    .r-card-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-ter);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .round-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    .round-btn {
+      flex: 1;
+      padding: 9px 4px;
+      border-radius: 10px;
+      border: 1.5px solid var(--separator);
+      background: none;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-sec);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.18s;
+    }
+    .round-btn.active {
+      border-color: var(--orange);
+      background: #FFF3E0;
+      color: var(--orange);
+    }
+
+    .b-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 0;
+      border-bottom: 0.5px solid var(--separator);
+    }
+    .b-row:last-child { border-bottom: none; }
+
+    .b-left { display: flex; align-items: center; gap: 8px; }
+
+    .b-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .b-name { font-size: 14px; color: var(--text-dark); }
+
+    .b-amt {
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    /* Share card */
+    .share-card {
+      background: linear-gradient(135deg, var(--orange) 0%, #FF9800 50%, var(--gold) 100%);
+      border-radius: 14px;
+      padding: 18px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .share-card::before {
+      content: '🍺';
+      position: absolute;
+      font-size: 80px;
+      opacity: 0.1;
+      right: 4px; top: 4px;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .share-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.82);
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    .share-main {
+      font-family: 'Inter', sans-serif;
+      font-size: 50px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1;
+      letter-spacing: -2px;
+    }
+    .share-main .unit { font-size: 22px; font-weight: 700; margin-right: 2px; }
+
+    .share-rows {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .share-row {
+      display: flex;
+      justify-content: space-between;
+    }
+    .share-row-l { font-size: 12px; color: rgba(255,255,255,0.68); }
+    .share-row-r {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Action buttons */
+    .action-row {
+      display: flex;
+      gap: 10px;
+      padding: 0 14px 6px;
+      flex-shrink: 0;
+    }
+
+    .btn-line {
+      flex: 1;
+      height: 52px;
+      background: var(--line-green);
+      border: none;
+      border-radius: 14px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px;
+      transition: opacity 0.15s;
+    }
+    .btn-line:active { opacity: 0.82; }
+
+    .btn-save {
+      flex: 1;
+      height: 52px;
+      background: var(--warm-gray);
+      border: none;
+      border-radius: 14px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-dark);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+    .btn-save:active { background: #DDD5C8; }
+
+    .btn-recalc {
+      margin: 0 14px 10px;
+      width: calc(100% - 28px);
+      height: 46px;
+      background: none;
+      border: 1.5px solid var(--separator);
+      border-radius: 14px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-sec);
+      cursor: pointer;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .btn-recalc:active { background: var(--warm-gray); }
+
+    /* ═══════════════════════════════════════════════
+       SCREEN 4 — HISTORY
+    ═══════════════════════════════════════════════ */
+
+    .history-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 40px;
+    }
+
+    .history-empty-icon { font-size: 52px; opacity: 0.25; }
+
+    .history-empty-text {
+      font-size: 14px;
+      color: var(--text-ter);
+      text-align: center;
+      line-height: 1.7;
+    }
+
+    .history-date-label {
+      padding: 10px 16px 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-ter);
+      letter-spacing: 0.08em;
+      background: var(--warm-gray);
+      border-bottom: 0.5px solid var(--separator);
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      padding: 13px 16px;
+      border-bottom: 0.5px solid var(--separator);
+      background: var(--cream);
+      cursor: pointer;
+      transition: background 0.12s;
+      gap: 12px;
+    }
+    .history-item:active { background: var(--warm-gray); }
+
+    .history-icon {
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--orange), #FF9800);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+      box-shadow: 0 3px 10px rgba(255,107,53,0.22);
+    }
+
+    .history-info { flex: 1; min-width: 0; }
+
+    .history-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-dark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-meta {
+      font-size: 12px;
+      color: var(--text-sec);
+      margin-top: 2px;
+    }
+
+    .history-amt-col { text-align: right; flex-shrink: 0; }
+
+    .history-per {
+      font-family: 'Inter', sans-serif;
+      font-size: 17px;
+      font-weight: 900;
+      color: var(--orange);
+    }
+
+    .history-total {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      color: var(--text-ter);
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-wrapper">
+    <div class="phone-label">ワリカン名人 — 琥珀夜 Redesign</div>
+    <div class="iphone-frame">
+      <div class="dynamic-island"></div>
+
+      <div class="screen-container">
+        <!-- STATUS BAR -->
+        <div class="status-bar" id="statusBar">
+          <span class="status-time">9:41</span>
+          <div class="status-icons">
+            <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor">
+              <rect x="0" y="4" width="3" height="8" rx="1" opacity=".5"/>
+              <rect x="4.5" y="2.5" width="3" height="9.5" rx="1" opacity=".7"/>
+              <rect x="9" y="1" width="3" height="11" rx="1" opacity=".85"/>
+              <rect x="13.5" y="0" width="3" height="12" rx="1"/>
+            </svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+              <path d="M8 2.5C10.8 2.5 13.2 3.8 14.6 5.8L16 4.1C14.1 1.6 11.2 0 8 0 4.8 0 1.9 1.6 0 4.1l1.4 1.7C2.8 3.8 5.2 2.5 8 2.5z" opacity=".6"/>
+              <path d="M8 6c1.9 0 3.5.9 4.5 2.2l1.4-1.6C12.4 4.9 10.3 3.9 8 3.9 5.7 3.9 3.6 4.9 2.1 6.6l1.4 1.6C4.5 6.9 6.1 6 8 6z" opacity=".8"/>
+              <circle cx="8" cy="10.5" r="1.5"/>
+            </svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+              <rect x=".5" y=".5" width="21" height="11" rx="3.5" stroke="currentColor" opacity=".4"/>
+              <rect x="22.5" y="3.5" width="2" height="5" rx="1" fill="currentColor" opacity=".4"/>
+              <rect x="2" y="2" width="17" height="8" rx="2" fill="currentColor"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- APP CONTENT -->
+        <div class="app-content">
+
+          <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+               SCREEN 1 — CALCULATOR
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+          <div class="screen active" id="screen-calc">
+
+            <!-- Dark input zone -->
+            <div class="calc-input-zone">
+              <div class="input-label">お会計</div>
+              <div class="amount-display-row">
+                <span class="amount-currency">¥</span>
+                <span class="amount-number placeholder" id="amountDisplay">0</span>
+                <span class="amount-cursor" id="amountCursor"></span>
+              </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls-section">
+              <!-- People -->
+              <div class="people-row">
+                <span class="ctrl-label">人数</span>
+                <div class="people-right">
+                  <div class="people-pips" id="peoplePips"></div>
+                  <span class="pip-count" id="pipCount">4人</span>
+                  <button class="pip-btn" onclick="setPeople(Math.max(1, appState.people - 1))">−</button>
+                  <button class="pip-btn plus" onclick="setPeople(appState.people + 1)">＋</button>
+                </div>
+              </div>
+
+              <!-- Presets -->
+              <div class="preset-row">
+                <div class="preset-chips" id="presetChips">
+                  <button class="chip" onclick="setPreset(3000, this)">¥3,000</button>
+                  <button class="chip" onclick="setPreset(4000, this)">¥4,000</button>
+                  <button class="chip" onclick="setPreset(5000, this)">¥5,000</button>
+                  <button class="chip" onclick="setPreset(6000, this)">¥6,000</button>
+                  <button class="chip" onclick="setPreset(8000, this)">¥8,000</button>
+                  <button class="chip" onclick="setPreset(10000, this)">¥10,000</button>
+                </div>
+              </div>
+
+              <!-- Mode -->
+              <div class="mode-row">
+                <span class="ctrl-label">割り方</span>
+                <div class="mode-toggle">
+                  <button class="mode-btn active" id="modeEqual" onclick="setMode('equal')">均等割り</button>
+                  <button class="mode-btn" id="modeSlope" onclick="setMode('slope')">傾斜割り</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Preview strip -->
+            <div class="preview-strip">
+              <span class="preview-label">一人あたり（目安）</span>
+              <span class="preview-amount"><span class="unit">¥</span><span id="previewAmt">—</span></span>
+            </div>
+
+            <!-- Keypad -->
+            <div class="keypad">
+              <button class="key" onclick="keyInput('1')">1</button>
+              <button class="key" onclick="keyInput('2')">2</button>
+              <button class="key" onclick="keyInput('3')">3</button>
+              <button class="key" onclick="keyInput('4')">4</button>
+              <button class="key" onclick="keyInput('5')">5</button>
+              <button class="key" onclick="keyInput('6')">6</button>
+              <button class="key" onclick="keyInput('7')">7</button>
+              <button class="key" onclick="keyInput('8')">8</button>
+              <button class="key" onclick="keyInput('9')">9</button>
+              <button class="key util" onclick="keyInput('00')">
+                <span>00</span>
+                <span class="key-sub">追加</span>
+              </button>
+              <button class="key" onclick="keyInput('0')">0</button>
+              <button class="key util" onclick="keyDelete()">
+                <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
+                  <path d="M8 1L1.5 8 8 15H20V1H8Z" stroke="#8A7A6A" stroke-width="1.5" stroke-linejoin="round"/>
+                  <line x1="11.5" y1="5.5" x2="16.5" y2="10.5" stroke="#8A7A6A" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="16.5" y1="5.5" x2="11.5" y2="10.5" stroke="#8A7A6A" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <button class="key calc-key" onclick="doCalc()">
+                計算する — 結果を見る →
+              </button>
+            </div>
+          </div>
+
+          <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+               SCREEN 2 — SLOPE SETTINGS
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+          <div class="screen" id="screen-slope">
+            <div class="nav-bar">
+              <div style="width:32px"></div>
+              <span class="nav-title">傾斜設定</span>
+              <button class="nav-btn" onclick="showScreen('calc')">✕</button>
+            </div>
+            <div class="sum-bar">
+              <span class="sum-label">配分合計</span>
+              <span class="sum-check" id="slopeCheck">100% ✓</span>
+            </div>
+            <div class="slope-scroll">
+              <div id="memberList"></div>
+              <button class="add-member-btn" onclick="addMember()">
+                <span style="font-size:18px;line-height:1">＋</span> メンバーを追加
+              </button>
+              <button class="slope-calc-btn" onclick="doCalc()">計算する</button>
+            </div>
+          </div>
+
+          <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+               SCREEN 3 — RESULT
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+          <div class="screen" id="screen-result">
+            <div class="result-hero">
+              <div class="confetti-wrap" id="confettiWrap"></div>
+              <div class="result-subtitle">一人あたり</div>
+              <div class="result-coin" id="resultCoin">
+                <div class="coin-label">おひとり様</div>
+                <div class="coin-yen">¥</div>
+                <div class="coin-amount" id="coinAmount">—</div>
+              </div>
+              <div class="result-meta">
+                <span class="result-badge" id="resultBadge1">—</span>
+                <span class="result-badge" id="resultBadge2">—</span>
+              </div>
+            </div>
+
+            <div class="result-scroll">
+              <!-- Rounding -->
+              <div class="r-card">
+                <div class="r-card-title">端数処理</div>
+                <div class="round-btns">
+                  <button class="round-btn active" onclick="setRound('ceil', this)">切り上げ</button>
+                  <button class="round-btn" onclick="setRound('floor', this)">切り捨て</button>
+                  <button class="round-btn" onclick="setRound('exact', this)">ぴったり</button>
+                </div>
+              </div>
+
+              <!-- Breakdown -->
+              <div class="r-card">
+                <div class="r-card-title">内訳</div>
+                <div id="breakdownList"></div>
+              </div>
+
+              <!-- Share preview -->
+              <div class="share-card">
+                <div class="share-title">割り勘メモ</div>
+                <div class="share-main"><span class="unit">¥</span><span id="shareAmt">—</span></div>
+                <div class="share-rows">
+                  <div class="share-row">
+                    <span class="share-row-l">合計金額</span>
+                    <span class="share-row-r" id="shareTotalAmt">—</span>
+                  </div>
+                  <div class="share-row">
+                    <span class="share-row-l">参加人数</span>
+                    <span class="share-row-r" id="shareCount">—</span>
+                  </div>
+                  <div class="share-row">
+                    <span class="share-row-l">割り方</span>
+                    <span class="share-row-r" id="shareMode">均等割り</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="action-row">
+              <button class="btn-line" onclick="shareLine()">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M9 1C4.6 1 1 4.2 1 8.2c0 2.8 1.7 5.2 4.3 6.6l-.8 2.8 3.1-1.3c.4.1.9.1 1.4.1 4.4 0 8-3.2 8-7.2C17 4.2 13.4 1 9 1z" fill="white"/>
+                </svg>
+                LINEで共有
+              </button>
+              <button class="btn-save" onclick="saveImage()">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M9 12.5L3.5 7H7V2h4v5h3.5L9 12.5Z" fill="#1C1009"/>
+                  <rect x="2" y="14" width="14" height="2" rx="1" fill="#1C1009"/>
+                </svg>
+                画像保存
+              </button>
+            </div>
+            <button class="btn-recalc" onclick="showScreen('calc')">← 再計算</button>
+          </div>
+
+          <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+               SCREEN 4 — HISTORY
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+          <div class="screen" id="screen-history">
+            <div class="nav-bar">
+              <div style="width:32px"></div>
+              <span class="nav-title">履歴</span>
+              <button class="nav-btn" onclick="clearHistory()" style="font-size:11px">全削除</button>
+            </div>
+            <div id="historyContent"></div>
+          </div>
+
+        </div><!-- /app-content -->
+
+        <!-- TAB BAR -->
+        <div class="tab-bar">
+          <button class="tab-item active" id="tab-calc" onclick="showScreen('calc')">
+            <div class="tab-icon-wrap">🧮</div>
+            <span class="tab-label">計算</span>
+            <div class="tab-dot"></div>
+          </button>
+          <button class="tab-item" id="tab-slope" onclick="showScreen('slope')">
+            <div class="tab-icon-wrap">⚖️</div>
+            <span class="tab-label">傾斜</span>
+            <div class="tab-dot"></div>
+          </button>
+          <button class="tab-item" id="tab-result" onclick="showScreen('result')">
+            <div class="tab-icon-wrap">🪙</div>
+            <span class="tab-label">結果</span>
+            <div class="tab-dot"></div>
+          </button>
+          <button class="tab-item" id="tab-history" onclick="showScreen('history')">
+            <div class="tab-icon-wrap">📋</div>
+            <span class="tab-label">履歴</span>
+            <div class="tab-dot"></div>
+          </button>
+        </div>
+
+      </div><!-- /screen-container -->
+    </div><!-- /iphone-frame -->
+  </div><!-- /phone-wrapper -->
+
+  <script>
+    // ════════════════════════════════════════════
+    //  STATE
+    // ════════════════════════════════════════════
+    var appState = {
+      amount:    '',
+      people:    4,
+      mode:      'equal',
+      roundMode: 'ceil',
+      members: [
+        { id:1, name:'幹事',  role:'host',     pct:30, color:'#FF6B35' },
+        { id:2, name:'Aさん', role:'normal',   pct:25, color:'#FFB800' },
+        { id:3, name:'Bさん', role:'normal',   pct:25, color:'#30D158' },
+        { id:4, name:'Cさん', role:'discount', pct:20, color:'#0A84FF' },
+      ],
+      history:  [],
+      nextId:   5,
+    };
+
+    var COLORS = ['#FF6B35','#FFB800','#30D158','#0A84FF','#AF52DE','#FF2D55','#5AC8FA','#FF9500','#34C759','#FF6B6B'];
+
+    // ════════════════════════════════════════════
+    //  NAVIGATION
+    // ════════════════════════════════════════════
+    function showScreen(name) {
+      document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+      document.querySelectorAll('.tab-item').forEach(function(t) { t.classList.remove('active'); });
+
+      var screen = document.getElementById('screen-' + name);
+      var tab    = document.getElementById('tab-' + name);
+      if (screen) screen.classList.add('active');
+      if (tab) tab.classList.add('active');
+
+      var sb = document.getElementById('statusBar');
+      if (name === 'calc' || name === 'result') {
+        sb.classList.remove('light');
+      } else {
+        sb.classList.add('light');
+      }
+
+      if (name === 'slope')   renderMembers();
+      if (name === 'result')  renderResult(true);
+      if (name === 'history') renderHistory();
+    }
+
+    // ════════════════════════════════════════════
+    //  KEYPAD
+    // ════════════════════════════════════════════
+    function keyInput(val) {
+      if (val === '00') {
+        if (!appState.amount) return;
+        if (appState.amount.length >= 7) return;
+        appState.amount += '00';
+      } else {
+        if (appState.amount.length >= 8) return;
+        if (appState.amount === '0') appState.amount = '';
+        appState.amount += val;
+      }
+      updateDisplay();
+      clearPresetActive();
+    }
+
+    function keyDelete() {
+      appState.amount = appState.amount.slice(0, -1);
+      updateDisplay();
+      clearPresetActive();
+    }
+
+    function clearPresetActive() {
+      document.querySelectorAll('.chip').forEach(function(c) { c.classList.remove('active'); });
+    }
+
+    function updateDisplay() {
+      var el  = document.getElementById('amountDisplay');
+      var amt = parseInt(appState.amount) || 0;
+      if (!appState.amount) {
+        el.textContent = '0';
+        el.classList.add('placeholder');
+      } else {
+        el.textContent = fmt(amt);
+        el.classList.remove('placeholder');
+      }
+      updatePreview();
+    }
+
+    function fmt(n) {
+      return n.toLocaleString('ja-JP');
+    }
+
+    function updatePreview() {
+      var el    = document.getElementById('previewAmt');
+      var total = parseInt(appState.amount) || 0;
+      if (!total || appState.people < 1) { el.textContent = '—'; return; }
+      el.textContent = fmt(Math.ceil(total / appState.people));
+    }
+
+    // ════════════════════════════════════════════
+    //  PRESETS
+    // ════════════════════════════════════════════
+    function setPreset(val, el) {
+      appState.amount = String(val);
+      document.querySelectorAll('.chip').forEach(function(c) { c.classList.remove('active'); });
+      if (el) el.classList.add('active');
+      updateDisplay();
+    }
+
+    // ════════════════════════════════════════════
+    //  PEOPLE PIPS
+    // ════════════════════════════════════════════
+    function renderPips() {
+      var container = document.getElementById('peoplePips');
+      var n = appState.people;
+      var show = Math.min(n, 6);
+      var html = '';
+      for (var i = 1; i <= show; i++) {
+        html += '<div class="pip filled">' + i + '</div>';
+      }
+      if (n < 6) {
+        // ghost of next
+        html += '<div class="pip" style="opacity:0.4">' + (n + 1) + '</div>';
+      }
+      if (n > 6) {
+        html += '<div class="pip" style="background:var(--warm-gray);color:var(--text-sec);border-color:var(--separator)">+' + (n - 6) + '</div>';
+      }
+      container.innerHTML = html;
+      document.getElementById('pipCount').textContent = n + '人';
+    }
+
+    function setPeople(n) {
+      appState.people = Math.max(1, Math.min(30, n));
+      renderPips();
+      updatePreview();
+    }
+
+    // ════════════════════════════════════════════
+    //  MODE
+    // ════════════════════════════════════════════
+    function setMode(mode) {
+      appState.mode = mode;
+      document.getElementById('modeEqual').classList.toggle('active', mode === 'equal');
+      document.getElementById('modeSlope').classList.toggle('active', mode === 'slope');
+    }
+
+    // ════════════════════════════════════════════
+    //  ROUNDING
+    // ════════════════════════════════════════════
+    function setRound(mode, el) {
+      appState.roundMode = mode;
+      document.querySelectorAll('.round-btn').forEach(function(b) { b.classList.remove('active'); });
+      if (el) el.classList.add('active');
+      renderResult(false);
+    }
+
+    function applyRound(n) {
+      if (appState.roundMode === 'ceil')  return Math.ceil(n / 10) * 10;
+      if (appState.roundMode === 'floor') return Math.floor(n / 10) * 10;
+      return Math.round(n);
+    }
+
+    // ════════════════════════════════════════════
+    //  CALCULATE & NAVIGATE TO RESULT
+    // ════════════════════════════════════════════
+    function doCalc() {
+      var total = parseInt(appState.amount) || 0;
+      if (!total) {
+        // flash the input zone
+        var zone = document.querySelector('.calc-input-zone');
+        zone.style.background = 'linear-gradient(160deg, #3A0A00 0%, #4D1800 100%)';
+        setTimeout(function() {
+          zone.style.background = 'linear-gradient(160deg, var(--amber-dark) 0%, var(--amber-deep) 100%)';
+        }, 300);
+        return;
+      }
+      var perPerson = applyRound(total / appState.people);
+      addToHistory(total, perPerson, appState.people);
+      showScreen('result');
+    }
+
+    // ════════════════════════════════════════════
+    //  RENDER RESULT
+    // ════════════════════════════════════════════
+    function renderResult(fireConfetti) {
+      var total     = parseInt(appState.amount) || 0;
+      var people    = appState.people;
+      var perPerson = applyRound(total / people);
+
+      document.getElementById('coinAmount').textContent    = fmt(perPerson);
+      document.getElementById('shareAmt').textContent      = fmt(perPerson);
+      document.getElementById('shareTotalAmt').textContent = '¥' + fmt(total);
+      document.getElementById('shareCount').textContent    = people + '名';
+      document.getElementById('shareMode').textContent     = appState.mode === 'equal' ? '均等割り' : '傾斜割り';
+      document.getElementById('resultBadge1').textContent  = '合計 ¥' + fmt(total);
+      document.getElementById('resultBadge2').textContent  = people + '人';
+
+      // Breakdown rows
+      var bdHtml = '';
+      if (appState.mode === 'slope' && appState.members.length > 0) {
+        appState.members.forEach(function(m) {
+          var amt = applyRound(total * m.pct / 100);
+          bdHtml += '<div class="b-row">'
+            + '<div class="b-left"><div class="b-dot" style="background:' + m.color + '"></div><span class="b-name">' + m.name + '</span></div>'
+            + '<span class="b-amt">¥' + fmt(amt) + '</span>'
+            + '</div>';
+        });
+      } else {
+        var names = ['幹事', 'Aさん', 'Bさん', 'Cさん'];
+        for (var i = 0; i < people; i++) {
+          var nm = i < names.length ? names[i] : (i + 1) + '人目';
+          bdHtml += '<div class="b-row">'
+            + '<div class="b-left"><div class="b-dot" style="background:' + COLORS[i % COLORS.length] + '"></div><span class="b-name">' + nm + '</span></div>'
+            + '<span class="b-amt">¥' + fmt(perPerson) + '</span>'
+            + '</div>';
+        }
+      }
+      document.getElementById('breakdownList').innerHTML = bdHtml;
+
+      // Re-trigger coin animation
+      var coin = document.getElementById('resultCoin');
+      if (fireConfetti) {
+        coin.style.animation = 'none';
+        coin.offsetHeight; // reflow
+        coin.style.animation = '';
+        spawnConfetti();
+      }
+    }
+
+    // ════════════════════════════════════════════
+    //  CONFETTI
+    // ════════════════════════════════════════════
+    function spawnConfetti() {
+      var wrap   = document.getElementById('confettiWrap');
+      wrap.innerHTML = '';
+      var palette = ['#FFB800','#FF6B35','#FF453A','#30D158','#0A84FF','#fff','#FFD060'];
+      for (var i = 0; i < 24; i++) {
+        var el  = document.createElement('div');
+        var size = 5 + Math.random() * 8;
+        el.className = 'confetti-piece';
+        el.style.cssText = [
+          'left:'               + (Math.random() * 100) + '%',
+          'top:'                + (-10 - Math.random() * 20) + 'px',
+          'width:'              + size + 'px',
+          'height:'             + size + 'px',
+          'background:'         + palette[Math.floor(Math.random() * palette.length)],
+          'border-radius:'      + (Math.random() > 0.5 ? '50%' : '2px'),
+          'animation-duration:' + (0.9 + Math.random() * 1.4) + 's',
+          'animation-delay:'    + (Math.random() * 0.5) + 's',
+        ].join(';');
+        wrap.appendChild(el);
+      }
+    }
+
+    // ════════════════════════════════════════════
+    //  MEMBERS (SLOPE)
+    // ════════════════════════════════════════════
+    function renderMembers() {
+      var total = parseInt(appState.amount) || 0;
+      var sum   = appState.members.reduce(function(a, m) { return a + m.pct; }, 0);
+
+      var el = document.getElementById('slopeCheck');
+      el.textContent = sum + '% ' + (sum === 100 ? '✓' : '⚠');
+      el.classList.toggle('warn', sum !== 100);
+
+      var html = appState.members.map(function(m) {
+        var amt       = applyRound(total * m.pct / 100);
+        var roleLabel = m.role === 'host' ? '幹事' : m.role === 'discount' ? '割引' : '通常';
+        var roleCls   = m.role === 'host' ? 'role-host' : m.role === 'discount' ? 'role-discount' : 'role-normal';
+        var trackBg   = 'background:linear-gradient(to right,' + m.color + ' 0%,' + m.color + ' ' + m.pct + '%,var(--warm-gray) ' + m.pct + '%)';
+        return '<div class="member-row">'
+          + '<div class="member-top">'
+            + '<div class="member-info">'
+              + '<div class="avatar" style="background:' + m.color + '">' + m.name[0] + '</div>'
+              + '<div>'
+                + '<div class="member-name-text">' + m.name + '</div>'
+                + '<div class="role-pill ' + roleCls + '">' + roleLabel + '</div>'
+              + '</div>'
+            + '</div>'
+            + '<div class="member-amt"><span class="unit">¥</span>' + fmt(amt) + '</div>'
+          + '</div>'
+          + '<div class="slider-row">'
+            + '<span class="pct-label" style="color:' + m.color + '">' + m.pct + '%</span>'
+            + '<input type="range" min="0" max="100" value="' + m.pct + '" style="' + trackBg + '" oninput="updateMemberPct(' + m.id + ', this.value, this)">'
+          + '</div>'
+          + '</div>';
+      }).join('');
+      document.getElementById('memberList').innerHTML = html;
+    }
+
+    function updateMemberPct(id, val, inputEl) {
+      var m = appState.members.find(function(x) { return x.id === id; });
+      if (m) {
+        m.pct = parseInt(val);
+        var bg = 'linear-gradient(to right,' + m.color + ' 0%,' + m.color + ' ' + val + '%,var(--warm-gray) ' + val + '%)';
+        inputEl.style.background = bg;
+      }
+      renderMembers();
+    }
+
+    function addMember() {
+      var colors = ['#AF52DE','#FF2D55','#5AC8FA','#FF9500','#34C759','#FF6B6B'];
+      appState.members.push({
+        id:    appState.nextId++,
+        name:  appState.nextId + 'さん',
+        role:  'normal',
+        pct:   0,
+        color: colors[appState.members.length % colors.length],
+      });
+      appState.people = appState.members.length;
+      renderPips();
+      renderMembers();
+    }
+
+    // ════════════════════════════════════════════
+    //  HISTORY
+    // ════════════════════════════════════════════
+    function addToHistory(total, perPerson, people) {
+      var key = total + '-' + perPerson + '-' + people;
+      if (appState.history.length > 0 && appState.history[0].key === key) return;
+      var now = new Date();
+      appState.history.unshift({
+        key:       key,
+        total:     total,
+        perPerson: perPerson,
+        people:    people,
+        date:      now.toLocaleDateString('ja-JP', { month:'long', day:'numeric', weekday:'short' }),
+        time:      now.toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' }),
+        mode:      appState.mode,
+      });
+      if (appState.history.length > 20) appState.history.pop();
+    }
+
+    function renderHistory() {
+      var el = document.getElementById('historyContent');
+      if (appState.history.length === 0) {
+        el.innerHTML = '<div class="history-empty">'
+          + '<div class="history-empty-icon">📋</div>'
+          + '<div class="history-empty-text">まだ履歴がありません<br>計算すると自動で保存されます</div>'
+          + '</div>';
+        return;
+      }
+      var html = '';
+      var lastDate = '';
+      appState.history.forEach(function(h, i) {
+        if (h.date !== lastDate) {
+          html += '<div class="history-date-label">' + h.date + '</div>';
+          lastDate = h.date;
+        }
+        html += '<div class="history-item" onclick="restoreHistory(' + i + ')">'
+          + '<div class="history-icon">🍺</div>'
+          + '<div class="history-info">'
+            + '<div class="history-title">' + h.people + '人 · ' + (h.mode === 'equal' ? '均等' : '傾斜') + '</div>'
+            + '<div class="history-meta">' + h.time + ' · 合計 ¥' + fmt(h.total) + '</div>'
+          + '</div>'
+          + '<div class="history-amt-col">'
+            + '<div class="history-per">¥' + fmt(h.perPerson) + '</div>'
+            + '<div class="history-total">一人あたり</div>'
+          + '</div>'
+          + '</div>';
+      });
+      el.innerHTML = html;
+    }
+
+    function restoreHistory(i) {
+      var h = appState.history[i];
+      appState.amount = String(h.total);
+      appState.people = h.people;
+      appState.mode   = h.mode;
+      updateDisplay();
+      renderPips();
+      setMode(h.mode);
+      showScreen('calc');
+    }
+
+    function clearHistory() {
+      appState.history = [];
+      renderHistory();
+    }
+
+    // ════════════════════════════════════════════
+    //  SHARE
+    // ════════════════════════════════════════════
+    function shareLine() {
+      var total  = parseInt(appState.amount) || 0;
+      var per    = applyRound(total / appState.people);
+      var msg    = '【割り勘】一人あたり ¥' + fmt(per) + '\n合計 ¥' + fmt(total) + ' / ' + appState.people + '人';
+      window.open('https://line.me/R/msg/text/?' + encodeURIComponent(msg));
+    }
+
+    function saveImage() {
+      var toast = document.createElement('div');
+      toast.textContent = '画像を保存しました';
+      toast.style.cssText = 'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);'
+        + 'background:rgba(0,0,0,0.8);color:#fff;padding:10px 20px;border-radius:22px;'
+        + 'font-size:14px;font-family:Noto Sans JP,sans-serif;pointer-events:none;z-index:999;'
+        + 'animation:none;opacity:1;transition:opacity 0.4s';
+      document.body.appendChild(toast);
+      setTimeout(function() { toast.style.opacity = '0'; }, 1500);
+      setTimeout(function() { document.body.removeChild(toast); }, 2000);
+    }
+
+    // ════════════════════════════════════════════
+    //  INIT
+    // ════════════════════════════════════════════
+    renderPips();
+    updateDisplay();
+  </script>
+</body>
+</html>

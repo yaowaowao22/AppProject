@@ -1,0 +1,1843 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Excel to PDF — 一括変換ツール</title>
+  <meta name="description" content="ExcelファイルやCSVを一括でPDFに変換。ドラッグ&ドロップで即時変換、データはサーバーに保存されません。">
+
+  <!-- Anti-FOUC theme detection (inline, before render) -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var dark = saved ? saved === 'dark' : prefersDark;
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    })();
+  </script>
+
+  <!-- Fonts: Noto Sans JP (utility-grade Japanese) + JetBrains Mono (filenames) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* ════════════════════════════════════════════════════
+       DESIGN TOKENS — Still Velocity (静速)
+       DDP: Structure 2 · Silence 2 · Precision 1
+            Universal 1 · Permanence 2
+       KOKKAKU + MA dominant
+    ════════════════════════════════════════════════════ */
+
+    :root {
+      /* Background */
+      --bg:              #FAFAFA;
+      --surface:         #FFFFFF;
+      --surface-hover:   #F5F5F5;
+      --surface-raised:  #FFFFFF;
+
+      /* Text */
+      --text-hi:         #171717;
+      --text-mid:        #525252;
+      --text-lo:         #A3A3A3;
+      --text-faint:      #D4D4D4;
+
+      /* Border */
+      --border:          #E5E5E5;
+      --border-strong:   #D4D4D4;
+
+      /* Accent — single voice. Action / Progress / Done only. */
+      --accent:          #2563EB;
+      --accent-hover:    #1D4ED8;
+      --accent-faint:    #EFF6FF;
+      --accent-subtle:   #DBEAFE;
+
+      /* Semantic */
+      --ok:              #16A34A;
+      --ok-faint:        #F0FDF4;
+      --ok-border:       #BBF7D0;
+      --err:             #DC2626;
+      --err-faint:       #FEF2F2;
+      --warn:            #D97706;
+
+      /* Typography */
+      --font:            "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono:            "JetBrains Mono", "SF Mono", Consolas, monospace;
+
+      /* Spacing (4px base) */
+      --s1:  4px;
+      --s2:  8px;
+      --s3:  12px;
+      --s4:  16px;
+      --s5:  24px;
+      --s6:  32px;
+      --s7:  48px;
+      --s8:  64px;
+      --s9:  96px;
+
+      /* Radius */
+      --r1:  4px;
+      --r2:  8px;
+      --r3:  12px;
+      --r4:  16px;
+
+      /* Elevation */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+
+      /* Timing */
+      --t-fast:  100ms ease;
+      --t-base:  200ms ease;
+      --t-slow:  350ms ease;
+    }
+
+    [data-theme="dark"] {
+      --bg:              #0A0A0A;
+      --surface:         #141414;
+      --surface-hover:   #1F1F1F;
+      --surface-raised:  #1A1A1A;
+
+      --text-hi:         rgba(255,255,255,0.87);
+      --text-mid:        rgba(255,255,255,0.55);
+      --text-lo:         rgba(255,255,255,0.32);
+      --text-faint:      rgba(255,255,255,0.12);
+
+      --border:          rgba(255,255,255,0.08);
+      --border-strong:   rgba(255,255,255,0.14);
+
+      --accent:          #3B82F6;
+      --accent-hover:    #60A5FA;
+      --accent-faint:    rgba(59,130,246,0.10);
+      --accent-subtle:   rgba(59,130,246,0.06);
+
+      --ok:              #22C55E;
+      --ok-faint:        rgba(34,197,94,0.10);
+      --ok-border:       rgba(34,197,94,0.20);
+      --err:             #EF4444;
+      --err-faint:       rgba(239,68,68,0.10);
+      --warn:            #F59E0B;
+
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 8px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    /* ════════════════════════════════════════════════════
+       RESET
+    ════════════════════════════════════════════════════ */
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 400;
+      line-height: 1.7;
+      color: var(--text-hi);
+      background: var(--bg);
+      min-height: 100vh;
+      transition: background var(--t-slow), color var(--t-slow);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ════════════════════════════════════════════════════
+       LAYOUT — Single column, max 720px centred
+    ════════════════════════════════════════════════════ */
+
+    .wrap {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 var(--s5);
+    }
+
+    /* ════════════════════════════════════════════════════
+       HEADER — 56px, sticky
+    ════════════════════════════════════════════════════ */
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      height: 56px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: background var(--t-slow), border-color var(--t-slow);
+    }
+
+    .header .wrap {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: var(--s2);
+      text-decoration: none;
+      color: var(--text-hi);
+    }
+
+    .logo-mark {
+      width: 30px;
+      height: 30px;
+      background: var(--accent);
+      border-radius: var(--r1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      flex-shrink: 0;
+      transition: background var(--t-base);
+    }
+
+    .logo:hover .logo-mark {
+      background: var(--accent-hover);
+    }
+
+    .logo-name {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      line-height: 1;
+    }
+
+    .logo-sep {
+      color: var(--text-faint);
+      margin: 0 1px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: var(--s2);
+    }
+
+    .privacy-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ok);
+      background: var(--ok-faint);
+      border: 1px solid var(--ok-border);
+      padding: 3px 8px;
+      border-radius: 100px;
+      white-space: nowrap;
+      transition: all var(--t-slow);
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border);
+      border-radius: var(--r2);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-mid);
+      transition: all var(--t-base);
+    }
+
+    .icon-btn:hover {
+      background: var(--surface-hover);
+      color: var(--text-hi);
+      border-color: var(--border-strong);
+    }
+
+    .icon-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* ════════════════════════════════════════════════════
+       MAIN
+    ════════════════════════════════════════════════════ */
+
+    .main {
+      padding: var(--s9) 0 var(--s8);
+    }
+
+    .main .wrap {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s7);
+    }
+
+    /* ── Hero ──────────────────────────────────────────── */
+
+    .hero {
+      text-align: center;
+      opacity: 0;
+      animation: rise 500ms ease forwards;
+      animation-delay: 0ms;
+    }
+
+    .hero-title {
+      font-size: 26px;
+      font-weight: 600;
+      line-height: 1.3;
+      letter-spacing: -0.02em;
+      color: var(--text-hi);
+      margin-bottom: var(--s2);
+    }
+
+    .hero-sub {
+      font-size: 14px;
+      color: var(--text-mid);
+      line-height: 1.6;
+    }
+
+    /* ── Drop Zone ─────────────────────────────────────── */
+
+    .drop-zone {
+      opacity: 0;
+      animation: rise 500ms ease forwards;
+      animation-delay: 80ms;
+      border: 1.5px dashed var(--border-strong);
+      border-radius: var(--r4);
+      background: var(--surface);
+      padding: var(--s8) var(--s6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--s4);
+      min-height: 280px;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color var(--t-base), background var(--t-base), box-shadow var(--t-base);
+      position: relative;
+    }
+
+    .drop-zone:hover {
+      border-color: var(--accent);
+      background: var(--accent-faint);
+    }
+
+    .drop-zone.drag-active {
+      border-color: var(--accent);
+      background: var(--accent-subtle);
+      box-shadow: 0 0 0 4px var(--accent-faint);
+    }
+
+    .drop-zone:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .drop-zone.drag-active .drop-glyph {
+      color: var(--accent);
+      transform: translateY(-6px) scale(1.08);
+    }
+
+    .drop-glyph {
+      color: var(--text-lo);
+      transition: all var(--t-base);
+    }
+
+    .drop-body {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s1);
+    }
+
+    .drop-primary {
+      font-size: 15px;
+      color: var(--text-hi);
+    }
+
+    .drop-primary strong {
+      color: var(--accent);
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-color: transparent;
+      text-underline-offset: 3px;
+      transition: text-decoration-color var(--t-fast);
+    }
+
+    .drop-primary strong:hover {
+      text-decoration-color: var(--accent);
+    }
+
+    .drop-hint {
+      font-size: 12px;
+      color: var(--text-lo);
+    }
+
+    .drop-actions {
+      display: flex;
+      gap: var(--s2);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    input[type="file"] {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--s1);
+      padding: var(--s2) var(--s4);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--r2);
+      background: var(--surface);
+      color: var(--text-hi);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--t-base);
+      min-height: 36px;
+      white-space: nowrap;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-ghost:hover {
+      background: var(--surface-hover);
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-ghost:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* ── File List ─────────────────────────────────────── */
+
+    .file-list-section {
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 350ms ease, transform 350ms ease;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--s3);
+    }
+
+    .section-head-left {
+      display: flex;
+      align-items: center;
+      gap: var(--s2);
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-lo);
+    }
+
+    .count-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      background: var(--accent-faint);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 100px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .clear-btn {
+      font-size: 12px;
+      color: var(--text-lo);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font);
+      padding: var(--s1) var(--s2);
+      border-radius: var(--r1);
+      transition: all var(--t-fast);
+    }
+
+    .clear-btn:hover {
+      color: var(--err);
+      background: var(--err-faint);
+    }
+
+    .clear-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .table-wrap {
+      border: 1px solid var(--border);
+      border-radius: var(--r3);
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      padding: var(--s2) var(--s4);
+      text-align: left;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-lo);
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      white-space: nowrap;
+    }
+
+    thead th:last-child {
+      width: 44px;
+      text-align: center;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background var(--t-fast);
+    }
+
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: var(--surface-hover);
+    }
+
+    td {
+      padding: var(--s3) var(--s4);
+      vertical-align: middle;
+      font-size: 13px;
+    }
+
+    /* File name cell */
+    .td-name {
+      display: flex;
+      align-items: center;
+      gap: var(--s2);
+      min-width: 0;
+    }
+
+    .ext-badge {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 500;
+      padding: 2px 5px;
+      border-radius: 3px;
+      flex-shrink: 0;
+      letter-spacing: 0.04em;
+    }
+
+    .ext-xlsx, .ext-xls {
+      background: #DCFCE7;
+      color: #166534;
+    }
+    .ext-csv {
+      background: #DBEAFE;
+      color: #1E40AF;
+    }
+
+    [data-theme="dark"] .ext-xlsx,
+    [data-theme="dark"] .ext-xls {
+      background: rgba(34,197,94,0.15);
+      color: #4ADE80;
+    }
+    [data-theme="dark"] .ext-csv {
+      background: rgba(59,130,246,0.15);
+      color: #93C5FD;
+    }
+
+    .file-name {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-hi);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 260px;
+    }
+
+    .file-size-cell {
+      font-variant-numeric: tabular-nums;
+      font-size: 12px;
+      color: var(--text-mid);
+      white-space: nowrap;
+    }
+
+    /* Status */
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .s-wait   { color: var(--text-lo); }
+    .s-wait .status-dot { background: var(--text-lo); }
+
+    .s-run    { color: var(--accent); }
+    .s-run .status-dot {
+      background: var(--accent);
+      animation: blink 1s ease infinite;
+    }
+
+    .s-done   { color: var(--ok); }
+    .s-done .status-dot { background: var(--ok); }
+
+    .s-err    { color: var(--err); }
+    .s-err .status-dot { background: var(--err); }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* Delete button */
+    .del-btn {
+      width: 28px;
+      height: 28px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      color: var(--text-lo);
+      border-radius: var(--r1);
+      cursor: pointer;
+      transition: all var(--t-fast);
+    }
+
+    .del-btn:hover {
+      color: var(--err);
+      background: var(--err-faint);
+    }
+
+    .del-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .del-btn:disabled {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    /* ── Convert Section ───────────────────────────────── */
+
+    .convert-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s4);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 350ms ease, transform 350ms ease;
+    }
+
+    .btn-primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--s2);
+      width: 100%;
+      padding: var(--s4) var(--s6);
+      min-height: 52px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--r2);
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--t-base), transform var(--t-base), box-shadow var(--t-base);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0);
+      transition: background var(--t-fast);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(37,99,235,0.28);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .btn-primary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    /* Progress */
+    .progress-wrap {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 300ms ease, opacity 300ms ease;
+    }
+
+    .progress-wrap.open {
+      max-height: 60px;
+      opacity: 1;
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-mid);
+      margin-bottom: var(--s2);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress-track {
+      height: 3px;
+      background: var(--accent-faint);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 120ms linear;
+    }
+
+    /* ── Download Section ──────────────────────────────── */
+
+    .download-section {
+      border: 1px solid var(--ok-border);
+      border-radius: var(--r4);
+      background: var(--ok-faint);
+      padding: var(--s5);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 350ms ease, transform 350ms ease;
+    }
+
+    .dl-head {
+      display: flex;
+      align-items: center;
+      gap: var(--s3);
+      margin-bottom: var(--s5);
+    }
+
+    .dl-head-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--r1);
+      background: var(--ok);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .dl-head-text strong {
+      display: block;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-hi);
+      line-height: 1.3;
+    }
+
+    .dl-head-text span {
+      font-size: 12px;
+      color: var(--text-mid);
+    }
+
+    .dl-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: var(--s2);
+      margin-bottom: var(--s4);
+    }
+
+    .dl-item {
+      display: flex;
+      align-items: center;
+      gap: var(--s3);
+      padding: var(--s3) var(--s4);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r2);
+      min-height: 44px;
+    }
+
+    .dl-pdf-badge {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 600;
+      padding: 2px 5px;
+      border-radius: 3px;
+      background: rgba(220,38,38,0.10);
+      color: var(--err);
+      flex-shrink: 0;
+      letter-spacing: 0.04em;
+    }
+
+    [data-theme="dark"] .dl-pdf-badge {
+      background: rgba(239,68,68,0.15);
+      color: #FCA5A5;
+    }
+
+    .dl-name {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-hi);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .btn-dl {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: var(--s1) var(--s3);
+      min-height: 28px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--r1);
+      background: var(--surface);
+      color: var(--text-hi);
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--t-fast);
+      white-space: nowrap;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .btn-dl:hover {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .btn-dl:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .btn-zip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--s2);
+      width: 100%;
+      min-height: 44px;
+      padding: var(--s3) var(--s5);
+      background: var(--ok);
+      color: #fff;
+      border: none;
+      border-radius: var(--r2);
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--t-base);
+    }
+
+    .btn-zip:hover:not(:disabled) {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(22,163,74,0.25);
+    }
+
+    .btn-zip:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    .btn-zip:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .btn-zip:focus-visible {
+      outline: 2px solid var(--ok);
+      outline-offset: 3px;
+    }
+
+    .btn-reset {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--s2);
+      width: 100%;
+      min-height: 36px;
+      margin-top: var(--s3);
+      padding: var(--s2) var(--s4);
+      background: transparent;
+      color: var(--text-mid);
+      border: 1px solid var(--border);
+      border-radius: var(--r2);
+      font-family: var(--font);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all var(--t-base);
+    }
+
+    .btn-reset:hover {
+      color: var(--text-hi);
+      border-color: var(--border-strong);
+      background: var(--surface-hover);
+    }
+
+    .btn-reset:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* ── Utility ───────────────────────────────────────── */
+
+    .hidden { display: none !important; }
+
+    .section-visible {
+      opacity: 1 !important;
+      transform: translateY(0) !important;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .spin {
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ════════════════════════════════════════════════════
+       FOOTER
+    ════════════════════════════════════════════════════ */
+
+    .footer {
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      padding: var(--s8) 0 var(--s7);
+      transition: background var(--t-slow), border-color var(--t-slow);
+    }
+
+    .footer .wrap {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s7);
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s5);
+    }
+
+    .faq-item h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-hi);
+      margin-bottom: var(--s2);
+    }
+
+    .faq-item p {
+      font-size: 13px;
+      color: var(--text-mid);
+      line-height: 1.65;
+    }
+
+    .footer-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: var(--s5);
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-copy {
+      font-size: 11px;
+      color: var(--text-lo);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: var(--s4);
+    }
+
+    .footer-links a {
+      font-size: 12px;
+      color: var(--text-lo);
+      text-decoration: none;
+      transition: color var(--t-fast);
+    }
+
+    .footer-links a:hover {
+      color: var(--text-mid);
+    }
+
+    .footer-links a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    /* ════════════════════════════════════════════════════
+       RESPONSIVE
+    ════════════════════════════════════════════════════ */
+
+    @media (max-width: 767px) {
+      .main {
+        padding: var(--s7) 0 var(--s6);
+      }
+
+      .hero-title {
+        font-size: 20px;
+      }
+
+      .drop-zone {
+        min-height: 200px;
+        padding: var(--s6) var(--s4);
+      }
+
+      .drop-actions {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .btn-ghost {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .faq-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        gap: var(--s3);
+        text-align: center;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      .privacy-tag {
+        display: none;
+      }
+    }
+
+    /* ════════════════════════════════════════════════════
+       REDUCED MOTION
+    ════════════════════════════════════════════════════ */
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════
+       HEADER
+  ═══════════════════════════════════════════════════ -->
+  <header class="header" role="banner">
+    <div class="wrap">
+      <a href="/" class="logo" aria-label="Excel to PDF Converter — ホームへ">
+        <div class="logo-mark" aria-hidden="true">
+          <!-- Document + arrow icon -->
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="8" y1="13" x2="16" y2="13"/>
+            <line x1="8" y1="17" x2="13" y2="17"/>
+          </svg>
+        </div>
+        <span class="logo-name">
+          Excel <span class="logo-sep">→</span> PDF
+        </span>
+      </a>
+
+      <div class="header-right">
+        <span class="privacy-tag" aria-label="プライバシー保護：ファイルはサーバーに保存されません">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.5" aria-hidden="true">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          データ非保存
+        </span>
+
+        <button class="icon-btn" id="theme-btn" aria-label="テーマ切り替え" title="ライト/ダーク切り替え">
+          <svg id="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <svg id="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" class="hidden" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════
+       MAIN
+  ═══════════════════════════════════════════════════ -->
+  <main class="main" role="main">
+    <div class="wrap">
+
+      <!-- Hero -->
+      <div class="hero">
+        <h1 class="hero-title">Excel・CSVを、一括でPDFに変換</h1>
+        <p class="hero-sub">
+          ファイルをドロップするだけ。変換は即時、データは通過するのみ。
+        </p>
+      </div>
+
+      <!-- Drop Zone -->
+      <div
+        class="drop-zone"
+        id="drop-zone"
+        role="button"
+        tabindex="0"
+        aria-label="ファイルをドロップ、またはクリックして選択"
+        aria-describedby="drop-hint-text"
+      >
+        <!-- Upload cloud icon -->
+        <svg class="drop-glyph" width="48" height="48" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.3" stroke-linecap="round"
+             stroke-linejoin="round" aria-hidden="true">
+          <polyline points="16 16 12 12 8 16"/>
+          <line x1="12" y1="12" x2="12" y2="21"/>
+          <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+        </svg>
+
+        <div class="drop-body">
+          <p class="drop-primary">
+            <strong id="browse-link" role="button" tabindex="0"
+                    aria-label="クリックしてファイルを選択">クリックして選択</strong>、またはここにドロップ
+          </p>
+          <p class="drop-hint" id="drop-hint-text">
+            .xlsx &nbsp;/&nbsp; .xls &nbsp;/&nbsp; .csv &nbsp;に対応 &nbsp;·&nbsp; フォルダ一括選択も可
+          </p>
+        </div>
+
+        <div class="drop-actions" role="group" aria-label="ファイル選択方法">
+          <label class="btn-ghost" for="file-input">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            ファイルを選択
+          </label>
+          <label class="btn-ghost" for="folder-input">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" aria-hidden="true">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            フォルダを選択
+          </label>
+        </div>
+
+        <!-- Hidden file inputs -->
+        <input type="file" id="file-input"
+               multiple accept=".xlsx,.xls,.csv"
+               aria-label="ファイルを選択（複数可）">
+        <input type="file" id="folder-input"
+               webkitdirectory multiple
+               accept=".xlsx,.xls,.csv"
+               aria-label="フォルダを選択">
+      </div>
+
+      <!-- File List -->
+      <section id="file-list-section" class="file-list-section hidden"
+               aria-label="アップロード済みファイル一覧">
+        <div class="section-head">
+          <div class="section-head-left">
+            <span class="section-label">変換対象</span>
+            <span class="count-badge" id="file-count" aria-live="polite">0</span>
+          </div>
+          <button class="clear-btn" id="clear-all-btn"
+                  aria-label="すべてのファイルをリストから削除">
+            すべて削除
+          </button>
+        </div>
+
+        <div class="table-wrap" role="region" aria-label="ファイルテーブル スクロール可能">
+          <table aria-label="変換ファイル一覧">
+            <thead>
+              <tr>
+                <th scope="col">ファイル名</th>
+                <th scope="col" style="width:90px">サイズ</th>
+                <th scope="col" style="width:100px">ステータス</th>
+                <th scope="col" style="width:44px" aria-label="操作"></th>
+              </tr>
+            </thead>
+            <tbody id="file-tbody">
+              <!-- JS rendered -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Convert + Progress -->
+      <div id="convert-section" class="convert-section hidden">
+        <button class="btn-primary" id="convert-btn"
+                aria-label="選択したファイルをすべてPDFに変換する">
+          <svg id="convert-icon" width="17" height="17" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="5 9 2 12 5 15"/>
+            <polyline points="9 5 12 2 15 5"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <line x1="12" y1="2" x2="12" y2="22"/>
+          </svg>
+          <span id="convert-label">一括PDF変換</span>
+        </button>
+
+        <!-- Progress bar (collapsed by default) -->
+        <div class="progress-wrap" id="progress-wrap"
+             role="status" aria-live="polite" aria-atomic="false">
+          <div class="progress-meta">
+            <span id="progress-text">変換中...</span>
+            <span id="progress-pct" aria-live="off">0%</span>
+          </div>
+          <div class="progress-track"
+               role="progressbar" aria-valuemin="0" aria-valuemax="100"
+               aria-valuenow="0" id="progress-track"
+               aria-label="変換進捗">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Download Area -->
+      <section id="download-section" class="download-section hidden"
+               aria-label="変換完了 — ダウンロードエリア">
+        <div class="dl-head">
+          <div class="dl-head-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div class="dl-head-text">
+            <strong>変換完了</strong>
+            <span id="dl-subtitle">ファイルが変換されました</span>
+          </div>
+        </div>
+
+        <ul class="dl-list" id="dl-list"
+            aria-label="ダウンロード可能なPDFファイル一覧">
+          <!-- JS rendered -->
+        </ul>
+
+        <button class="btn-zip" id="zip-btn"
+                aria-label="すべてのPDFをZIPファイルにまとめてダウンロード">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          ZIP一括ダウンロード
+        </button>
+
+        <button class="btn-reset" id="reset-btn"
+                aria-label="リセットして最初からやり直す">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
+          </svg>
+          最初からやり直す
+        </button>
+      </section>
+
+    </div><!-- /wrap -->
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════════════════ -->
+  <footer class="footer" role="contentinfo">
+    <div class="wrap">
+
+      <div class="faq-grid">
+        <div class="faq-item">
+          <h3>ファイルは保存されますか？</h3>
+          <p>変換処理が完了したファイルは即時削除されます。ファイル内容が外部に流出したり、第三者に閲覧されることはありません。</p>
+        </div>
+        <div class="faq-item">
+          <h3>対応しているファイル形式は？</h3>
+          <p>.xlsx・.xls・.csv に対応しています。フォルダごと選択して、含まれるすべてのファイルを一括変換できます。</p>
+        </div>
+        <div class="faq-item">
+          <h3>ファイル数・サイズの上限は？</h3>
+          <p>1回のセッションで最大100ファイル、各ファイル50MBまで処理できます。大量ファイルは順次キューで処理されます。</p>
+        </div>
+        <div class="faq-item">
+          <h3>変換後のPDF品質について</h3>
+          <p>フォント・レイアウト・グラフ・数式書式を可能な限り再現した印刷品質のPDFを生成します。フォント埋め込みに対応。</p>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p class="footer-copy">© 2026 Excel to PDF Converter</p>
+        <nav class="footer-links" aria-label="フッターナビゲーション">
+          <a href="#" aria-label="プライバシーポリシーを表示">プライバシーポリシー</a>
+          <a href="#" aria-label="利用規約を表示">利用規約</a>
+          <a href="#" aria-label="お問い合わせ">お問い合わせ</a>
+        </nav>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- ═══════════════════════════════════════════════════
+       JAVASCRIPT
+  ═══════════════════════════════════════════════════ -->
+  <script>
+    'use strict';
+
+    /* ────────────────────────────────────────────────────
+       THEME TOGGLE
+    ──────────────────────────────────────────────────── */
+    const html      = document.documentElement;
+    const themeBtn  = document.getElementById('theme-btn');
+    const iconMoon  = document.getElementById('icon-moon');
+    const iconSun   = document.getElementById('icon-sun');
+
+    function applyTheme(dark) {
+      html.setAttribute('data-theme', dark ? 'dark' : 'light');
+      iconMoon.classList.toggle('hidden', dark);
+      iconSun.classList.toggle('hidden', !dark);
+      localStorage.setItem('theme', dark ? 'dark' : 'light');
+    }
+
+    // Initial state is set by the inline script in <head>; sync icons
+    (function syncIcons() {
+      const dark = html.getAttribute('data-theme') === 'dark';
+      iconMoon.classList.toggle('hidden', dark);
+      iconSun.classList.toggle('hidden', !dark);
+    })();
+
+    themeBtn.addEventListener('click', () => {
+      applyTheme(html.getAttribute('data-theme') !== 'dark');
+    });
+
+    /* ────────────────────────────────────────────────────
+       STATE
+    ──────────────────────────────────────────────────── */
+    let files = [];      // { id, name, size, status: 'wait'|'run'|'done'|'err' }
+    let converting = false;
+
+    const SUPPORTED = new Set(['xlsx', 'xls', 'csv']);
+
+    /* ────────────────────────────────────────────────────
+       DOM REFS
+    ──────────────────────────────────────────────────── */
+    const dropZone         = document.getElementById('drop-zone');
+    const fileInput        = document.getElementById('file-input');
+    const folderInput      = document.getElementById('folder-input');
+    const browseLink       = document.getElementById('browse-link');
+    const fileListSection  = document.getElementById('file-list-section');
+    const fileTbody        = document.getElementById('file-tbody');
+    const fileCount        = document.getElementById('file-count');
+    const clearAllBtn      = document.getElementById('clear-all-btn');
+    const convertSection   = document.getElementById('convert-section');
+    const convertBtn       = document.getElementById('convert-btn');
+    const convertIcon      = document.getElementById('convert-icon');
+    const convertLabel     = document.getElementById('convert-label');
+    const progressWrap     = document.getElementById('progress-wrap');
+    const progressFill     = document.getElementById('progress-fill');
+    const progressTrack    = document.getElementById('progress-track');
+    const progressText     = document.getElementById('progress-text');
+    const progressPct      = document.getElementById('progress-pct');
+    const downloadSection  = document.getElementById('download-section');
+    const dlSubtitle       = document.getElementById('dl-subtitle');
+    const dlList           = document.getElementById('dl-list');
+    const zipBtn           = document.getElementById('zip-btn');
+    const resetBtn         = document.getElementById('reset-btn');
+
+    /* ────────────────────────────────────────────────────
+       HELPERS
+    ──────────────────────────────────────────────────── */
+    const uid = () => Math.random().toString(36).slice(2, 9);
+
+    function ext(name) {
+      return (name.split('.').pop() || '').toLowerCase();
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024)           return bytes + ' B';
+      if (bytes < 1024 * 1024)    return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function sleep(ms) {
+      return new Promise(r => setTimeout(r, ms));
+    }
+
+    function stripExt(name) {
+      return name.replace(/\.[^/.]+$/, '');
+    }
+
+    function escapeHTML(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    /* ────────────────────────────────────────────────────
+       RENDER
+    ──────────────────────────────────────────────────── */
+    function statusHTML(f) {
+      if (f.status === 'wait') {
+        return `<span class="status s-wait"><span class="status-dot" aria-hidden="true"></span>待機中</span>`;
+      }
+      if (f.status === 'run') {
+        return `<span class="status s-run"><span class="status-dot" aria-hidden="true"></span>変換中</span>`;
+      }
+      if (f.status === 'done') {
+        return `<span class="status s-done">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+          完了
+        </span>`;
+      }
+      return `<span class="status s-err">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        エラー
+      </span>`;
+    }
+
+    function renderTable() {
+      fileTbody.innerHTML = '';
+
+      files.forEach(f => {
+        const e = ext(f.name);
+        const base = stripExt(f.name);
+        const tr = document.createElement('tr');
+        tr.id = 'row-' + f.id;
+
+        // TD1: ファイル名
+        const td1 = document.createElement('td');
+        const divName = document.createElement('div');
+        divName.className = 'td-name';
+
+        const extBadge = document.createElement('span');
+        extBadge.className = 'ext-badge ext-' + e;
+        extBadge.setAttribute('aria-label', e.toUpperCase() + ' 形式');
+        extBadge.textContent = e.toUpperCase();
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'file-name';
+        nameSpan.setAttribute('title', f.name);
+        nameSpan.textContent = base;
+
+        divName.appendChild(extBadge);
+        divName.appendChild(nameSpan);
+        td1.appendChild(divName);
+
+        // TD2: ファイルサイズ
+        const td2 = document.createElement('td');
+        td2.className = 'file-size-cell';
+        td2.textContent = formatSize(f.size);
+
+        // TD3: ステータス（statusHTML は内部制御のマークアップのみ返す）
+        const td3 = document.createElement('td');
+        td3.innerHTML = statusHTML(f);
+
+        // TD4: 削除ボタン
+        const td4 = document.createElement('td');
+        td4.style.textAlign = 'center';
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'del-btn';
+        delBtn.dataset.id = f.id;
+        delBtn.setAttribute('aria-label', f.name + ' をリストから削除');
+        if (converting) delBtn.disabled = true;
+        delBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        td4.appendChild(delBtn);
+
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        tr.appendChild(td3);
+        tr.appendChild(td4);
+
+        fileTbody.appendChild(tr);
+      });
+
+      fileCount.textContent = files.length;
+    }
+
+    function showSection(el) {
+      el.classList.remove('hidden');
+      void el.offsetWidth; // force reflow so transition starts from opacity:0
+      el.classList.add('section-visible');
+    }
+
+    function hideSection(el) {
+      el.classList.remove('section-visible');
+      el.classList.add('hidden');
+    }
+
+    function updateVisibility() {
+      const has = files.length > 0;
+      if (has) {
+        showSection(fileListSection);
+        showSection(convertSection);
+      } else {
+        hideSection(fileListSection);
+        hideSection(convertSection);
+      }
+      renderTable();
+    }
+
+    /* ────────────────────────────────────────────────────
+       ADD FILES
+    ──────────────────────────────────────────────────── */
+    function addFiles(fileList) {
+      let added = 0;
+      Array.from(fileList).forEach(f => {
+        if (!SUPPORTED.has(ext(f.name))) return;
+        // deduplicate by name + size
+        if (files.some(x => x.name === f.name && x.size === f.size)) return;
+        files.push({ id: uid(), name: f.name, size: f.size, status: 'wait' });
+        added++;
+      });
+
+      if (added > 0) {
+        hideSection(downloadSection);
+        updateVisibility();
+      }
+    }
+
+    /* ────────────────────────────────────────────────────
+       DRAG & DROP
+    ──────────────────────────────────────────────────── */
+    let dragCounter = 0;
+
+    dropZone.addEventListener('dragenter', e => {
+      e.preventDefault();
+      dragCounter++;
+      dropZone.classList.add('drag-active');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dragCounter--;
+      if (dragCounter <= 0) {
+        dragCounter = 0;
+        dropZone.classList.remove('drag-active');
+      }
+    });
+
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dragCounter = 0;
+      dropZone.classList.remove('drag-active');
+      if (converting) return;
+      addFiles(e.dataTransfer.files);
+    });
+
+    /* Click / keyboard on drop zone */
+    dropZone.addEventListener('click', e => {
+      if (converting) return;
+      if (e.target.closest('label') || e.target.closest('input')) return;
+      fileInput.click();
+    });
+
+    dropZone.addEventListener('keydown', e => {
+      if ((e.key === 'Enter' || e.key === ' ') && !converting) {
+        e.preventDefault();
+        fileInput.click();
+      }
+    });
+
+    /* Browse link */
+    browseLink.addEventListener('click', e => {
+      e.stopPropagation();
+      if (!converting) fileInput.click();
+    });
+
+    browseLink.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (!converting) fileInput.click();
+      }
+    });
+
+    /* File inputs */
+    fileInput.addEventListener('change', e => {
+      if (converting) return;
+      addFiles(e.target.files);
+      e.target.value = '';
+    });
+
+    folderInput.addEventListener('change', e => {
+      if (converting) return;
+      addFiles(e.target.files);
+      e.target.value = '';
+    });
+
+    /* ────────────────────────────────────────────────────
+       DELETE
+    ──────────────────────────────────────────────────── */
+    fileTbody.addEventListener('click', e => {
+      const btn = e.target.closest('.del-btn');
+      if (!btn || converting) return;
+      files = files.filter(f => f.id !== btn.dataset.id);
+      if (files.length === 0) hideSection(downloadSection);
+      updateVisibility();
+    });
+
+    clearAllBtn.addEventListener('click', () => {
+      if (converting) return;
+      files = [];
+      hideSection(downloadSection);
+      updateVisibility();
+    });
+
+    /* ────────────────────────────────────────────────────
+       CONVERSION MOCK (2s total, per-file staggered)
+    ──────────────────────────────────────────────────── */
+    function setProgress(pct, textLabel) {
+      progressFill.style.width = pct + '%';
+      progressTrack.setAttribute('aria-valuenow', pct);
+      progressPct.textContent = pct + '%';
+      if (textLabel !== undefined) progressText.textContent = textLabel;
+    }
+
+    convertBtn.addEventListener('click', async () => {
+      if (converting || files.length === 0) return;
+
+      converting = true;
+      convertBtn.disabled = true;
+      convertLabel.textContent = '変換中...';
+      convertIcon.classList.add('spin');
+      progressWrap.classList.add('open');
+      hideSection(downloadSection);
+
+      // Reset all to wait
+      files.forEach(f => { f.status = 'wait'; });
+      renderTable();
+      setProgress(0, '変換を開始しています...');
+
+      const total = files.length;
+      const perFileDelay = Math.max(300, Math.floor(1800 / total));
+
+      for (let i = 0; i < files.length; i++) {
+        files[i].status = 'run';
+        renderTable();
+        await sleep(perFileDelay);
+
+        files[i].status = 'done';
+        const pct = Math.round(((i + 1) / total) * 100);
+        setProgress(pct, `変換中 (${i + 1} / ${total})`);
+        renderTable();
+      }
+
+      setProgress(100, '変換完了');
+      await sleep(350);
+
+      // Build download list
+      buildDownloadArea();
+      showSection(downloadSection);
+      downloadSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      // Reset convert button
+      converting = false;
+      convertBtn.disabled = false;
+      convertLabel.textContent = '一括PDF変換';
+      convertIcon.classList.remove('spin');
+      progressWrap.classList.remove('open');
+      setProgress(0);
+    });
+
+    /* ────────────────────────────────────────────────────
+       DOWNLOAD AREA
+    ──────────────────────────────────────────────────── */
+    function buildDownloadArea() {
+      const done = files.filter(f => f.status === 'done');
+      dlSubtitle.textContent = `${done.length}件のPDFファイルが準備できました`;
+      dlList.innerHTML = '';
+
+      done.forEach(f => {
+        const pdfName = stripExt(f.name) + '.pdf';
+        const li = document.createElement('li');
+        li.className = 'dl-item';
+
+        const pdfBadge = document.createElement('span');
+        pdfBadge.className = 'dl-pdf-badge';
+        pdfBadge.setAttribute('aria-label', 'PDF形式');
+        pdfBadge.textContent = 'PDF';
+
+        const dlNameSpan = document.createElement('span');
+        dlNameSpan.className = 'dl-name';
+        dlNameSpan.setAttribute('title', pdfName);
+        dlNameSpan.textContent = pdfName;
+
+        const dlBtn = document.createElement('button');
+        dlBtn.className = 'btn-dl';
+        dlBtn.setAttribute('aria-label', pdfName + ' をダウンロード');
+        dlBtn.dataset.pdf = pdfName;
+        dlBtn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>DL';
+
+        li.appendChild(pdfBadge);
+        li.appendChild(dlNameSpan);
+        li.appendChild(dlBtn);
+        dlList.appendChild(li);
+      });
+    }
+
+    /* Individual download mock */
+    dlList.addEventListener('click', e => {
+      const btn = e.target.closest('.btn-dl');
+      if (!btn) return;
+      const orig = btn.innerHTML;
+      btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
+      btn.style.background = 'var(--ok)';
+      btn.style.color = '#fff';
+      btn.style.borderColor = 'var(--ok)';
+      setTimeout(() => {
+        btn.innerHTML = orig;
+        btn.style.background = '';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }, 1800);
+    });
+
+    /* ZIP download mock */
+    zipBtn.addEventListener('click', async () => {
+      if (zipBtn.disabled) return;
+      const origHTML = zipBtn.innerHTML;
+      zipBtn.disabled = true;
+      zipBtn.innerHTML = `
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" class="spin" aria-hidden="true">
+          <path d="M21 2H3v16h5v4l4-4 4 4v-4h5V2z"/>
+        </svg>
+        ZIPを生成中...
+      `;
+
+      await sleep(1200);
+
+      zipBtn.innerHTML = `
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        ダウンロード完了
+      `;
+
+      await sleep(2000);
+      zipBtn.innerHTML = origHTML;
+      zipBtn.disabled = false;
+    });
+
+    /* Reset */
+    resetBtn.addEventListener('click', () => {
+      files = [];
+      hideSection(downloadSection);
+      progressFill.style.width = '0%';
+      updateVisibility();
+    });
+
+    /* ────────────────────────────────────────────────────
+       INIT
+    ──────────────────────────────────────────────────── */
+    updateVisibility();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  証明写真スタジオ — iOS UIプロトタイプ                           ║
+  ║  デザイン哲学: 凛雅 (Ringa) — Poised Refinement               ║
+  ║                                                              ║
+  ║  「証明」という言葉が持つ、揺るぎない確信感を画面全体に宿らせる。    ║
+  ║  余計な装飾を排除し、使い手が「これで大丈夫」と感じられる             ║
+  ║  清冽な精緻さ（凛）と品格ある整頓（雅）のUIを目指す。               ║
+  ║                                                              ║
+  ║  対象: iPhone 15 Pro (393×852px) / iOS 17+                  ║
+  ║  Structure: 2/10 | Silence: 4/10 | Precision: 1/10          ║
+  ╚══════════════════════════════════════════════════════════════╝
+-->
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>証明写真スタジオ — UIプロトタイプ</title>
+  <style>
+    /* ── CSS Variables ─────────────────────────────────────── */
+    :root {
+      --kinpaku:      #F7F5F0;   /* 絹白: 主背景 */
+      --sumi:         #1A1A1C;   /* 墨白: 主テキスト */
+      --sumi-70:      rgba(26,26,28,.70);
+      --sumi-45:      rgba(26,26,28,.45);
+      --sumi-20:      rgba(26,26,28,.20);
+      --sumi-08:      rgba(26,26,28,.08);
+      --blue:         #0A7AFF;   /* iOS systemBlue */
+      --blue-lt:      #E3EFFF;
+      --blue-dk:      #005FCC;
+      --green:        #34C759;
+      --orange:       #FF9500;
+      --red:          #FF3B30;
+      --card:         #FFFFFF;
+      --bg2:          #EFEEEB;
+      --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-xl: 28px;
+      --shadow: 0 2px 12px rgba(26,26,28,.08);
+      --shadow-lg: 0 8px 32px rgba(26,26,28,.16);
+    }
+
+    /* ── Reset ──────────────────────────────────────────────── */
+    *,*::before,*::after { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+    button { font:inherit; cursor:pointer; border:none; background:none; -webkit-tap-highlight-color:transparent; }
+
+    /* ── Page ───────────────────────────────────────────────── */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      background: #C8C4BB;
+      background-image:
+        radial-gradient(ellipse 120% 80% at 20% 10%, rgba(210,207,200,.9) 0%, transparent 55%),
+        radial-gradient(ellipse 100% 80% at 80% 90%, rgba(190,186,178,.8) 0%, transparent 55%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px 56px;
+      gap: 20px;
+    }
+
+    /* ── iPhone 15 Pro Frame ────────────────────────────────── */
+    .iphone-frame {
+      width: 393px;
+      height: 852px;
+      border-radius: 56px;
+      background: #3A3531; /* Natural Titanium */
+      position: relative;
+      flex-shrink: 0;
+      box-shadow:
+        inset 0 0 0 .5px rgba(255,255,255,.1),
+        0 0 0 .5px rgba(0,0,0,.5),
+        0 40px 120px rgba(0,0,0,.5),
+        0 16px 40px rgba(0,0,0,.3);
+    }
+    /* Volume buttons (left) */
+    .iphone-frame::before {
+      content:'';
+      position:absolute; left:-3px; top:158px;
+      width:3px; height:32px;
+      background:#2C2826; border-radius:2px 0 0 2px;
+      box-shadow: 0 46px 0 #2C2826, 0 92px 0 #2C2826;
+    }
+    /* Power button (right) */
+    .iphone-frame::after {
+      content:'';
+      position:absolute; right:-3px; top:194px;
+      width:3px; height:72px;
+      background:#2C2826; border-radius:0 2px 2px 0;
+    }
+
+    .iphone-screen {
+      position:absolute; inset:5px;
+      border-radius:52px;
+      overflow:hidden;
+      background:var(--kinpaku);
+      display:flex; flex-direction:column;
+    }
+
+    /* Dynamic Island */
+    .dyn-island {
+      position:absolute; top:13px; left:50%;
+      transform:translateX(-50%);
+      width:126px; height:36px;
+      background:#000; border-radius:20px;
+      z-index:200;
+      pointer-events:none;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      height:59px; flex-shrink:0;
+      padding:0 28px 10px;
+      display:flex; align-items:flex-end; justify-content:space-between;
+      position:relative; z-index:10;
+    }
+    .status-bar.dark { color:rgba(255,255,255,.92); }
+    .status-time { font-size:15px; font-weight:600; letter-spacing:-.3px; }
+    .status-icons { display:flex; align-items:center; gap:6px; }
+
+    /* Screens container */
+    .screens-wrap { flex:1; position:relative; overflow:hidden; }
+
+    .screen {
+      position:absolute; inset:0;
+      background:var(--kinpaku);
+      display:none; flex-direction:column;
+      overflow:hidden;
+    }
+    .screen.active { display:flex; }
+
+    /* Slide transition */
+    @keyframes slideInR  { from { transform:translateX(100%) }  to { transform:translateX(0) } }
+    @keyframes slideOutL { from { transform:translateX(0) }     to { transform:translateX(-28%) opacity:.7 } }
+    @keyframes slideInL  { from { transform:translateX(-28%) opacity:.7 } to { transform:translateX(0) opacity:1 } }
+
+    /* Home indicator */
+    .home-ind {
+      height:34px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      background:var(--kinpaku);
+    }
+    .home-ind span {
+      display:block; width:134px; height:5px;
+      border-radius:3px; background:var(--sumi); opacity:.18;
+    }
+
+    /* ── Navigation Bar ────────────────────────────────────── */
+    .nav {
+      padding:12px 16px 10px;
+      display:flex; align-items:center; justify-content:space-between;
+      border-bottom:.5px solid var(--sumi-08); flex-shrink:0;
+      background:rgba(247,245,240,.94);
+      backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+    }
+    .nav.dark {
+      background:rgba(10,10,14,.90);
+      border-bottom-color:rgba(255,255,255,.08);
+    }
+    .nav-back {
+      display:flex; align-items:center; gap:4px;
+      color:var(--blue); font-size:17px; font-weight:400;
+      min-width:44px; min-height:44px;
+    }
+    .nav-back.white { color:white; }
+    .nav-back:active { opacity:.5; }
+    .nav-title {
+      font-size:17px; font-weight:600;
+      color:var(--sumi); letter-spacing:-.4px;
+    }
+    .nav-title.white { color:white; }
+    .nav-action {
+      color:var(--blue); font-size:15px; font-weight:500;
+      min-width:44px; min-height:44px;
+      display:flex; align-items:center; justify-content:flex-end;
+    }
+    .nav-action.white { color:rgba(255,255,255,.85); }
+    .nav-action:active { opacity:.5; }
+
+    /* ── Step Progress ─────────────────────────────────────── */
+    .steps {
+      padding:14px 20px 10px; flex-shrink:0;
+      background:var(--kinpaku);
+    }
+    .steps.dark { background:rgba(10,10,14,1); }
+    .steps-row {
+      display:flex; align-items:flex-start;
+    }
+    .step-item {
+      flex:1; display:flex; flex-direction:column; align-items:center; gap:5px;
+      position:relative;
+    }
+    /* connector line between dots */
+    .step-item:not(:last-child)::after {
+      content:''; position:absolute;
+      top:13px; left:calc(50% + 14px);
+      right:calc(-50% + 14px);
+      height:2px;
+      background:var(--sumi-20);
+      transition:background .3s;
+    }
+    .step-item.done::after,
+    .step-item.act::after  { background:var(--blue); }
+
+    .step-dot {
+      width:28px; height:28px; border-radius:50%;
+      background:var(--bg2); border:2px solid var(--sumi-08);
+      display:flex; align-items:center; justify-content:center;
+      font-size:13px; font-weight:600; color:var(--sumi-45);
+      transition:all .25s;
+      position:relative; z-index:1;
+      flex-shrink:0;
+    }
+    .step-item.act .step-dot { background:var(--blue); border-color:var(--blue); color:#fff; }
+    .step-item.done .step-dot { background:var(--blue); border-color:var(--blue); color:#fff; }
+
+    .step-lbl {
+      font-size:10px; font-weight:500; color:var(--sumi-45);
+      letter-spacing:.2px; text-align:center; white-space:nowrap;
+    }
+    .step-item.act  .step-lbl { color:var(--blue); }
+    .step-item.done .step-lbl { color:var(--blue); }
+    /* dark mode step labels */
+    .steps.dark .step-item .step-lbl       { color:rgba(255,255,255,.3); }
+    .steps.dark .step-item .step-dot       { background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.1); color:rgba(255,255,255,.3); }
+    .steps.dark .step-item.act .step-dot   { background:var(--blue); border-color:var(--blue); color:#fff; }
+    .steps.dark .step-item.done .step-dot  { background:var(--blue); border-color:var(--blue); color:#fff; }
+    .steps.dark .step-item.act .step-lbl   { color:var(--blue); }
+    .steps.dark .step-item.done .step-lbl  { color:var(--blue); }
+    .steps.dark .step-item::after          { background:rgba(255,255,255,.15); }
+    .steps.dark .step-item.done::after,
+    .steps.dark .step-item.act::after      { background:var(--blue); }
+
+    /* ── Scroll area ───────────────────────────────────────── */
+    .scroll { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .scroll::-webkit-scrollbar { display:none; }
+
+    /* ── Bottom action bar ─────────────────────────────────── */
+    .bottom-bar {
+      padding:14px 20px 18px; flex-shrink:0;
+      background:var(--kinpaku);
+      border-top:.5px solid var(--sumi-08);
+    }
+    .btn-p {
+      width:100%; height:52px;
+      background:var(--blue); color:#fff;
+      border-radius:var(--r-lg);
+      font-size:17px; font-weight:600; letter-spacing:-.3px;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      transition:all .15s;
+    }
+    .btn-p:active { transform:scale(.97); background:var(--blue-dk); }
+
+    .btn-s {
+      width:100%; height:50px;
+      background:transparent; color:var(--blue);
+      border:1.5px solid var(--blue);
+      border-radius:var(--r-lg);
+      font-size:16px; font-weight:600;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .btn-s:active { opacity:.6; }
+
+    /* ════════════════════════════════════════════════════════
+       SCREEN 1 — Size Selection
+    ════════════════════════════════════════════════════════ */
+    .screen-hd { padding:20px 20px 6px; }
+    .screen-ttl { font-size:28px; font-weight:700; color:var(--sumi); letter-spacing:-.8px; line-height:1.2; }
+    .screen-sub { font-size:15px; color:var(--sumi-70); margin-top:5px; line-height:1.4; }
+
+    .size-list { padding:12px 16px 24px; display:flex; flex-direction:column; gap:10px; }
+
+    .sz-card {
+      background:var(--card);
+      border-radius:var(--r-md);
+      padding:14px 14px 14px 14px;
+      display:flex; align-items:center; gap:13px;
+      border:2px solid transparent;
+      box-shadow:var(--shadow);
+      transition:all .18s;
+    }
+    .sz-card:active { transform:scale(.985); }
+    .sz-card.sel { border-color:var(--blue); background:var(--blue-lt); }
+
+    .sz-icon {
+      width:48px; height:48px; border-radius:11px;
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .sz-info { flex:1; min-width:0; }
+    .sz-name { font-size:15px; font-weight:600; color:var(--sumi); letter-spacing:-.3px; }
+    .sz-desc { font-size:12px; color:var(--sumi-45); margin-top:2px; }
+    .sz-right { display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0; }
+    .sz-dim { font-size:13px; font-weight:600; color:var(--sumi-45); font-variant-numeric:tabular-nums; }
+
+    .badge {
+      display:inline-flex; padding:2px 8px;
+      border-radius:10px; font-size:11px; font-weight:600;
+    }
+    .badge-blue   { background:var(--blue);   color:#fff; }
+    .badge-orange { background:var(--orange); color:#fff; }
+    .badge-green  { background:var(--green);  color:#fff; }
+    .badge-ghost  { background:var(--blue-lt); color:var(--blue); }
+
+    .sz-check {
+      width:22px; height:22px; border-radius:50%;
+      border:2px solid var(--sumi-20);
+      display:flex; align-items:center; justify-content:center;
+      flex-shrink:0; transition:all .18s;
+    }
+    .sz-card.sel .sz-check { background:var(--blue); border-color:var(--blue); }
+
+    /* ════════════════════════════════════════════════════════
+       SCREEN 2 — Camera / Shooting Guide
+    ════════════════════════════════════════════════════════ */
+    .camera-wrap {
+      flex:1; position:relative;
+      background:#080A0E; overflow:hidden;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .cam-bg {
+      position:absolute; inset:0;
+      background:linear-gradient(175deg,#12141C 0%,#06080C 100%);
+    }
+    /* subtle grid */
+    .cam-bg::after {
+      content:''; position:absolute; inset:0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size:40px 40px;
+    }
+    /* vignette */
+    .cam-vig {
+      position:absolute; inset:0; pointer-events:none;
+      background:radial-gradient(ellipse 70% 60% at 50% 42%, transparent 35%, rgba(0,0,0,.7) 100%);
+    }
+    /* person silhouette */
+    .cam-person {
+      position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+      pointer-events:none;
+    }
+    /* face oval guide */
+    .face-guide {
+      position:absolute;
+      width:198px; height:264px;
+      top:50%; left:50%;
+      transform:translate(-50%,-56%);
+    }
+    @keyframes guideBreath {
+      0%,100% { transform:translate(-50%,-56%) scale(1);   opacity:.92; }
+      50%      { transform:translate(-50%,-56%) scale(1.02); opacity:.8; }
+    }
+    .face-guide { animation:guideBreath 3.5s ease-in-out infinite; }
+
+    .corner {
+      position:absolute; width:22px; height:22px;
+      border-color:var(--blue); border-style:solid;
+    }
+    .c-tl { top:-4px; left:-4px; border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+    .c-tr { top:-4px; right:-4px; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
+    .c-bl { bottom:-4px; left:-4px; border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
+    .c-br { bottom:-4px; right:-4px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
+
+    .cam-hint {
+      position:absolute; bottom:130px; left:0; right:0;
+      display:flex; flex-direction:column; align-items:center; gap:4px;
+    }
+    .cam-hint-main {
+      font-size:14px; font-weight:500; color:rgba(255,255,255,.92);
+      background:rgba(0,0,0,.52); padding:7px 18px; border-radius:20px;
+      backdrop-filter:blur(12px);
+    }
+    .cam-tips {
+      display:flex; flex-direction:column; align-items:center; gap:5px;
+      margin-top:4px;
+    }
+    .cam-tip {
+      display:flex; align-items:center; gap:7px;
+      color:rgba(255,255,255,.6); font-size:12px;
+    }
+    .tip-dot { width:5px; height:5px; border-radius:50%; background:var(--blue); flex-shrink:0; }
+
+    .cam-controls {
+      position:absolute; bottom:0; left:0; right:0;
+      padding:16px 36px 24px;
+      display:flex; align-items:center; justify-content:space-between;
+      background:linear-gradient(0deg, rgba(0,0,0,.72) 0%, transparent 100%);
+    }
+    .cam-btn {
+      width:50px; height:50px; border-radius:50%;
+      background:rgba(255,255,255,.14);
+      border:.5px solid rgba(255,255,255,.18);
+      display:flex; align-items:center; justify-content:center;
+      backdrop-filter:blur(8px);
+      transition:all .15s;
+    }
+    .cam-btn:active { transform:scale(.92); background:rgba(255,255,255,.22); }
+
+    .shutter {
+      width:76px; height:76px; border-radius:50%;
+      background:rgba(255,255,255,.96);
+      border:4px solid rgba(255,255,255,.35);
+      display:flex; align-items:center; justify-content:center;
+      transition:transform .1s;
+      box-shadow:0 0 0 1px rgba(255,255,255,.2), 0 4px 20px rgba(0,0,0,.4);
+    }
+    .shutter:active { transform:scale(.9); }
+    .shutter-inner {
+      width:58px; height:58px; border-radius:50%;
+      background:#fff; border:2.5px solid rgba(0,0,0,.08);
+    }
+
+    /* Camera flash */
+    @keyframes flash { 0%{opacity:0} 8%{opacity:1} 100%{opacity:0} }
+    #cam-flash {
+      position:absolute; inset:0; background:#fff;
+      opacity:0; pointer-events:none; z-index:50;
+    }
+    #cam-flash.on { animation:flash .55s ease-out forwards; }
+
+    /* ════════════════════════════════════════════════════════
+       SCREEN 3 — Edit
+    ════════════════════════════════════════════════════════ */
+    .edit-top {
+      padding:18px 20px 0;
+      display:flex; justify-content:center; flex-shrink:0;
+    }
+    .photo-frame-wrap {
+      display:flex; flex-direction:column; align-items:center; gap:8px;
+    }
+    .photo-frame {
+      width:154px; height:193px;
+      border-radius:8px; overflow:hidden; position:relative;
+      box-shadow:var(--shadow-lg);
+      border:.5px solid var(--sumi-08);
+    }
+    .photo-frame-bg {
+      position:absolute; inset:0;
+      transition:background .3s ease;
+    }
+    .photo-hint-sm {
+      font-size:12px; color:var(--sumi-45);
+      display:flex; align-items:center; gap:5px;
+    }
+
+    .edit-controls {
+      flex:1; overflow-y:auto; padding:16px 20px 12px;
+      -webkit-overflow-scrolling:touch; scrollbar-width:none;
+    }
+    .edit-controls::-webkit-scrollbar { display:none; }
+
+    .ctrl-sec { margin-bottom:22px; }
+    .ctrl-lbl {
+      font-size:11px; font-weight:700; letter-spacing:.6px;
+      text-transform:uppercase; color:var(--sumi-45); margin-bottom:11px;
+    }
+
+    .bg-opts { display:flex; gap:16px; }
+    .bg-opt { display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; }
+    .bg-circle {
+      width:50px; height:50px; border-radius:50%;
+      border:3px solid transparent;
+      transition:all .2s;
+      position:relative;
+    }
+    .bg-opt.sel .bg-circle {
+      border-color:var(--blue);
+      box-shadow:0 0 0 2px var(--blue);
+    }
+    .bg-opt.sel .bg-circle::after {
+      content:'✓'; position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:18px; font-weight:700; color:var(--blue);
+    }
+    .bg-opt.sel.bg-white .bg-circle::after { color:var(--sumi); }
+    .bg-lbl { font-size:12px; font-weight:500; color:var(--sumi-45); }
+
+    /* Range slider */
+    .slider-row { display:flex; align-items:center; gap:11px; }
+    .slider-ico { font-size:15px; line-height:1; }
+    input[type=range] {
+      -webkit-appearance:none; appearance:none; flex:1;
+      height:4px; border-radius:2px; outline:none;
+      background:linear-gradient(to right, var(--blue) var(--v, 60%), var(--sumi-08) var(--v, 60%));
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance:none; width:22px; height:22px;
+      border-radius:50%; background:#fff;
+      box-shadow:0 2px 8px rgba(0,0,0,.22);
+    }
+
+    /* AI toggle card */
+    .ai-card {
+      background:linear-gradient(135deg, #E3EFFF 0%, #EDE3FF 100%);
+      border-radius:var(--r-md); padding:13px 14px;
+      display:flex; align-items:center; gap:12px;
+    }
+    .ai-icon {
+      width:38px; height:38px; border-radius:10px;
+      background:var(--blue); display:flex; align-items:center; justify-content:center;
+      flex-shrink:0;
+    }
+    .ai-toggle {
+      width:50px; height:28px; border-radius:14px;
+      background:var(--green); position:relative; cursor:pointer;
+      margin-left:auto; flex-shrink:0;
+      transition:background .2s;
+    }
+    .ai-toggle.off { background:#C7C7CC; }
+    .ai-knob {
+      width:24px; height:24px; border-radius:50%;
+      background:#fff; position:absolute; top:2px; right:2px;
+      box-shadow:0 1px 5px rgba(0,0,0,.25);
+      transition:right .2s;
+    }
+    .ai-toggle.off .ai-knob { right:auto; left:2px; }
+
+    /* ════════════════════════════════════════════════════════
+       SCREEN 4 — Preview & Save
+    ════════════════════════════════════════════════════════ */
+    .prev-scroll { flex:1; overflow-y:auto; padding:16px 20px 8px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .prev-scroll::-webkit-scrollbar { display:none; }
+
+    .final-photo-wrap { display:flex; justify-content:center; margin-bottom:20px; }
+    .final-photo {
+      width:168px; height:210px; border-radius:8px; overflow:hidden;
+      position:relative; box-shadow:var(--shadow-lg);
+      border:.5px solid var(--sumi-08);
+    }
+    .size-tag {
+      display:inline-flex; align-items:center; gap:6px;
+      background:var(--blue-lt); border-radius:8px; padding:5px 12px;
+      font-size:12px; font-weight:600; color:var(--blue); margin-top:8px;
+    }
+
+    /* Compliance check card */
+    .check-card {
+      background:var(--card); border-radius:var(--r-md);
+      padding:14px 16px; box-shadow:var(--shadow);
+      margin-bottom:16px;
+    }
+    .check-ttl { font-size:14px; font-weight:700; color:var(--sumi); margin-bottom:10px; }
+    .check-row { display:flex; align-items:center; gap:10px; margin-bottom:7px; }
+    .check-row:last-child { margin-bottom:0; }
+    .chk-ico { width:20px; height:20px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+    .chk-ok  { background:var(--green); }
+    .chk-warn{ background:var(--orange); }
+    .check-row span { font-size:13px; color:var(--sumi); }
+
+    /* Print layout */
+    .print-sec { margin-bottom:16px; }
+    .sec-hd { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+    .sec-ttl { font-size:15px; font-weight:700; color:var(--sumi); letter-spacing:-.3px; }
+    .sec-tag {
+      font-size:10px; font-weight:700;
+      background:var(--orange); color:#fff;
+      padding:2px 8px; border-radius:6px;
+    }
+
+    .print-layout {
+      background:var(--card); border-radius:var(--r-md);
+      padding:16px; box-shadow:var(--shadow);
+      display:flex; justify-content:center;
+      border:.5px solid var(--sumi-08);
+    }
+    .print-paper {
+      background:#FAFAFA; border:1px solid #E2E2E2;
+      padding:10px; border-radius:3px;
+      box-shadow:0 3px 12px rgba(0,0,0,.1);
+      display:inline-flex; flex-direction:column; gap:4px;
+    }
+    .print-row-g { display:flex; gap:4px; }
+    .print-ph {
+      width:68px; height:85px; border-radius:2px;
+      border:.5px solid #E0E0E0;
+      position:relative; overflow:hidden;
+    }
+    .print-ph .p-bg { position:absolute; inset:0; background:#fff; }
+    .print-cap { text-align:center; font-size:9px; color:#AAA; margin-top:6px; font-family:inherit; }
+
+    .print-meta {
+      display:flex; justify-content:center; gap:16px;
+      font-size:11px; color:var(--sumi-45); margin-top:7px;
+    }
+
+    /* Save action area */
+    .save-area { padding:12px 20px 18px; flex-shrink:0; display:flex; flex-direction:column; gap:10px; }
+
+    /* ── Toast ──────────────────────────────────────────────── */
+    #toast {
+      position:fixed; bottom:72px; left:50%;
+      transform:translateX(-50%) translateY(16px);
+      background:rgba(26,26,28,.88);
+      color:#fff; padding:13px 22px;
+      border-radius:16px; font-size:14px; font-weight:500;
+      backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+      display:flex; align-items:center; gap:10px;
+      opacity:0; pointer-events:none; z-index:9999;
+      white-space:nowrap;
+      transition:all .3s cubic-bezier(.32,.72,0,1);
+    }
+    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* ── Prototype label ────────────────────────────────────── */
+    .proto-lbl {
+      font-size:12px; color:rgba(26,26,28,.4); letter-spacing:.4px;
+      text-align:center; font-family:inherit;
+    }
+
+    /* ── Checkmark SVG shorthand ────────────────────────────── */
+    .chk-svg { width:11px; height:11px; }
+  </style>
+</head>
+<body>
+
+<div class="iphone-frame">
+  <!-- Dynamic Island -->
+  <div class="dyn-island"></div>
+
+  <div class="iphone-screen">
+
+    <!-- ── Status Bar ────────────────────────────────────── -->
+    <div class="status-bar" id="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <!-- Signal bars -->
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor">
+          <rect x="0"   y="7" width="3" height="5" rx=".5" opacity=".3"/>
+          <rect x="4.5" y="5" width="3" height="7" rx=".5" opacity=".5"/>
+          <rect x="9"   y="2.5" width="3" height="9.5" rx=".5" opacity=".75"/>
+          <rect x="13.5" y="0" width="3" height="12" rx=".5"/>
+        </svg>
+        <!-- WiFi -->
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+          <path d="M8 9.8a1.2 1.2 0 110 2.4A1.2 1.2 0 018 9.8z" fill="currentColor"/>
+          <path d="M4.8 7.2A4.5 4.5 0 018 6a4.5 4.5 0 013.2 1.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/>
+          <path d="M2 4.4A7.8 7.8 0 018 2a7.8 7.8 0 016 2.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/>
+        </svg>
+        <!-- Battery -->
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+          <rect x=".5" y=".5" width="21" height="11" rx="3.5" stroke="currentColor" stroke-opacity=".35"/>
+          <rect x="2"  y="2"  width="17" height="8"  rx="2"   fill="currentColor"/>
+          <path d="M23 4v4a2 2 0 000-4z" fill="currentColor" opacity=".4"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- ── Screens wrapper ───────────────────────────────── -->
+    <div class="screens-wrap">
+
+      <!-- ══════════════════════════════════════════════════
+           SCREEN 1: サイズ選択
+      ══════════════════════════════════════════════════ -->
+      <div class="screen active" id="s1">
+
+        <div class="nav">
+          <div style="min-width:44px"></div>
+          <span class="nav-title">証明写真スタジオ</span>
+          <button class="nav-action">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="steps">
+          <div class="steps-row">
+            <div class="step-item act">
+              <div class="step-dot">1</div>
+              <div class="step-lbl">サイズ</div>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">2</div>
+              <div class="step-lbl">撮影</div>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">3</div>
+              <div class="step-lbl">編集</div>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">4</div>
+              <div class="step-lbl">保存</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="scroll">
+          <div class="screen-hd">
+            <h1 class="screen-ttl">サイズを選択</h1>
+            <p class="screen-sub">用途に合わせてプリセットを選んでください</p>
+          </div>
+
+          <div class="size-list">
+
+            <!-- Passport -->
+            <div class="sz-card sel" onclick="pickSize(this,'passport')" data-sid="passport">
+              <div class="sz-icon" style="background:#E3EFFF;">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                  <rect x="5" y="2" width="18" height="24" rx="3" fill="#0A7AFF" opacity=".18" stroke="#0A7AFF" stroke-width="1.4"/>
+                  <circle cx="14" cy="11.5" r="3.8" fill="#0A7AFF" opacity=".38"/>
+                  <path d="M8 22c0-3.3 2.7-4.2 6-4.2s6 .9 6 4.2" fill="#0A7AFF" opacity=".38"/>
+                  <path d="M10 6.5h8M10 9.5h5" stroke="#0A7AFF" stroke-width="1.1" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="sz-info">
+                <div class="sz-name">パスポート</div>
+                <div class="sz-desc">国際旅券・ESTA申請</div>
+              </div>
+              <div class="sz-right">
+                <span class="sz-dim">35 × 45 mm</span>
+                <span class="badge badge-blue">人気 No.1</span>
+              </div>
+              <div class="sz-check">
+                <svg class="chk-svg" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Resume -->
+            <div class="sz-card" onclick="pickSize(this,'resume')" data-sid="resume">
+              <div class="sz-icon" style="background:#FFF0E3;">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                  <rect x="5" y="2" width="18" height="24" rx="2" fill="#FF9500" opacity=".18" stroke="#FF9500" stroke-width="1.4"/>
+                  <circle cx="14" cy="11" r="3.5" fill="#FF9500" opacity=".38"/>
+                  <path d="M9 21c0-2.76 2.24-3.5 5-3.5s5 .74 5 3.5" fill="#FF9500" opacity=".38"/>
+                  <path d="M9 6.5h4" stroke="#FF9500" stroke-width="1.1" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="sz-info">
+                <div class="sz-name">履歴書・就活</div>
+                <div class="sz-desc">就職・転職活動用</div>
+              </div>
+              <div class="sz-right">
+                <span class="sz-dim">30 × 40 mm</span>
+                <span class="badge" style="background:#FFF0E3;color:#CC7700;">就活</span>
+              </div>
+              <div class="sz-check">
+                <svg class="chk-svg" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- My Number -->
+            <div class="sz-card" onclick="pickSize(this,'mynumber')" data-sid="mynumber">
+              <div class="sz-icon" style="background:#E3F5E8;">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                  <rect x="2" y="7" width="24" height="14" rx="3" fill="#34C759" opacity=".18" stroke="#34C759" stroke-width="1.4"/>
+                  <circle cx="9" cy="14" r="3" fill="#34C759" opacity=".38"/>
+                  <path d="M15 11h7M15 14h5M15 17h6" stroke="#34C759" stroke-width="1.1" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="sz-info">
+                <div class="sz-name">マイナンバーカード</div>
+                <div class="sz-desc">マイナンバー申請用</div>
+              </div>
+              <div class="sz-right">
+                <span class="sz-dim">35 × 45 mm</span>
+                <span class="badge badge-green">推奨</span>
+              </div>
+              <div class="sz-check">
+                <svg class="chk-svg" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Visa -->
+            <div class="sz-card" onclick="pickSize(this,'visa')" data-sid="visa">
+              <div class="sz-icon" style="background:#F0E8FF;">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                  <path d="M14 3L25 8v5c0 6-4.5 10.5-11 12.5C7.5 23.5 3 19 3 13V8L14 3z"
+                    fill="#9C6FE4" opacity=".18" stroke="#9C6FE4" stroke-width="1.4"/>
+                  <circle cx="14" cy="12" r="3" fill="#9C6FE4" opacity=".38"/>
+                  <path d="M9.5 19c0-2.5 2.0-3 4.5-3s4.5.5 4.5 3" fill="#9C6FE4" opacity=".38"/>
+                </svg>
+              </div>
+              <div class="sz-info">
+                <div class="sz-name">ビザ・在留資格</div>
+                <div class="sz-desc">在留カード・就労ビザ</div>
+              </div>
+              <div class="sz-right">
+                <span class="sz-dim">45 × 45 mm</span>
+              </div>
+              <div class="sz-check">
+                <svg class="chk-svg" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Driver License -->
+            <div class="sz-card" onclick="pickSize(this,'license')" data-sid="license">
+              <div class="sz-icon" style="background:#FFF3E0;">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                  <rect x="2" y="6" width="24" height="16" rx="3" fill="#FF9500" opacity=".18" stroke="#FF9500" stroke-width="1.4"/>
+                  <circle cx="8.5" cy="14" r="3" fill="#FF9500" opacity=".38"/>
+                  <path d="M14 11h8M14 14h6M14 17h7" stroke="#FF9500" stroke-width="1.1" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="sz-info">
+                <div class="sz-name">運転免許証</div>
+                <div class="sz-desc">免許更新・IC免許証</div>
+              </div>
+              <div class="sz-right">
+                <span class="sz-dim">24 × 30 mm</span>
+              </div>
+              <div class="sz-check">
+                <svg class="chk-svg" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+
+          </div>
+        </div><!-- /scroll -->
+
+        <div class="bottom-bar">
+          <button class="btn-p" onclick="go(2)">
+            撮影を開始する
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M5 12h14M12 5l7 7-7 7" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+      </div><!-- /s1 -->
+
+
+      <!-- ══════════════════════════════════════════════════
+           SCREEN 2: 撮影ガイド
+      ══════════════════════════════════════════════════ -->
+      <div class="screen" id="s2">
+
+        <div class="nav dark">
+          <button class="nav-back white" onclick="go(1)">
+            <svg width="11" height="18" viewBox="0 0 11 18" fill="none">
+              <path d="M9.5 1L1.5 9l8 8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            戻る
+          </button>
+          <span class="nav-title white">撮影ガイド</span>
+          <button class="nav-action white">ヘルプ</button>
+        </div>
+
+        <div class="steps dark">
+          <div class="steps-row">
+            <div class="step-item done">
+              <div class="step-dot">
+                <svg class="chk-svg" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="step-lbl">サイズ</div>
+            </div>
+            <div class="step-item act">
+              <div class="step-dot">2</div>
+              <div class="step-lbl">撮影</div>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">3</div>
+              <div class="step-lbl">編集</div>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">4</div>
+              <div class="step-lbl">保存</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Camera viewport -->
+        <div class="camera-wrap">
+          <div class="cam-bg"></div>
+          <div id="cam-flash"></div>
+
+          <!-- Faint person silhouette -->
+          <svg class="cam-person" width="260" height="380" viewBox="0 0 260 380" fill="none">
+            <ellipse cx="130" cy="370" rx="100" ry="30" fill="rgba(255,255,255,.05)"/>
+            <path d="M42 380 Q55 255 92 232 Q110 226 130 226 Q150 226 168 232 Q205 255 218 380Z"
+              fill="rgba(255,255,255,.07)"/>
+            <rect x="114" y="196" width="32" height="38" rx="10" fill="rgba(255,255,255,.09)"/>
+            <ellipse cx="130" cy="174" rx="56" ry="67" fill="rgba(255,255,255,.1)"/>
+          </svg>
+
+          <!-- Face guide overlay -->
+          <div class="face-guide">
+            <div class="corner c-tl"></div>
+            <div class="corner c-tr"></div>
+            <div class="corner c-bl"></div>
+            <div class="corner c-br"></div>
+            <svg width="198" height="264" viewBox="0 0 198 264" style="position:absolute;top:0;left:0;overflow:visible">
+              <!-- Dashed oval -->
+              <ellipse cx="99" cy="122" rx="74" ry="94"
+                fill="none"
+                stroke="rgba(10,122,255,.95)"
+                stroke-width="2"
+                stroke-dasharray="9 5"/>
+              <!-- Crown line -->
+              <line x1="72" y1="30" x2="126" y2="30"
+                stroke="rgba(10,122,255,.55)" stroke-width="1.2"/>
+              <!-- Eye level line -->
+              <line x1="18" y1="100" x2="180" y2="100"
+                stroke="rgba(10,122,255,.4)" stroke-width="1"/>
+              <text x="184" y="103" font-size="9" fill="rgba(255,255,255,.45)"
+                font-family="-apple-system,sans-serif">目線</text>
+              <!-- Center vertical dotted -->
+              <line x1="99" y1="12" x2="99" y2="252"
+                stroke="rgba(255,255,255,.22)" stroke-width="1" stroke-dasharray="4 4"/>
+              <!-- Center horizontal dotted -->
+              <line x1="12" y1="122" x2="186" y2="122"
+                stroke="rgba(255,255,255,.22)" stroke-width="1" stroke-dasharray="4 4"/>
+            </svg>
+          </div>
+
+          <!-- Vignette -->
+          <div class="cam-vig"></div>
+
+          <!-- Guide text -->
+          <div class="cam-hint">
+            <div class="cam-hint-main">顔を楕円に合わせてください</div>
+            <div class="cam-tips">
+              <div class="cam-tip">
+                <div class="tip-dot"></div>
+                白い壁など無地の背景で撮影してください
+              </div>
+              <div class="cam-tip">
+                <div class="tip-dot"></div>
+                正面を向き、表情は自然な無表情で
+              </div>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div class="cam-controls">
+            <!-- Gallery shortcut -->
+            <button class="cam-btn" onclick="go(3)">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="18" height="18" rx="4" stroke="white" stroke-width="1.5"/>
+                <circle cx="8.5" cy="8.5" r="1.8" stroke="white" stroke-width="1.3"/>
+                <path d="M3 15l4.5-4.5 4 4 2.5-2.5 4 4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+
+            <!-- Shutter -->
+            <button class="shutter" onclick="triggerShutter()">
+              <div class="shutter-inner"></div>
+            </button>
+
+            <!-- Flip camera -->
+            <button class="cam-btn">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M20 8h-3M3 8h10m0 0l-3-3m3 3l-3 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 16h3M21 16H11m0 0l3 3m-3-3l3-3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /s2 -->
+
+
+      <!-- ══════════════════════════════════════════════════
+           SCREEN 3: 編集
+      ══════════════════════════════════════════════════ -->
+      <div class="screen" id="s3">
+
+        <div class="nav">
+          <button class="nav-back" onclick="go(2)">
+            <svg width="11" height="18" viewBox="0 0 11 18" fill="none">
+              <path d="M9.5 1L1.5 9l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            撮影
+          </button>
+          <span class="nav-title">写真を編集</span>
+          <button class="nav-action" style="font-size:13px;font-weight:500;">リセット</button>
+        </div>
+
+        <div class="steps">
+          <div class="steps-row">
+            <div class="step-item done">
+              <div class="step-dot">
+                <svg class="chk-svg" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="step-lbl">サイズ</div>
+            </div>
+            <div class="step-item done">
+              <div class="step-dot">
+                <svg class="chk-svg" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="step-lbl">撮影</div>
+            </div>
+            <div class="step-item act">
+              <div class="step-dot">3</div>
+              <div class="step-lbl">編集</div>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">4</div>
+              <div class="step-lbl">保存</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Photo preview -->
+        <div class="edit-top">
+          <div class="photo-frame-wrap">
+            <div class="photo-frame">
+              <div class="photo-frame-bg" id="edit-bg" style="background:#FFFFFF;"></div>
+              <!-- Person SVG (proof photo style) -->
+              <svg width="154" height="193" viewBox="0 0 154 193" style="position:relative;z-index:1;" fill="none">
+                <!-- Hair (back) -->
+                <path d="M42 58 Q42 20 77 20 Q112 20 112 58 Q104 36 77 36 Q50 36 42 58Z" fill="#2A1F15"/>
+                <!-- Head -->
+                <ellipse cx="77" cy="70" rx="33" ry="38" fill="#D4A87C"/>
+                <!-- Hair (top/sides) -->
+                <path d="M44 55 Q46 28 77 26 Q108 28 110 55" stroke="#2A1F15" stroke-width="2.5" fill="none"/>
+                <path d="M44 55 Q40 68 44 80" stroke="#2A1F15" stroke-width="2.5" fill="none"/>
+                <path d="M110 55 Q114 68 110 80" stroke="#2A1F15" stroke-width="2.5" fill="none"/>
+                <!-- Ears -->
+                <ellipse cx="44" cy="72" rx="6" ry="7.5" fill="#C9996A"/>
+                <ellipse cx="110" cy="72" rx="6" ry="7.5" fill="#C9996A"/>
+                <ellipse cx="44" cy="72" rx="3.5" ry="4.5" fill="#BD8960"/>
+                <ellipse cx="110" cy="72" rx="3.5" ry="4.5" fill="#BD8960"/>
+                <!-- Eyes (whites) -->
+                <ellipse cx="64" cy="67" rx="5.5" ry="5.5" fill="white"/>
+                <ellipse cx="90" cy="67" rx="5.5" ry="5.5" fill="white"/>
+                <!-- Irises -->
+                <circle cx="65" cy="67.5" r="3.5" fill="#23160C"/>
+                <circle cx="91" cy="67.5" r="3.5" fill="#23160C"/>
+                <!-- Pupils -->
+                <circle cx="65.5" cy="67" r="1.5" fill="#0D0906"/>
+                <circle cx="91.5" cy="67" r="1.5" fill="#0D0906"/>
+                <!-- Eye shine -->
+                <circle cx="66.5" cy="65.8" r="1.1" fill="white" opacity=".85"/>
+                <circle cx="92.5" cy="65.8" r="1.1" fill="white" opacity=".85"/>
+                <!-- Eyebrows -->
+                <path d="M57 59 Q64.5 55.5 72 58.5" stroke="#2A1F15" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+                <path d="M82 58.5 Q89.5 55.5 97 59" stroke="#2A1F15" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+                <!-- Nose -->
+                <path d="M77 72 Q74.5 81 72 84 Q77 86.5 82 84 Q79.5 81 77 72Z" fill="#C09060" opacity=".55"/>
+                <path d="M73 84 Q77 87 81 84" stroke="#A87848" stroke-width="1" fill="none" stroke-linecap="round"/>
+                <!-- Mouth -->
+                <path d="M69 94 Q77 97 85 94" stroke="#A07050" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                <!-- Neck -->
+                <rect x="67" y="106" width="26" height="26" rx="8" fill="#D4A87C"/>
+                <!-- Collar / suit -->
+                <path d="M16 193 Q18 148 54 134 Q65 130 77 130 Q89 130 100 134 Q136 148 138 193Z"
+                  fill="#2C3E6B"/>
+                <!-- White shirt collar -->
+                <path d="M67 130 L61 148 L77 154 L93 148 L87 130"
+                  fill="white" opacity=".92"/>
+                <line x1="77" y1="130" x2="77" y2="154"
+                  stroke="#DDD" stroke-width=".6" opacity=".6"/>
+                <!-- Suit lapels -->
+                <path d="M61 148 L40 140 L54 134 Q65 130 67 130Z"
+                  fill="#253560"/>
+                <path d="M93 148 L114 140 L100 134 Q89 130 87 130Z"
+                  fill="#253560"/>
+              </svg>
+            </div>
+            <div class="photo-hint-sm">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <path d="M21 21l-6-6M3 11a8 8 0 1116 0 8 8 0 01-16 0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              ピンチでズーム・ドラッグで位置調整
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="edit-controls">
+
+          <!-- Background color -->
+          <div class="ctrl-sec">
+            <div class="ctrl-lbl">背景色</div>
+            <div class="bg-opts">
+              <div class="bg-opt sel bg-white" onclick="setBg(this,'#FFFFFF')">
+                <div class="bg-circle" style="background:#FFFFFF;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);"></div>
+                <span class="bg-lbl">白</span>
+              </div>
+              <div class="bg-opt" onclick="setBg(this,'#4A86D4')">
+                <div class="bg-circle" style="background:#4A86D4;"></div>
+                <span class="bg-lbl">青</span>
+              </div>
+              <div class="bg-opt" onclick="setBg(this,'#A8B4BF')">
+                <div class="bg-circle" style="background:#A8B4BF;"></div>
+                <span class="bg-lbl">グレー</span>
+              </div>
+              <div class="bg-opt" onclick="setBg(this,'#EDE8E0')">
+                <div class="bg-circle" style="background:#EDE8E0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);"></div>
+                <span class="bg-lbl">生成り</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Brightness -->
+          <div class="ctrl-sec">
+            <div class="ctrl-lbl">明るさ</div>
+            <div class="slider-row">
+              <span class="slider-ico">🌑</span>
+              <input type="range" id="sl-bright" min="0" max="100" value="62"
+                style="--v:62%;" oninput="updSlider(this)">
+              <span class="slider-ico">☀️</span>
+            </div>
+          </div>
+
+          <!-- Contrast -->
+          <div class="ctrl-sec">
+            <div class="ctrl-lbl">コントラスト</div>
+            <div class="slider-row">
+              <span class="slider-ico" style="font-size:13px;">◑</span>
+              <input type="range" id="sl-contrast" min="0" max="100" value="50"
+                style="--v:50%;" oninput="updSlider(this)">
+              <span class="slider-ico" style="font-size:13px;font-weight:700;">◉</span>
+            </div>
+          </div>
+
+          <!-- AI Background removal -->
+          <div class="ai-card">
+            <div class="ai-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                  stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--sumi);">AI 背景除去</div>
+              <div style="font-size:12px;color:var(--sumi-45);margin-top:2px;">背景を自動で除去 (iOS 17+)</div>
+            </div>
+            <div class="ai-toggle" id="ai-tog" onclick="togAI(this)">
+              <div class="ai-knob"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="bottom-bar">
+          <button class="btn-p" onclick="go(4)">
+            プレビューを確認
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M5 12h14M12 5l7 7-7 7" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+      </div><!-- /s3 -->
+
+
+      <!-- ══════════════════════════════════════════════════
+           SCREEN 4: プレビュー・保存
+      ══════════════════════════════════════════════════ -->
+      <div class="screen" id="s4">
+
+        <div class="nav">
+          <button class="nav-back" onclick="go(3)">
+            <svg width="11" height="18" viewBox="0 0 11 18" fill="none">
+              <path d="M9.5 1L1.5 9l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            編集
+          </button>
+          <span class="nav-title">プレビュー</span>
+          <button class="nav-action">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none">
+              <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="steps">
+          <div class="steps-row">
+            <div class="step-item done">
+              <div class="step-dot">
+                <svg class="chk-svg" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="step-lbl">サイズ</div>
+            </div>
+            <div class="step-item done">
+              <div class="step-dot">
+                <svg class="chk-svg" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="step-lbl">撮影</div>
+            </div>
+            <div class="step-item done">
+              <div class="step-dot">
+                <svg class="chk-svg" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="step-lbl">編集</div>
+            </div>
+            <div class="step-item act">
+              <div class="step-dot">4</div>
+              <div class="step-lbl">保存</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="prev-scroll">
+
+          <!-- Final photo -->
+          <div class="final-photo-wrap">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+              <div class="final-photo">
+                <div id="final-bg" style="position:absolute;inset:0;background:#FFFFFF;"></div>
+                <svg width="168" height="210" viewBox="0 0 154 193" style="position:relative;z-index:1;" fill="none">
+                  <path d="M42 58 Q42 20 77 20 Q112 20 112 58 Q104 36 77 36 Q50 36 42 58Z" fill="#2A1F15"/>
+                  <ellipse cx="77" cy="70" rx="33" ry="38" fill="#D4A87C"/>
+                  <path d="M44 55 Q46 28 77 26 Q108 28 110 55" stroke="#2A1F15" stroke-width="2.5" fill="none"/>
+                  <path d="M44 55 Q40 68 44 80" stroke="#2A1F15" stroke-width="2.5" fill="none"/>
+                  <path d="M110 55 Q114 68 110 80" stroke="#2A1F15" stroke-width="2.5" fill="none"/>
+                  <ellipse cx="44" cy="72" rx="6" ry="7.5" fill="#C9996A"/>
+                  <ellipse cx="110" cy="72" rx="6" ry="7.5" fill="#C9996A"/>
+                  <ellipse cx="44" cy="72" rx="3.5" ry="4.5" fill="#BD8960"/>
+                  <ellipse cx="110" cy="72" rx="3.5" ry="4.5" fill="#BD8960"/>
+                  <ellipse cx="64" cy="67" rx="5.5" ry="5.5" fill="white"/>
+                  <ellipse cx="90" cy="67" rx="5.5" ry="5.5" fill="white"/>
+                  <circle cx="65" cy="67.5" r="3.5" fill="#23160C"/>
+                  <circle cx="91" cy="67.5" r="3.5" fill="#23160C"/>
+                  <circle cx="65.5" cy="67" r="1.5" fill="#0D0906"/>
+                  <circle cx="91.5" cy="67" r="1.5" fill="#0D0906"/>
+                  <circle cx="66.5" cy="65.8" r="1.1" fill="white" opacity=".85"/>
+                  <circle cx="92.5" cy="65.8" r="1.1" fill="white" opacity=".85"/>
+                  <path d="M57 59 Q64.5 55.5 72 58.5" stroke="#2A1F15" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+                  <path d="M82 58.5 Q89.5 55.5 97 59" stroke="#2A1F15" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+                  <path d="M77 72 Q74.5 81 72 84 Q77 86.5 82 84 Q79.5 81 77 72Z" fill="#C09060" opacity=".55"/>
+                  <path d="M73 84 Q77 87 81 84" stroke="#A87848" stroke-width="1" fill="none" stroke-linecap="round"/>
+                  <path d="M69 94 Q77 97 85 94" stroke="#A07050" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                  <rect x="67" y="106" width="26" height="26" rx="8" fill="#D4A87C"/>
+                  <path d="M16 193 Q18 148 54 134 Q65 130 77 130 Q89 130 100 134 Q136 148 138 193Z" fill="#2C3E6B"/>
+                  <path d="M67 130 L61 148 L77 154 L93 148 L87 130" fill="white" opacity=".92"/>
+                  <line x1="77" y1="130" x2="77" y2="154" stroke="#DDD" stroke-width=".6" opacity=".6"/>
+                  <path d="M61 148 L40 140 L54 134 Q65 130 67 130Z" fill="#253560"/>
+                  <path d="M93 148 L114 140 L100 134 Q89 130 87 130Z" fill="#253560"/>
+                </svg>
+              </div>
+              <div class="size-tag" id="size-tag-lbl">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                  <path d="M15 3h6v6M14 10l7-7M9 21H3v-6M10 14l-7 7"
+                    stroke="var(--blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                35 × 45 mm — パスポート
+              </div>
+            </div>
+          </div>
+
+          <!-- Compliance check -->
+          <div class="check-card">
+            <div class="check-ttl">適合チェック</div>
+            <div class="check-row">
+              <div class="chk-ico chk-ok">
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <span>顔の比率が規格に適合しています</span>
+            </div>
+            <div class="check-row">
+              <div class="chk-ico chk-ok">
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <span>背景色が規定に合致しています</span>
+            </div>
+            <div class="check-row">
+              <div class="chk-ico chk-warn">
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                  <path d="M6 4v3.5M6 9.5v.5" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <span>明るさをあと少し上げると最適です</span>
+            </div>
+          </div>
+
+          <!-- L-size print layout -->
+          <div class="print-sec">
+            <div class="sec-hd">
+              <span class="sec-ttl">L判印刷プレビュー</span>
+              <span class="sec-tag">コンビニ対応</span>
+            </div>
+            <div class="print-layout">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                <div class="print-paper">
+                  <div class="print-row-g">
+                    <!-- Mini photo × 4 -->
+                    <div class="print-ph">
+                      <div class="p-bg" id="pp-bg-1"></div>
+                      <svg width="68" height="85" viewBox="0 0 154 193" style="position:relative;z-index:1;" fill="none">
+                        <path d="M42 58 Q42 20 77 20 Q112 20 112 58 Q104 36 77 36 Q50 36 42 58Z" fill="#2A1F15"/>
+                        <ellipse cx="77" cy="70" rx="33" ry="38" fill="#D4A87C"/>
+                        <ellipse cx="64" cy="67" rx="5" ry="5" fill="white"/>
+                        <ellipse cx="90" cy="67" rx="5" ry="5" fill="white"/>
+                        <circle cx="64.5" cy="67.5" r="3" fill="#23160C"/>
+                        <circle cx="90.5" cy="67.5" r="3" fill="#23160C"/>
+                        <path d="M57 59 Q64.5 55.5 72 58.5" stroke="#2A1F15" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+                        <path d="M82 58.5 Q89.5 55.5 97 59" stroke="#2A1F15" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+                        <path d="M69 94 Q77 97 85 94" stroke="#A07050" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                        <rect x="67" y="106" width="26" height="26" rx="8" fill="#D4A87C"/>
+                        <path d="M16 193 Q18 148 54 134 Q65 130 77 130 Q89 130 100 134 Q136 148 138 193Z" fill="#2C3E6B"/>
+                        <path d="M67 130 L61 148 L77 154 L93 148 L87 130" fill="white" opacity=".9"/>
+                      </svg>
+                    </div>
+                    <div class="print-ph">
+                      <div class="p-bg" id="pp-bg-2"></div>
+                      <svg width="68" height="85" viewBox="0 0 154 193" style="position:relative;z-index:1;" fill="none">
+                        <path d="M42 58 Q42 20 77 20 Q112 20 112 58 Q104 36 77 36 Q50 36 42 58Z" fill="#2A1F15"/>
+                        <ellipse cx="77" cy="70" rx="33" ry="38" fill="#D4A87C"/>
+                        <ellipse cx="64" cy="67" rx="5" ry="5" fill="white"/>
+                        <ellipse cx="90" cy="67" rx="5" ry="5" fill="white"/>
+                        <circle cx="64.5" cy="67.5" r="3" fill="#23160C"/>
+                        <circle cx="90.5" cy="67.5" r="3" fill="#23160C"/>
+                        <path d="M57 59 Q64.5 55.5 72 58.5" stroke="#2A1F15" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+                        <path d="M82 58.5 Q89.5 55.5 97 59" stroke="#2A1F15" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+                        <path d="M69 94 Q77 97 85 94" stroke="#A07050" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                        <rect x="67" y="106" width="26" height="26" rx="8" fill="#D4A87C"/>
+                        <path d="M16 193 Q18 148 54 134 Q65 130 77 130 Q89 130 100 134 Q136 148 138 193Z" fill="#2C3E6B"/>
+                        <path d="M67 130 L61 148 L77 154 L93 148 L87 130" fill="white" opacity=".9"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="print-row-g">
+                    <div class="print-ph">
+                      <div class="p-bg" id="pp-bg-3"></div>
+                      <svg width="68" height="85" viewBox="0 0 154 193" style="position:relative;z-index:1;" fill="none">
+                        <path d="M42 58 Q42 20 77 20 Q112 20 112 58 Q104 36 77 36 Q50 36 42 58Z" fill="#2A1F15"/>
+                        <ellipse cx="77" cy="70" rx="33" ry="38" fill="#D4A87C"/>
+                        <ellipse cx="64" cy="67" rx="5" ry="5" fill="white"/>
+                        <ellipse cx="90" cy="67" rx="5" ry="5" fill="white"/>
+                        <circle cx="64.5" cy="67.5" r="3" fill="#23160C"/>
+                        <circle cx="90.5" cy="67.5" r="3" fill="#23160C"/>
+                        <path d="M57 59 Q64.5 55.5 72 58.5" stroke="#2A1F15" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+                        <path d="M82 58.5 Q89.5 55.5 97 59" stroke="#2A1F15" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+                        <path d="M69 94 Q77 97 85 94" stroke="#A07050" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                        <rect x="67" y="106" width="26" height="26" rx="8" fill="#D4A87C"/>
+                        <path d="M16 193 Q18 148 54 134 Q65 130 77 130 Q89 130 100 134 Q136 148 138 193Z" fill="#2C3E6B"/>
+                        <path d="M67 130 L61 148 L77 154 L93 148 L87 130" fill="white" opacity=".9"/>
+                      </svg>
+                    </div>
+                    <div class="print-ph">
+                      <div class="p-bg" id="pp-bg-4"></div>
+                      <svg width="68" height="85" viewBox="0 0 154 193" style="position:relative;z-index:1;" fill="none">
+                        <path d="M42 58 Q42 20 77 20 Q112 20 112 58 Q104 36 77 36 Q50 36 42 58Z" fill="#2A1F15"/>
+                        <ellipse cx="77" cy="70" rx="33" ry="38" fill="#D4A87C"/>
+                        <ellipse cx="64" cy="67" rx="5" ry="5" fill="white"/>
+                        <ellipse cx="90" cy="67" rx="5" ry="5" fill="white"/>
+                        <circle cx="64.5" cy="67.5" r="3" fill="#23160C"/>
+                        <circle cx="90.5" cy="67.5" r="3" fill="#23160C"/>
+                        <path d="M57 59 Q64.5 55.5 72 58.5" stroke="#2A1F15" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+                        <path d="M82 58.5 Q89.5 55.5 97 59" stroke="#2A1F15" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+                        <path d="M69 94 Q77 97 85 94" stroke="#A07050" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                        <rect x="67" y="106" width="26" height="26" rx="8" fill="#D4A87C"/>
+                        <path d="M16 193 Q18 148 54 134 Q65 130 77 130 Q89 130 100 134 Q136 148 138 193Z" fill="#2C3E6B"/>
+                        <path d="M67 130 L61 148 L77 154 L93 148 L87 130" fill="white" opacity=".9"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="print-cap">L判 (89×127mm) — 4枚配置</div>
+                </div>
+                <div class="print-meta">
+                  <span>解像度: 600dpi</span>
+                  <span>カラー印刷対応</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /prev-scroll -->
+
+        <!-- Save actions -->
+        <div class="save-area">
+          <button class="btn-p" onclick="showSaved()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M4 14.9A7 7 0 1115.7 8h1.8a4.5 4.5 0 012.5 8.25M12 12v9m0 0l3-3m-3 3l-3-3"
+                stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            カメラロールに保存
+          </button>
+          <button class="btn-s">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M6 2h12a2 2 0 012 2v16a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2zM8 7h8M8 11h8M8 15h5"
+                stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            コンビニで印刷する
+          </button>
+        </div>
+
+      </div><!-- /s4 -->
+
+    </div><!-- /screens-wrap -->
+
+    <div class="home-ind"><span></span></div>
+  </div><!-- /iphone-screen -->
+</div><!-- /iphone-frame -->
+
+<div class="proto-lbl">証明写真スタジオ — UIプロトタイプ v1.0 &nbsp;|&nbsp; 凛雅 Ringa Design</div>
+
+<!-- Toast -->
+<div id="toast">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="10" fill="#34C759"/>
+    <path d="M7 12l4 4 6-6" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  カメラロールに保存しました
+</div>
+
+<script>
+  /* ── State ───────────────────────────────────────────── */
+  var cur   = 1;
+  var bgCol = '#FFFFFF';
+  var sizeLabels = {
+    passport : '35 × 45 mm — パスポート',
+    resume   : '30 × 40 mm — 履歴書・就活',
+    mynumber : '35 × 45 mm — マイナンバー',
+    visa     : '45 × 45 mm — ビザ・在留資格',
+    license  : '24 × 30 mm — 運転免許証'
+  };
+  var selectedSid = 'passport';
+
+  /* ── Screen navigation ───────────────────────────────── */
+  function go(n) {
+    if (n === cur) return;
+    var prev = document.getElementById('s' + cur);
+    var next = document.getElementById('s' + n);
+    if (!next) return;
+
+    // Sync bg on going to s4
+    if (n === 4) syncBg();
+
+    prev.style.display = 'none';
+    next.style.display = 'flex';
+
+    // Status bar color
+    var sb = document.getElementById('status-bar');
+    if (n === 2) {
+      sb.style.background = 'rgba(10,10,14,1)';
+      sb.style.color       = 'rgba(255,255,255,.92)';
+    } else {
+      sb.style.background = '';
+      sb.style.color       = '';
+    }
+    cur = n;
+  }
+
+  /* ── Size pick ───────────────────────────────────────── */
+  function pickSize(card, sid) {
+    document.querySelectorAll('.sz-card').forEach(function(c){ c.classList.remove('sel'); });
+    card.classList.add('sel');
+    selectedSid = sid;
+    var el = document.getElementById('size-tag-lbl');
+    if (el && sizeLabels[sid]) el.textContent = sizeLabels[sid];
+  }
+
+  /* ── Background color ────────────────────────────────── */
+  function setBg(opt, color) {
+    document.querySelectorAll('.bg-opt').forEach(function(o){ o.classList.remove('sel'); });
+    opt.classList.add('sel');
+    bgCol = color;
+    var eb = document.getElementById('edit-bg');
+    if (eb) eb.style.background = color;
+  }
+
+  function syncBg() {
+    var fb = document.getElementById('final-bg');
+    if (fb) fb.style.background = bgCol;
+    ['pp-bg-1','pp-bg-2','pp-bg-3','pp-bg-4'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.style.background = bgCol;
+    });
+  }
+
+  /* ── Range slider ────────────────────────────────────── */
+  function updSlider(input) {
+    input.style.setProperty('--v', input.value + '%');
+  }
+
+  /* ── Shutter ─────────────────────────────────────────── */
+  function triggerShutter() {
+    var fl = document.getElementById('cam-flash');
+    if (fl) {
+      fl.classList.remove('on');
+      void fl.offsetWidth; // reflow
+      fl.classList.add('on');
+    }
+    setTimeout(function(){ go(3); }, 580);
+  }
+
+  /* ── AI toggle ───────────────────────────────────────── */
+  function togAI(el) {
+    el.classList.toggle('off');
+  }
+
+  /* ── Save toast ──────────────────────────────────────── */
+  function showSaved() {
+    var t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 2600);
+  }
+
+  /* ── Init sliders ────────────────────────────────────── */
+  document.querySelectorAll('input[type=range]').forEach(function(el){
+    el.style.setProperty('--v', el.value + '%');
+  });
+</script>
+</body>
+</html>

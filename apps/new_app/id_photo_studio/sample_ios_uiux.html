@@ -1,0 +1,2388 @@
+<!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║  証明写真スタジオ — iOS UI/UX Redesign                             ║
+  ║  設計思想: Apple HIG × 凛雅 (Ringa) — Poised Refinement           ║
+  ║                                                                  ║
+  ║  iOS UI/UX原則適用:                                               ║
+  ║  • タップターゲット最小44×44pt (Tier S)                            ║
+  ║  • 8ptグリッドシステム (Tier S)                                    ║
+  ║  • Spring curve (0.34,1.56,0.64,1) フィードバック (Tier A)         ║
+  ║  • スケルトンスクリーン (Tier S)                                   ║
+  ║  • Safe Area厳守 (Tier A)                                         ║
+  ║  • Dynamic Island対応 (Tier B)                                    ║
+  ║  • ハプティクスフィードバック模倣                                   ║
+  ║  • Just-in-Timeパーミッション (Tier S)                            ║
+  ║                                                                  ║
+  ║  対象: iPhone 15 Pro (390×844pt) / iOS 17+                       ║
+  ║  Structure: 2/10 | Silence: 4/10 | Precision: 1/10              ║
+  ╚══════════════════════════════════════════════════════════════════╝
+-->
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>証明写真スタジオ — iOS UI/UX</title>
+  <style>
+    /* ── Design Tokens ──────────────────────────────────────────── */
+    :root {
+      /* 凛雅カラーシステム */
+      --kinpaku:       #F7F5F0;
+      --sumi:          #1A1A1C;
+      --sumi-70:       rgba(26,26,28,.70);
+      --sumi-45:       rgba(26,26,28,.45);
+      --sumi-20:       rgba(26,26,28,.20);
+      --sumi-08:       rgba(26,26,28,.08);
+      --card:          #FFFFFF;
+      --bg2:           #EFEEEB;
+      --bg3:           #E8E6E1;
+
+      /* iOS System Colors */
+      --sys-blue:      #0A7AFF;
+      --sys-blue-lt:   #E3EFFF;
+      --sys-blue-dk:   #0062CC;
+      --sys-green:     #34C759;
+      --sys-orange:    #FF9500;
+      --sys-red:       #FF3B30;
+      --sys-yellow:    #FFD60A;
+
+      /* Typography Scale (8pt grid) */
+      --font-display:  28px;
+      --font-title:    22px;
+      --font-headline: 17px;
+      --font-body:     15px;
+      --font-caption:  12px;
+      --font-micro:    11px;
+
+      /* Radius */
+      --r-xs:  8px;
+      --r-sm:  12px;
+      --r-md:  16px;
+      --r-lg:  20px;
+      --r-xl:  28px;
+
+      /* Spacing (8pt grid) */
+      --sp-1: 8px;
+      --sp-2: 16px;
+      --sp-3: 24px;
+      --sp-4: 32px;
+      --sp-5: 40px;
+
+      /* Elevation */
+      --shadow-xs: 0 1px 4px rgba(26,26,28,.06);
+      --shadow-sm: 0 2px 12px rgba(26,26,28,.08);
+      --shadow-md: 0 4px 20px rgba(26,26,28,.12);
+      --shadow-lg: 0 8px 32px rgba(26,26,28,.18);
+
+      /* Animation curves */
+      --spring:    cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-in:   cubic-bezier(0.4, 0, 1, 1);
+    }
+
+    /* ── Reset ──────────────────────────────────────────────────── */
+    *, *::before, *::after {
+      margin: 0; padding: 0;
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    button {
+      font: inherit; cursor: pointer; border: none; background: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    /* ── Page Layout ─────────────────────────────────────────────── */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+                   'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
+      background: #B8B4AC;
+      background-image:
+        radial-gradient(ellipse 140% 70% at 15% 5%, rgba(215,212,205,.9) 0%, transparent 50%),
+        radial-gradient(ellipse 120% 80% at 85% 95%, rgba(185,182,174,.85) 0%, transparent 55%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px 56px;
+      gap: 32px;
+    }
+
+    /* ── Page Title ───────────────────────────────────────────────── */
+    .page-header {
+      text-align: center;
+    }
+    .page-header h1 {
+      font-size: 13px; font-weight: 600;
+      color: rgba(255,255,255,.75);
+      letter-spacing: .6px; text-transform: uppercase;
+    }
+    .page-header p {
+      font-size: 11px; color: rgba(255,255,255,.4);
+      margin-top: 4px; letter-spacing: .3px;
+    }
+
+    /* ── iPhone 15 Pro Frame ─────────────────────────────────────── */
+    .iphone-frame {
+      width: 393px;
+      height: 852px;
+      border-radius: 55px;
+      /* Natural Titanium */
+      background: linear-gradient(145deg, #4A4540 0%, #2E2A26 40%, #3A3531 100%);
+      position: relative;
+      flex-shrink: 0;
+      box-shadow:
+        inset 0 0 0 .5px rgba(255,255,255,.12),
+        inset 0 1px 0 rgba(255,255,255,.08),
+        0 0 0 .5px rgba(0,0,0,.6),
+        0 0 0 2px rgba(0,0,0,.3),
+        0 50px 140px rgba(0,0,0,.55),
+        0 20px 50px rgba(0,0,0,.35);
+    }
+
+    /* Volume buttons (left) */
+    .iphone-frame::before {
+      content: '';
+      position: absolute; left: -3.5px; top: 152px;
+      width: 3.5px; height: 30px;
+      background: linear-gradient(90deg, #1A1816, #2C2826);
+      border-radius: 3px 0 0 3px;
+      box-shadow: 0 48px 0 #2C2826, 0 96px 0 #2C2826;
+    }
+    /* Power button (right) */
+    .iphone-frame::after {
+      content: '';
+      position: absolute; right: -3.5px; top: 188px;
+      width: 3.5px; height: 76px;
+      background: linear-gradient(270deg, #1A1816, #2C2826);
+      border-radius: 0 3px 3px 0;
+    }
+
+    /* Screen bezel */
+    .iphone-screen {
+      position: absolute;
+      inset: 5px;
+      border-radius: 50px;
+      overflow: hidden;
+      background: var(--kinpaku);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Dynamic Island ───────────────────────────────────────────── */
+    .dyn-island {
+      position: absolute;
+      top: 13px; left: 50%;
+      transform: translateX(-50%);
+      width: 126px; height: 36px;
+      background: #000000;
+      border-radius: 20px;
+      z-index: 300;
+      pointer-events: none;
+      transition: all 0.4s var(--spring);
+    }
+    .dyn-island.expanded {
+      width: 200px; height: 56px;
+      border-radius: 26px;
+    }
+
+    /* ── Status Bar ───────────────────────────────────────────────── */
+    .status-bar {
+      height: 59px;
+      flex-shrink: 0;
+      padding: 0 28px 10px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      position: relative;
+      z-index: 10;
+      transition: color .3s;
+    }
+    .status-bar.light { color: var(--sumi); }
+    .status-bar.dark  { color: rgba(255,255,255,.92); }
+    .status-time {
+      font-size: 15px; font-weight: 600;
+      letter-spacing: -.3px;
+    }
+    .status-icons {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .status-icons svg { opacity: .9; }
+
+    /* ── Screens Container ────────────────────────────────────────── */
+    .screens-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen {
+      position: absolute; inset: 0;
+      background: var(--kinpaku);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .screen.active { display: flex; }
+
+    /* iOS Navigation Push/Pop Animations */
+    @keyframes pushIn    { from { transform: translateX(100%) } to { transform: translateX(0) } }
+    @keyframes pushOut   { from { transform: translateX(0); opacity: 1 } to { transform: translateX(-28%); opacity: .85 } }
+    @keyframes popIn     { from { transform: translateX(-28%); opacity: .85 } to { transform: translateX(0); opacity: 1 } }
+    @keyframes popOut    { from { transform: translateX(0) } to { transform: translateX(100%) } }
+    @keyframes fadeScale { from { opacity: 0; transform: scale(.95) } to { opacity: 1; transform: scale(1) } }
+
+    .screen.push-in  { animation: pushIn  .36s var(--ease-out) both; }
+    .screen.push-out { animation: pushOut .36s var(--ease-out) both; pointer-events: none; }
+    .screen.pop-in   { animation: popIn   .36s var(--ease-out) both; }
+    .screen.pop-out  { animation: popOut  .36s var(--ease-out) both; pointer-events: none; }
+
+    /* ── Home Indicator ───────────────────────────────────────────── */
+    .home-ind {
+      height: 34px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .3s;
+    }
+    .home-ind span {
+      display: block;
+      width: 134px; height: 5px;
+      border-radius: 3px;
+      opacity: .18;
+      transition: all .3s;
+    }
+    .home-ind.light { background: var(--kinpaku); }
+    .home-ind.light span { background: var(--sumi); }
+    .home-ind.dark  { background: #080A0E; }
+    .home-ind.dark span  { background: #fff; }
+
+    /* ── Navigation Bar (inline style) ───────────────────────────── */
+    .nav-bar {
+      height: 44px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      position: relative;
+    }
+    .nav-bar.frosted {
+      background: rgba(247,245,240,.88);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: .5px solid var(--sumi-08);
+    }
+    .nav-bar.dark-frosted {
+      background: rgba(8,10,14,.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: .5px solid rgba(255,255,255,.06);
+    }
+
+    .nav-btn {
+      min-width: 44px; min-height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: var(--r-sm);
+      color: var(--sys-blue);
+      font-size: var(--font-headline);
+      font-weight: 400;
+      gap: 4px;
+      transition: opacity .15s;
+    }
+    .nav-btn:active { opacity: .45; }
+    .nav-btn.white { color: rgba(255,255,255,.92); }
+    .nav-btn.right { margin-left: auto; }
+
+    .nav-title-wrap {
+      position: absolute; left: 0; right: 0;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .nav-title {
+      font-size: var(--font-headline);
+      font-weight: 600;
+      color: var(--sumi);
+      letter-spacing: -.4px;
+    }
+    .nav-title.white { color: rgba(255,255,255,.96); }
+
+    /* ── Step Indicator ───────────────────────────────────────────── */
+    .step-strip {
+      padding: 12px var(--sp-2) 8px;
+      flex-shrink: 0;
+      background: var(--kinpaku);
+    }
+    .step-row {
+      display: flex; align-items: flex-start;
+    }
+    .step-item {
+      flex: 1;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      position: relative;
+    }
+    .step-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 14px;
+      left: calc(50% + 15px);
+      right: calc(-50% + 15px);
+      height: 2px;
+      background: var(--sumi-08);
+      border-radius: 1px;
+      transition: background .35s;
+    }
+    .step-item.done::after,
+    .step-item.act::after {
+      background: var(--sys-blue);
+    }
+
+    .step-dot {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--bg2);
+      border: 2px solid var(--sumi-08);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600;
+      color: var(--sumi-45);
+      transition: all .3s var(--spring);
+      position: relative; z-index: 1;
+    }
+    .step-item.act .step-dot {
+      background: var(--sys-blue);
+      border-color: var(--sys-blue);
+      color: #fff;
+      box-shadow: 0 0 0 4px rgba(10,122,255,.16);
+      transform: scale(1.1);
+    }
+    .step-item.done .step-dot {
+      background: var(--sys-blue);
+      border-color: var(--sys-blue);
+      color: #fff;
+    }
+
+    .step-lbl {
+      font-size: 10px; font-weight: 500;
+      color: var(--sumi-45);
+      letter-spacing: .2px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .step-item.act  .step-lbl { color: var(--sys-blue); font-weight: 600; }
+    .step-item.done .step-lbl { color: var(--sys-blue); }
+
+    /* ── Scroll Area ──────────────────────────────────────────────── */
+    .scroll {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .scroll::-webkit-scrollbar { display: none; }
+
+    /* ── Bottom Action Bar ────────────────────────────────────────── */
+    .bottom-bar {
+      padding: 12px var(--sp-2) 16px;
+      flex-shrink: 0;
+      background: var(--kinpaku);
+      border-top: .5px solid var(--sumi-08);
+    }
+
+    /* Primary Button — 52pt height, full-width */
+    .btn-primary {
+      width: 100%; height: 52px;
+      background: var(--sys-blue);
+      color: #fff;
+      border-radius: var(--r-lg);
+      font-size: var(--font-headline);
+      font-weight: 600;
+      letter-spacing: -.3px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: transform .12s var(--spring), background .12s;
+    }
+    .btn-primary:active {
+      transform: scale(.96);
+      background: var(--sys-blue-dk);
+    }
+    .btn-primary:disabled,
+    .btn-primary.disabled {
+      background: var(--sumi-20);
+      color: var(--sumi-45);
+      pointer-events: none;
+    }
+
+    /* Secondary Button */
+    .btn-secondary {
+      width: 100%; height: 52px;
+      background: transparent;
+      color: var(--sys-blue);
+      border: 1.5px solid var(--sys-blue);
+      border-radius: var(--r-lg);
+      font-size: var(--font-headline);
+      font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: all .12s;
+    }
+    .btn-secondary:active { opacity: .55; }
+
+    /* Icon Button (44×44pt minimum) */
+    .btn-icon {
+      min-width: 44px; min-height: 44px;
+      border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      transition: transform .12s var(--spring), opacity .12s;
+    }
+    .btn-icon:active { transform: scale(.88); opacity: .6; }
+
+    /* ── Skeleton Loader ──────────────────────────────────────────── */
+    @keyframes shimmer {
+      0%   { background-position: -400px 0; }
+      100% { background-position: 400px 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg,
+        var(--bg2) 25%, var(--bg3) 50%, var(--bg2) 75%);
+      background-size: 800px 100%;
+      animation: shimmer 1.6s ease-in-out infinite;
+      border-radius: var(--r-sm);
+    }
+
+    /* ── Section Header ───────────────────────────────────────────── */
+    .section-hd {
+      padding: 20px var(--sp-2) 4px;
+    }
+    .section-title {
+      font-size: var(--font-display);
+      font-weight: 700;
+      color: var(--sumi);
+      letter-spacing: -.8px;
+      line-height: 1.2;
+    }
+    .section-sub {
+      font-size: var(--font-body);
+      color: var(--sumi-70);
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    /* ── Badges ───────────────────────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: var(--font-micro);
+      font-weight: 600;
+      letter-spacing: .1px;
+    }
+    .badge-blue   { background: var(--sys-blue);   color: #fff; }
+    .badge-green  { background: var(--sys-green);  color: #fff; }
+    .badge-orange { background: var(--sys-orange); color: #fff; }
+    .badge-ghost  { background: var(--sys-blue-lt); color: var(--sys-blue); }
+    .badge-gray   { background: var(--bg2); color: var(--sumi-70); }
+
+    /* ── Toast Notification ───────────────────────────────────────── */
+    @keyframes toastIn  { from { opacity:0; transform:translateY(20px) scale(.92) } to { opacity:1; transform:translateY(0) scale(1) } }
+    @keyframes toastOut { from { opacity:1; transform:translateY(0) scale(1) } to { opacity:0; transform:translateY(20px) scale(.92) } }
+
+    #toast {
+      position: absolute;
+      bottom: 100px; left: 16px; right: 16px;
+      background: rgba(26,26,28,.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      color: #fff;
+      font-size: var(--font-body);
+      font-weight: 500;
+      padding: 14px 18px;
+      border-radius: var(--r-md);
+      display: flex; align-items: center; gap: 10px;
+      z-index: 500;
+      box-shadow: var(--shadow-lg);
+      display: none;
+    }
+    #toast.show {
+      display: flex;
+      animation: toastIn .35s var(--spring) both;
+    }
+    #toast.hide {
+      animation: toastOut .28s var(--ease-in) both;
+    }
+
+    /* ── Permission Pre-prompt Sheet ──────────────────────────────── */
+    .perm-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(4px);
+      z-index: 400;
+      display: flex; align-items: flex-end;
+      opacity: 0; pointer-events: none;
+      transition: opacity .3s;
+    }
+    .perm-overlay.show { opacity: 1; pointer-events: auto; }
+
+    .perm-sheet {
+      width: 100%;
+      background: var(--card);
+      border-radius: var(--r-xl) var(--r-xl) 0 0;
+      padding: 12px var(--sp-2) 32px;
+      transform: translateY(100%);
+      transition: transform .4s var(--spring);
+    }
+    .perm-overlay.show .perm-sheet {
+      transform: translateY(0);
+    }
+    .perm-handle {
+      width: 36px; height: 4px;
+      border-radius: 2px;
+      background: var(--sumi-20);
+      margin: 0 auto 20px;
+    }
+    .perm-icon-wrap {
+      width: 72px; height: 72px;
+      background: var(--sys-blue-lt);
+      border-radius: var(--r-lg);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .perm-title {
+      font-size: var(--font-title);
+      font-weight: 700;
+      color: var(--sumi);
+      text-align: center;
+      letter-spacing: -.5px;
+      margin-bottom: 8px;
+    }
+    .perm-desc {
+      font-size: var(--font-body);
+      color: var(--sumi-70);
+      text-align: center;
+      line-height: 1.55;
+      margin-bottom: 24px;
+    }
+    .perm-features {
+      display: flex; flex-direction: column; gap: 12px;
+      margin-bottom: 24px;
+    }
+    .perm-feat {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .perm-feat-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--bg2);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .perm-feat-text { font-size: var(--font-body); color: var(--sumi); }
+    .perm-feat-text span { display: block; font-size: var(--font-caption); color: var(--sumi-45); margin-top: 1px; }
+
+    /* ════════════════════════════════════════════════════════════════
+       SCREEN 1 — サイズ選択
+    ════════════════════════════════════════════════════════════════ */
+
+    .size-list {
+      padding: 8px var(--sp-2) var(--sp-3);
+      display: flex; flex-direction: column; gap: 10px;
+    }
+
+    .sz-card {
+      background: var(--card);
+      border-radius: var(--r-md);
+      padding: 14px;
+      display: flex; align-items: center; gap: 14px;
+      border: 2px solid transparent;
+      box-shadow: var(--shadow-xs);
+      transition: all .18s var(--spring);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .sz-card:active { transform: scale(.975); }
+    .sz-card.sel {
+      border-color: var(--sys-blue);
+      background: var(--sys-blue-lt);
+      box-shadow: 0 0 0 1px var(--sys-blue), var(--shadow-sm);
+    }
+
+    /* Photo ratio preview */
+    .sz-ratio {
+      flex-shrink: 0;
+      background: var(--bg2);
+      border: 1.5px solid var(--sumi-08);
+      border-radius: 4px;
+      transition: all .2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .sz-ratio::after {
+      content: '';
+      position: absolute; inset: 3px;
+      background: linear-gradient(135deg, #D4D1CA 0%, #C8C5BD 100%);
+      border-radius: 2px;
+    }
+    .sz-card.sel .sz-ratio {
+      background: var(--sys-blue-lt);
+      border-color: var(--sys-blue);
+    }
+
+    .sz-info { flex: 1; min-width: 0; }
+    .sz-name {
+      font-size: var(--font-body);
+      font-weight: 600;
+      color: var(--sumi);
+      letter-spacing: -.3px;
+    }
+    .sz-desc {
+      font-size: var(--font-caption);
+      color: var(--sumi-45);
+      margin-top: 2px;
+    }
+    .sz-right {
+      display: flex; flex-direction: column;
+      align-items: flex-end; gap: 6px;
+      flex-shrink: 0;
+    }
+    .sz-dim {
+      font-size: 13px; font-weight: 600;
+      color: var(--sumi-45);
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: 'tnum';
+    }
+    .sz-check {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      border: 2px solid var(--sumi-20);
+      display: flex; align-items: center; justify-content: center;
+      transition: all .2s var(--spring);
+      flex-shrink: 0;
+    }
+    .sz-card.sel .sz-check {
+      background: var(--sys-blue);
+      border-color: var(--sys-blue);
+      transform: scale(1.05);
+    }
+
+    /* Country usage chips */
+    .sz-chips {
+      display: flex; gap: 4px; flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .sz-chip {
+      font-size: 10px; font-weight: 500;
+      color: var(--sumi-45);
+      background: var(--bg2);
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: .5px solid var(--sumi-08);
+    }
+
+    /* Popular banner */
+    .popular-banner {
+      background: linear-gradient(135deg, #E3EFFF 0%, #D4E8FF 100%);
+      border-radius: var(--r-sm);
+      padding: 12px var(--sp-2);
+      margin: 0 var(--sp-2) 16px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .popular-banner-icon {
+      width: 36px; height: 36px;
+      background: var(--sys-blue);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .popular-text { font-size: var(--font-caption); color: var(--sys-blue); font-weight: 500; }
+    .popular-text strong { display: block; font-size: var(--font-body); font-weight: 700; color: var(--sumi); }
+
+    /* Section label */
+    .list-label {
+      font-size: 11px; font-weight: 700;
+      color: var(--sumi-45);
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      padding: 0 var(--sp-2) 8px;
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       SCREEN 2 — カメラ撮影
+    ════════════════════════════════════════════════════════════════ */
+
+    .cam-shell {
+      flex: 1;
+      position: relative;
+      background: #06080C;
+      overflow: hidden;
+    }
+
+    /* Camera feed simulation */
+    .cam-feed {
+      position: absolute; inset: 0;
+      background: linear-gradient(175deg, #0E1018 0%, #06080C 100%);
+    }
+    /* Subtle grid overlay */
+    .cam-feed::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    /* Rule-of-thirds guide */
+    .cam-feed::after {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size: 33.33% 33.33%;
+    }
+
+    /* Vignette */
+    .cam-vignette {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 68% 56% at 50% 40%,
+        transparent 30%, rgba(0,0,0,.72) 100%);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Focus indicator (simulated autofocus) */
+    @keyframes focusPulse {
+      0%   { opacity: 0; transform: scale(1.3); }
+      30%  { opacity: 1; transform: scale(.98); }
+      100% { opacity: 0; transform: scale(.9); }
+    }
+    .focus-ring {
+      position: absolute;
+      width: 60px; height: 60px;
+      border: 1.5px solid rgba(255,220,0,.85);
+      border-radius: 8px;
+      top: 34%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation: focusPulse 1.8s var(--ease-out) 1s infinite;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* Face oval guide */
+    .face-guide-wrap {
+      position: absolute;
+      width: 200px; height: 268px;
+      top: 42%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 4;
+    }
+
+    @keyframes guideBreath {
+      0%,100% { transform: translate(-50%, -50%) scale(1); opacity: .9; }
+      50%      { transform: translate(-50%, -50%) scale(1.025); opacity: .7; }
+    }
+    .face-guide-wrap { animation: guideBreath 3.5s ease-in-out infinite; }
+
+    /* Corner ticks */
+    .tick {
+      position: absolute;
+      width: 20px; height: 20px;
+      border-color: #0A7AFF;
+      border-style: solid;
+    }
+    .tk-tl { top: 0; left: 0; border-width: 2.5px 0 0 2.5px; border-radius: 3px 0 0 0; }
+    .tk-tr { top: 0; right: 0; border-width: 2.5px 2.5px 0 0; border-radius: 0 3px 0 0; }
+    .tk-bl { bottom: 0; left: 0; border-width: 0 0 2.5px 2.5px; border-radius: 0 0 0 3px; }
+    .tk-br { bottom: 0; right: 0; border-width: 0 2.5px 2.5px 0; border-radius: 0 0 3px 0; }
+
+    /* Oval SVG */
+    .face-oval {
+      width: 100%; height: 100%;
+    }
+
+    /* Hint badges */
+    .cam-hint-area {
+      position: absolute;
+      bottom: 144px; left: 0; right: 0;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 8px;
+      z-index: 5;
+    }
+    .hint-pill {
+      font-size: 13px; font-weight: 500;
+      color: rgba(255,255,255,.95);
+      background: rgba(0,0,0,.56);
+      backdrop-filter: blur(16px);
+      padding: 7px 16px;
+      border-radius: 20px;
+      border: .5px solid rgba(255,255,255,.1);
+    }
+
+    @keyframes dotBlink {
+      0%,100% { opacity: 1; } 50% { opacity: .3; }
+    }
+    .live-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--sys-green);
+      display: inline-block;
+      animation: dotBlink 1.4s ease-in-out infinite;
+    }
+
+    /* Camera controls bar */
+    .cam-controls {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 16px 40px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(0deg, rgba(0,0,0,.7) 0%, transparent 100%);
+      z-index: 6;
+    }
+
+    /* Side control buttons — 44×44pt */
+    .cam-side-btn {
+      width: 50px; height: 50px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.12);
+      border: .5px solid rgba(255,255,255,.16);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,.92);
+      transition: all .15s var(--spring);
+    }
+    .cam-side-btn:active { transform: scale(.88); background: rgba(255,255,255,.22); }
+
+    /* Shutter button */
+    .shutter {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.95);
+      border: 4px solid rgba(255,255,255,.3);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.15), 0 4px 24px rgba(0,0,0,.5);
+      transition: transform .1s var(--spring);
+    }
+    .shutter:active { transform: scale(.88); }
+    .shutter-inner {
+      width: 62px; height: 62px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid rgba(0,0,0,.06);
+    }
+
+    /* Camera flash overlay */
+    @keyframes camFlash { 0%{opacity:0} 10%{opacity:1} 100%{opacity:0} }
+    #cam-flash {
+      position: absolute; inset: 0;
+      background: #fff;
+      opacity: 0; pointer-events: none;
+      z-index: 100;
+    }
+    #cam-flash.on { animation: camFlash .55s ease-out forwards; }
+
+    /* Camera timer display */
+    .cam-timer {
+      position: absolute;
+      top: 16px; left: 0; right: 0;
+      display: flex; justify-content: center;
+      z-index: 6;
+    }
+    @keyframes timerCount {
+      0% { transform: scale(1.5); opacity: 0; }
+      20% { transform: scale(1); opacity: 1; }
+      80% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(.7); opacity: 0; }
+    }
+    .timer-num {
+      font-size: 64px; font-weight: 700;
+      color: rgba(255,255,255,.95);
+      text-shadow: 0 0 30px rgba(255,255,255,.4);
+      letter-spacing: -2px;
+      animation: timerCount 1s ease-in-out forwards;
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       SCREEN 3 — 編集・補正
+    ════════════════════════════════════════════════════════════════ */
+
+    /* Photo preview — extra frame spacing (額縁の間) */
+    .edit-preview-area {
+      padding: 20px var(--sp-2) 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .photo-frame-outer {
+      /* minimum 24pt margin = 額縁の間 */
+      padding: 24px;
+      background: var(--bg2);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-sm);
+    }
+    .photo-frame {
+      width: 136px; height: 170px;
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--shadow-md);
+      border: .5px solid var(--sumi-08);
+      background: var(--bg3);
+    }
+    .photo-frame-bg {
+      position: absolute; inset: 0;
+      transition: background .35s ease;
+    }
+    /* Photo silhouette */
+    .photo-silhouette {
+      position: absolute; inset: 0;
+      display: flex; align-items: flex-end; justify-content: center;
+      pointer-events: none;
+    }
+
+    .edit-meta {
+      font-size: var(--font-caption);
+      color: var(--sumi-45);
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    /* Edit controls */
+    .edit-controls {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px var(--sp-2) 12px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .edit-controls::-webkit-scrollbar { display: none; }
+
+    .ctrl-section { margin-bottom: 24px; }
+    .ctrl-label {
+      font-size: 11px; font-weight: 700;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      color: var(--sumi-45);
+      margin-bottom: 12px;
+    }
+
+    /* Background color selector */
+    .bg-grid {
+      display: flex; gap: 12px;
+    }
+    .bg-opt {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 5px;
+      cursor: pointer;
+    }
+    .bg-swatch {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      transition: all .2s var(--spring);
+      position: relative;
+    }
+    .bg-opt.sel .bg-swatch {
+      border-color: var(--sys-blue);
+      box-shadow: 0 0 0 2px var(--sys-blue), var(--shadow-sm);
+      transform: scale(1.08);
+    }
+    .bg-opt.sel .bg-swatch::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12l5 5L19 7' stroke='%230A7AFF' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/18px no-repeat;
+    }
+    .bg-opt.sel.bg-white .bg-swatch::after {
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12l5 5L19 7' stroke='%231A1A1C' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/18px no-repeat;
+    }
+    .bg-lbl {
+      font-size: var(--font-caption);
+      font-weight: 500;
+      color: var(--sumi-70);
+    }
+
+    /* Slider row */
+    .slider-row {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 12px;
+    }
+    .slider-ico { font-size: 16px; line-height: 1; }
+    .slider-val {
+      font-size: var(--font-caption);
+      font-weight: 600;
+      color: var(--sys-blue);
+      width: 32px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 4px;
+      border-radius: 2px;
+      outline: none;
+      background: linear-gradient(to right,
+        var(--sys-blue) var(--v, 60%),
+        var(--sumi-08) var(--v, 60%));
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2), 0 0 0 1px rgba(0,0,0,.04);
+      cursor: pointer;
+      transition: transform .1s var(--spring);
+    }
+    input[type=range]:active::-webkit-slider-thumb {
+      transform: scale(1.2);
+    }
+
+    /* AI background removal card */
+    .ai-card {
+      background: linear-gradient(135deg, #E3EFFF 0%, #EEE3FF 100%);
+      border-radius: var(--r-sm);
+      padding: 14px;
+      display: flex; align-items: center; gap: 12px;
+      border: 1px solid rgba(10,122,255,.12);
+    }
+    .ai-icon {
+      width: 40px; height: 40px;
+      border-radius: var(--r-sm);
+      background: var(--sys-blue);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .ai-info { flex: 1; }
+    .ai-title { font-size: var(--font-body); font-weight: 600; color: var(--sumi); }
+    .ai-sub   { font-size: var(--font-caption); color: var(--sumi-45); margin-top: 2px; }
+    .ai-toggle {
+      width: 50px; height: 30px;
+      border-radius: 15px;
+      background: var(--sys-blue);
+      position: relative;
+      flex-shrink: 0;
+      transition: background .2s;
+      cursor: pointer;
+    }
+    .ai-toggle::after {
+      content: '';
+      position: absolute;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: #fff;
+      top: 2px; right: 2px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.2);
+      transition: transform .25s var(--spring);
+    }
+    .ai-toggle.off { background: var(--sumi-20); }
+    .ai-toggle.off::after { transform: translateX(-20px); }
+
+    /* Adjustment micro tabs */
+    .adj-tabs {
+      display: flex; gap: 6px;
+      margin-bottom: 16px;
+    }
+    .adj-tab {
+      flex: 1; height: 36px;
+      border-radius: var(--r-xs);
+      background: var(--bg2);
+      font-size: var(--font-caption);
+      font-weight: 600;
+      color: var(--sumi-45);
+      display: flex; align-items: center; justify-content: center;
+      gap: 4px;
+      transition: all .18s var(--spring);
+    }
+    .adj-tab.act {
+      background: var(--sys-blue);
+      color: #fff;
+    }
+    .adj-tab:active { transform: scale(.95); }
+
+    /* ════════════════════════════════════════════════════════════════
+       SCREEN 4 — プレビュー・保存
+    ════════════════════════════════════════════════════════════════ */
+
+    .preview-hero {
+      padding: 20px var(--sp-2) 16px;
+      flex-shrink: 0;
+      background: var(--kinpaku);
+    }
+
+    /* Print layout grid */
+    .print-layout {
+      display: flex; justify-content: center;
+      padding: 12px;
+      background: #E0DDD7;
+      border-radius: var(--r-sm);
+      gap: 4px;
+      flex-wrap: wrap;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,.08);
+    }
+    .print-cell {
+      background: #fff;
+      border: .5px solid rgba(0,0,0,.08);
+      overflow: hidden;
+      position: relative;
+      border-radius: 2px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    }
+    .print-cell-inner {
+      position: absolute; inset: 2px;
+      background: var(--bg2);
+      border-radius: 1px;
+    }
+
+    /* Layout selector chips */
+    .layout-chips {
+      display: flex; gap: 8px;
+      padding: 0 var(--sp-2) 16px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .layout-chips::-webkit-scrollbar { display: none; }
+    .layout-chip {
+      flex-shrink: 0;
+      height: 36px;
+      padding: 0 14px;
+      border-radius: 18px;
+      background: var(--bg2);
+      border: 1.5px solid transparent;
+      font-size: var(--font-caption);
+      font-weight: 600;
+      color: var(--sumi-70);
+      white-space: nowrap;
+      transition: all .18s var(--spring);
+    }
+    .layout-chip.sel {
+      background: var(--sys-blue-lt);
+      border-color: var(--sys-blue);
+      color: var(--sys-blue);
+    }
+    .layout-chip:active { transform: scale(.94); }
+
+    /* Share row */
+    .share-row {
+      padding: 0 var(--sp-2) 16px;
+    }
+    .share-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .share-card {
+      background: var(--card);
+      border-radius: var(--r-sm);
+      padding: 14px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: var(--shadow-xs);
+      cursor: pointer;
+      transition: all .15s var(--spring);
+      border: 1px solid var(--sumi-08);
+    }
+    .share-card:active { transform: scale(.97); box-shadow: none; }
+    .share-card-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .share-card-label { font-size: var(--font-caption); font-weight: 600; color: var(--sumi); }
+    .share-card-sub   { font-size: 10px; color: var(--sumi-45); margin-top: 1px; }
+
+    /* Stats row */
+    .stats-row {
+      display: flex;
+      padding: 0 var(--sp-2);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .stat-card {
+      flex: 1;
+      background: var(--card);
+      border-radius: var(--r-sm);
+      padding: 12px;
+      box-shadow: var(--shadow-xs);
+      text-align: center;
+    }
+    .stat-val {
+      font-size: 20px; font-weight: 700;
+      color: var(--sumi);
+      letter-spacing: -.5px;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-lbl {
+      font-size: 10px;
+      color: var(--sumi-45);
+      margin-top: 2px;
+    }
+
+    /* Success animation */
+    @keyframes checkDraw {
+      from { stroke-dashoffset: 50; }
+      to   { stroke-dashoffset: 0; }
+    }
+    .success-check {
+      stroke-dasharray: 50;
+      stroke-dashoffset: 50;
+    }
+    .check-ring.animated .success-check {
+      animation: checkDraw .5s var(--spring) .1s forwards;
+    }
+
+    /* Processing overlay */
+    .proc-overlay {
+      position: absolute; inset: 0;
+      background: rgba(8,10,14,.75);
+      backdrop-filter: blur(8px);
+      z-index: 200;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px;
+      opacity: 0; pointer-events: none;
+      transition: opacity .3s;
+    }
+    .proc-overlay.show { opacity: 1; pointer-events: auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .proc-ring {
+      width: 56px; height: 56px;
+      border: 3px solid rgba(255,255,255,.12);
+      border-top-color: var(--sys-blue);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    .proc-text { font-size: var(--font-body); font-weight: 500; color: rgba(255,255,255,.85); }
+    .proc-sub  { font-size: var(--font-caption); color: rgba(255,255,255,.4); }
+  </style>
+</head>
+<body>
+
+<!-- ──────────── Page header ──────────────── -->
+<div class="page-header">
+  <h1>証明写真スタジオ</h1>
+  <p>iOS UI/UX Redesign — Apple HIG × 凛雅</p>
+</div>
+
+<!-- ──────────── iPhone Frame ─────────────── -->
+<div class="iphone-frame">
+  <div class="iphone-screen">
+
+    <!-- Dynamic Island -->
+    <div class="dyn-island" id="dynIsland"></div>
+
+    <!-- Status Bar -->
+    <div class="status-bar light" id="statusBar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <!-- Signal -->
+        <svg width="17" height="12" fill="currentColor" viewBox="0 0 17 12">
+          <rect x="0" y="6" width="3" height="6" rx="1" opacity=".4"/>
+          <rect x="4.5" y="4" width="3" height="8" rx="1" opacity=".6"/>
+          <rect x="9" y="2" width="3" height="10" rx="1" opacity=".8"/>
+          <rect x="13.5" y="0" width="3" height="12" rx="1"/>
+        </svg>
+        <!-- WiFi -->
+        <svg width="16" height="12" fill="currentColor" viewBox="0 0 16 12">
+          <path d="M8 9.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/>
+          <path d="M4.2 7.1a5.3 5.3 0 0 1 7.6 0l-1.4 1.4a3.3 3.3 0 0 0-4.8 0z"/>
+          <path d="M1.4 4.3a9.3 9.3 0 0 1 13.2 0l-1.4 1.4a7.3 7.3 0 0 0-10.4 0z" opacity=".6"/>
+        </svg>
+        <!-- Battery -->
+        <svg width="25" height="12" fill="currentColor" viewBox="0 0 25 12">
+          <rect x="0" y="1" width="21" height="10" rx="3" stroke="currentColor" stroke-width="1" fill="none" opacity=".35"/>
+          <rect x="1.5" y="2.5" width="15" height="7" rx="2"/>
+          <path d="M22.5 4.5v3a1.5 1.5 0 0 0 0-3z" opacity=".4"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Screens wrapper -->
+    <div class="screens-wrap">
+
+      <!-- ══════════════════════════════════════════
+           SCREEN 1 — サイズ選択
+      ══════════════════════════════════════════ -->
+      <div class="screen active" id="s1">
+
+        <!-- Navigation Bar -->
+        <div class="nav-bar frosted">
+          <div class="nav-title-wrap">
+            <span class="nav-title">証明写真スタジオ</span>
+          </div>
+          <button class="nav-btn right" aria-label="ヘルプ">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <circle cx="12" cy="17" r=".5" fill="currentColor"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Step Indicator -->
+        <div class="step-strip">
+          <div class="step-row">
+            <div class="step-item act">
+              <div class="step-dot">1</div>
+              <span class="step-lbl">サイズ</span>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">2</div>
+              <span class="step-lbl">撮影</span>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">3</div>
+              <span class="step-lbl">編集</span>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">4</div>
+              <span class="step-lbl">保存</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scroll area -->
+        <div class="scroll">
+          <div class="section-hd">
+            <div class="section-title">サイズを選択</div>
+            <div class="section-sub">提出先の規格を選んでください</div>
+          </div>
+
+          <!-- Popular recommendation banner -->
+          <div class="popular-banner">
+            <div class="popular-banner-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                   stroke="#fff" stroke-width="2" stroke-linecap="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </div>
+            <div>
+              <strong class="popular-text"><strong>就活・履歴書</strong></strong>
+              <span class="popular-text">40×30mm が最もよく使われます</span>
+            </div>
+          </div>
+
+          <div class="list-label">日本規格</div>
+
+          <div class="size-list">
+
+            <!-- 40×30mm — most popular -->
+            <div class="sz-card sel" onclick="selectSize(this)" role="radio" aria-checked="true">
+              <!-- Ratio preview: 30:40 = 3:4 -->
+              <div class="sz-ratio" style="width:42px;height:56px;"></div>
+              <div class="sz-info">
+                <div class="sz-name">履歴書・就活</div>
+                <div class="sz-desc">最も一般的な証明写真</div>
+                <div class="sz-chips">
+                  <span class="sz-chip">履歴書</span>
+                  <span class="sz-chip">ES</span>
+                  <span class="sz-chip">マイナンバー</span>
+                </div>
+              </div>
+              <div class="sz-right">
+                <span class="badge badge-blue">人気</span>
+                <div class="sz-dim">40×30mm</div>
+                <div class="sz-check">
+                  <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+                    <path d="M1 4l3.5 3.5L11 1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- 45×35mm -->
+            <div class="sz-card" onclick="selectSize(this)" role="radio" aria-checked="false">
+              <div class="sz-ratio" style="width:42px;height:54px;"></div>
+              <div class="sz-info">
+                <div class="sz-name">パスポート（日本）</div>
+                <div class="sz-desc">外務省規格</div>
+                <div class="sz-chips">
+                  <span class="sz-chip">パスポート</span>
+                  <span class="sz-chip">在留カード</span>
+                </div>
+              </div>
+              <div class="sz-right">
+                <span class="badge badge-ghost">公式</span>
+                <div class="sz-dim">45×35mm</div>
+                <div class="sz-check"></div>
+              </div>
+            </div>
+
+            <!-- 36×24mm -->
+            <div class="sz-card" onclick="selectSize(this)" role="radio" aria-checked="false">
+              <div class="sz-ratio" style="width:40px;height:60px;"></div>
+              <div class="sz-info">
+                <div class="sz-name">運転免許証</div>
+                <div class="sz-desc">警察庁規格</div>
+                <div class="sz-chips">
+                  <span class="sz-chip">免許証</span>
+                  <span class="sz-chip">更新</span>
+                </div>
+              </div>
+              <div class="sz-right">
+                <div class="sz-dim">36×24mm</div>
+                <div class="sz-check"></div>
+              </div>
+            </div>
+
+            <div class="list-label" style="padding-top:8px">国際規格</div>
+
+            <!-- US Passport -->
+            <div class="sz-card" onclick="selectSize(this)" role="radio" aria-checked="false">
+              <div class="sz-ratio" style="width:50px;height:50px;"></div>
+              <div class="sz-info">
+                <div class="sz-name">US パスポート</div>
+                <div class="sz-desc">アメリカ国務省規格</div>
+                <div class="sz-chips">
+                  <span class="sz-chip">米国</span>
+                  <span class="sz-chip">ESTA</span>
+                </div>
+              </div>
+              <div class="sz-right">
+                <div class="sz-dim">50×50mm</div>
+                <div class="sz-check"></div>
+              </div>
+            </div>
+
+            <!-- EU Biometric -->
+            <div class="sz-card" onclick="selectSize(this)" role="radio" aria-checked="false">
+              <div class="sz-ratio" style="width:38px;height:48px;"></div>
+              <div class="sz-info">
+                <div class="sz-name">EU 生体認証パスポート</div>
+                <div class="sz-desc">ICAO標準規格</div>
+                <div class="sz-chips">
+                  <span class="sz-chip">EU</span>
+                  <span class="sz-chip">ICAO</span>
+                </div>
+              </div>
+              <div class="sz-right">
+                <div class="sz-dim">35×45mm</div>
+                <div class="sz-check"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Bottom action bar -->
+        <div class="bottom-bar">
+          <button class="btn-primary" id="s1-next" onclick="goToCamera()">
+            <span>次へ — 撮影へ進む</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Permission pre-prompt overlay (Just-in-Time) -->
+        <div class="perm-overlay" id="permOverlay">
+          <div class="perm-sheet">
+            <div class="perm-handle"></div>
+            <div class="perm-icon-wrap">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+                   stroke="var(--sys-blue)" stroke-width="1.8" stroke-linecap="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </div>
+            <div class="perm-title">カメラのアクセスを許可</div>
+            <div class="perm-desc">証明写真の撮影にカメラが必要です。<br>写真はお使いのデバイスにのみ保存されます。</div>
+            <div class="perm-features">
+              <div class="perm-feat">
+                <div class="perm-feat-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="var(--sumi)" stroke-width="2" stroke-linecap="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                </div>
+                <div class="perm-feat-text">プライバシー保護
+                  <span>写真はサーバーに送信されません</span>
+                </div>
+              </div>
+              <div class="perm-feat">
+                <div class="perm-feat-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="var(--sumi)" stroke-width="2" stroke-linecap="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </div>
+                <div class="perm-feat-text">端末内処理
+                  <span>AI補正もオフラインで完結</span>
+                </div>
+              </div>
+            </div>
+            <button class="btn-primary" onclick="allowCamera()" style="margin-bottom:10px">
+              カメラを許可する
+            </button>
+            <button class="btn-secondary" onclick="dismissPerm()">
+              後で設定する
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /screen1 -->
+
+      <!-- ══════════════════════════════════════════
+           SCREEN 2 — カメラ撮影
+      ══════════════════════════════════════════ -->
+      <div class="screen" id="s2" style="background:#06080C">
+
+        <!-- Camera shell (full-bleed dark) -->
+        <div class="cam-shell">
+          <div class="cam-feed"></div>
+          <div class="cam-vignette"></div>
+
+          <!-- Focus ring -->
+          <div class="focus-ring"></div>
+
+          <!-- Flash overlay -->
+          <div id="cam-flash"></div>
+
+          <!-- Timer display -->
+          <div class="cam-timer" id="timerDisplay" style="display:none">
+            <div class="timer-num" id="timerNum"></div>
+          </div>
+
+          <!-- Face guide oval -->
+          <div class="face-guide-wrap">
+            <svg class="face-oval" viewBox="0 0 200 268" fill="none">
+              <!-- Dashed oval -->
+              <ellipse cx="100" cy="134" rx="88" ry="118"
+                stroke="#0A7AFF" stroke-width="1.8"
+                stroke-dasharray="6 5"
+                opacity=".85"/>
+              <!-- Corner ticks rendered separately -->
+              <!-- Top-left -->
+              <path d="M12 60 L12 20 Q12 12 20 12 L60 12"
+                stroke="#0A7AFF" stroke-width="3" stroke-linecap="round"/>
+              <!-- Top-right -->
+              <path d="M188 60 L188 20 Q188 12 180 12 L140 12"
+                stroke="#0A7AFF" stroke-width="3" stroke-linecap="round"/>
+              <!-- Bottom-left -->
+              <path d="M12 208 L12 248 Q12 256 20 256 L60 256"
+                stroke="#0A7AFF" stroke-width="3" stroke-linecap="round"/>
+              <!-- Bottom-right -->
+              <path d="M188 208 L188 248 Q188 256 180 256 L140 256"
+                stroke="#0A7AFF" stroke-width="3" stroke-linecap="round"/>
+              <!-- Center horizontal rule -->
+              <line x1="76" y1="134" x2="124" y2="134"
+                stroke="rgba(255,255,255,.25)" stroke-width="1"
+                stroke-dasharray="3 3"/>
+              <!-- Center vertical rule -->
+              <line x1="100" y1="110" x2="100" y2="158"
+                stroke="rgba(255,255,255,.25)" stroke-width="1"
+                stroke-dasharray="3 3"/>
+            </svg>
+          </div>
+
+          <!-- Hint area -->
+          <div class="cam-hint-area">
+            <div class="hint-pill">
+              <span class="live-dot"></span>
+              &nbsp;顔を枠に合わせてください
+            </div>
+          </div>
+
+          <!-- Camera Controls -->
+          <div class="cam-controls">
+            <!-- Timer button -->
+            <button class="cam-side-btn" onclick="startTimer()" aria-label="タイマー">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="12" cy="13" r="8"/>
+                <path d="M12 9v4l2.5 2.5"/>
+                <path d="M9 2h6M12 2v3"/>
+              </svg>
+            </button>
+
+            <!-- Shutter -->
+            <button class="shutter" onclick="takePhoto()" aria-label="撮影">
+              <div class="shutter-inner"></div>
+            </button>
+
+            <!-- Flip camera -->
+            <button class="cam-side-btn" onclick="flipCamera()" aria-label="カメラ切替">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M1 4v6h6"/>
+                <path d="M23 20v-6h-6"/>
+                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step indicator (dark version) -->
+        <div class="step-strip" style="background:#06080C; padding:10px 16px 8px;">
+          <div class="step-row">
+            <div class="step-item done" style="--col:#0A7AFF">
+              <div class="step-dot">✓</div>
+              <span class="step-lbl" style="color:rgba(255,255,255,.4)">サイズ</span>
+            </div>
+            <div class="step-item act">
+              <div class="step-dot">2</div>
+              <span class="step-lbl" style="color:var(--sys-blue)">撮影</span>
+            </div>
+            <div class="step-item">
+              <div class="step-dot" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.3)">3</div>
+              <span class="step-lbl" style="color:rgba(255,255,255,.3)">編集</span>
+            </div>
+            <div class="step-item">
+              <div class="step-dot" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.3)">4</div>
+              <span class="step-lbl" style="color:rgba(255,255,255,.3)">保存</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Home indicator (dark) -->
+        <div class="home-ind dark"><span></span></div>
+
+      </div><!-- /screen2 -->
+
+      <!-- ══════════════════════════════════════════
+           SCREEN 3 — 編集・補正
+      ══════════════════════════════════════════ -->
+      <div class="screen" id="s3">
+
+        <!-- Nav bar -->
+        <div class="nav-bar frosted">
+          <button class="nav-btn" onclick="goBack(3)" aria-label="戻る">
+            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"
+                 stroke="var(--sys-blue)" stroke-width="2.5" stroke-linecap="round">
+              <path d="M9 1L1 9l8 8"/>
+            </svg>
+            <span style="font-size:17px">撮影</span>
+          </button>
+          <div class="nav-title-wrap">
+            <span class="nav-title">編集</span>
+          </div>
+          <button class="nav-btn right" style="color:var(--sys-blue);font-size:15px;font-weight:600">
+            リセット
+          </button>
+        </div>
+
+        <!-- Step indicator -->
+        <div class="step-strip">
+          <div class="step-row">
+            <div class="step-item done">
+              <div class="step-dot">✓</div>
+              <span class="step-lbl">サイズ</span>
+            </div>
+            <div class="step-item done">
+              <div class="step-dot">✓</div>
+              <span class="step-lbl">撮影</span>
+            </div>
+            <div class="step-item act">
+              <div class="step-dot">3</div>
+              <span class="step-lbl">編集</span>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">4</div>
+              <span class="step-lbl">保存</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Photo preview — 額縁の間 (minimum 24pt padding) -->
+        <div class="edit-preview-area">
+          <div class="photo-frame-outer">
+            <div class="photo-frame" id="editPhotoFrame">
+              <div class="photo-frame-bg" id="editBg" style="background:#fff"></div>
+              <!-- Person silhouette (SVG) -->
+              <div class="photo-silhouette">
+                <svg width="100" height="138" viewBox="0 0 100 138" fill="none">
+                  <!-- Body -->
+                  <ellipse cx="50" cy="122" rx="40" ry="22" fill="rgba(180,176,168,.35)"/>
+                  <rect x="22" y="82" width="56" height="56" rx="8" fill="rgba(160,156,148,.3)"/>
+                  <!-- Head -->
+                  <ellipse cx="50" cy="52" rx="28" ry="34" fill="rgba(195,190,182,.4)"/>
+                  <!-- Neck -->
+                  <rect x="41" y="82" width="18" height="14" rx="4" fill="rgba(185,180,172,.3)"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="edit-meta">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--sys-blue)">
+              <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1-11v6h2v-6h-2zm0-4v2h2V7h-2z"/>
+            </svg>
+            <span>40×30mm — 履歴書</span>
+          </div>
+        </div>
+
+        <!-- Edit controls -->
+        <div class="edit-controls">
+
+          <!-- Background color -->
+          <div class="ctrl-section">
+            <div class="ctrl-label">背景色</div>
+            <div class="bg-grid">
+              <div class="bg-opt bg-white sel" onclick="setBg(this,'#fff')" role="radio" aria-label="白">
+                <div class="bg-swatch" style="background:#fff;border:1.5px solid var(--sumi-08)"></div>
+                <div class="bg-lbl">白</div>
+              </div>
+              <div class="bg-opt" onclick="setBg(this,'#D4E4F7')" role="radio" aria-label="青">
+                <div class="bg-swatch" style="background:#D4E4F7"></div>
+                <div class="bg-lbl">青</div>
+              </div>
+              <div class="bg-opt" onclick="setBg(this,'#E8D5B7')" role="radio" aria-label="薄茶">
+                <div class="bg-swatch" style="background:#E8D5B7"></div>
+                <div class="bg-lbl">薄茶</div>
+              </div>
+              <div class="bg-opt" onclick="setBg(this,'#E0E8D8')" role="radio" aria-label="薄緑">
+                <div class="bg-swatch" style="background:#E0E8D8"></div>
+                <div class="bg-lbl">薄緑</div>
+              </div>
+              <div class="bg-opt" onclick="setBg(this,'#C8C8C8')" role="radio" aria-label="グレー">
+                <div class="bg-swatch" style="background:#C8C8C8"></div>
+                <div class="bg-lbl">グレー</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Adjustment tabs -->
+          <div class="ctrl-section">
+            <div class="ctrl-label">補正</div>
+            <div class="adj-tabs">
+              <button class="adj-tab act" onclick="setAdjTab(this,'brightness')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <circle cx="12" cy="12" r="5"/>
+                  <line x1="12" y1="1" x2="12" y2="3"/>
+                  <line x1="12" y1="21" x2="12" y2="23"/>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                  <line x1="1" y1="12" x2="3" y2="12"/>
+                  <line x1="21" y1="12" x2="23" y2="12"/>
+                </svg>
+                明るさ
+              </button>
+              <button class="adj-tab" onclick="setAdjTab(this,'contrast')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 2a10 10 0 0 1 0 20z" fill="currentColor"/>
+                </svg>
+                コントラスト
+              </button>
+              <button class="adj-tab" onclick="setAdjTab(this,'sharpness')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <polygon points="12 2 22 20 2 20"/>
+                </svg>
+                シャープ
+              </button>
+            </div>
+
+            <!-- Brightness slider -->
+            <div class="slider-row" id="row-brightness">
+              <span class="slider-ico">🌑</span>
+              <input type="range" min="0" max="100" value="60"
+                     style="--v:60%"
+                     oninput="updateSlider(this,'valBrightness')"
+                     aria-label="明るさ">
+              <span class="slider-ico">☀️</span>
+              <span class="slider-val" id="valBrightness">60</span>
+            </div>
+
+            <!-- Contrast slider (hidden initially) -->
+            <div class="slider-row" id="row-contrast" style="display:none">
+              <span class="slider-ico">◐</span>
+              <input type="range" min="0" max="100" value="50"
+                     style="--v:50%"
+                     oninput="updateSlider(this,'valContrast')"
+                     aria-label="コントラスト">
+              <span class="slider-ico">⬛</span>
+              <span class="slider-val" id="valContrast">50</span>
+            </div>
+
+            <!-- Sharpness slider (hidden initially) -->
+            <div class="slider-row" id="row-sharpness" style="display:none">
+              <span class="slider-ico">◌</span>
+              <input type="range" min="0" max="100" value="40"
+                     style="--v:40%"
+                     oninput="updateSlider(this,'valSharpness')"
+                     aria-label="シャープネス">
+              <span class="slider-ico">◉</span>
+              <span class="slider-val" id="valSharpness">40</span>
+            </div>
+          </div>
+
+          <!-- AI background removal -->
+          <div class="ctrl-section">
+            <div class="ctrl-label">AI機能</div>
+            <div class="ai-card">
+              <div class="ai-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                     stroke="#fff" stroke-width="1.8" stroke-linecap="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                  <path d="M2 17l10 5 10-5"/>
+                  <path d="M2 12l10 5 10-5"/>
+                </svg>
+              </div>
+              <div class="ai-info">
+                <div class="ai-title">AI背景除去</div>
+                <div class="ai-sub">iOS 17+ VisionKit 使用 · 端末内処理</div>
+              </div>
+              <div class="ai-toggle" id="aiToggle" onclick="toggleAI()"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Bottom bar -->
+        <div class="bottom-bar">
+          <button class="btn-primary" onclick="showProcessing()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <polyline points="9 11 12 14 22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            補正を適用して次へ
+          </button>
+        </div>
+
+        <!-- Processing overlay -->
+        <div class="proc-overlay" id="procOverlay">
+          <div class="proc-ring"></div>
+          <div class="proc-text">AI処理中...</div>
+          <div class="proc-sub">背景を除去しています（10秒以内）</div>
+        </div>
+
+      </div><!-- /screen3 -->
+
+      <!-- ══════════════════════════════════════════
+           SCREEN 4 — プレビュー・保存
+      ══════════════════════════════════════════ -->
+      <div class="screen" id="s4">
+
+        <!-- Nav bar -->
+        <div class="nav-bar frosted">
+          <button class="nav-btn" onclick="goBack(4)" aria-label="戻る">
+            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"
+                 stroke="var(--sys-blue)" stroke-width="2.5" stroke-linecap="round">
+              <path d="M9 1L1 9l8 8"/>
+            </svg>
+            <span style="font-size:17px">編集</span>
+          </button>
+          <div class="nav-title-wrap">
+            <span class="nav-title">プレビュー</span>
+          </div>
+          <button class="nav-btn right" onclick="sharePhoto()" aria-label="共有">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="var(--sys-blue)" stroke-width="2" stroke-linecap="round">
+              <circle cx="18" cy="5" r="3"/>
+              <circle cx="6" cy="12" r="3"/>
+              <circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Step indicator -->
+        <div class="step-strip">
+          <div class="step-row">
+            <div class="step-item done">
+              <div class="step-dot">✓</div>
+              <span class="step-lbl">サイズ</span>
+            </div>
+            <div class="step-item done">
+              <div class="step-dot">✓</div>
+              <span class="step-lbl">撮影</span>
+            </div>
+            <div class="step-item done">
+              <div class="step-dot">✓</div>
+              <span class="step-lbl">編集</span>
+            </div>
+            <div class="step-item act">
+              <div class="step-dot">4</div>
+              <span class="step-lbl">保存</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="scroll">
+
+          <!-- Print preview -->
+          <div class="preview-hero">
+            <!-- Stats -->
+            <div class="stats-row" style="padding:0 0 12px">
+              <div class="stat-card">
+                <div class="stat-val">8</div>
+                <div class="stat-lbl">L判で8枚</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-val">40×30</div>
+                <div class="stat-lbl">mm</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-val">
+                  <span id="s4-check" class="check-ring">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="var(--sys-green)" stroke-width="2"/>
+                      <path class="success-check" d="M8 12l3 3 5-5"
+                        stroke="var(--sys-green)" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </div>
+                <div class="stat-lbl">規格適合</div>
+              </div>
+            </div>
+
+            <!-- Print grid (L判 8-up) -->
+            <div class="print-layout" id="printGrid">
+              <!-- Cells generated by JS -->
+            </div>
+          </div>
+
+          <!-- Layout selector chips -->
+          <div class="layout-chips">
+            <button class="layout-chip sel" onclick="setLayout(this,'L8')">L判 8枚</button>
+            <button class="layout-chip" onclick="setLayout(this,'L4')">L判 4枚</button>
+            <button class="layout-chip" onclick="setLayout(this,'L2')">L判 2枚</button>
+            <button class="layout-chip" onclick="setLayout(this,'2L4')">2L判 4枚</button>
+          </div>
+
+          <!-- Share options -->
+          <div class="share-row">
+            <div class="list-label" style="padding:0 0 8px">保存・共有</div>
+            <div class="share-grid">
+              <div class="share-card" onclick="doSave('写真')">
+                <div class="share-card-icon" style="background:#E3EFFF">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                       stroke="var(--sys-blue)" stroke-width="2" stroke-linecap="round">
+                    <rect x="3" y="3" width="18" height="18" rx="3"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="share-card-label">写真に保存</div>
+                  <div class="share-card-sub">カメラロール</div>
+                </div>
+              </div>
+
+              <div class="share-card" onclick="doSave('PDF')">
+                <div class="share-card-icon" style="background:#FFE8E5">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                       stroke="var(--sys-red)" stroke-width="2" stroke-linecap="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <path d="M9 15h.01M12 15h.01M15 15h.01"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="share-card-label">PDFで保存</div>
+                  <div class="share-card-sub">印刷用高解像度</div>
+                </div>
+              </div>
+
+              <div class="share-card" onclick="doSave('コンビニ印刷')">
+                <div class="share-card-icon" style="background:#E8F5E9">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                       stroke="var(--sys-green)" stroke-width="2" stroke-linecap="round">
+                    <polyline points="6 9 6 2 18 2 18 9"/>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                    <rect x="6" y="14" width="12" height="8"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="share-card-label">コンビニ印刷</div>
+                  <div class="share-card-sub">ローソン / FamilyMart</div>
+                </div>
+              </div>
+
+              <div class="share-card" onclick="doSave('メール')">
+                <div class="share-card-icon" style="background:#FFF3E0">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                       stroke="var(--sys-orange)" stroke-width="2" stroke-linecap="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="share-card-label">メールで送信</div>
+                  <div class="share-card-sub">添付ファイル</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Reuse section -->
+          <div style="padding:0 var(--sp-2) var(--sp-3);">
+            <button class="btn-secondary" onclick="restartFlow()" style="font-size:15px;height:48px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <polyline points="1 4 1 10 7 10"/>
+                <path d="M3.51 15a9 9 0 1 0 .49-4.71"/>
+              </svg>
+              別のサイズで作成
+            </button>
+          </div>
+
+        </div><!-- /scroll -->
+
+        <!-- Bottom CTA -->
+        <div class="bottom-bar">
+          <button class="btn-primary" onclick="doSave('写真')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            写真に保存する
+          </button>
+        </div>
+
+      </div><!-- /screen4 -->
+
+    </div><!-- /screens-wrap -->
+
+    <!-- Home indicator (light default) -->
+    <div class="home-ind light" id="homeInd"><span></span></div>
+
+    <!-- Global Toast -->
+    <div id="toast" role="alert">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+           stroke="var(--sys-green)" stroke-width="2.5" stroke-linecap="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      <span id="toastMsg">保存しました</span>
+    </div>
+
+  </div><!-- /iphone-screen -->
+</div><!-- /iphone-frame -->
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   証明写真スタジオ — Interactive JS
+   Apple HIG: Spring curve / Just-in-Time permission /
+              Optimistic UI / Skeleton loading
+══════════════════════════════════════════════════════════════ */
+
+let currentScreen = 1;
+let selectedSizeCard = null;
+let aiEnabled = true;
+let currentBgColor = '#fff';
+let timerActive = false;
+
+/* ── Spring animation helper ─────────────────────────────── */
+function springIn(el) {
+  el.style.transform = 'scale(0.92)';
+  el.style.opacity = '0.8';
+  requestAnimationFrame(() => {
+    el.style.transition = 'transform .4s cubic-bezier(0.34,1.56,0.64,1), opacity .3s ease';
+    el.style.transform = 'scale(1)';
+    el.style.opacity = '1';
+  });
+}
+
+/* ── Screen navigation ────────────────────────────────────── */
+function showScreen(n, dir = 'push') {
+  const prev = document.getElementById('s' + currentScreen);
+  const next = document.getElementById('s' + n);
+
+  // Remove existing animation classes
+  ['push-in','push-out','pop-in','pop-out'].forEach(c => {
+    prev && prev.classList.remove(c);
+    next && next.classList.remove(c);
+  });
+
+  if (dir === 'push') {
+    prev.classList.add('push-out');
+    next.style.display = 'flex';
+    next.classList.add('push-in');
+    setTimeout(() => {
+      prev.style.display = 'none';
+      prev.classList.remove('push-out');
+      next.classList.remove('push-in');
+    }, 380);
+  } else {
+    prev.classList.add('pop-out');
+    next.style.display = 'flex';
+    next.classList.add('pop-in');
+    setTimeout(() => {
+      prev.style.display = 'none';
+      prev.classList.remove('pop-out');
+      next.classList.remove('pop-in');
+    }, 380);
+  }
+
+  // Update active state
+  prev.classList.remove('active');
+  next.classList.add('active');
+  currentScreen = n;
+
+  // Update status bar
+  updateStatusBar(n);
+  // Update home indicator
+  updateHomeInd(n);
+}
+
+function updateStatusBar(n) {
+  const bar = document.getElementById('statusBar');
+  if (n === 2) {
+    bar.classList.remove('light');
+    bar.classList.add('dark');
+    bar.style.background = 'transparent';
+  } else {
+    bar.classList.remove('dark');
+    bar.classList.add('light');
+    bar.style.background = '';
+  }
+}
+
+function updateHomeInd(n) {
+  const ind = document.getElementById('homeInd');
+  if (n === 2) {
+    ind.className = 'home-ind dark';
+  } else {
+    ind.className = 'home-ind light';
+  }
+}
+
+/* ── Screen 1: Size selection ─────────────────────────────── */
+function selectSize(card) {
+  document.querySelectorAll('.sz-card').forEach(c => {
+    c.classList.remove('sel');
+    c.setAttribute('aria-checked', 'false');
+    c.querySelector('.sz-check').innerHTML = '';
+  });
+  card.classList.add('sel');
+  card.setAttribute('aria-checked', 'true');
+  card.querySelector('.sz-check').innerHTML =
+    '<svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4l3.5 3.5L11 1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  springIn(card);
+}
+
+/* ── Just-in-Time camera permission ──────────────────────── */
+function goToCamera() {
+  // Show permission pre-prompt BEFORE requesting actual permission
+  document.getElementById('permOverlay').classList.add('show');
+}
+
+function allowCamera() {
+  dismissPerm();
+  // After permission granted → navigate to camera screen
+  setTimeout(() => { showScreen(2); }, 300);
+}
+
+function dismissPerm() {
+  document.getElementById('permOverlay').classList.remove('show');
+}
+
+/* ── Screen 2: Camera ─────────────────────────────────────── */
+function takePhoto() {
+  const flash = document.getElementById('cam-flash');
+  flash.classList.remove('on');
+  void flash.offsetWidth;
+  flash.classList.add('on');
+  // Haptic feedback simulation (visual bounce)
+  const shutter = document.querySelector('.shutter');
+  shutter.style.transform = 'scale(0.88)';
+  setTimeout(() => {
+    shutter.style.transform = '';
+    // Navigate to edit screen
+    setTimeout(() => showScreen(3), 200);
+  }, 140);
+}
+
+function startTimer() {
+  if (timerActive) return;
+  timerActive = true;
+  const display = document.getElementById('timerDisplay');
+  const numEl   = document.getElementById('timerNum');
+  let count = 3;
+  display.style.display = 'flex';
+
+  const interval = setInterval(() => {
+    numEl.textContent = count;
+    numEl.style.animation = 'none';
+    void numEl.offsetWidth;
+    numEl.style.animation = 'timerCount 1s ease-in-out forwards';
+    count--;
+    if (count < 0) {
+      clearInterval(interval);
+      display.style.display = 'none';
+      timerActive = false;
+      takePhoto();
+    }
+  }, 1000);
+}
+
+function flipCamera() {
+  const feed = document.querySelector('.cam-feed');
+  feed.style.transition = 'transform .3s cubic-bezier(0.34,1.56,0.64,1)';
+  feed.style.transform = 'scaleX(-1) scaleY(1.02)';
+  setTimeout(() => {
+    feed.style.transform = 'scaleX(-1)';
+    setTimeout(() => {
+      feed.style.transform = '';
+    }, 300);
+  }, 300);
+}
+
+/* ── Screen 3: Edit ───────────────────────────────────────── */
+function setBg(opt, color) {
+  document.querySelectorAll('.bg-opt').forEach(o => o.classList.remove('sel'));
+  opt.classList.add('sel');
+  springIn(opt.querySelector('.bg-swatch'));
+  document.getElementById('editBg').style.background = color;
+  currentBgColor = color;
+  // Update print cells too
+  document.querySelectorAll('.print-cell-inner').forEach(c => {
+    c.style.background = color === '#fff' ? '#f0ede8' : color;
+  });
+}
+
+function updateSlider(input, valId) {
+  const v = input.value;
+  input.style.setProperty('--v', v + '%');
+  document.getElementById(valId).textContent = v;
+}
+
+function setAdjTab(tab, type) {
+  document.querySelectorAll('.adj-tab').forEach(t => t.classList.remove('act'));
+  tab.classList.add('act');
+  springIn(tab);
+  // Show relevant slider
+  ['brightness','contrast','sharpness'].forEach(t => {
+    const row = document.getElementById('row-' + t);
+    if (row) row.style.display = (t === type) ? 'flex' : 'none';
+  });
+}
+
+function toggleAI() {
+  aiEnabled = !aiEnabled;
+  const toggle = document.getElementById('aiToggle');
+  toggle.classList.toggle('off', !aiEnabled);
+  springIn(toggle);
+}
+
+function showProcessing() {
+  const overlay = document.getElementById('procOverlay');
+  overlay.classList.add('show');
+  // Simulate AI processing (skeleton → result)
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    showScreen(4);
+    buildPrintGrid(8, 4);
+    // Trigger success check animation
+    setTimeout(() => {
+      document.getElementById('s4-check').classList.add('animated');
+    }, 400);
+  }, 2200);
+}
+
+/* ── Screen 4: Preview & Save ─────────────────────────────── */
+function buildPrintGrid(count, cols) {
+  const grid = document.getElementById('printGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  // L判 (127×89mm) — proportional cell
+  const cellW = Math.floor((330 - (cols - 1) * 4 - 24) / cols);
+  const cellH = Math.floor(cellW * 4 / 3);
+  for (let i = 0; i < count; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'print-cell';
+    cell.style.cssText = `width:${cellW}px;height:${cellH}px`;
+    const inner = document.createElement('div');
+    inner.className = 'print-cell-inner';
+    inner.style.background = currentBgColor === '#fff' ? '#f0ede8' : currentBgColor;
+    cell.appendChild(inner);
+    grid.appendChild(cell);
+  }
+}
+
+function setLayout(chip, type) {
+  document.querySelectorAll('.layout-chip').forEach(c => c.classList.remove('sel'));
+  chip.classList.add('sel');
+  springIn(chip);
+  const map = { 'L8':[8,4], 'L4':[4,2], 'L2':[2,2], '2L4':[4,2] };
+  const [count, cols] = map[type] || [8,4];
+  buildPrintGrid(count, cols);
+}
+
+function doSave(method) {
+  // Optimistic UI — immediate feedback, no waiting
+  showToast(`${method}に保存しました`);
+  if (method === '写真') {
+    // Simulate photo saved animation
+    const btn = document.querySelector('#s4 .bottom-bar .btn-primary');
+    if (btn) {
+      btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> 保存しました';
+      btn.style.background = 'var(--sys-green)';
+      setTimeout(() => {
+        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> 写真に保存する';
+        btn.style.background = '';
+      }, 2500);
+    }
+  }
+}
+
+function sharePhoto() {
+  showToast('共有シートを開いています...');
+}
+
+function restartFlow() {
+  showScreen(1, 'pop');
+  // Reset step state
+  document.getElementById('s4-check').classList.remove('animated');
+}
+
+function goBack(from) {
+  showScreen(from - 1, 'pop');
+}
+
+/* ── Toast ─────────────────────────────────────────────────── */
+let toastTimer = null;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  const msgEl = document.getElementById('toastMsg');
+  msgEl.textContent = msg;
+
+  clearTimeout(toastTimer);
+  toast.classList.remove('hide');
+  toast.classList.add('show');
+
+  toastTimer = setTimeout(() => {
+    toast.classList.add('hide');
+    setTimeout(() => {
+      toast.classList.remove('show','hide');
+    }, 300);
+  }, 2800);
+}
+
+/* ── Dynamic Island expansion ────────────────────────────── */
+function expandIsland(msg) {
+  const island = document.getElementById('dynIsland');
+  island.classList.add('expanded');
+  island.title = msg;
+  setTimeout(() => island.classList.remove('expanded'), 3000);
+}
+
+/* ── Init ───────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  // Set initial screen state
+  document.getElementById('s1').style.display = 'flex';
+  // Build initial print grid when screen 4 is first shown
+  // (called via showProcessing)
+
+  // Animate step dot on load (Tier A: spring feedback)
+  const activeDot = document.querySelector('.step-item.act .step-dot');
+  if (activeDot) springIn(activeDot);
+});
+</script>
+</body>
+</html>

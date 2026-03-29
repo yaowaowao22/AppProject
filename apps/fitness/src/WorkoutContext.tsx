@@ -1,6 +1,24 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import type { DailyWorkout, PersonalRecord, WeeklyStats, WorkoutSession, WorkoutSet } from './types';
-import { loadPersonalRecords, loadWorkouts, savePersonalRecords, saveWorkouts } from './utils/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { DailyWorkout, PersonalRecord, WeeklyStats, WorkoutSession, WorkoutSet, WorkoutTemplate } from './types';
+import { loadPersonalRecords, loadWorkouts, loadTemplates, savePersonalRecords, saveWorkouts, saveTemplates } from './utils/storage';
+import { STORAGE_KEYS, WORKOUT } from './config';
+
+// ── ワークアウト設定型 ─────────────────────────────────────────────────────────
+
+export interface WorkoutConfig {
+  weightStep: number;
+  defaultSets: number;
+  defaultWeight: number;
+  defaultReps: number;
+}
+
+const DEFAULT_WORKOUT_CONFIG: WorkoutConfig = {
+  weightStep:    WORKOUT.WEIGHT_STEP,
+  defaultSets:   WORKOUT.DEFAULT_SETS,
+  defaultWeight: WORKOUT.DEFAULT_WEIGHT,
+  defaultReps:   WORKOUT.DEFAULT_REPS,
+};
 
 // ── 型 ────────────────────────────────────────────────────────────────────────
 
@@ -9,10 +27,17 @@ interface WorkoutContextValue {
   personalRecords: PersonalRecord[];
   currentSession: WorkoutSession | null;
   weeklyStats: WeeklyStats;
+  templates: WorkoutTemplate[];
   startSession: (exerciseId: string) => void;
   addSet: (weight: number | null, reps: number | null) => void;
   completeSession: () => Promise<void>;
   deleteWorkout: (id: string) => Promise<void>;
+  deleteSessionFromWorkout: (workoutId: string, exerciseId: string) => Promise<void>;
+  saveTemplate: (name: string, exerciseIds: string[]) => Promise<void>;
+  deleteTemplate: (id: string) => Promise<void>;
+  workoutConfig: WorkoutConfig;
+  updateWorkoutConfig: (partial: Partial<WorkoutConfig>) => Promise<void>;
+  updateSession: (workoutId: string, session: WorkoutSession) => Promise<void>;
 }
 
 // ── ヘルパー ──────────────────────────────────────────────────────────────────
@@ -59,10 +84,17 @@ const WorkoutContext = createContext<WorkoutContextValue>({
   personalRecords: [],
   currentSession: null,
   weeklyStats: DEFAULT_WEEKLY_STATS,
+  templates: [],
   startSession: () => {},
   addSet: () => {},
   completeSession: async () => {},
   deleteWorkout: async () => {},
+  deleteSessionFromWorkout: async () => {},
+  saveTemplate: async () => {},
+  deleteTemplate: async () => {},
+  workoutConfig: DEFAULT_WORKOUT_CONFIG,
+  updateWorkoutConfig: async () => {},
+  updateSession: async () => {},
 });
 
 // ── Provider ──────────────────────────────────────────────────────────────────
@@ -72,17 +104,25 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
   const [currentSession, setCurrentSession] = useState<WorkoutSession | null>(null);
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStats>(DEFAULT_WEEKLY_STATS);
+  const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
+  const [workoutConfig, setWorkoutConfig] = useState<WorkoutConfig>(DEFAULT_WORKOUT_CONFIG);
 
   // 起動時にストレージからロード
   useEffect(() => {
     (async () => {
-      const [loadedWorkouts, loadedRecords] = await Promise.all([
+      const [loadedWorkouts, loadedRecords, loadedTemplates, savedConfig] = await Promise.all([
         loadWorkouts(),
         loadPersonalRecords(),
+        loadTemplates(),
+        AsyncStorage.getItem(STORAGE_KEYS.WORKOUT_CONFIG),
       ]);
       setWorkouts(loadedWorkouts);
       setPersonalRecords(loadedRecords);
       setWeeklyStats(computeWeeklyStats(loadedWorkouts));
+      setTemplates(loadedTemplates);
+      if (savedConfig) {
+        setWorkoutConfig({ ...DEFAULT_WORKOUT_CONFIG, ...JSON.parse(savedConfig) });
+      }
     })();
   }, []);
 
@@ -208,6 +248,48 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     ]);
   }, [currentSession, workouts, personalRecords]);
 
+  // ワークアウト設定更新
+  const updateWorkoutConfig = useCallback(async (partial: Partial<WorkoutConfig>) => {
+    const next = { ...workoutConfig, ...partial };
+    setWorkoutConfig(next);
+    await AsyncStorage.setItem(STORAGE_KEYS.WORKOUT_CONFIG, JSON.stringify(next));
+  }, [workoutConfig]);
+
+  // セッション更新（セット内容の編集）
+  const updateSession = useCallback(async (workoutId: string, session: WorkoutSession) => {
+    const updatedWorkouts = workouts.map(w => {
+      if (w.id !== workoutId) return w;
+      const sessions = w.sessions.map(s => s.exerciseId === session.exerciseId ? session : s);
+      const totalVolume = sessions.reduce((sum, s) =>
+        sum + s.sets.reduce((sv, set) =>
+          sv + (set.weight !== null && set.reps !== null ? set.weight * set.reps : 0), 0), 0);
+      return { ...w, sessions, totalVolume };
+    });
+    setWorkouts(updatedWorkouts);
+    setWeeklyStats(computeWeeklyStats(updatedWorkouts));
+    await saveWorkouts(updatedWorkouts);
+  }, [workouts]);
+
+  // テンプレート保存
+  const saveTemplate = useCallback(async (name: string, exerciseIds: string[]) => {
+    const newTemplate: WorkoutTemplate = {
+      id: newId(),
+      name,
+      exerciseIds,
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [...templates, newTemplate];
+    setTemplates(updated);
+    await saveTemplates(updated);
+  }, [templates]);
+
+  // テンプレート削除
+  const deleteTemplate = useCallback(async (id: string) => {
+    const updated = templates.filter(t => t.id !== id);
+    setTemplates(updated);
+    await saveTemplates(updated);
+  }, [templates]);
+
   // ワークアウト削除
   const deleteWorkout = useCallback(async (id: string) => {
     const updatedWorkouts = workouts.filter(w => w.id !== id);
@@ -216,9 +298,27 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     await saveWorkouts(updatedWorkouts);
   }, [workouts]);
 
+  // 特定ワークアウト内の種目セッション削除（セッションが0になったらワークアウトごと削除）
+  const deleteSessionFromWorkout = useCallback(async (workoutId: string, exerciseId: string) => {
+    const updatedWorkouts = workouts
+      .map(w => {
+        if (w.id !== workoutId) return w;
+        const sessions = w.sessions.filter(s => s.exerciseId !== exerciseId);
+        if (sessions.length === 0) return null;
+        const totalVolume = sessions.reduce((sum, s) =>
+          sum + s.sets.reduce((sv, set) =>
+            sv + (set.weight !== null && set.reps !== null ? set.weight * set.reps : 0), 0), 0);
+        return { ...w, sessions, totalVolume };
+      })
+      .filter((w): w is DailyWorkout => w !== null);
+    setWorkouts(updatedWorkouts);
+    setWeeklyStats(computeWeeklyStats(updatedWorkouts));
+    await saveWorkouts(updatedWorkouts);
+  }, [workouts]);
+
   return (
     <WorkoutContext.Provider
-      value={{ workouts, personalRecords, currentSession, weeklyStats, startSession, addSet, completeSession, deleteWorkout }}
+      value={{ workouts, personalRecords, currentSession, weeklyStats, templates, startSession, addSet, completeSession, deleteWorkout, deleteSessionFromWorkout, saveTemplate, deleteTemplate, workoutConfig, updateWorkoutConfig, updateSession }}
     >
       {children}
     </WorkoutContext.Provider>

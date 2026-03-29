@@ -6,6 +6,9 @@ export const STORAGE_KEYS = {
   QUICK_START_IDS: 'tanren_quick_start_ids',  // string[]（カスタマイズ済みクイックスタート）
   LAST_WEIGHTS:    'tanren_last_weights',      // Record<exerciseId, number>（前回重量キャッシュ）
   STREAK_DATA:     'tanren_streak_data',       // { lastDate: string; streakDays: number }
+  TEMPLATES:       'tanren_templates',         // WorkoutTemplate[]
+  WORKOUT_CONFIG:  'tanren_workout_config',    // WorkoutConfig（ユーザーカスタム設定）
+  APP_SETTINGS:    'tanren_app_settings',      // AppSettings
 } as const;
 
 // ── アニメーション ────────────────────────────────────────────────────────────
@@ -51,4 +54,11 @@ export const APP = {
   SPARK_MAX_SESSIONS: 6,
   // Progress 画面の棒グラフ表示日数
   VOLUME_CHART_DAYS: 7,
+  DEFAULT_APP_SETTINGS: { showCalendar: true, showQuickStart: true },
+} as const;
+
+// ── カレンダー設定 ────────────────────────────────────────────────────────────
+export const CALENDAR = {
+  WEEKS_TO_SHOW: 5, // カレンダーに表示する週数
+  WEEK_START:    1, // 0=日曜, 1=月曜
 } as const;

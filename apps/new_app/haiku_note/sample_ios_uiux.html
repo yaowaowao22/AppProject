@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<!--
+  俳句帳 — iOS UI/UX リデザイン
+  Spec: Apple HIG準拠 × 凛雅 (Ringa) × 枯山水の間
+  Device: iPhone 15 Pro (390×844pt) / Dynamic Island
+  Screens: 俳句一覧 / 新規作成 / 俳句詳細 / 季語辞典
+  Nav: Bottom Tab (3) + FAB + Push screens
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>俳句帳 — iOS UI/UX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RESET & BASE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+button { border: none; background: none; cursor: pointer; font-family: inherit; -webkit-tap-highlight-color: transparent; }
+input, textarea { border: none; outline: none; background: none; font-family: inherit; resize: none; -webkit-appearance: none; }
+svg { display: block; }
+
+:root {
+  /* ── 凛雅 × 俳句帳 カラーシステム ── */
+  --kinpaku:      #F7F5F0;
+  --kinpaku-2:    #EFEDE8;
+  --kinpaku-3:    #E2DED7;
+  --sumi:         #1A1A1C;
+  --sumi-2:       #3A3A3C;
+  --sumi-3:       #8A8A8E;
+  --sep:          rgba(26,26,28,0.08);
+  --ainezu:       #3D4B6E;
+  --ainezu-soft:  rgba(61,75,110,0.12);
+
+  /* 四季 */
+  --haru:         #C85A6F;
+  --haru-soft:    rgba(200,90,111,0.10);
+  --haru-bg:      #FAF4F5;
+  --natsu:        #3D8B6A;
+  --natsu-soft:   rgba(61,139,106,0.10);
+  --natsu-bg:     #F3F8F5;
+  --aki:          #B87333;
+  --aki-soft:     rgba(184,115,51,0.10);
+  --aki-bg:       #F8F4EE;
+  --fuyu:         #5B6F9A;
+  --fuyu-soft:    rgba(91,111,154,0.10);
+  --fuyu-bg:      #F4F5F9;
+
+  /* タイポグラフィ */
+  --serif: 'Noto Serif JP', 'YuMincho', 'Hiragino Mincho ProN', serif;
+  --sans:  'Noto Sans JP', 'Hiragino Sans', -apple-system, sans-serif;
+
+  /* 8pt スペーシンググリッド */
+  --s4:4px; --s8:8px; --s12:12px; --s16:16px;
+  --s20:20px; --s24:24px; --s32:32px; --s40:40px; --s48:48px;
+
+  /* Safe Area */
+  --safe-top:   59px;
+  --nav-h:      44px;
+  --tab-h:      83px;
+
+  /* カード */
+  --r:  16px;
+  --rs: 12px;
+  --shadow: 0 2px 12px rgba(26,26,28,0.06), 0 1px 3px rgba(26,26,28,0.04);
+
+  /* アニメーション */
+  --spring: cubic-bezier(0.34,1.56,0.64,1);
+  --ease:   cubic-bezier(0.25,0.46,0.45,0.94);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PAGE WRAPPER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+body {
+  background: #111;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 20px 80px;
+  min-height: 100vh;
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+.pg-title { text-align:center; color:#F7F5F0; margin-bottom:32px; }
+.pg-title h1 { font-family:var(--serif); font-size:20px; font-weight:300; letter-spacing:.2em; margin-bottom:4px; }
+.pg-title p  { font-size:11px; color:#8A8A8E; letter-spacing:.06em; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   iPHONE FRAME
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.iphone {
+  position: relative;
+  width: 390px; height: 844px;
+  background: #000;
+  border-radius: 54px;
+  box-shadow:
+    0 0 0 1.5px #5A5A5A,
+    0 0 0 3px #2C2926,
+    0 0 0 5px #3C3835,
+    0 50px 120px rgba(0,0,0,.85),
+    0 20px 40px rgba(0,0,0,.5);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+/* サイドボタン */
+.iphone::before {
+  content:''; position:absolute;
+  right:-2px; top:156px; width:3px; height:68px;
+  background:#3C3835; border-radius:0 2px 2px 0;
+  box-shadow: 0 100px 0 #3C3835;
+}
+.iphone::after {
+  content:''; position:absolute;
+  left:-2px; top:112px; width:3px; height:36px;
+  background:#3C3835; border-radius:2px 0 0 2px;
+  box-shadow: 0 52px 0 #3C3835, 0 104px 0 #3C3835;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SCREENS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.screen {
+  position: absolute; inset: 0;
+  background: var(--kinpaku);
+  border-radius: 54px;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transform: translateX(28px);
+  transition: opacity .3s var(--ease), transform .3s var(--ease);
+  z-index: 1;
+}
+.screen.active { opacity:1; pointer-events:all; transform:translateX(0); }
+
+/* 和紙テクスチャ */
+.screen::after {
+  content:''; position:absolute; inset:0; z-index:999;
+  border-radius:54px; pointer-events:none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23w)' opacity='.025'/%3E%3C/svg%3E");
+  opacity: .7;
+}
+
+/* Dynamic Island */
+.di {
+  position: absolute;
+  top: 12px; left: 50%; transform: translateX(-50%);
+  width: 126px; height: 37px;
+  background: #000; border-radius: 20px;
+  z-index: 200;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   STATUS BAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.sb {
+  height: var(--safe-top);
+  padding: 14px 28px 0;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; z-index: 150; position: relative;
+  color: var(--sumi);
+}
+.sb.light { color: var(--kinpaku); }
+.sb-time { font-size:15px; font-weight:600; letter-spacing:-.3px; font-variant-numeric:tabular-nums; }
+.sb-icons { display:flex; gap:6px; align-items:center; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   NAV BAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.nb {
+  height: var(--nav-h);
+  padding: 0 var(--s16);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; position: relative; z-index:100;
+}
+.nb::after {
+  content:''; position:absolute; bottom:0; left:0; right:0;
+  height:.5px; background:var(--sep);
+}
+.nb-title { font-family:var(--serif); font-size:17px; font-weight:500; color:var(--sumi); letter-spacing:.04em; }
+.nb-btn {
+  min-width:44px; min-height:44px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:15px; font-weight:500; color:var(--ainezu);
+  border-radius:10px; transition:opacity .15s;
+}
+.nb-btn:active { opacity:.5; }
+.nb-btn.save { color:var(--haru); font-weight:600; }
+.nb-btn.save.off { color:var(--sumi-3); pointer-events:none; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   LARGE TITLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.lt-area { padding: var(--s8) var(--s20) var(--s16); flex-shrink:0; }
+.lt { font-family:var(--serif); font-size:34px; font-weight:400; color:var(--sumi); letter-spacing:-.5px; line-height:1.1; }
+.lt-sub { font-size:13px; color:var(--sumi-3); margin-top:4px; letter-spacing:.02em; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SCROLL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.scroll { flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
+.scroll::-webkit-scrollbar { display:none; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SEASON FILTER CHIPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.sf {
+  display:flex; gap:8px;
+  padding: var(--s4) var(--s20) var(--s16);
+  overflow-x:auto; flex-shrink:0;
+}
+.sf::-webkit-scrollbar { display:none; }
+.chip {
+  display:flex; align-items:center; gap:6px;
+  height:32px; padding:0 14px; border-radius:16px;
+  background:var(--kinpaku-2); color:var(--sumi-2);
+  font-size:13px; font-weight:500; white-space:nowrap;
+  transition:all .2s var(--ease); cursor:pointer;
+  min-width:44px; min-height:44px;
+  border: 1.5px solid transparent;
+}
+.chip.on { background:var(--ainezu); color:#fff; border-color:transparent; }
+.chip[data-s="haru"].on  { background:var(--haru); }
+.chip[data-s="natsu"].on { background:var(--natsu); }
+.chip[data-s="aki"].on   { background:var(--aki); }
+.chip[data-s="fuyu"].on  { background:var(--fuyu); }
+.dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.chip[data-s="all"]  .dot { background:var(--ainezu); }
+.chip[data-s="haru"] .dot { background:var(--haru); }
+.chip[data-s="natsu"].dot { background:var(--natsu); }
+.chip[data-s="aki"]  .dot { background:var(--aki); }
+.chip[data-s="fuyu"] .dot { background:var(--fuyu); }
+.chip.on .dot { background:rgba(255,255,255,.7); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   STATS STRIP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.stats {
+  display:flex; gap:1px;
+  margin:0 var(--s20) var(--s20);
+  background:var(--kinpaku-3); border-radius:var(--r); overflow:hidden;
+}
+.stat { flex:1; background:var(--kinpaku-2); padding:12px 8px; text-align:center; }
+.stat-n { font-family:var(--serif); font-size:24px; font-weight:400; color:var(--sumi); line-height:1; letter-spacing:-.5px; }
+.stat-l { font-size:10px; color:var(--sumi-3); margin-top:3px; letter-spacing:.04em; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   FEATURED CARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.feat {
+  margin:0 var(--s20) var(--s16);
+  background:var(--kinpaku-2); border-radius:var(--r);
+  padding:var(--s24) var(--s24) var(--s20);
+  position:relative; overflow:hidden; cursor:pointer;
+  box-shadow:var(--shadow);
+  border-top:3px solid var(--haru);
+  transition:transform .2s var(--spring);
+}
+.feat:active { transform:scale(.98); }
+.feat-tag {
+  font-size:10px; font-weight:700; letter-spacing:.12em;
+  color:var(--haru); text-transform:uppercase; margin-bottom:var(--s16);
+  display:flex; align-items:center; gap:5px;
+}
+.feat-haiku {
+  writing-mode:vertical-rl; text-orientation:upright;
+  font-family:var(--serif); font-size:20px; font-weight:400;
+  color:var(--sumi); line-height:2.2; letter-spacing:.08em;
+  height:120px;
+}
+.feat-foot {
+  display:flex; justify-content:space-between; align-items:flex-end;
+  margin-top:var(--s16);
+}
+.feat-author { font-size:12px; color:var(--sumi-3); letter-spacing:.06em; }
+.feat-kigo {
+  height:22px; padding:0 10px; border-radius:11px;
+  background:var(--haru-soft); font-size:11px; color:var(--haru); font-weight:500;
+  display:inline-flex; align-items:center;
+}
+.feat::before {
+  content:'春'; position:absolute; right:20px; top:50%; transform:translateY(-50%);
+  font-family:var(--serif); font-size:96px; font-weight:700;
+  color:var(--haru); opacity:.035; pointer-events:none; line-height:1;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SECTION HEADER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.sh {
+  padding:var(--s20) var(--s20) var(--s12);
+  display:flex; align-items:baseline; gap:var(--s8);
+}
+.sh-t { font-family:var(--serif); font-size:20px; font-weight:500; color:var(--sumi); letter-spacing:.02em; }
+.sh-c { font-size:13px; color:var(--ainezu); font-weight:500; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CARDS GRID
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:0 var(--s20); }
+.hcard {
+  background:var(--kinpaku-2); border-radius:var(--rs);
+  padding:var(--s16) var(--s12) var(--s12);
+  cursor:pointer; box-shadow:var(--shadow);
+  transition:transform .2s var(--spring);
+  position:relative; overflow:hidden;
+  display:flex; flex-direction:column;
+  border-top:3px solid var(--sep);
+  animation:ci .4s var(--ease) both;
+}
+.hcard:active { transform:scale(.97); }
+.hcard[data-s="haru"] { border-top-color:var(--haru); }
+.hcard[data-s="natsu"] { border-top-color:var(--natsu); }
+.hcard[data-s="aki"]   { border-top-color:var(--aki); }
+.hcard[data-s="fuyu"]  { border-top-color:var(--fuyu); }
+.hcard:nth-child(1){animation-delay:.04s}
+.hcard:nth-child(2){animation-delay:.08s}
+.hcard:nth-child(3){animation-delay:.12s}
+.hcard:nth-child(4){animation-delay:.16s}
+.hcard:nth-child(5){animation-delay:.20s}
+.hcard:nth-child(6){animation-delay:.24s}
+@keyframes ci { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+.hc-text {
+  writing-mode:vertical-rl; text-orientation:upright;
+  font-family:var(--serif); font-size:14px; font-weight:400;
+  color:var(--sumi); line-height:2.0; letter-spacing:.05em;
+  height:88px; margin:0 auto; flex:1;
+}
+.hc-foot {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-top:var(--s12); border-top:.5px solid var(--sep); padding-top:8px;
+}
+.hc-kigo { font-size:10px; color:var(--sumi-3); letter-spacing:.04em; }
+.hc-date { font-size:10px; color:var(--sumi-3); font-variant-numeric:tabular-nums; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TAB BAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.tb {
+  height:var(--tab-h);
+  background:rgba(247,245,240,.92);
+  backdrop-filter:blur(20px) saturate(1.5);
+  -webkit-backdrop-filter:blur(20px) saturate(1.5);
+  border-top:.5px solid var(--sep);
+  display:flex; align-items:flex-start; padding-top:6px;
+  flex-shrink:0; position:relative; z-index:100;
+}
+.ti {
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
+  padding:4px 8px; min-height:44px; cursor:pointer;
+  transition:opacity .15s;
+}
+.ti:active { opacity:.6; }
+.ti svg { width:22px; height:22px; }
+.ti-l { font-size:10px; font-weight:500; letter-spacing:.02em; line-height:1; }
+.ti.on .ti-l, .ti.on svg { color:var(--ainezu); }
+.ti:not(.on) .ti-l, .ti:not(.on) svg { color:var(--sumi-3); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   FAB
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.fab {
+  position:absolute; right:20px; bottom:calc(var(--tab-h) + 16px);
+  width:56px; height:56px; border-radius:28px;
+  background:var(--haru); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 20px rgba(200,90,111,.45), 0 2px 6px rgba(0,0,0,.18);
+  cursor:pointer; z-index:50;
+  transition:transform .3s var(--spring);
+  animation:pulse 4s ease-in-out infinite;
+}
+.fab:active { transform:scale(.9); }
+.fab svg { width:24px; height:24px; }
+@keyframes pulse {
+  0%,100%{box-shadow:0 4px 20px rgba(200,90,111,.45),0 2px 6px rgba(0,0,0,.18)}
+  50%    {box-shadow:0 6px 28px rgba(200,90,111,.6), 0 2px 8px rgba(0,0,0,.2)}
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CREATE SCREEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.sp { /* season picker */
+  display:flex; gap:8px;
+  padding:var(--s16) var(--s20) 0;
+  overflow-x:auto; flex-shrink:0;
+}
+.sp::-webkit-scrollbar{display:none}
+.spb {
+  height:36px; padding:0 var(--s16); border-radius:18px;
+  border:1.5px solid var(--kinpaku-3); background:transparent;
+  font-size:13px; font-weight:500; color:var(--sumi-2);
+  white-space:nowrap; cursor:pointer;
+  transition:all .2s var(--ease);
+  min-height:44px; display:flex; align-items:center;
+}
+.spb[data-s="haru"].on { border-color:var(--haru); background:var(--haru); color:#fff; }
+.spb[data-s="natsu"].on{ border-color:var(--natsu);background:var(--natsu);color:#fff; }
+.spb[data-s="aki"].on  { border-color:var(--aki);  background:var(--aki);  color:#fff; }
+.spb[data-s="fuyu"].on { border-color:var(--fuyu); background:var(--fuyu); color:#fff; }
+.spb[data-s="none"].on { border-color:var(--sumi-2);background:var(--sumi-2);color:#fff; }
+
+.inputs { padding:var(--s24) var(--s20) 0; display:flex; flex-direction:column; gap:var(--s12); }
+.irow {
+  background:var(--kinpaku-2); border-radius:var(--r);
+  padding:var(--s16); display:flex; align-items:center; gap:var(--s12);
+  position:relative; transition:box-shadow .2s;
+}
+.irow.focused { box-shadow:0 0 0 2px var(--haru); }
+.irow-lbl { width:32px; font-size:11px; font-weight:600; color:var(--sumi-3); letter-spacing:.06em; text-align:center; flex-shrink:0; }
+.itxt { flex:1; font-family:var(--serif); font-size:20px; font-weight:400; color:var(--sumi); letter-spacing:.05em; }
+.itxt::placeholder { color:var(--sumi-3); font-weight:300; }
+.mc {
+  width:36px; height:36px; border-radius:18px;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; font-size:14px; font-weight:600;
+  font-variant-numeric:tabular-nums;
+  transition:all .3s var(--spring);
+}
+.mc.ok   { background:var(--haru); color:#fff; }
+.mc.over { background:#FF3B30; color:#fff; }
+.mc.def  { background:var(--kinpaku-3); color:var(--sumi-3); }
+
+.prev-sec {
+  margin:var(--s24) var(--s20) 0;
+  background:var(--kinpaku-2); border-radius:var(--r);
+  padding:var(--s20) var(--s24); position:relative; overflow:hidden;
+}
+.prev-lbl { font-size:10px; font-weight:700; color:var(--sumi-3); letter-spacing:.12em; text-transform:uppercase; margin-bottom:var(--s16); }
+.prev-h {
+  writing-mode:vertical-rl; text-orientation:upright;
+  font-family:var(--serif); font-size:22px; font-weight:400;
+  color:var(--sumi); line-height:2.2; letter-spacing:.08em;
+  min-height:80px; max-height:120px;
+}
+.prev-h.empty { color:var(--sumi-3); font-weight:300; }
+.prev-ghost {
+  position:absolute; right:16px; bottom:10px;
+  font-family:var(--serif); font-size:72px; font-weight:700;
+  color:var(--haru); opacity:.04; pointer-events:none; line-height:1;
+}
+
+.kigo-sec { padding:var(--s20) var(--s20) 0; }
+.kigo-sec-lbl { font-size:13px; font-weight:600; color:var(--sumi-2); margin-bottom:var(--s12); letter-spacing:.04em; }
+.kigo-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.kc {
+  height:32px; padding:0 14px; border-radius:16px;
+  background:var(--kinpaku-2); color:var(--sumi-2);
+  font-size:13px; cursor:pointer;
+  transition:all .2s var(--spring); border:1px solid transparent;
+  min-height:44px; display:flex; align-items:center;
+}
+.kc:active { transform:scale(.95); }
+.kc.on { background:var(--haru-soft); border-color:var(--haru); color:var(--haru); }
+
+.memo-sec { padding:var(--s16) var(--s20) 0; }
+.memo {
+  background:var(--kinpaku-2); border-radius:var(--rs);
+  padding:var(--s12) var(--s16); font-size:15px;
+  color:var(--sumi); width:100%; min-height:64px;
+}
+.memo::placeholder { color:var(--sumi-3); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   DETAIL SCREEN — 枯山水の間
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#s-detail { background:var(--haru-bg); }
+
+.det-ghost {
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  font-family:var(--serif); font-size:220px; font-weight:700;
+  color:var(--haru); opacity:.022; pointer-events:none; z-index:1; line-height:1; user-select:none;
+}
+.ando { position:absolute; left:48px; right:48px; height:.5px; background:var(--sep); z-index:2; }
+.ando-t { top:37%; }
+.ando-b { bottom:30%; }
+
+/* Haiku floats in 70% whitespace */
+.det-haiku-wrap {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-60%); z-index:10;
+  display:flex; flex-direction:column; align-items:center;
+}
+.det-haiku {
+  writing-mode:vertical-rl; text-orientation:upright;
+  font-family:var(--serif); font-size:30px; font-weight:300;
+  color:var(--sumi); line-height:2.4; letter-spacing:.1em;
+}
+
+.det-meta {
+  position:absolute; bottom:96px; left:var(--s32); right:var(--s32); z-index:10;
+  display:flex; flex-direction:column; gap:var(--s12); align-items:center;
+}
+.det-kigo-badge {
+  height:28px; padding:0 14px; border-radius:14px;
+  background:var(--haru-soft); display:inline-flex; align-items:center;
+  font-size:13px; color:var(--haru); font-weight:500; letter-spacing:.04em;
+}
+.det-info-row { display:flex; gap:var(--s32); }
+.det-info-item { display:flex; flex-direction:column; align-items:center; gap:3px; }
+.det-info-lbl { font-size:10px; color:var(--sumi-3); letter-spacing:.08em; }
+.det-info-val { font-size:13px; color:var(--sumi-2); font-weight:500; letter-spacing:.04em; }
+
+.det-actions {
+  position:absolute; bottom:36px; left:0; right:0;
+  display:flex; justify-content:center; gap:var(--s32); z-index:10;
+}
+.det-btn {
+  width:48px; height:48px; border-radius:24px;
+  background:rgba(247,245,240,.82); backdrop-filter:blur(12px);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:transform .2s var(--spring);
+}
+.det-btn:active { transform:scale(.88); }
+.det-btn svg { width:20px; height:20px; color:var(--sumi-2); }
+.det-btn.liked svg { color:var(--haru); fill:var(--haru); }
+.det-back {
+  position:absolute; top:var(--safe-top); left:12px; z-index:20;
+  min-width:44px; min-height:44px; display:flex; align-items:center;
+  padding:0 8px; font-size:15px; font-weight:500; color:var(--ainezu);
+  cursor:pointer;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   KIGO DICTIONARY SCREEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.ktabs {
+  display:flex; background:var(--kinpaku-2); border-radius:var(--rs);
+  margin:var(--s8) var(--s20) var(--s16); padding:3px;
+}
+.ktab {
+  flex:1; height:36px; border-radius:10px; font-size:13px; font-weight:500;
+  cursor:pointer; color:var(--sumi-3); transition:all .2s var(--ease);
+  min-height:44px; display:flex; align-items:center; justify-content:center;
+}
+.ktab[data-s="haru"].on { background:var(--haru); color:#fff; box-shadow:0 2px 8px rgba(200,90,111,.35); }
+.ktab[data-s="natsu"].on{ background:var(--natsu);color:#fff; box-shadow:0 2px 8px rgba(61,139,106,.35); }
+.ktab[data-s="aki"].on  { background:var(--aki);  color:#fff; box-shadow:0 2px 8px rgba(184,115,51,.35); }
+.ktab[data-s="fuyu"].on { background:var(--fuyu); color:#fff; box-shadow:0 2px 8px rgba(91,111,154,.35); }
+
+.sbar {
+  margin:0 var(--s20) var(--s16);
+  background:var(--kinpaku-2); border-radius:var(--rs);
+  display:flex; align-items:center; gap:var(--s8); padding:0 var(--s12); height:44px;
+}
+.sbar svg { width:16px; height:16px; color:var(--sumi-3); flex-shrink:0; }
+.sinput { flex:1; font-size:17px; color:var(--sumi); height:44px; }
+.sinput::placeholder { color:var(--sumi-3); }
+
+.kday {
+  margin:0 var(--s20) var(--s20);
+  background:var(--kinpaku-2); border-radius:var(--r);
+  padding:var(--s16) var(--s20); border-left:4px solid var(--haru);
+  position:relative; overflow:hidden;
+}
+.kday-tag { font-size:10px; font-weight:700; letter-spacing:.12em; color:var(--haru); text-transform:uppercase; margin-bottom:var(--s8); }
+.kday-w { font-family:var(--serif); font-size:28px; font-weight:400; color:var(--sumi); letter-spacing:.04em; margin-bottom:3px; }
+.kday-r { font-size:12px; color:var(--sumi-3); letter-spacing:.1em; margin-bottom:var(--s8); }
+.kday-d { font-size:13px; color:var(--sumi-2); line-height:1.7; }
+.kday-ghost {
+  position:absolute; right:12px; bottom:-8px;
+  font-family:var(--serif); font-size:80px; font-weight:700;
+  color:var(--haru); opacity:.05; pointer-events:none; line-height:1;
+}
+
+.klist { padding:0 var(--s20); }
+.ksec-h {
+  font-size:12px; font-weight:600; color:var(--sumi-3); letter-spacing:.1em;
+  padding:var(--s8) 0; border-bottom:.5px solid var(--sep); margin-bottom:4px;
+  text-transform:uppercase;
+}
+.kitem {
+  display:flex; align-items:center; gap:var(--s16);
+  padding:14px 0; border-bottom:.5px solid var(--sep);
+  cursor:pointer; min-height:44px; transition:opacity .15s;
+}
+.kitem:active { opacity:.6; }
+.kword { font-family:var(--serif); font-size:20px; font-weight:400; color:var(--sumi); letter-spacing:.04em; min-width:60px; }
+.kinfo { flex:1; display:flex; flex-direction:column; gap:3px; }
+.kreading { font-size:11px; color:var(--sumi-3); letter-spacing:.08em; }
+.kdesc    { font-size:13px; color:var(--sumi-2); line-height:1.5; }
+.ksdot    { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* Bottom Sheet */
+.overlay {
+  position:absolute; inset:0; border-radius:54px; overflow:hidden;
+  background:transparent; z-index:500; pointer-events:none;
+  transition:background .3s;
+}
+.overlay.vis { background:rgba(0,0,0,.3); pointer-events:all; }
+.bsheet {
+  position:absolute; bottom:0; left:0; right:0;
+  background:var(--kinpaku); border-radius:24px 24px 0 0;
+  padding:0 var(--s24) var(--s40);
+  transform:translateY(100%);
+  transition:transform .4s var(--spring);
+}
+.overlay.vis .bsheet { transform:translateY(0); }
+.bhandle { width:36px; height:4px; background:var(--kinpaku-3); border-radius:2px; margin:10px auto 20px; }
+.bsheet-title   { font-family:var(--serif); font-size:28px; font-weight:400; color:var(--sumi); margin-bottom:4px; }
+.bsheet-reading { font-size:13px; color:var(--sumi-3); letter-spacing:.1em; margin-bottom:var(--s16); }
+.bsheet-desc    { font-size:15px; color:var(--sumi-2); line-height:1.8; margin-bottom:var(--s20); }
+.bsheet-el { font-size:11px; font-weight:700; letter-spacing:.1em; color:var(--sumi-3); text-transform:uppercase; margin-bottom:var(--s12); }
+.bsheet-ex {
+  background:var(--kinpaku-2); border-radius:var(--rs);
+  padding:var(--s16) var(--s20); border-left:3px solid var(--haru);
+}
+.bsheet-haiku {
+  writing-mode:vertical-rl; text-orientation:upright;
+  font-family:var(--serif); font-size:18px; font-weight:400;
+  color:var(--sumi); line-height:2.4; letter-spacing:.08em;
+  height:80px; margin-bottom:var(--s12);
+}
+.bsheet-author { font-size:12px; color:var(--sumi-3); letter-spacing:.06em; }
+</style>
+</head>
+<body>
+
+<div class="pg-title">
+  <h1>俳句帳</h1>
+  <p>iOS UI/UX リデザイン — iPhone 15 Pro · Apple HIG準拠</p>
+</div>
+
+<div class="iphone">
+  <div class="di"></div>
+
+  <!-- ══════════════════════════════════════
+       SCREEN 1: 俳句一覧
+  ══════════════════════════════════════ -->
+  <div class="screen active" id="s-list">
+    <div class="sb">
+      <span class="sb-time">9:41</span>
+      <div class="sb-icons">
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor">
+          <rect x="0" y="5" width="3" height="7" rx=".5"/><rect x="4.5" y="3.5" width="3" height="8.5" rx=".5"/>
+          <rect x="9" y="1.5" width="3" height="10.5" rx=".5"/><rect x="13.5" y="0" width="3" height="12" rx=".5"/>
+        </svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+          <path d="M8 9.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm0-3.5a5 5 0 014.2 2.3l-1.5 1.3A3 3 0 008 8a3 3 0 00-2.7 1.6L3.8 8.3A5 5 0 018 6zm0-3.5a8.5 8.5 0 016.5 3.1L13 7A6.5 6.5 0 008 4.5 6.5 6.5 0 003 7L1.5 5.6A8.5 8.5 0 018 2.5z"/>
+        </svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor">
+          <rect x="0" y="1" width="22" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1"/>
+          <rect x="23" y="4" width="2" height="4" rx="1"/><rect x="1.5" y="2.5" width="17" height="7" rx="2"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="lt-area">
+      <div class="lt">俳句帳</div>
+      <div class="lt-sub">2026年 春 · 17句</div>
+    </div>
+
+    <div class="sf">
+      <div class="chip on"  data-s="all"  onclick="filt('all',this)"><span class="dot" style="background:var(--ainezu)"></span>すべて</div>
+      <div class="chip" data-s="haru" onclick="filt('haru',this)"><span class="dot"></span>春</div>
+      <div class="chip" data-s="natsu" onclick="filt('natsu',this)"><span class="dot" style="background:var(--natsu)"></span>夏</div>
+      <div class="chip" data-s="aki"  onclick="filt('aki',this)"><span class="dot" style="background:var(--aki)"></span>秋</div>
+      <div class="chip" data-s="fuyu" onclick="filt('fuyu',this)"><span class="dot" style="background:var(--fuyu)"></span>冬</div>
+    </div>
+
+    <div class="scroll" id="list-scroll">
+      <div class="stats">
+        <div class="stat"><div class="stat-n">17</div><div class="stat-l">総句数</div></div>
+        <div class="stat"><div class="stat-n">4</div><div class="stat-l">春の句</div></div>
+        <div class="stat"><div class="stat-n">12</div><div class="stat-l">連続日数</div></div>
+      </div>
+
+      <div class="feat" onclick="go('s-detail')">
+        <div class="feat-tag">✦ 今月の一句</div>
+        <div class="feat-haiku">古池や蛙飛び込む水の音</div>
+        <div class="feat-foot">
+          <span class="feat-author">松尾芭蕉</span>
+          <span class="feat-kigo">蛙（春）</span>
+        </div>
+      </div>
+
+      <div class="sh">
+        <span class="sh-t">最近の句</span>
+        <span class="sh-c">すべて見る</span>
+      </div>
+
+      <div class="grid" id="hgrid">
+        <div class="hcard" data-s="haru" onclick="go('s-detail')">
+          <div class="hc-text">春暁や花の声を聞く朝</div>
+          <div class="hc-foot"><span class="hc-kigo">春暁</span><span class="hc-date">3/26</span></div>
+        </div>
+        <div class="hcard" data-s="natsu" onclick="go('s-detail')">
+          <div class="hc-text">夕凪や海鳴りひとつ夏の果て</div>
+          <div class="hc-foot"><span class="hc-kigo">夕凪</span><span class="hc-date">3/24</span></div>
+        </div>
+        <div class="hcard" data-s="haru" onclick="go('s-detail')">
+          <div class="hc-text">梅雨晴間遠き山の息づかい</div>
+          <div class="hc-foot"><span class="hc-kigo">梅雨晴間</span><span class="hc-date">3/22</span></div>
+        </div>
+        <div class="hcard" data-s="aki" onclick="go('s-detail')">
+          <div class="hc-text">秋の夜や灯台ひとつ沖の星</div>
+          <div class="hc-foot"><span class="hc-kigo">秋の夜</span><span class="hc-date">3/20</span></div>
+        </div>
+        <div class="hcard" data-s="fuyu" onclick="go('s-detail')">
+          <div class="hc-text">雪の朝誰も踏まない庭の白</div>
+          <div class="hc-foot"><span class="hc-kigo">雪</span><span class="hc-date">3/18</span></div>
+        </div>
+        <div class="hcard" data-s="haru" onclick="go('s-detail')">
+          <div class="hc-text">桜散る風にまかせて旅の空</div>
+          <div class="hc-foot"><span class="hc-kigo">桜</span><span class="hc-date">3/16</span></div>
+        </div>
+      </div>
+      <div style="height:24px"></div>
+    </div>
+
+    <div class="fab" onclick="go('s-create')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </div>
+
+    <div class="tb">
+      <div class="ti on">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <rect x="4" y="3" width="16" height="5" rx="1" fill="currentColor" stroke="none"/>
+          <path d="M4 11h16M4 15h16M4 19h10"/>
+        </svg>
+        <span class="ti-l">俳句帳</span>
+      </div>
+      <div class="ti" onclick="go('s-kigo')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2C8 8 4 10 4 14a8 8 0 0016 0c0-4-4-6-8-12z"/>
+          <path d="M12 2v20M7 10h10M6 16h12"/>
+        </svg>
+        <span class="ti-l">季語辞典</span>
+      </div>
+      <div class="ti">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+        <span class="ti-l">設定</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCREEN 2: 新規作成
+  ══════════════════════════════════════ -->
+  <div class="screen" id="s-create">
+    <div class="sb">
+      <span class="sb-time">9:41</span>
+      <div class="sb-icons">
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="5" width="3" height="7" rx=".5"/><rect x="4.5" y="3.5" width="3" height="8.5" rx=".5"/><rect x="9" y="1.5" width="3" height="10.5" rx=".5"/><rect x="13.5" y="0" width="3" height="12" rx=".5"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm0-3.5a5 5 0 014.2 2.3l-1.5 1.3A3 3 0 008 8a3 3 0 00-2.7 1.6L3.8 8.3A5 5 0 018 6zm0-3.5a8.5 8.5 0 016.5 3.1L13 7A6.5 6.5 0 008 4.5 6.5 6.5 0 003 7L1.5 5.6A8.5 8.5 0 018 2.5z"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor"><rect x="0" y="1" width="22" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1"/><rect x="23" y="4" width="2" height="4" rx="1"/><rect x="1.5" y="2.5" width="17" height="7" rx="2"/></svg>
+      </div>
+    </div>
+    <div class="nb">
+      <button class="nb-btn" onclick="go('s-list')">← 俳句帳</button>
+      <span class="nb-title">新しい句</span>
+      <button class="nb-btn save off" id="save-btn" onclick="doSave()">保存</button>
+    </div>
+
+    <div class="scroll">
+      <div class="sp">
+        <button class="spb on" data-s="haru" onclick="pickS(this)">春</button>
+        <button class="spb" data-s="natsu" onclick="pickS(this)">夏</button>
+        <button class="spb" data-s="aki"   onclick="pickS(this)">秋</button>
+        <button class="spb" data-s="fuyu"  onclick="pickS(this)">冬</button>
+        <button class="spb" data-s="none"  onclick="pickS(this)">無季</button>
+      </div>
+
+      <div class="inputs">
+        <div class="irow" id="r5a">
+          <span class="irow-lbl">上五</span>
+          <input class="itxt" id="i5a" type="text" placeholder="五文字" maxlength="20"
+            oninput="upd()" onfocus="foc('r5a',true)" onblur="foc('r5a',false)">
+          <div class="mc def" id="c5a">5</div>
+        </div>
+        <div class="irow" id="r7">
+          <span class="irow-lbl">中七</span>
+          <input class="itxt" id="i7" type="text" placeholder="七文字" maxlength="20"
+            oninput="upd()" onfocus="foc('r7',true)" onblur="foc('r7',false)">
+          <div class="mc def" id="c7">7</div>
+        </div>
+        <div class="irow" id="r5b">
+          <span class="irow-lbl">下五</span>
+          <input class="itxt" id="i5b" type="text" placeholder="五文字" maxlength="20"
+            oninput="upd()" onfocus="foc('r5b',true)" onblur="foc('r5b',false)">
+          <div class="mc def" id="c5b">5</div>
+        </div>
+      </div>
+
+      <div class="prev-sec">
+        <div class="prev-lbl">縦書きプレビュー</div>
+        <div class="prev-h empty" id="prev">ここに句が並びます</div>
+        <div class="prev-ghost" id="pghost">春</div>
+      </div>
+
+      <div class="kigo-sec">
+        <div class="kigo-sec-lbl" id="kigo-lbl">季語を選ぶ（春）</div>
+        <div class="kigo-chips" id="kchips">
+          <div class="kc" onclick="selK(this)">桜</div>
+          <div class="kc" onclick="selK(this)">春霞</div>
+          <div class="kc" onclick="selK(this)">菜の花</div>
+          <div class="kc" onclick="selK(this)">蛙</div>
+          <div class="kc" onclick="selK(this)">春暁</div>
+          <div class="kc" onclick="selK(this)">朧月</div>
+          <div class="kc" onclick="selK(this)">春風</div>
+          <div class="kc" onclick="selK(this)">椿</div>
+        </div>
+      </div>
+
+      <div class="memo-sec">
+        <textarea class="memo" placeholder="創作メモ（任意）"></textarea>
+      </div>
+      <div style="height:40px"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCREEN 3: 俳句詳細 — 枯山水の間
+  ══════════════════════════════════════ -->
+  <div class="screen" id="s-detail">
+    <!-- Ghost kanji decoration -->
+    <div class="det-ghost">春</div>
+    <!-- Ando light lines -->
+    <div class="ando ando-t"></div>
+    <div class="ando ando-b"></div>
+
+    <!-- Status bar (transparent overlay) -->
+    <div class="sb" style="position:absolute;top:0;left:0;right:0;background:transparent;z-index:20;">
+      <span class="sb-time">9:41</span>
+      <div class="sb-icons">
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="5" width="3" height="7" rx=".5"/><rect x="4.5" y="3.5" width="3" height="8.5" rx=".5"/><rect x="9" y="1.5" width="3" height="10.5" rx=".5"/><rect x="13.5" y="0" width="3" height="12" rx=".5"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm0-3.5a5 5 0 014.2 2.3l-1.5 1.3A3 3 0 008 8a3 3 0 00-2.7 1.6L3.8 8.3A5 5 0 018 6zm0-3.5a8.5 8.5 0 016.5 3.1L13 7A6.5 6.5 0 008 4.5 6.5 6.5 0 003 7L1.5 5.6A8.5 8.5 0 018 2.5z"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor"><rect x="0" y="1" width="22" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1"/><rect x="23" y="4" width="2" height="4" rx="1"/><rect x="1.5" y="2.5" width="17" height="7" rx="2"/></svg>
+      </div>
+    </div>
+
+    <button class="det-back" onclick="go('s-list')">← 戻る</button>
+
+    <!-- ★ 枯山水の間: 句が画面の70%余白に浮かぶ ★ -->
+    <div class="det-haiku-wrap">
+      <div class="det-haiku">古池や蛙飛び込む水の音</div>
+    </div>
+
+    <div class="det-meta">
+      <div class="det-kigo-badge">🐸 蛙（春）</div>
+      <div class="det-info-row">
+        <div class="det-info-item">
+          <span class="det-info-lbl">詠んだ日</span>
+          <span class="det-info-val">2026年3月26日</span>
+        </div>
+        <div class="det-info-item">
+          <span class="det-info-lbl">場所</span>
+          <span class="det-info-val">深川</span>
+        </div>
+        <div class="det-info-item">
+          <span class="det-info-lbl">いいね</span>
+          <span class="det-info-val">12</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="det-actions">
+      <div class="det-btn" id="like-btn" onclick="like()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+        </svg>
+      </div>
+      <div class="det-btn" onclick="shareHaiku()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+      </div>
+      <div class="det-btn" onclick="go('s-create')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCREEN 4: 季語辞典
+  ══════════════════════════════════════ -->
+  <div class="screen" id="s-kigo">
+    <div class="sb">
+      <span class="sb-time">9:41</span>
+      <div class="sb-icons">
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="5" width="3" height="7" rx=".5"/><rect x="4.5" y="3.5" width="3" height="8.5" rx=".5"/><rect x="9" y="1.5" width="3" height="10.5" rx=".5"/><rect x="13.5" y="0" width="3" height="12" rx=".5"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm0-3.5a5 5 0 014.2 2.3l-1.5 1.3A3 3 0 008 8a3 3 0 00-2.7 1.6L3.8 8.3A5 5 0 018 6zm0-3.5a8.5 8.5 0 016.5 3.1L13 7A6.5 6.5 0 008 4.5 6.5 6.5 0 003 7L1.5 5.6A8.5 8.5 0 018 2.5z"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor"><rect x="0" y="1" width="22" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1"/><rect x="23" y="4" width="2" height="4" rx="1"/><rect x="1.5" y="2.5" width="17" height="7" rx="2"/></svg>
+      </div>
+    </div>
+    <div class="nb">
+      <div style="width:44px"></div>
+      <span class="nb-title">季語辞典</span>
+      <div style="width:44px"></div>
+    </div>
+
+    <div class="scroll">
+      <div class="ktabs">
+        <button class="ktab on" data-s="haru" onclick="ksTab(this)">春</button>
+        <button class="ktab"    data-s="natsu" onclick="ksTab(this)">夏</button>
+        <button class="ktab"    data-s="aki"   onclick="ksTab(this)">秋</button>
+        <button class="ktab"    data-s="fuyu"  onclick="ksTab(this)">冬</button>
+      </div>
+
+      <div class="sbar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="sinput" type="text" placeholder="季語を検索">
+      </div>
+
+      <div class="kday">
+        <div class="kday-tag">今日の季語</div>
+        <div class="kday-w">春霞</div>
+        <div class="kday-r">はるがすみ</div>
+        <div class="kday-d">春の大気中に霞がたなびくこと。遠くの山や景色がぼんやりと霞んで見える春の風物詩。</div>
+        <div class="kday-ghost">霞</div>
+      </div>
+
+      <div class="klist">
+        <div class="ksec-h">自然 · 天象</div>
+        <div class="kitem" onclick="openSheet('春霞','はるがすみ','春の大気中に霞がたなびくこと。遠くの山や景色がぼんやりと霞んで見える春の風物詩。','春霞たなびく山の奥深く')">
+          <div class="kword">春霞</div>
+          <div class="kinfo"><span class="kreading">はるがすみ</span><span class="kdesc">春の大気が霞む現象</span></div>
+          <div class="ksdot" style="background:var(--haru)"></div>
+        </div>
+        <div class="kitem" onclick="openSheet('春暁','しゅんぎょう','春の夜明け。まだ暗いうちから鳥が鳴き始め、徐々に明けていく春の早朝の光景。','春暁や小鳥のこゑの空に満つ')">
+          <div class="kword">春暁</div>
+          <div class="kinfo"><span class="kreading">しゅんぎょう</span><span class="kdesc">春の夜明け・早朝の情景</span></div>
+          <div class="ksdot" style="background:var(--haru)"></div>
+        </div>
+        <div class="kitem" onclick="openSheet('朧月','おぼろづき','春の夜、薄い霞がかかって朧げに見える月。「朧」は物がはっきりしない状態。','朧月かたばみの花白く揺れ')">
+          <div class="kword">朧月</div>
+          <div class="kinfo"><span class="kreading">おぼろづき</span><span class="kdesc">霞の中にぼんやり見える月</span></div>
+          <div class="ksdot" style="background:var(--haru)"></div>
+        </div>
+
+        <div class="ksec-h" style="margin-top:8px">植物</div>
+        <div class="kitem" onclick="openSheet('桜','さくら','春を代表する花。ソメイヨシノを中心に多くの品種があり、花見の文化とともに俳句でも多用される。','花の雲鐘は上野か浅草か')">
+          <div class="kword">桜</div>
+          <div class="kinfo"><span class="kreading">さくら</span><span class="kdesc">春の花の代表、花見の象徴</span></div>
+          <div class="ksdot" style="background:var(--haru)"></div>
+        </div>
+        <div class="kitem" onclick="openSheet('菜の花','なのはな','アブラナの花。黄色い花が一面に咲く春の田園風景は俳句の定番テーマ。','菜の花や月は東に日は西に')">
+          <div class="kword">菜の花</div>
+          <div class="kinfo"><span class="kreading">なのはな</span><span class="kdesc">春の田園を彩る黄色い花</span></div>
+          <div class="ksdot" style="background:var(--haru)"></div>
+        </div>
+        <div class="kitem" onclick="openSheet('椿','つばき','常緑の木に咲く赤い花。春の訪れとともに開花し、花ごと落ちる散り方が美しい。','赤い椿白い椿と落ちにけり')">
+          <div class="kword">椿</div>
+          <div class="kinfo"><span class="kreading">つばき</span><span class="kdesc">春に咲く赤い花、花ごと落ちる</span></div>
+          <div class="ksdot" style="background:var(--haru)"></div>
+        </div>
+
+        <div class="ksec-h" style="margin-top:8px">動物</div>
+        <div class="kitem" onclick="openSheet('蛙','かわず / かえる','春になると田んぼや池で鳴き始める蛙。松尾芭蕉の「古池や」で最も有名な春の季語の一つ。','古池や蛙飛び込む水の音')">
+          <div class="kword">蛙</div>
+          <div class="kinfo"><span class="kreading">かわず / かえる</span><span class="kdesc">春の池に飛び込む、芭蕉の句で著名</span></div>
+          <div class="ksdot" style="background:var(--haru)"></div>
+        </div>
+        <div class="kitem" onclick="openSheet('燕','つばめ','南から渡ってくる春の渡り鳥。軒先に巣を作り、子育てをする姿が春の風物詩。','燕来て家のにぎわい増しにけり')">
+          <div class="kword">燕</div>
+          <div class="kinfo"><span class="kreading">つばめ</span><span class="kdesc">春に南から渡ってくる鳥</span></div>
+          <div class="ksdot" style="background:var(--haru)"></div>
+        </div>
+
+        <div class="ksec-h" style="margin-top:8px">行事 · 生活</div>
+        <div class="kitem" onclick="openSheet('花見','はなみ','桜の花の下に集まって宴を楽しむ行事。平安時代に起源を持ち、現代でも春の恒例行事。','花見酒余れる杯かかぐれば')">
+          <div class="kword">花見</div>
+          <div class="kinfo"><span class="kreading">はなみ</span><span class="kdesc">桜の下で宴を楽しむ春の行事</span></div>
+          <div class="ksdot" style="background:var(--haru)"></div>
+        </div>
+        <div style="height:16px"></div>
+      </div>
+    </div>
+
+    <!-- Kigo bottom sheet -->
+    <div class="overlay" id="koverlay" onclick="closeSheet()">
+      <div class="bsheet" onclick="event.stopPropagation()">
+        <div class="bhandle"></div>
+        <div class="bsheet-title"   id="bs-title">春霞</div>
+        <div class="bsheet-reading" id="bs-reading">はるがすみ</div>
+        <div class="bsheet-desc"    id="bs-desc">説明テキスト</div>
+        <div class="bsheet-el">用例句</div>
+        <div class="bsheet-ex">
+          <div class="bsheet-haiku"  id="bs-haiku">春霞たなびく山の奥深く</div>
+          <div class="bsheet-author">作者不詳</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tb">
+      <div class="ti" onclick="go('s-list')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <rect x="4" y="3" width="16" height="5" rx="1" fill="currentColor" stroke="none"/>
+          <path d="M4 11h16M4 15h16M4 19h10"/>
+        </svg>
+        <span class="ti-l">俳句帳</span>
+      </div>
+      <div class="ti on">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C8 8 4 10 4 14a8 8 0 0016 0c0-4-4-6-8-12zm0 4c1.5 3 4 5 4 8a4 4 0 01-8 0c0-3 2.5-5 4-8z"/>
+        </svg>
+        <span class="ti-l">季語辞典</span>
+      </div>
+      <div class="ti">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+        <span class="ti-l">設定</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /iphone -->
+
+<script>
+/* ━━ Navigation ━━ */
+let prev = 's-list';
+function go(id) {
+  const cur = document.querySelector('.screen.active');
+  if (cur) cur.classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  prev = cur ? cur.id : prev;
+}
+
+/* ━━ Season filter (list screen) ━━ */
+function filt(s, el) {
+  document.querySelectorAll('.sf .chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  document.querySelectorAll('.hcard').forEach(card => {
+    card.style.display = (s === 'all' || card.dataset.s === s) ? '' : 'none';
+  });
+}
+
+/* ━━ Create: season picker ━━ */
+const kigoMap = {
+  haru: ['桜','春霞','菜の花','蛙','春暁','朧月','春風','椿'],
+  natsu: ['蝉','向日葵','夕立','蛍','夏雲','炎暑','西瓜','青田'],
+  aki:  ['紅葉','菊','月','鈴虫','秋風','銀杏','柿','稲穂'],
+  fuyu: ['雪','霜','枯野','焚火','水仙','冬星','寒椿','氷'],
+  none: ['—（無季）']
+};
+const ghostMap = {haru:'春',natsu:'夏',aki:'秋',fuyu:'冬',none:'無'};
+
+function pickS(btn) {
+  document.querySelectorAll('.spb').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const s = btn.dataset.s;
+  // Update ghost
+  document.getElementById('pghost').textContent = ghostMap[s] || '句';
+  // Update kigo label + chips
+  document.getElementById('kigo-lbl').textContent = `季語を選ぶ（${btn.textContent}）`;
+  const chips = document.getElementById('kchips');
+  chips.innerHTML = (kigoMap[s] || []).map(k =>
+    `<div class="kc" onclick="selK(this)">${k}</div>`
+  ).join('');
+  // Update focused ring color via inline var override
+  document.querySelectorAll('.irow.focused').forEach(r => r.classList.remove('focused'));
+}
+
+/* ━━ 五七五 mora counter ━━ */
+function mora(t) {
+  if (!t) return 0;
+  let n = 0;
+  for (const c of t.replace(/\s/g,'')) {
+    if (/[ぁぃぅぇぉっゃゅょァィゥェォッャュョ]/.test(c)) continue;
+    n++;
+  }
+  return n;
+}
+function setMC(id, val, target) {
+  const el = document.getElementById(id);
+  const m = mora(val);
+  el.className = 'mc';
+  if (!val)      { el.classList.add('def');  el.textContent = target; return; }
+  if (m === target) { el.classList.add('ok'); el.textContent = m; }
+  else if (m > target) { el.classList.add('over'); el.textContent = m; }
+  else           { el.classList.add('def'); el.textContent = m; }
+}
+function upd() {
+  const a = document.getElementById('i5a').value;
+  const b = document.getElementById('i7').value;
+  const c = document.getElementById('i5b').value;
+  setMC('c5a', a, 5);
+  setMC('c7',  b, 7);
+  setMC('c5b', c, 5);
+  const prev = document.getElementById('prev');
+  if (a || b || c) {
+    prev.classList.remove('empty');
+    prev.textContent = [a, b, c].filter(Boolean).join('\u3000');
+  } else {
+    prev.classList.add('empty');
+    prev.textContent = 'ここに句が並びます';
+  }
+  const sb = document.getElementById('save-btn');
+  if (a && b && c) sb.classList.remove('off');
+  else sb.classList.add('off');
+}
+function foc(id, on) {
+  document.getElementById(id).classList.toggle('focused', on);
+}
+function doSave() {
+  // Optimistic save feedback
+  const btn = document.getElementById('save-btn');
+  btn.textContent = '保存済 ✓';
+  btn.style.color = 'var(--natsu)';
+  setTimeout(() => { go('s-list'); btn.textContent='保存'; btn.style.color=''; }, 800);
+}
+
+/* ━━ Kigo chip ━━ */
+function selK(chip) {
+  document.querySelectorAll('.kc').forEach(c => c.classList.remove('on'));
+  chip.classList.add('on');
+}
+
+/* ━━ Detail: like ━━ */
+function like() {
+  const btn = document.getElementById('like-btn');
+  btn.classList.toggle('liked');
+  btn.style.transform = 'scale(1.35)';
+  setTimeout(() => btn.style.transform = '', 350);
+}
+function shareHaiku() {
+  const btn = event.currentTarget;
+  btn.style.transform = 'scale(1.2) rotate(15deg)';
+  setTimeout(() => btn.style.transform = '', 400);
+}
+
+/* ━━ Kigo dict: season tab ━━ */
+function ksTab(btn) {
+  document.querySelectorAll('.ktab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+/* ━━ Bottom sheet ━━ */
+function openSheet(title, reading, desc, haiku) {
+  document.getElementById('bs-title').textContent   = title;
+  document.getElementById('bs-reading').textContent = reading;
+  document.getElementById('bs-desc').textContent    = desc;
+  document.getElementById('bs-haiku').textContent   = haiku;
+  document.getElementById('koverlay').classList.add('vis');
+}
+function closeSheet() {
+  document.getElementById('koverlay').classList.remove('vis');
+}
+</script>
+</body>
+</html>

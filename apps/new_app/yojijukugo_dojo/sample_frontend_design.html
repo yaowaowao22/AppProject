@@ -1,0 +1,2109 @@
+<!DOCTYPE html>
+<!--
+  四字熟語道場 — Redesigned iOS App UI
+  ════════════════════════════════════════════════════════
+  Design Concept: 「鍛の静寂」— Stillness in the Forge
+
+  凛雅 (Ringa) × 武道道場 美学
+  ─────────────────────────────────────────────────────
+  墨黒 × 臙脂 × 金 — 道場の床板の焦げ目、朱肉の赤、
+  ずっしりとした金属の印鑑。学ぶとは鍛えること。
+
+  記憶に残る1要素:
+  学習カードが「朱印」のスタンプモーションで裏返る。
+  答えた瞬間、金色の光が画面を横切る。
+
+  技術アプローチ:
+  - iPhone 15 Pro フレーム (393×852px)
+  - 5画面タブ: 道場 / 稽古 / 型 (クイズ) / 辞典 / 成績
+  - Spring cubic-bezier アニメーション
+  - 和紙ノイズテクスチャ (SVG fractal)
+  - 3D フリップカード (perspective: 1400px)
+  - 帯システム 白帯→黒帯 7段階
+  ════════════════════════════════════════════════════════
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>四字熟語道場 — Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500;600;700;900&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════
+   DESIGN TOKENS
+   ══════════════════════════════════════════════════════ */
+:root {
+  /* Core — 道場の三色 */
+  --koku:      #1A1A1C;
+  --koku-90:   #242426;
+  --koku-80:   #2E2E31;
+  --koku-60:   #4A4A4E;
+  --koku-40:   #68686E;
+  --enji:      #8B0000;    /* 臙脂 */
+  --enji-l:    #A31515;
+  --enji-xl:   #C01E1E;
+  --kin:       #C8973A;    /* 金 */
+  --kin-l:     #DBA84A;
+  --kin-xl:    #ECC060;
+  --shiroi:    #F5F2EC;    /* 絹白 */
+  --shiroi-d:  #EBE7DC;
+  --gin:       #8A8A8F;    /* 銀 */
+  --gin-l:     #B2B2B7;
+  --gin-xl:    #D6D6DC;
+
+  /* Belt Colors */
+  --belt-white:  #F0EDE8;
+  --belt-yellow: #E2C440;
+  --belt-orange: #E07820;
+  --belt-green:  #2A7038;
+  --belt-blue:   #1A48A0;
+  --belt-brown:  #5A3010;
+  --belt-black:  #1A1A1C;
+
+  /* Space */
+  --sp-xs:  4px;
+  --sp-sm:  8px;
+  --sp-md:  16px;
+  --sp-lg:  24px;
+  --sp-xl:  32px;
+  --sp-2xl: 48px;
+
+  /* Type */
+  --serif: 'Noto Serif JP', 'Hiragino Mincho ProN', serif;
+  --sans:  'Noto Sans JP', 'Hiragino Sans', sans-serif;
+
+  /* Radii */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --r-2xl:32px;
+
+  /* Easing */
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-o: cubic-bezier(0.0, 0.0, 0.2, 1);
+  --ease-io:cubic-bezier(0.4, 0.0, 0.2, 1);
+
+  /* Shadows */
+  --sh-card: 0 2px 10px rgba(26,26,28,0.14), 0 1px 3px rgba(26,26,28,0.10);
+  --sh-raised: 0 8px 28px rgba(26,26,28,0.24), 0 2px 8px rgba(26,26,28,0.14);
+  --sh-enji: 0 6px 24px rgba(139,0,0,0.38);
+  --sh-kin:  0 0 16px rgba(200,151,58,0.5);
+}
+
+/* ══════════════════════════════════════════════════════
+   RESET & OUTER SHELL
+   ══════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  font-family: var(--sans);
+  background: #0C0C0E;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+/* ══════════════════════════════════════════════════════
+   NOISE (和紙テクスチャ)
+   ══════════════════════════════════════════════════════ */
+.washi {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 260px;
+  border-radius: inherit;
+}
+
+/* ══════════════════════════════════════════════════════
+   iPHONE 15 PRO FRAME
+   ══════════════════════════════════════════════════════ */
+.device-wrap { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.device-label { color: #3A3A40; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; font-family: var(--sans); }
+
+.iphone {
+  position: relative;
+  width: 393px;
+  height: 852px;
+  background: #1C1C1E;
+  border-radius: 52px;
+  box-shadow:
+    0 0 0 1px #3C3C3E,
+    0 0 0 2px #2A2A2C,
+    inset 0 0 0 1px #4A4A4C,
+    0 50px 140px rgba(0,0,0,0.85),
+    0 20px 60px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+.iphone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 52px;
+  background: linear-gradient(145deg,
+    rgba(255,255,255,0.07) 0%,
+    transparent 35%,
+    transparent 65%,
+    rgba(255,255,255,0.03) 100%);
+  pointer-events: none;
+  z-index: 300;
+}
+/* Side buttons */
+.btn-vup { position: absolute; left: -3px; top: 168px; width: 3px; height: 52px; background: #2E2E30; border-radius: 2px; }
+.btn-vdn { position: absolute; left: -3px; top: 232px; width: 3px; height: 52px; background: #2E2E30; border-radius: 2px; }
+.btn-sil { position: absolute; left: -3px; top: 120px; width: 3px; height: 28px; background: #2E2E30; border-radius: 2px; }
+.btn-pwr { position: absolute; right: -3px; top: 180px; width: 3px; height: 80px; background: #2E2E30; border-radius: 2px; }
+
+/* Screen */
+.screen {
+  position: absolute;
+  inset: 0;
+  border-radius: 52px;
+  overflow: hidden;
+  background: var(--shiroi);
+}
+
+/* Dynamic Island */
+.di {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 126px;
+  height: 36px;
+  background: #000;
+  border-radius: 19px;
+  z-index: 150;
+}
+
+/* Status Bar */
+.sbar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 58px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 28px 8px;
+  z-index: 120;
+  pointer-events: none;
+}
+.sbar-time { font-size: 15px; font-weight: 600; color: var(--koku); letter-spacing: -0.3px; }
+.sbar-icons { display: flex; align-items: center; gap: 5px; }
+
+/* ══════════════════════════════════════════════════════
+   TAB BAR
+   ══════════════════════════════════════════════════════ */
+.tabbar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 83px;
+  background: rgba(245,242,236,0.96);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border-top: 0.5px solid rgba(26,26,28,0.08);
+  display: flex;
+  align-items: flex-start;
+  padding-top: 8px;
+  z-index: 110;
+}
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  padding: var(--sp-sm) 0;
+  transition: transform 0.18s var(--spring);
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+.tab:active { transform: scale(0.90); }
+.tab-ico {
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; line-height: 1;
+  position: relative;
+}
+.tab-lbl {
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--gin);
+  transition: color 0.2s ease;
+}
+.tab.active .tab-lbl { color: var(--enji); }
+.tab.active .tab-ico  { filter: drop-shadow(0 0 5px rgba(139,0,0,0.35)); }
+/* Badge */
+.tab-badge {
+  position: absolute;
+  top: -2px; right: -4px;
+  background: var(--enji);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 1.5px solid var(--shiroi);
+}
+
+/* ══════════════════════════════════════════════════════
+   APP SCREENS — BASE
+   ══════════════════════════════════════════════════════ */
+.app-screen {
+  position: absolute;
+  inset: 0;
+  background: var(--shiroi);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.app-screen.active { display: flex; }
+
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 58px 0 83px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll::-webkit-scrollbar { display: none; }
+
+/* ══════════════════════════════════════════════════════
+   SCREEN 1 — 道場 (HOME)
+   ══════════════════════════════════════════════════════ */
+#s-home { background: var(--shiroi); }
+
+/* ── Hero Banner ── */
+.hero {
+  margin: var(--sp-md) var(--sp-md) 0;
+  border-radius: var(--r-2xl);
+  overflow: hidden;
+  background: var(--koku);
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--sp-xl) var(--sp-lg) var(--sp-lg);
+  position: relative;
+}
+.hero-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 85% 15%, rgba(139,0,0,0.45) 0%, transparent 55%),
+    radial-gradient(ellipse at 15% 85%, rgba(200,151,58,0.18) 0%, transparent 50%),
+    linear-gradient(160deg, #1E1E20 0%, #141416 100%);
+}
+/* 斜めストライプ（和紙感） */
+.hero-hatch {
+  position: absolute; inset: 0;
+  opacity: 0.035;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255,255,255,0.7) 0px,
+    rgba(255,255,255,0.7) 1px,
+    transparent 1px,
+    transparent 18px
+  );
+}
+/* 大漢字透かし */
+.hero-kanji-ghost {
+  position: absolute;
+  right: -12px; top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--serif);
+  font-size: 160px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.04);
+  line-height: 1;
+  writing-mode: vertical-rl;
+  pointer-events: none;
+  letter-spacing: -8px;
+  user-select: none;
+}
+.hero-content { position: relative; z-index: 2; }
+.hero-eyebrow {
+  font-family: var(--serif);
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(245,242,236,0.45);
+  letter-spacing: 0.18em;
+  margin-bottom: 6px;
+}
+.hero-rank-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: var(--sp-sm);
+}
+.hero-rank {
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--shiroi);
+  line-height: 1;
+}
+.hero-belt-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(200,151,58,0.15);
+  border: 1px solid rgba(200,151,58,0.3);
+  border-radius: 20px;
+  padding: 4px 12px;
+}
+.hero-belt-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--kin);
+  box-shadow: var(--sh-kin);
+}
+.hero-belt-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--kin);
+  letter-spacing: 0.05em;
+}
+/* Belt progress */
+.hero-progress {
+  position: relative;
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: visible;
+  margin-bottom: 6px;
+}
+.hero-progress-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 62%;
+  background: linear-gradient(90deg, var(--kin) 0%, var(--kin-xl) 100%);
+  border-radius: 3px;
+  box-shadow: 0 0 10px rgba(200,151,58,0.65);
+}
+.hero-progress-thumb {
+  position: absolute;
+  right: 0; top: 50%;
+  transform: translate(50%, -50%);
+  width: 14px; height: 14px;
+  background: var(--kin-xl);
+  border-radius: 50%;
+  border: 2px solid var(--koku);
+  box-shadow: var(--sh-kin);
+}
+.hero-progress-text {
+  font-size: 10.5px;
+  color: rgba(245,242,236,0.45);
+  margin-top: 2px;
+}
+
+/* ── Streak Widget ── */
+.streak {
+  margin: var(--sp-sm) var(--sp-md) 0;
+  background: var(--koku);
+  border-radius: var(--r-lg);
+  padding: var(--sp-md) var(--sp-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s var(--spring);
+}
+.streak:active { transform: scale(0.98); }
+.streak-glow {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 10% 50%, rgba(200,151,58,0.12) 0%, transparent 60%);
+}
+.streak-fire {
+  font-size: 38px;
+  line-height: 1;
+  filter: drop-shadow(0 0 10px rgba(255,120,0,0.7));
+  animation: firePulse 2.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes firePulse {
+  0%,100% { transform: scale(1) rotate(-3deg); }
+  50%      { transform: scale(1.1) rotate(3deg); }
+}
+.streak-body { flex: 1; position: relative; }
+.streak-num {
+  font-family: var(--serif);
+  font-size: 38px;
+  font-weight: 700;
+  color: var(--kin);
+  line-height: 1;
+  text-shadow: 0 0 20px rgba(200,151,58,0.3);
+}
+.streak-lbl { font-size: 12px; color: rgba(245,242,236,0.5); margin-top: 1px; }
+.streak-days {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  position: relative;
+}
+.streak-days-label { font-size: 9px; color: rgba(245,242,236,0.35); letter-spacing: 0.08em; }
+.streak-dots-row { display: flex; gap: 5px; }
+.dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+}
+.dot.done  { background: var(--kin); box-shadow: 0 0 5px rgba(200,151,58,0.6); }
+.dot.today { background: var(--enji-xl); box-shadow: 0 0 7px rgba(192,30,30,0.7); animation: dotPulse 1.6s ease-in-out infinite; }
+@keyframes dotPulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+/* ── Stats Row ── */
+.stats-row {
+  display: flex;
+  gap: var(--sp-sm);
+  margin: var(--sp-sm) var(--sp-md) 0;
+}
+.stat {
+  flex: 1;
+  background: #fff;
+  border-radius: var(--r-md);
+  padding: var(--sp-md) var(--sp-sm);
+  text-align: center;
+  box-shadow: var(--sh-card);
+  border: 0.5px solid rgba(26,26,28,0.05);
+  cursor: pointer;
+  transition: transform 0.2s var(--spring), box-shadow 0.2s ease;
+}
+.stat:active { transform: scale(0.95); box-shadow: none; }
+.stat-val {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--koku);
+  line-height: 1;
+}
+.stat-val.r { color: var(--enji); }
+.stat-val.g { color: var(--kin); }
+.stat-lbl { font-size: 10.5px; color: var(--gin); margin-top: 4px; font-weight: 500; }
+
+/* ── Section Header ── */
+.sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: var(--sp-lg) var(--sp-md) var(--sp-sm);
+}
+.sec-title {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--koku);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sec-title::before {
+  content: '';
+  width: 3px; height: 16px;
+  background: var(--enji);
+  border-radius: 2px;
+  display: inline-block;
+}
+.sec-more { font-size: 13px; color: var(--enji); font-weight: 500; cursor: pointer; }
+
+/* ── Review CTA ── */
+.review-cta {
+  margin: var(--sp-sm) var(--sp-md) 0;
+  background: linear-gradient(135deg, #8B0000 0%, #5C0000 100%);
+  border-radius: var(--r-xl);
+  padding: var(--sp-lg) var(--sp-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: transform 0.2s var(--spring), box-shadow 0.2s ease;
+  box-shadow: var(--sh-enji);
+  position: relative;
+  overflow: hidden;
+}
+.review-cta::before {
+  content: '修';
+  position: absolute;
+  right: 56px; bottom: -14px;
+  font-family: var(--serif);
+  font-size: 96px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.04);
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+.review-cta:active { transform: scale(0.98); box-shadow: 0 2px 12px rgba(139,0,0,0.4); }
+.cta-count {
+  font-family: var(--serif);
+  font-size: 40px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+.cta-lbl { font-size: 13px; color: rgba(255,255,255,0.65); margin-top: 2px; }
+.cta-btn {
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 22px;
+  padding: 10px 22px;
+  color: #fff;
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.cta-btn:hover { background: rgba(255,255,255,0.22); }
+
+/* ── Belt Grid ── */
+.belt-grid {
+  padding: 0 var(--sp-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+  margin-bottom: var(--sp-md);
+}
+.belt-row {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: var(--r-md);
+  padding: 14px var(--sp-md);
+  gap: var(--sp-md);
+  box-shadow: var(--sh-card);
+  border: 0.5px solid rgba(26,26,28,0.05);
+  cursor: pointer;
+  transition: transform 0.2s var(--spring), box-shadow 0.2s ease;
+}
+.belt-row:active { transform: scale(0.98); }
+.belt-row.current {
+  border-color: rgba(200,151,58,0.5);
+  box-shadow: 0 0 0 1.5px var(--kin), var(--sh-card);
+}
+.belt-ico {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+}
+.belt-meta { flex: 1; min-width: 0; }
+.belt-name {
+  font-family: var(--serif);
+  font-size: 15px; font-weight: 600;
+  color: var(--koku);
+}
+.belt-sub { font-size: 11.5px; color: var(--gin); margin-top: 2px; }
+.belt-mini-bar {
+  width: 60px;
+}
+.belt-mini-track {
+  height: 3px;
+  background: var(--gin-xl);
+  border-radius: 2px;
+  margin-top: 4px;
+}
+.belt-mini-fill { height: 100%; border-radius: 2px; }
+.belt-cnt {
+  font-family: var(--serif);
+  font-size: 13px; font-weight: 600;
+  color: var(--gin); text-align: right;
+}
+.belt-check { font-size: 18px; color: var(--kin); }
+
+/* ══════════════════════════════════════════════════════
+   SCREEN 2 — 稽古 (FLASHCARD STUDY)
+   ══════════════════════════════════════════════════════ */
+#s-study { background: #EEE9DE; }
+
+/* Nav bar for study */
+.study-nav {
+  position: absolute;
+  top: 58px; left: 0; right: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-md);
+  z-index: 20;
+}
+.study-nav-title {
+  font-family: var(--serif);
+  font-size: 16px; font-weight: 600;
+  color: var(--koku);
+}
+.study-pill {
+  background: var(--koku);
+  color: var(--shiroi);
+  font-size: 12px; font-weight: 600;
+  padding: 4px 13px;
+  border-radius: 14px;
+}
+
+/* Progress strip */
+.study-strip {
+  position: absolute;
+  top: 102px; left: 0; right: 0;
+  height: 3px;
+  background: rgba(26,26,28,0.08);
+  z-index: 20;
+}
+.study-strip-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--enji), var(--kin));
+  border-radius: 0 2px 2px 0;
+  transition: width 0.45s var(--ease-o);
+  width: 30%;
+}
+
+.study-body {
+  position: absolute;
+  top: 105px; left: 0; right: 0; bottom: 83px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-md);
+  gap: var(--sp-xl);
+}
+
+/* 3D Flip Card */
+.flip-scene {
+  width: 100%;
+  max-width: 350px;
+  height: 330px;
+  perspective: 1400px;
+  cursor: pointer;
+}
+.flip-inner {
+  position: relative;
+  width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.65s var(--ease-io);
+}
+.flip-scene.flipped .flip-inner { transform: rotateY(180deg); }
+
+.flip-face {
+  position: absolute; inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--sh-raised);
+}
+
+/* Front: 四字熟語 */
+.flip-front {
+  background: var(--koku);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-md);
+  position: relative;
+}
+.flip-front-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 25% 30%, rgba(139,0,0,0.32) 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 75%, rgba(200,151,58,0.14) 0%, transparent 50%);
+}
+/* 朱印スタンプ風フレーム */
+.flip-stamp {
+  position: absolute;
+  top: var(--sp-md); right: var(--sp-md);
+  width: 42px; height: 42px;
+  border: 2px solid rgba(200,151,58,0.35);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  transform: rotate(-3deg);
+}
+.flip-stamp span {
+  font-family: var(--serif);
+  font-size: 9px; font-weight: 700;
+  color: rgba(200,151,58,0.55);
+  letter-spacing: 0.05em;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+.flip-level {
+  position: absolute;
+  top: var(--sp-md); left: var(--sp-md);
+  background: rgba(139,0,0,0.55);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 11px; font-weight: 600;
+  color: rgba(245,242,236,0.8);
+  letter-spacing: 0.06em;
+}
+.flip-kanji {
+  font-family: var(--serif);
+  font-size: 76px;
+  font-weight: 900;
+  color: var(--shiroi);
+  letter-spacing: -5px;
+  line-height: 1;
+  text-shadow: 0 4px 24px rgba(200,151,58,0.28);
+  position: relative; z-index: 1;
+}
+.flip-hint {
+  font-size: 11.5px;
+  color: rgba(245,242,236,0.3);
+  letter-spacing: 0.1em;
+  position: relative; z-index: 1;
+  animation: hintBlink 2.8s ease-in-out infinite;
+}
+@keyframes hintBlink { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+
+/* Back: 解説 */
+.flip-back {
+  background: #fff;
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-xl) var(--sp-lg);
+  gap: var(--sp-md);
+}
+.flip-back-reading {
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--gin);
+  letter-spacing: 0.12em;
+  padding-bottom: var(--sp-sm);
+  border-bottom: 1px solid var(--gin-xl);
+}
+.flip-back-kanji {
+  font-family: var(--serif);
+  font-size: 38px; font-weight: 700;
+  color: var(--koku);
+  letter-spacing: -2px;
+}
+.flip-back-tag {
+  font-size: 10px; font-weight: 700;
+  color: var(--enji);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.flip-back-meaning {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--koku-60);
+}
+.flip-back-example {
+  margin-top: auto;
+  background: var(--shiroi);
+  border-radius: var(--r-sm);
+  padding: var(--sp-sm) var(--sp-md);
+  border-left: 3px solid var(--kin);
+}
+.flip-back-ex-tag {
+  font-size: 9.5px; font-weight: 700;
+  color: var(--kin);
+  letter-spacing: 0.12em;
+  margin-bottom: 3px;
+}
+.flip-back-ex-text {
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--koku-40);
+}
+
+/* Answer buttons */
+.answer-row {
+  display: flex;
+  gap: var(--sp-md);
+  width: 100%;
+  max-width: 350px;
+}
+.btn-again {
+  flex: 1; padding: 16px;
+  border-radius: var(--r-lg);
+  background: #fff;
+  border: 1.5px solid var(--gin-xl);
+  font-family: var(--serif);
+  font-size: 16px; font-weight: 600;
+  color: var(--gin);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.18s var(--spring);
+  box-shadow: var(--sh-card);
+}
+.btn-again:active { transform: scale(0.96); background: #f5f5f5; }
+.btn-again small { display: block; font-size: 10.5px; font-weight: 400; font-family: var(--sans); color: var(--gin-l); margin-top: 2px; }
+.btn-got {
+  flex: 1.3; padding: 16px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, #1B7A3C, #0E5828);
+  font-family: var(--serif);
+  font-size: 16px; font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.18s var(--spring);
+  box-shadow: 0 4px 16px rgba(26,122,60,0.45);
+  border: none;
+}
+.btn-got:active { transform: scale(0.96); }
+.btn-got small { display: block; font-size: 10.5px; font-weight: 400; font-family: var(--sans); color: rgba(255,255,255,0.6); margin-top: 2px; }
+
+/* Session info */
+.session-row {
+  display: flex;
+  gap: var(--sp-lg);
+  align-items: center;
+}
+.session-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.session-val {
+  font-family: var(--serif);
+  font-size: 22px; font-weight: 700;
+  color: var(--koku);
+}
+.session-lbl { font-size: 10px; color: var(--gin); letter-spacing: 0.05em; }
+.session-sep { width: 1px; height: 28px; background: var(--gin-xl); }
+
+/* ══════════════════════════════════════════════════════
+   SCREEN 3 — 型 (QUIZ)
+   ══════════════════════════════════════════════════════ */
+#s-quiz { background: var(--koku); }
+
+.quiz-nav {
+  position: absolute;
+  top: 58px; left: 0; right: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-md);
+  z-index: 20;
+}
+.quiz-nav-title {
+  font-family: var(--serif);
+  font-size: 16px; font-weight: 600;
+  color: var(--shiroi);
+}
+.quiz-score-tag {
+  background: rgba(200,151,58,0.18);
+  border: 1px solid rgba(200,151,58,0.38);
+  border-radius: 13px;
+  padding: 4px 13px;
+  font-size: 13px; font-weight: 600;
+  color: var(--kin);
+}
+
+/* Timer */
+.quiz-timer {
+  position: absolute;
+  top: 102px; left: 0; right: 0;
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  z-index: 20;
+}
+.quiz-timer-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--kin-xl), var(--enji-xl));
+  border-radius: 0 2px 2px 0;
+  animation: timerDown 20s linear forwards;
+}
+@keyframes timerDown { from { width: 100%; } to { width: 0%; } }
+
+.quiz-body {
+  position: absolute;
+  top: 106px; left: 0; right: 0; bottom: 83px;
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-lg) var(--sp-md);
+  gap: var(--sp-md);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.quiz-body::-webkit-scrollbar { display: none; }
+
+/* Question card */
+.q-card {
+  background: var(--koku-90);
+  border-radius: var(--r-xl);
+  padding: var(--sp-xl) var(--sp-lg);
+  text-align: center;
+  border: 0.5px solid rgba(255,255,255,0.05);
+  position: relative;
+  overflow: hidden;
+}
+.q-card::after {
+  content: '？';
+  position: absolute;
+  right: 14px; bottom: -12px;
+  font-family: var(--serif);
+  font-size: 88px; font-weight: 900;
+  color: rgba(255,255,255,0.025);
+  line-height: 1;
+  pointer-events: none;
+}
+.q-tag {
+  font-size: 10.5px; font-weight: 700;
+  color: var(--kin);
+  letter-spacing: 0.18em;
+  margin-bottom: var(--sp-sm);
+  text-transform: uppercase;
+}
+.q-text {
+  font-size: 15.5px; line-height: 1.7;
+  color: var(--shiroi);
+  font-family: var(--sans);
+}
+.q-example {
+  margin-top: var(--sp-sm);
+  font-size: 12.5px;
+  color: rgba(245,242,236,0.38);
+  font-style: italic;
+}
+
+/* Choices */
+.choices { display: flex; flex-direction: column; gap: var(--sp-sm); }
+.choice {
+  background: rgba(255,255,255,0.055);
+  border: 1.5px solid rgba(255,255,255,0.07);
+  border-radius: var(--r-lg);
+  padding: 14px var(--sp-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+  cursor: pointer;
+  transition: all 0.18s var(--spring);
+  -webkit-tap-highlight-color: transparent;
+}
+.choice:active { transform: scale(0.98); }
+.choice.correct {
+  background: rgba(26,120,58,0.28);
+  border-color: rgba(40,200,80,0.55);
+  box-shadow: 0 0 18px rgba(26,200,80,0.18);
+}
+.choice.wrong {
+  background: rgba(139,0,0,0.28);
+  border-color: rgba(200,30,30,0.55);
+  box-shadow: 0 0 18px rgba(200,30,30,0.18);
+}
+.choice-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  color: var(--gin-l); flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+.choice.correct .choice-num { background: rgba(40,200,80,0.25); color: #4ade80; }
+.choice.wrong   .choice-num { background: rgba(200,30,30,0.3); color: #f87171; }
+.choice-kanji {
+  font-family: var(--serif);
+  font-size: 24px; font-weight: 700;
+  color: var(--shiroi);
+  letter-spacing: -1px;
+  transition: color 0.2s ease;
+  flex: 1;
+}
+.choice.correct .choice-kanji { color: #4ade80; }
+.choice.wrong   .choice-kanji { color: #f87171; }
+.choice-check { font-size: 16px; opacity: 0; transition: opacity 0.2s; }
+.choice.correct .choice-check { opacity: 1; }
+.choice.wrong   .choice-check { opacity: 1; }
+
+/* Explanation */
+.exp-panel {
+  background: rgba(200,151,58,0.09);
+  border: 1px solid rgba(200,151,58,0.2);
+  border-radius: var(--r-lg);
+  padding: var(--sp-md);
+  display: none;
+  animation: slideUp 0.35s var(--spring);
+}
+.exp-panel.show { display: block; }
+@keyframes slideUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+.exp-ans {
+  font-size: 10.5px; font-weight: 700;
+  color: var(--kin);
+  letter-spacing: 0.12em;
+  margin-bottom: var(--sp-xs);
+  text-transform: uppercase;
+}
+.exp-text { font-size: 13px; line-height: 1.65; color: rgba(245,242,236,0.68); }
+.exp-next {
+  display: block; width: 100%;
+  margin-top: var(--sp-md);
+  padding: 14px;
+  background: var(--kin);
+  border-radius: var(--r-md);
+  border: none;
+  font-family: var(--serif);
+  font-size: 15px; font-weight: 700;
+  color: var(--koku);
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.18s var(--spring), box-shadow 0.18s ease;
+  box-shadow: 0 4px 16px rgba(200,151,58,0.4);
+}
+.exp-next:active { transform: scale(0.97); }
+
+/* ══════════════════════════════════════════════════════
+   SCREEN 4 — 辞典 (DICTIONARY)
+   ══════════════════════════════════════════════════════ */
+#s-dict { background: var(--shiroi); }
+
+.dict-head {
+  position: absolute;
+  top: 58px; left: 0; right: 0;
+  z-index: 20;
+  padding: 0 var(--sp-md);
+  background: rgba(245,242,236,0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.dict-title-row {
+  height: 44px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.dict-title {
+  font-family: var(--serif);
+  font-size: 17px; font-weight: 700;
+  color: var(--koku);
+}
+.dict-add-btn {
+  width: 30px; height: 30px;
+  background: var(--enji);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--sh-enji);
+}
+
+/* Search */
+.dict-search {
+  display: flex; align-items: center;
+  gap: var(--sp-sm);
+  background: rgba(26,26,28,0.07);
+  border-radius: 12px;
+  padding: 9px var(--sp-md);
+  margin-bottom: var(--sp-sm);
+}
+.dict-search svg { opacity: 0.35; flex-shrink: 0; }
+.dict-search input {
+  flex: 1; background: none; border: none; outline: none;
+  font-size: 15px; font-family: var(--sans);
+  color: var(--koku);
+}
+.dict-search input::placeholder { color: var(--gin-l); }
+
+/* Filters */
+.dict-filters {
+  padding: var(--sp-sm) 0;
+  display: flex; gap: var(--sp-sm);
+  overflow-x: auto; scrollbar-width: none;
+}
+.dict-filters::-webkit-scrollbar { display: none; }
+.chip {
+  flex-shrink: 0;
+  padding: 6px 15px;
+  border-radius: 18px;
+  font-size: 12.5px; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+  background: rgba(26,26,28,0.06);
+  color: var(--koku-40);
+  border: 1px solid transparent;
+  transition: all 0.18s var(--spring);
+}
+.chip.active { background: var(--koku); color: var(--shiroi); }
+
+.dict-scroll {
+  position: absolute;
+  top: 196px; left: 0; right: 0; bottom: 83px;
+  overflow-y: auto; scrollbar-width: none;
+  padding: 0 var(--sp-md) var(--sp-md);
+}
+.dict-scroll::-webkit-scrollbar { display: none; }
+
+.dict-sec-head {
+  font-family: var(--serif);
+  font-size: 12px; font-weight: 700;
+  color: var(--enji);
+  padding: var(--sp-md) 0 var(--sp-xs);
+  border-bottom: 1px solid rgba(139,0,0,0.12);
+  letter-spacing: 0.05em;
+  display: flex; align-items: center; gap: var(--sp-sm);
+}
+
+.dict-item {
+  display: flex; align-items: center;
+  padding: 13px 0;
+  border-bottom: 0.5px solid rgba(26,26,28,0.06);
+  gap: var(--sp-md);
+  cursor: pointer;
+  transition: background 0.12s;
+  border-radius: var(--r-sm);
+  padding-left: var(--sp-sm);
+  margin-left: calc(-1 * var(--sp-sm));
+}
+.dict-item:active { background: rgba(26,26,28,0.04); }
+.dict-item-kanji {
+  font-family: var(--serif);
+  font-size: 22px; font-weight: 700;
+  color: var(--koku);
+  width: 82px; flex-shrink: 0;
+  letter-spacing: -1px;
+}
+.dict-item-meta { flex: 1; min-width: 0; }
+.dict-item-read { font-size: 11.5px; color: var(--gin); margin-bottom: 2px; }
+.dict-item-def {
+  font-size: 12.5px; color: var(--koku-40);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.badge {
+  flex-shrink: 0;
+  font-size: 9.5px; font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 8px;
+  letter-spacing: 0.05em;
+}
+.badge-new    { background: rgba(200,151,58,0.1); color: var(--kin); border: 1px solid rgba(200,151,58,0.22); }
+.badge-learn  { background: rgba(26,72,160,0.08); color: #1A4AA0; border: 1px solid rgba(26,72,160,0.18); }
+.badge-master { background: rgba(26,122,58,0.09); color: #1A7A3A; border: 1px solid rgba(26,122,58,0.2); }
+
+/* ══════════════════════════════════════════════════════
+   SCREEN 5 — 成績 (ACHIEVEMENTS)
+   ══════════════════════════════════════════════════════ */
+#s-achv { background: var(--koku); }
+
+.achv-head {
+  position: absolute;
+  top: 58px; left: 0; right: 0;
+  height: 44px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--sp-md);
+  z-index: 20;
+}
+.achv-title {
+  font-family: var(--serif);
+  font-size: 17px; font-weight: 700;
+  color: var(--shiroi);
+}
+
+.achv-scroll {
+  position: absolute;
+  top: 102px; left: 0; right: 0; bottom: 83px;
+  overflow-y: auto; scrollbar-width: none;
+  padding: 0 var(--sp-md) var(--sp-md);
+}
+.achv-scroll::-webkit-scrollbar { display: none; }
+
+/* XP Hero */
+.xp-hero {
+  background: var(--koku-90);
+  border-radius: var(--r-xl);
+  padding: var(--sp-xl) var(--sp-lg);
+  margin-bottom: var(--sp-md);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  border: 0.5px solid rgba(200,151,58,0.15);
+}
+.xp-hero::before {
+  content: '段';
+  position: absolute;
+  left: 50%; bottom: -20px;
+  transform: translateX(-50%);
+  font-family: var(--serif);
+  font-size: 140px; font-weight: 900;
+  color: rgba(200,151,58,0.04);
+  line-height: 1;
+  pointer-events: none;
+}
+.xp-belt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(200,151,58,0.12);
+  border: 1px solid rgba(200,151,58,0.28);
+  border-radius: 20px;
+  padding: 6px 18px;
+  margin-bottom: var(--sp-md);
+}
+.xp-belt-ico { font-size: 18px; }
+.xp-belt-txt {
+  font-family: var(--serif);
+  font-size: 14px; font-weight: 600;
+  color: var(--kin);
+}
+.xp-num {
+  font-family: var(--serif);
+  font-size: 56px; font-weight: 900;
+  color: var(--shiroi);
+  line-height: 1;
+  text-shadow: 0 0 40px rgba(200,151,58,0.2);
+  position: relative;
+}
+.xp-num span {
+  font-size: 20px; font-weight: 400;
+  color: var(--kin);
+  vertical-align: super;
+  margin-left: 4px;
+}
+.xp-lbl { font-size: 12px; color: rgba(245,242,236,0.45); margin-top: 4px; letter-spacing: 0.08em; }
+
+/* Stats grid */
+.achv-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-sm);
+  margin-bottom: var(--sp-md);
+}
+.achv-stat {
+  background: var(--koku-80);
+  border-radius: var(--r-md);
+  padding: var(--sp-md);
+  border: 0.5px solid rgba(255,255,255,0.05);
+  position: relative;
+  overflow: hidden;
+}
+.achv-stat::before {
+  content: attr(data-ghost);
+  position: absolute;
+  right: -4px; bottom: -10px;
+  font-family: var(--serif);
+  font-size: 52px; font-weight: 900;
+  color: rgba(255,255,255,0.03);
+  line-height: 1;
+  pointer-events: none;
+}
+.achv-stat-val {
+  font-family: var(--serif);
+  font-size: 30px; font-weight: 700;
+  color: var(--shiroi);
+  line-height: 1;
+}
+.achv-stat-val.kin { color: var(--kin); }
+.achv-stat-val.enj { color: var(--enji-xl); }
+.achv-stat-lbl { font-size: 11px; color: rgba(245,242,236,0.4); margin-top: 4px; }
+
+/* Trophy row */
+.trophy-sec-head {
+  font-family: var(--serif);
+  font-size: 13px; font-weight: 700;
+  color: rgba(200,151,58,0.7);
+  letter-spacing: 0.08em;
+  margin: var(--sp-lg) 0 var(--sp-sm);
+  display: flex; align-items: center; gap: var(--sp-sm);
+}
+.trophy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-sm);
+}
+.trophy-card {
+  background: var(--koku-80);
+  border-radius: var(--r-md);
+  padding: var(--sp-md) var(--sp-sm);
+  text-align: center;
+  border: 0.5px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: transform 0.2s var(--spring);
+  position: relative;
+}
+.trophy-card:active { transform: scale(0.95); }
+.trophy-card.earned { border-color: rgba(200,151,58,0.28); }
+.trophy-card.earned::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-md);
+  background: rgba(200,151,58,0.04);
+}
+.trophy-ico { font-size: 28px; margin-bottom: 4px; }
+.trophy-name {
+  font-size: 10px; font-weight: 600;
+  color: rgba(245,242,236,0.6);
+  line-height: 1.3;
+}
+.trophy-card.earned .trophy-name { color: var(--kin); }
+.trophy-locked { opacity: 0.3; filter: grayscale(1); }
+
+/* Streak cal */
+.streak-cal {
+  background: var(--koku-90);
+  border-radius: var(--r-xl);
+  padding: var(--sp-lg);
+  margin-top: var(--sp-sm);
+  border: 0.5px solid rgba(255,255,255,0.04);
+}
+.cal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--sp-md);
+}
+.cal-title {
+  font-family: var(--serif);
+  font-size: 14px; font-weight: 600;
+  color: var(--shiroi);
+}
+.cal-streak-tag {
+  font-size: 12px; font-weight: 700;
+  color: var(--kin);
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.cal-cell {
+  aspect-ratio: 1;
+  border-radius: 5px;
+  background: rgba(255,255,255,0.05);
+}
+.cal-cell.done   { background: rgba(200,151,58,0.55); }
+.cal-cell.today  { background: var(--enji-xl); box-shadow: 0 0 8px rgba(192,30,30,0.6); }
+.cal-cell.empty  { background: transparent; }
+.cal-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.cal-day {
+  font-size: 9px; font-weight: 600;
+  color: rgba(245,242,236,0.25);
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+/* ══════════════════════════════════════════════════════
+   STATUS BAR OVERRIDES PER SCREEN
+   ══════════════════════════════════════════════════════ */
+#s-quiz  .sbar { color: var(--shiroi); }
+#s-quiz  .sbar-time,
+#s-quiz  .sbar-icons { color: rgba(245,242,236,0.9); }
+#s-achv  .sbar-time,
+#s-achv  .sbar-icons { color: rgba(245,242,236,0.9); }
+
+/* ══════════════════════════════════════════════════════
+   FLASH EFFECT (正解時)
+   ══════════════════════════════════════════════════════ */
+.flash-overlay {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  z-index: 250;
+  opacity: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(200,151,58,0.6) 0%, transparent 70%);
+  border-radius: inherit;
+}
+.flash-overlay.flash {
+  animation: flashBurst 0.6s var(--ease-o) forwards;
+}
+@keyframes flashBurst {
+  0%  { opacity: 0; transform: scale(0.8); }
+  30% { opacity: 1; transform: scale(1.05); }
+  100%{ opacity: 0; transform: scale(1.2); }
+}
+
+/* ══════════════════════════════════════════════════════
+   SCREEN TRANSITIONS
+   ══════════════════════════════════════════════════════ */
+@keyframes screenIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.app-screen.active { animation: screenIn 0.28s var(--ease-o); }
+
+/* ══════════════════════════════════════════════════════
+   SCROLLBAR & MISC
+   ══════════════════════════════════════════════════════ */
+button { cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="device-wrap">
+  <div class="device-label">iPhone 15 Pro · 四字熟語道場</div>
+  <div class="iphone">
+    <div class="btn-vup"></div>
+    <div class="btn-vdn"></div>
+    <div class="btn-sil"></div>
+    <div class="btn-pwr"></div>
+
+    <div class="screen">
+      <!-- Dynamic Island -->
+      <div class="di"></div>
+
+      <!-- ════════════════════════════════
+           SCREEN 1: 道場 (HOME)
+           ════════════════════════════════ -->
+      <div id="s-home" class="app-screen active">
+        <div class="washi"></div>
+
+        <!-- Status Bar -->
+        <div class="sbar">
+          <span class="sbar-time">9:41</span>
+          <div class="sbar-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="#1A1A1C">
+              <rect x="0" y="3" width="3" height="9" rx="1" opacity="0.4"/>
+              <rect x="4.5" y="2" width="3" height="10" rx="1" opacity="0.6"/>
+              <rect x="9" y="0" width="3" height="12" rx="1"/>
+              <rect x="13.5" y="0" width="2.5" height="12" rx="1"/>
+            </svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+              <path d="M8 2.5C10.2 2.5 12.1 3.5 13.4 5L15 3.4C13.3 1.7 10.8 0.5 8 0.5C5.2 0.5 2.7 1.7 1 3.4L2.6 5C3.9 3.5 5.8 2.5 8 2.5Z" fill="#1A1A1C"/>
+              <path d="M8 5.5C9.4 5.5 10.6 6.1 11.5 7L13.1 5.4C11.8 4.2 10 3.5 8 3.5C6 3.5 4.2 4.2 2.9 5.4L4.5 7C5.4 6.1 6.6 5.5 8 5.5Z" fill="#1A1A1C"/>
+              <circle cx="8" cy="10" r="1.5" fill="#1A1A1C"/>
+            </svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+              <rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#1A1A1C" stroke-opacity="0.35"/>
+              <rect x="2" y="2" width="16" height="8" rx="2" fill="#1A1A1C"/>
+              <path d="M23 4.5C23.8 4.8 24.5 5.3 24.5 6C24.5 6.7 23.8 7.2 23 7.5V4.5Z" fill="#1A1A1C" opacity="0.4"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="scroll">
+          <!-- Hero Banner -->
+          <div class="hero">
+            <div class="hero-bg"></div>
+            <div class="hero-hatch"></div>
+            <div class="hero-kanji-ghost">道場</div>
+            <div class="hero-content">
+              <div class="hero-eyebrow">YOJIJUKUGO DOJO</div>
+              <div class="hero-rank-row">
+                <div class="hero-rank">黄帯 — 初段</div>
+                <div class="hero-belt-tag">
+                  <div class="hero-belt-dot"></div>
+                  <span class="hero-belt-label">修練中</span>
+                </div>
+              </div>
+              <div class="hero-progress">
+                <div class="hero-progress-fill"></div>
+                <div class="hero-progress-thumb"></div>
+              </div>
+              <div class="hero-progress-text">次の帯まで 38語 / 学習済み 62語</div>
+            </div>
+          </div>
+
+          <!-- Streak Widget -->
+          <div class="streak">
+            <div class="streak-glow"></div>
+            <div class="streak-fire">🔥</div>
+            <div class="streak-body">
+              <div class="streak-num">12</div>
+              <div class="streak-lbl">日連続稽古中</div>
+            </div>
+            <div class="streak-days">
+              <div class="streak-days-label">今週</div>
+              <div class="streak-dots-row">
+                <div class="dot done"></div>
+                <div class="dot done"></div>
+                <div class="dot done"></div>
+                <div class="dot done"></div>
+                <div class="dot done"></div>
+                <div class="dot today"></div>
+                <div class="dot"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stats Row -->
+          <div class="stats-row">
+            <div class="stat">
+              <div class="stat-val">247</div>
+              <div class="stat-lbl">学習語数</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val r">18</div>
+              <div class="stat-lbl">復習待ち</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val g">84%</div>
+              <div class="stat-lbl">正答率</div>
+            </div>
+          </div>
+
+          <!-- Review CTA -->
+          <div class="sec-head">
+            <div class="sec-title">今日の修練</div>
+          </div>
+          <div class="review-cta" onclick="switchTab('s-study')">
+            <div>
+              <div class="cta-count">18</div>
+              <div class="cta-lbl">復習カードが待っています</div>
+            </div>
+            <div class="cta-btn">今すぐ稽古</div>
+          </div>
+
+          <!-- Belt Grid -->
+          <div class="sec-head">
+            <div class="sec-title">帯の道</div>
+            <div class="sec-more">全段位</div>
+          </div>
+          <div class="belt-grid">
+            <div class="belt-row">
+              <div class="belt-ico" style="background:#F0EDE8;">🥋</div>
+              <div class="belt-meta">
+                <div class="belt-name">白帯 — 入門</div>
+                <div class="belt-sub">50語</div>
+                <div class="belt-mini-track"><div class="belt-mini-fill" style="width:100%;background:var(--gin-l);"></div></div>
+              </div>
+              <div class="belt-cnt">50/50</div>
+              <div class="belt-check">✓</div>
+            </div>
+            <div class="belt-row current">
+              <div class="belt-ico" style="background:rgba(226,196,64,0.15);">🥋</div>
+              <div class="belt-meta">
+                <div class="belt-name" style="color:var(--kin);">黄帯 — 初段</div>
+                <div class="belt-sub">100語 (修得中)</div>
+                <div class="belt-mini-track"><div class="belt-mini-fill" style="width:62%;background:var(--kin);box-shadow:0 0 6px rgba(200,151,58,0.5);"></div></div>
+              </div>
+              <div class="belt-cnt" style="color:var(--kin);">62/100</div>
+            </div>
+            <div class="belt-row" style="opacity:0.5;">
+              <div class="belt-ico" style="background:rgba(224,120,32,0.12);">🥋</div>
+              <div class="belt-meta">
+                <div class="belt-name">橙帯 — 二段</div>
+                <div class="belt-sub">150語</div>
+                <div class="belt-mini-track"><div class="belt-mini-fill" style="width:0%;background:var(--belt-orange);"></div></div>
+              </div>
+              <div class="belt-cnt">0/150</div>
+            </div>
+            <div class="belt-row" style="opacity:0.35;">
+              <div class="belt-ico" style="background:rgba(42,112,56,0.1);">🥋</div>
+              <div class="belt-meta">
+                <div class="belt-name">緑帯 — 三段</div>
+                <div class="belt-sub">200語</div>
+                <div class="belt-mini-track"><div class="belt-mini-fill" style="width:0%;background:var(--belt-green);"></div></div>
+              </div>
+              <div class="belt-cnt">0/200</div>
+            </div>
+          </div>
+
+        </div><!-- /scroll -->
+      </div>
+
+      <!-- ════════════════════════════════
+           SCREEN 2: 稽古 (FLASHCARD)
+           ════════════════════════════════ -->
+      <div id="s-study" class="app-screen">
+        <div class="washi"></div>
+        <div class="sbar">
+          <span class="sbar-time">9:41</span>
+          <div class="sbar-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="#1A1A1C"><rect x="0" y="3" width="3" height="9" rx="1" opacity="0.4"/><rect x="4.5" y="2" width="3" height="10" rx="1" opacity="0.6"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="2.5" height="12" rx="1"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#1A1A1C" stroke-opacity="0.35"/><rect x="2" y="2" width="16" height="8" rx="2" fill="#1A1A1C"/><path d="M23 4.5C23.8 4.8 24.5 5.3 24.5 6C24.5 6.7 23.8 7.2 23 7.5V4.5Z" fill="#1A1A1C" opacity="0.4"/></svg>
+          </div>
+        </div>
+
+        <div class="study-nav">
+          <div class="study-nav-title">今日の稽古</div>
+          <div class="study-pill">3 / 18</div>
+        </div>
+        <div class="study-strip">
+          <div class="study-strip-fill" id="study-fill"></div>
+        </div>
+
+        <div class="study-body">
+          <!-- Flip card -->
+          <div class="flip-scene" id="flip-scene" onclick="flipCard()">
+            <div class="flip-inner" id="flip-inner">
+              <!-- Front -->
+              <div class="flip-face flip-front">
+                <div class="flip-front-bg"></div>
+                <div class="flip-level">SM-2 · Lv.3</div>
+                <div class="flip-stamp"><span>稽古</span></div>
+                <div class="flip-kanji">一期一会</div>
+                <div class="flip-hint">タップして意味を見る</div>
+              </div>
+              <!-- Back -->
+              <div class="flip-face flip-back">
+                <div class="flip-back-reading">いちごいちえ</div>
+                <div class="flip-back-kanji">一期一会</div>
+                <div class="flip-back-tag">意味</div>
+                <div class="flip-back-meaning">一生に一度の出会いを大切にするという心得。その場その場の出会いを唯一無二のものとして誠実に向き合うこと。</div>
+                <div class="flip-back-example">
+                  <div class="flip-back-ex-tag">用例</div>
+                  <div class="flip-back-ex-text">「一期一会の精神でお客様をもてなす」</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Session stats -->
+          <div class="session-row" id="session-row">
+            <div class="session-item">
+              <div class="session-val" style="color:var(--enji)">5</div>
+              <div class="session-lbl">再稽古</div>
+            </div>
+            <div class="session-sep"></div>
+            <div class="session-item">
+              <div class="session-val">3</div>
+              <div class="session-lbl">完了</div>
+            </div>
+            <div class="session-sep"></div>
+            <div class="session-item">
+              <div class="session-val" style="color:var(--kin)">18</div>
+              <div class="session-lbl">残り</div>
+            </div>
+          </div>
+
+          <!-- Answer buttons (hidden until flipped) -->
+          <div class="answer-row" id="answer-row" style="display:none;">
+            <div class="btn-again" onclick="answerCard(false)">
+              もう一度<small>次回: 1日後</small>
+            </div>
+            <div class="btn-got" onclick="answerCard(true)">
+              覚えた！<small>次回: 4日後</small>
+            </div>
+          </div>
+        </div>
+        <div class="flash-overlay" id="flash-study"></div>
+      </div>
+
+      <!-- ════════════════════════════════
+           SCREEN 3: 型 (QUIZ)
+           ════════════════════════════════ -->
+      <div id="s-quiz" class="app-screen">
+        <div class="washi" style="opacity:0.015;"></div>
+        <div class="sbar">
+          <span class="sbar-time" style="color:rgba(245,242,236,0.9)">9:41</span>
+          <div class="sbar-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="rgba(245,242,236,0.9)"><rect x="0" y="3" width="3" height="9" rx="1" opacity="0.4"/><rect x="4.5" y="2" width="3" height="10" rx="1" opacity="0.6"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="2.5" height="12" rx="1"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="rgba(245,242,236,0.5)"/><rect x="2" y="2" width="16" height="8" rx="2" fill="rgba(245,242,236,0.9)"/></svg>
+          </div>
+        </div>
+
+        <div class="quiz-nav">
+          <div class="quiz-nav-title">型 — 四択クイズ</div>
+          <div class="quiz-score-tag">⭐ 360pt</div>
+        </div>
+        <div class="quiz-timer">
+          <div class="quiz-timer-bar" id="q-timer"></div>
+        </div>
+
+        <div class="quiz-body">
+          <!-- Question -->
+          <div class="q-card">
+            <div class="q-tag">問題 7 / 10</div>
+            <div class="q-text">「準備を万全に整えて、どんな事態にも対応できる状態」を表す四字熟語は？</div>
+            <div class="q-example">例: 試験前に___で臨む</div>
+          </div>
+
+          <!-- Choices -->
+          <div class="choices" id="quiz-choices">
+            <div class="choice" onclick="selectChoice(this, false)">
+              <div class="choice-num">1</div>
+              <div class="choice-kanji">一石二鳥</div>
+              <div class="choice-check">✗</div>
+            </div>
+            <div class="choice" onclick="selectChoice(this, true)">
+              <div class="choice-num">2</div>
+              <div class="choice-kanji">万全之策</div>
+              <div class="choice-check">✓</div>
+            </div>
+            <div class="choice" onclick="selectChoice(this, false)">
+              <div class="choice-num">3</div>
+              <div class="choice-kanji">七転八起</div>
+              <div class="choice-check">✗</div>
+            </div>
+            <div class="choice" onclick="selectChoice(this, false)">
+              <div class="choice-num">4</div>
+              <div class="choice-kanji">温故知新</div>
+              <div class="choice-check">✗</div>
+            </div>
+          </div>
+
+          <!-- Explanation (hidden) -->
+          <div class="exp-panel" id="exp-panel">
+            <div class="exp-ans">正解: 万全之策 (ばんぜんのさく)</div>
+            <div class="exp-text">「万全」は完全で欠けたところがないこと。「之策」はその対策・方法。あらゆる準備を整えた完璧な策のこと。</div>
+            <button class="exp-next" onclick="nextQuestion()">次の問題へ →</button>
+          </div>
+
+        </div>
+        <div class="flash-overlay" id="flash-quiz"></div>
+      </div>
+
+      <!-- ════════════════════════════════
+           SCREEN 4: 辞典
+           ════════════════════════════════ -->
+      <div id="s-dict" class="app-screen">
+        <div class="washi"></div>
+        <div class="sbar">
+          <span class="sbar-time">9:41</span>
+          <div class="sbar-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="#1A1A1C"><rect x="0" y="3" width="3" height="9" rx="1" opacity="0.4"/><rect x="4.5" y="2" width="3" height="10" rx="1" opacity="0.6"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="2.5" height="12" rx="1"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#1A1A1C" stroke-opacity="0.35"/><rect x="2" y="2" width="16" height="8" rx="2" fill="#1A1A1C"/><path d="M23 4.5C23.8 4.8 24.5 5.3 24.5 6C24.5 6.7 23.8 7.2 23 7.5V4.5Z" fill="#1A1A1C" opacity="0.4"/></svg>
+          </div>
+        </div>
+
+        <div class="dict-head">
+          <div class="dict-title-row">
+            <div class="dict-title">辞典</div>
+            <div class="dict-add-btn">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+          <div class="dict-search">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="#1A1A1C" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="#1A1A1C" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <input type="text" placeholder="四字熟語を検索…">
+          </div>
+          <div class="dict-filters">
+            <div class="chip active">すべて</div>
+            <div class="chip">白帯</div>
+            <div class="chip">黄帯</div>
+            <div class="chip">未学習</div>
+            <div class="chip">習得済</div>
+            <div class="chip">復習中</div>
+          </div>
+        </div>
+
+        <div class="dict-scroll">
+          <div class="dict-sec-head">あ行</div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">以心伝心</div>
+            <div class="dict-item-meta">
+              <div class="dict-item-read">いしんでんしん</div>
+              <div class="dict-item-def">言葉を使わずに心が通じ合うこと</div>
+            </div>
+            <div class="badge badge-master">習得</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">一期一会</div>
+            <div class="dict-item-meta">
+              <div class="dict-item-read">いちごいちえ</div>
+              <div class="dict-item-def">一生に一度の出会いを大切に</div>
+            </div>
+            <div class="badge badge-learn">学習中</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">一石二鳥</div>
+            <div class="dict-item-meta">
+              <div class="dict-item-read">いっせきにちょう</div>
+              <div class="dict-item-def">一つの行為で二つの利益を得る</div>
+            </div>
+            <div class="badge badge-master">習得</div>
+          </div>
+          <div class="dict-sec-head">か行</div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">臥薪嘗胆</div>
+            <div class="dict-item-meta">
+              <div class="dict-item-read">がしんしょうたん</div>
+              <div class="dict-item-def">目的のために苦労を重ねること</div>
+            </div>
+            <div class="badge badge-new">新規</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">花鳥風月</div>
+            <div class="dict-item-meta">
+              <div class="dict-item-read">かちょうふうげつ</div>
+              <div class="dict-item-def">自然の美しい風物・風雅な趣</div>
+            </div>
+            <div class="badge badge-learn">学習中</div>
+          </div>
+          <div class="dict-sec-head">さ行</div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">試行錯誤</div>
+            <div class="dict-item-meta">
+              <div class="dict-item-read">しこうさくご</div>
+              <div class="dict-item-def">繰り返し試みて失敗しながら解決策を探すこと</div>
+            </div>
+            <div class="badge badge-master">習得</div>
+          </div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">四面楚歌</div>
+            <div class="dict-item-meta">
+              <div class="dict-item-read">しめんそか</div>
+              <div class="dict-item-def">周囲がすべて敵・味方がいない孤立状態</div>
+            </div>
+            <div class="badge badge-new">新規</div>
+          </div>
+          <div class="dict-sec-head">た行</div>
+          <div class="dict-item">
+            <div class="dict-item-kanji">温故知新</div>
+            <div class="dict-item-meta">
+              <div class="dict-item-read">おんこちしん</div>
+              <div class="dict-item-def">古いものを学び新しい知識・知見を得ること</div>
+            </div>
+            <div class="badge badge-learn">学習中</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════
+           SCREEN 5: 成績 (ACHIEVEMENTS)
+           ════════════════════════════════ -->
+      <div id="s-achv" class="app-screen">
+        <div class="washi" style="opacity:0.015;"></div>
+        <div class="sbar">
+          <span class="sbar-time" style="color:rgba(245,242,236,0.9)">9:41</span>
+          <div class="sbar-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="rgba(245,242,236,0.85)"><rect x="0" y="3" width="3" height="9" rx="1" opacity="0.4"/><rect x="4.5" y="2" width="3" height="10" rx="1" opacity="0.6"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="2.5" height="12" rx="1"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="rgba(245,242,236,0.5)"/><rect x="2" y="2" width="16" height="8" rx="2" fill="rgba(245,242,236,0.85)"/></svg>
+          </div>
+        </div>
+
+        <div class="achv-head">
+          <div class="achv-title">成績・トロフィー</div>
+          <div style="font-size:11px;color:rgba(245,242,236,0.35);letter-spacing:0.08em;">2026年3月</div>
+        </div>
+
+        <div class="achv-scroll">
+          <!-- XP Hero -->
+          <div class="xp-hero">
+            <div class="xp-belt-badge">
+              <span class="xp-belt-ico">🥋</span>
+              <span class="xp-belt-txt">黄帯 — 修練の道</span>
+            </div>
+            <div class="xp-num">4,280<span>XP</span></div>
+            <div class="xp-lbl">累計経験値</div>
+          </div>
+
+          <!-- Stats Grid -->
+          <div class="achv-stats">
+            <div class="achv-stat" data-ghost="語">
+              <div class="achv-stat-val">247</div>
+              <div class="achv-stat-lbl">学習語数</div>
+            </div>
+            <div class="achv-stat" data-ghost="%">
+              <div class="achv-stat-val kin">84%</div>
+              <div class="achv-stat-lbl">総正答率</div>
+            </div>
+            <div class="achv-stat" data-ghost="日">
+              <div class="achv-stat-val enj">12</div>
+              <div class="achv-stat-lbl">連続稽古日数</div>
+            </div>
+            <div class="achv-stat" data-ghost="回">
+              <div class="achv-stat-val">1,840</div>
+              <div class="achv-stat-lbl">総稽古回数</div>
+            </div>
+          </div>
+
+          <!-- Trophies -->
+          <div class="trophy-sec-head">🏆 獲得トロフィー</div>
+          <div class="trophy-grid">
+            <div class="trophy-card earned">
+              <div class="trophy-ico">🥋</div>
+              <div class="trophy-name">初入門</div>
+            </div>
+            <div class="trophy-card earned">
+              <div class="trophy-ico">🔥</div>
+              <div class="trophy-name">7日連続</div>
+            </div>
+            <div class="trophy-card earned">
+              <div class="trophy-ico">⭐</div>
+              <div class="trophy-name">100語達成</div>
+            </div>
+            <div class="trophy-card earned">
+              <div class="trophy-ico">🎯</div>
+              <div class="trophy-name">完璧な回</div>
+            </div>
+            <div class="trophy-card trophy-locked">
+              <div class="trophy-ico">🏆</div>
+              <div class="trophy-name">黒帯達成</div>
+            </div>
+            <div class="trophy-card trophy-locked">
+              <div class="trophy-ico">🌟</div>
+              <div class="trophy-name">30日連続</div>
+            </div>
+          </div>
+
+          <!-- Streak Calendar -->
+          <div class="trophy-sec-head" style="margin-top:var(--sp-lg);">📅 稽古カレンダー</div>
+          <div class="streak-cal">
+            <div class="cal-head">
+              <div class="cal-title">2026年 3月</div>
+              <div class="cal-streak-tag">🔥 12日連続</div>
+            </div>
+            <div class="cal-days">
+              <div class="cal-day">日</div><div class="cal-day">月</div><div class="cal-day">火</div>
+              <div class="cal-day">水</div><div class="cal-day">木</div><div class="cal-day">金</div>
+              <div class="cal-day">土</div>
+            </div>
+            <div class="cal-grid" id="cal-grid"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════
+           TAB BAR
+           ════════════════════════════════ -->
+      <div class="tabbar">
+        <div class="tab active" data-screen="s-home" onclick="switchTab('s-home')">
+          <div class="tab-ico">⛩️</div>
+          <div class="tab-lbl">道場</div>
+        </div>
+        <div class="tab" data-screen="s-study" onclick="switchTab('s-study')">
+          <div class="tab-ico">🃏
+            <div class="tab-badge">18</div>
+          </div>
+          <div class="tab-lbl">稽古</div>
+        </div>
+        <div class="tab" data-screen="s-quiz" onclick="switchTab('s-quiz')">
+          <div class="tab-ico">🎯</div>
+          <div class="tab-lbl">型</div>
+        </div>
+        <div class="tab" data-screen="s-dict" onclick="switchTab('s-dict')">
+          <div class="tab-ico">📖</div>
+          <div class="tab-lbl">辞典</div>
+        </div>
+        <div class="tab" data-screen="s-achv" onclick="switchTab('s-achv')">
+          <div class="tab-ico">🏆</div>
+          <div class="tab-lbl">成績</div>
+        </div>
+      </div>
+
+    </div><!-- /screen -->
+  </div><!-- /iphone -->
+</div><!-- /device-wrap -->
+
+<script>
+/* ── Tab switching ── */
+function switchTab(id) {
+  document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelector(`[data-screen="${id}"]`)?.classList.add('active');
+
+  // Reset quiz timer when switching to quiz
+  if (id === 's-quiz') {
+    const bar = document.getElementById('q-timer');
+    bar.style.animation = 'none';
+    bar.offsetHeight; // reflow
+    bar.style.animation = 'timerDown 20s linear forwards';
+    // Reset choices state
+    document.querySelectorAll('.choice').forEach(c => {
+      c.classList.remove('correct','wrong');
+      c.style.pointerEvents = '';
+    });
+    document.getElementById('exp-panel').classList.remove('show');
+  }
+  // Reset flip when switching to study
+  if (id === 's-study') {
+    document.getElementById('flip-scene').classList.remove('flipped');
+    document.getElementById('answer-row').style.display = 'none';
+    document.getElementById('session-row').style.display = '';
+  }
+}
+
+/* ── Flip card ── */
+let flipped = false;
+function flipCard() {
+  const scene = document.getElementById('flip-scene');
+  flipped = !flipped;
+  scene.classList.toggle('flipped', flipped);
+  if (flipped) {
+    setTimeout(() => {
+      document.getElementById('answer-row').style.display = 'flex';
+      document.getElementById('session-row').style.display = 'none';
+    }, 350);
+  } else {
+    document.getElementById('answer-row').style.display = 'none';
+    document.getElementById('session-row').style.display = '';
+  }
+}
+
+function answerCard(correct) {
+  if (correct) triggerFlash('flash-study');
+  // Reset card
+  setTimeout(() => {
+    flipped = false;
+    document.getElementById('flip-scene').classList.remove('flipped');
+    document.getElementById('answer-row').style.display = 'none';
+    document.getElementById('session-row').style.display = '';
+    // Update progress
+    const fill = document.getElementById('study-fill');
+    const cur = parseInt(fill.style.width) || 30;
+    fill.style.width = Math.min(cur + 5, 100) + '%';
+  }, 200);
+}
+
+/* ── Quiz choices ── */
+function selectChoice(el, isCorrect) {
+  const choices = document.querySelectorAll('.choice');
+  choices.forEach(c => c.style.pointerEvents = 'none');
+  if (isCorrect) {
+    el.classList.add('correct');
+    triggerFlash('flash-quiz');
+  } else {
+    el.classList.add('wrong');
+    // Reveal correct
+    choices[1].classList.add('correct');
+  }
+  setTimeout(() => {
+    document.getElementById('exp-panel').classList.add('show');
+  }, 400);
+}
+
+function nextQuestion() {
+  // Reset
+  document.querySelectorAll('.choice').forEach(c => {
+    c.classList.remove('correct','wrong');
+    c.style.pointerEvents = '';
+  });
+  document.getElementById('exp-panel').classList.remove('show');
+  const bar = document.getElementById('q-timer');
+  bar.style.animation = 'none';
+  bar.offsetHeight;
+  bar.style.animation = 'timerDown 20s linear forwards';
+}
+
+/* ── Gold flash ── */
+function triggerFlash(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('flash');
+  el.offsetHeight;
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 700);
+}
+
+/* ── Render calendar ── */
+(function renderCal() {
+  const grid = document.getElementById('cal-grid');
+  if (!grid) return;
+  // March 2026: starts Saturday (day 6, 0-indexed)
+  const startDay = 6;
+  const daysInMonth = 31;
+  const todayNum = 28;
+  const streakStart = todayNum - 11; // 12-day streak
+
+  // Empty cells for offset
+  for (let i = 0; i < startDay; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell empty';
+    grid.appendChild(cell);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const cell = document.createElement('div');
+    if (d === todayNum) cell.className = 'cal-cell today';
+    else if (d >= streakStart && d < todayNum) cell.className = 'cal-cell done';
+    else cell.className = 'cal-cell';
+    grid.appendChild(cell);
+  }
+})();
+
+/* ── Filter chips ── */
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    this.closest('.dict-filters').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
