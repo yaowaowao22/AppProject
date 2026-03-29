@@ -45,7 +45,14 @@ export type ThemeId =
   // ダークテーマ（追加3種）
   | 'sakuraen'    // 桜煙（ローズ/ピンク）
   | 'moegi'       // 萌黄（ライム/イエローグリーン）
-  | 'shokou';     // 曙光（コーラル/サーモン）
+  | 'shokou'      // 曙光（コーラル/サーモン）
+  // モノクロ＋アクセントテーマ（墨彩6種）
+  | 'bokuen'      // 墨炎（ダークモノクロ＋オレンジ）
+  | 'bokusei'     // 墨青（ダークモノクロ＋ブルー）
+  | 'bokusui'     // 墨翠（ダークモノクロ＋グリーン）
+  | 'hakuen'      // 白炎（ライトモノクロ＋レッド）
+  | 'hakusei'     // 白青（ライトモノクロ＋ブルー）
+  | 'hakusui';    // 白翠（ライトモノクロ＋グリーン）
 
 // ── テーマメタ情報型 ──────────────────────────────────────────────────────────
 export interface ThemeMeta {
@@ -430,6 +437,132 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       scrim:         'rgba(0,0,0,0.55)',
       tabBarBg:      '#1C1715',
       tabBarBorder:  'rgba(240,215,200,0.07)',
+    },
+  },
+
+  // ── 墨彩テーマ（モノクロ＋アクセント6種）────────────────────────────────────
+
+  // ダーク墨彩（3種）
+  bokuen: {
+    meta: { id: 'bokuen', name: '墨炎', subtitle: '色なき闇に、炉の記憶だけが灯る', accentLabel: '鍛冶焔' },
+    colors: {
+      background:    '#121212',
+      surface1:      '#1A1A1A',
+      surface2:      '#242424',
+      textPrimary:   '#E8E8E8',
+      textSecondary: 'rgba(232,232,232,0.58)',
+      textTertiary:  'rgba(232,232,232,0.36)',
+      accent:        '#F97316',
+      accentDim:     'rgba(249,115,22,0.10)',
+      success:       '#2DB55D',
+      separator:     'rgba(255,255,255,0.07)',
+      error:         '#FF453A',
+      onAccent:      '#FFFFFF',
+      scrim:         'rgba(0,0,0,0.60)',
+      tabBarBg:      '#1A1A1A',
+      tabBarBorder:  'rgba(255,255,255,0.07)',
+    },
+  },
+  bokusei: {
+    meta: { id: 'bokusei', name: '墨青', subtitle: '墨の海に、ひと筋の稲妻が走る', accentLabel: '墨雷' },
+    colors: {
+      background:    '#121212',
+      surface1:      '#1A1A1A',
+      surface2:      '#242424',
+      textPrimary:   '#E8E8E8',
+      textSecondary: 'rgba(232,232,232,0.58)',
+      textTertiary:  'rgba(232,232,232,0.36)',
+      accent:        '#3B82F6',
+      accentDim:     'rgba(59,130,246,0.10)',
+      success:       '#2DB55D',
+      separator:     'rgba(255,255,255,0.07)',
+      error:         '#FF453A',
+      onAccent:      '#FFFFFF',
+      scrim:         'rgba(0,0,0,0.60)',
+      tabBarBg:      '#1A1A1A',
+      tabBarBorder:  'rgba(255,255,255,0.07)',
+    },
+  },
+  bokusui: {
+    meta: { id: 'bokusui', name: '墨翠', subtitle: '枯山水に、一枝の苔だけが生きている', accentLabel: '苔翠' },
+    colors: {
+      background:    '#121212',
+      surface1:      '#1A1A1A',
+      surface2:      '#242424',
+      textPrimary:   '#E8E8E8',
+      textSecondary: 'rgba(232,232,232,0.58)',
+      textTertiary:  'rgba(232,232,232,0.36)',
+      accent:        '#22C55E',
+      accentDim:     'rgba(34,197,94,0.10)',
+      success:       '#60A5FA',
+      separator:     'rgba(255,255,255,0.07)',
+      error:         '#FF453A',
+      onAccent:      '#FFFFFF',
+      scrim:         'rgba(0,0,0,0.60)',
+      tabBarBg:      '#1A1A1A',
+      tabBarBorder:  'rgba(255,255,255,0.07)',
+    },
+  },
+
+  // ライト墨彩（3種）
+  hakuen: {
+    meta: { id: 'hakuen', name: '白炎', subtitle: '白紙の上に、朱のひと滴が落ちる', accentLabel: '朱滴', isLight: true },
+    colors: {
+      background:    '#FAFAFA',
+      surface1:      '#F0F0F0',
+      surface2:      '#E5E5E5',
+      textPrimary:   '#1A1A1A',
+      textSecondary: '#6B6B6B',
+      textTertiary:  '#999999',
+      accent:        '#DC2626',
+      accentDim:     'rgba(220,38,38,0.10)',
+      success:       '#2D8E4E',
+      separator:     'rgba(0,0,0,0.08)',
+      error:         '#B91C1C',
+      onAccent:      '#FFFFFF',
+      scrim:         'rgba(0,0,0,0.55)',
+      tabBarBg:      '#F0F0F0',
+      tabBarBorder:  'rgba(0,0,0,0.08)',
+    },
+  },
+  hakusei: {
+    meta: { id: 'hakusei', name: '白青', subtitle: '雪原の果てに、空だけが青い', accentLabel: '天藍', isLight: true },
+    colors: {
+      background:    '#FAFAFA',
+      surface1:      '#F0F0F0',
+      surface2:      '#E5E5E5',
+      textPrimary:   '#1A1A1A',
+      textSecondary: '#6B6B6B',
+      textTertiary:  '#999999',
+      accent:        '#2563EB',
+      accentDim:     'rgba(37,99,235,0.10)',
+      success:       '#2D8E4E',
+      separator:     'rgba(0,0,0,0.08)',
+      error:         '#C53929',
+      onAccent:      '#FFFFFF',
+      scrim:         'rgba(0,0,0,0.55)',
+      tabBarBg:      '#F0F0F0',
+      tabBarBorder:  'rgba(0,0,0,0.08)',
+    },
+  },
+  hakusui: {
+    meta: { id: 'hakusui', name: '白翠', subtitle: '霜降る庭に、笹の葉だけが揺れる', accentLabel: '笹翠', isLight: true },
+    colors: {
+      background:    '#FAFAFA',
+      surface1:      '#F0F0F0',
+      surface2:      '#E5E5E5',
+      textPrimary:   '#1A1A1A',
+      textSecondary: '#6B6B6B',
+      textTertiary:  '#999999',
+      accent:        '#16A34A',
+      accentDim:     'rgba(22,163,74,0.10)',
+      success:       '#60A5FA',
+      separator:     'rgba(0,0,0,0.08)',
+      error:         '#C53929',
+      onAccent:      '#FFFFFF',
+      scrim:         'rgba(0,0,0,0.55)',
+      tabBarBg:      '#F0F0F0',
+      tabBarBorder:  'rgba(0,0,0,0.08)',
     },
   },
 };
