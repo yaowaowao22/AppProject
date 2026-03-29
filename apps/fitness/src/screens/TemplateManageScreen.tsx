@@ -23,7 +23,7 @@ import type { BodyPart } from '../types';
 
 export default function TemplateManageScreen() {
   const { colors } = useTheme();
-  const { templates, saveTemplate, deleteTemplate } = useWorkout();
+  const { templates, saveTemplate, deleteTemplate, updateTemplate } = useWorkout();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   // ── 表示モード管理 ──
@@ -69,9 +69,12 @@ export default function TemplateManageScreen() {
       return;
     }
     if (editingTemplateId !== null) {
-      await deleteTemplate(editingTemplateId);
+      // 既存テンプレートを更新（IDを保持）
+      await updateTemplate(editingTemplateId, name, Array.from(selectedIds));
+    } else {
+      // 新規作成
+      await saveTemplate(name, Array.from(selectedIds));
     }
-    await saveTemplate(name, Array.from(selectedIds));
     setEditingTemplateId(null);
     setIsCreating(false);
   };
