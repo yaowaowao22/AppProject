@@ -167,7 +167,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
   // セッション完了: volume計算 → DailyWorkout更新 → PR更新 → 永続化
   const completeSession = useCallback(async () => {
-    if (!currentSession) return;
+    if (!currentSession || currentSession.sets.length === 0) { setCurrentSession(null); return; }
 
     const now = new Date().toISOString();
     const todayStr = toDateStr(new Date());

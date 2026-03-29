@@ -786,10 +786,11 @@ function ExerciseDetailView({
     const sorted = [...workouts].sort((a, b) => a.date.localeCompare(b.date));
     const result: ChartBar[] = [];
     for (const w of sorted) {
-      const session = w.sessions.find(s => s.exerciseId === exerciseId);
-      if (!session) continue;
-      const maxW = getMaxWeight(session);
-      result.push({ label: formatDateShort(w.date), value: maxW ?? 0 });
+      const matched = w.sessions.filter(s => s.exerciseId === exerciseId);
+      for (const session of matched) {
+        const maxW = getMaxWeight(session);
+        result.push({ label: formatDateShort(w.date), value: maxW ?? 0 });
+      }
     }
     return result.slice(-12);
   }, [workouts, exerciseId]);
@@ -799,8 +800,8 @@ function ExerciseDetailView({
     const sorted = [...workouts].sort((a, b) => b.date.localeCompare(a.date));
     const result: ExDetailSession[] = [];
     for (const w of sorted) {
-      const session = w.sessions.find(s => s.exerciseId === exerciseId);
-      if (session) {
+      const matched = w.sessions.filter(s => s.exerciseId === exerciseId);
+      for (const session of matched) {
         result.push({
           key:       `${w.id}-${session.id}`,
           date:      w.date,

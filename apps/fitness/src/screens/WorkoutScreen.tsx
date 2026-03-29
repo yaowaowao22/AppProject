@@ -227,20 +227,18 @@ function buildRows(
   defaultWeight: number,
   defaultReps: number,
 ): SetRow[] {
-  // 前回データなし → 設定のデフォルト値を反映
+  // 最初の行のみ前回データ/デフォルト値を設定、それ以降は空（null）にする
   if (!prevSets || prevSets.length === 0) {
-    return Array.from({ length: defaultSets }, () => ({
-      weight: defaultWeight > 0 ? defaultWeight : null,
-      reps: defaultReps > 0 ? defaultReps : null,
-      done: false,
+    return Array.from({ length: defaultSets }, (_, i) => ({
+      weight: i === 0 && defaultWeight > 0 ? defaultWeight : null,
+      reps:   i === 0 && defaultReps > 0   ? defaultReps   : null,
+      done:   false,
     }));
   }
-  const base    = prevSets.slice(0, defaultSets);
-  const lastW   = base[base.length - 1].weight;
-  const lastR   = base[base.length - 1].reps;
+  const base = prevSets.slice(0, defaultSets);
   return Array.from({ length: defaultSets }, (_, i) => ({
-    weight: base[i]?.weight ?? lastW,
-    reps:   base[i]?.reps   ?? lastR,
+    weight: i === 0 ? (base[0]?.weight ?? null) : null,
+    reps:   i === 0 ? (base[0]?.reps   ?? null) : null,
     done:   false,
   }));
 }
@@ -743,7 +741,7 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
           </TouchableOpacity>
         )}
         <TouchableOpacity
-          style={[styles.doneBtn, styles.doneBtnDone, styles.btnRowItem]}
+          style={[styles.doneBtn, styles.btnRowItem]}
           onPress={handleExerciseComplete}
           accessibilityLabel={isLastExercise ? '種目完了' : '次の種目へ'}
         >
