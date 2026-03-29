@@ -468,6 +468,14 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
     }
   }
 
+  async function handlePreviousExercise() {
+    if (currentIndex === 0) return;
+    if (rows.some(r => r.done)) {
+      await completeSession();
+    }
+    setCurrentIndex(prev => prev - 1);
+  }
+
   async function doWorkoutEnd() {
     if (rows.some(r => r.done)) {
       await completeSession();
@@ -636,7 +644,8 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
         <Text style={styles.sectionLabel}>セット</Text>
         {rows.map((row, i) => {
           const isActive = i === activeIdx;
-          const isFuture = !row.done && i !== activeIdx;
+          // データがなく、完了でも現在アクティブでもない行のみ薄く表示
+          const isFuture = !row.done && i !== activeIdx && row.weight === null && row.reps === null;
           return (
             <TouchableOpacity
               key={i}
@@ -656,7 +665,7 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
                 row.done && styles.setValsDone,
                 isFuture && styles.setValsFuture,
               ]}>
-                {(!isFuture && row.weight !== null && row.reps !== null)
+                {(row.weight !== null && row.reps !== null)
                   ? `${row.weight % 1 === 0 ? row.weight : row.weight.toFixed(1)}kg × ${row.reps}`
                   : '—'}
               </Text>
@@ -710,6 +719,16 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
       {/* 種目完了 / ワークアウト終了（固定・横並び） */}
       <View style={styles.btnRow}>
+        {currentIndex > 0 && (
+          <TouchableOpacity
+            style={styles.prevBtn}
+            onPress={handlePreviousExercise}
+            accessibilityLabel="前の種目に戻る"
+          >
+            <Ionicons name="chevron-back" size={16} color={colors.textSecondary} />
+            <Text style={styles.prevBtnText}>前の種目</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={[styles.doneBtn, styles.doneBtnDone, styles.btnRowItem]}
           onPress={handleExerciseComplete}
@@ -720,7 +739,7 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.endBtn, styles.btnRowItem]}
+          style={[styles.endBtn, styles.btnRowEnd]}
           onPress={handleWorkoutEnd}
           accessibilityLabel="ワークアウトを終了する"
         >
@@ -1038,11 +1057,33 @@ function makeStyles(c: TanrenThemeColors) {
     gap: 8,
     marginHorizontal: SPACING.contentMargin,
     marginBottom: 8,
+    alignItems: 'stretch',
   },
   btnRowItem: {
     flex: 1,
     marginHorizontal: 0,
     marginBottom: 0,
+  },
+  btnRowEnd: {
+    marginHorizontal: 0,
+    marginBottom: 0,
+    paddingHorizontal: 16,
+    width: 64,
+  },
+  prevBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    paddingHorizontal: 12,
+    height: BUTTON_HEIGHT.secondary,
+    backgroundColor: c.surface1,
+    borderRadius: RADIUS.card,
+  },
+  prevBtnText: {
+    fontSize: TYPOGRAPHY.bodySmall,
+    fontWeight: TYPOGRAPHY.regular,
+    color: c.textSecondary,
   },
   doneBtn: {
     flexDirection: 'row',
