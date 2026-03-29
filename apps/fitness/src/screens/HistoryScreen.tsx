@@ -813,7 +813,7 @@ function ExerciseDetailView({
   }, [workouts, exerciseId]);
 
   const renderSetTable = (session: WorkoutSession) => (
-    <View style={{ paddingBottom: SPACING.sm }}>
+    <View style={{ paddingBottom: SPACING.sm, backgroundColor: colors.background }}>
       {/* ヘッダー行 */}
       <View style={[S.setTableHeader, { backgroundColor: colors.surface2, paddingTop: 8, paddingBottom: 6 }]}>
         <Text style={[S.setColNo, { fontSize: TYPOGRAPHY.captionSmall, fontWeight: TYPOGRAPHY.semiBold, color: colors.textTertiary }]}>
