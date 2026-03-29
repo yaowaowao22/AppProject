@@ -224,10 +224,16 @@ type SetRow = { weight: number | null; reps: number | null; done: boolean };
 function buildRows(
   prevSets: Array<{ weight: number | null; reps: number | null }> | null,
   defaultSets: number,
+  defaultWeight: number,
+  defaultReps: number,
 ): SetRow[] {
-  // 前回データなし → すべて空白
+  // 前回データなし → 設定のデフォルト値を反映
   if (!prevSets || prevSets.length === 0) {
-    return Array.from({ length: defaultSets }, () => ({ weight: null, reps: null, done: false }));
+    return Array.from({ length: defaultSets }, () => ({
+      weight: defaultWeight > 0 ? defaultWeight : null,
+      reps: defaultReps > 0 ? defaultReps : null,
+      done: false,
+    }));
   }
   const base    = prevSets.slice(0, defaultSets);
   const lastW   = base[base.length - 1].weight;
@@ -249,13 +255,12 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   const exerciseId = exerciseIds[currentIndex];
   const exercise = EXERCISES.find(e => e.id === exerciseId);
 
-  const [rows, setRows] = useState<SetRow[]>(() => buildRows(null, workoutConfig.defaultSets));
+  const [rows, setRows] = useState<SetRow[]>(() => buildRows(null, workoutConfig.defaultSets, workoutConfig.defaultWeight, workoutConfig.defaultReps));
   const [setDone, setSetDone] = useState(false);
   const [restSeconds, setRestSeconds] = useState<number | null>(null);
   const [editingField, setEditingField] = useState<'weight' | 'reps' | null>(null);
   const [editValue, setEditValue] = useState('');
   const [manualActiveIdx, setManualActiveIdx] = useState<number | null>(null);
-  const [showEndConfirm, setShowEndConfirm] = useState(false);
   const workoutStartedAt = useRef(new Date().toISOString());
 
   const weightScale = useRef(new Animated.Value(1)).current;
@@ -275,7 +280,7 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
       .filter(s => s.exerciseId === exerciseId && !!s.completedAt)
       .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
 
-    setRows(buildRows(prev?.sets ?? null, workoutConfig.defaultSets));
+    setRows(buildRows(prev?.sets ?? null, workoutConfig.defaultSets, workoutConfig.defaultWeight, workoutConfig.defaultReps));
     setManualActiveIdx(null);
     setSetDone(false);
     setRestSeconds(null);
@@ -353,21 +358,22 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   }
 
   function handleRowTap(i: number) {
-    // 編集中の値を切り替え前に確実に保存する
+    // 編集中の値を切り替え前に確実に保存する（editingRowRef.current で正確な行を特定）
     if (editingField !== null) {
-      const currIdx = activeIdx;
+      const rowIdx = editingRowRef.current;
       const numVal = parseFloat(editValue);
-      if (!isNaN(numVal) && numVal >= 0) {
-        setRows(prev => prev.map((r, idx) => {
-          if (idx !== currIdx) return { ...r };
+      setRows(prev => prev.map((r, idx) => {
+        if (idx === rowIdx && !isNaN(numVal) && numVal >= 0) {
           if (editingField === 'weight') return { ...r, weight: Math.max(0, Math.round(numVal * 10) / 10) };
           return { ...r, reps: Math.max(1, Math.floor(numVal)) };
-        }));
-      }
+        }
+        // タップした行が done なら同時に解除
+        if (idx === i && r.done) return { ...r, done: false };
+        return r;
+      }));
       setEditingField(null);
       setEditValue('');
-    }
-    if (rows[i].done) {
+    } else if (rows[i].done) {
       setRows(prev => prev.map((r, idx) => idx === i ? { ...r, done: false } : r));
     }
     setManualActiveIdx(i);
@@ -472,17 +478,14 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
     });
   }
 
-  async function handleWorkoutEnd() {
-    if (currentIndex < exerciseIds.length - 1) {
-      setShowEndConfirm(true);
-      return;
-    }
-    await doWorkoutEnd();
-  }
-
-  async function confirmWorkoutEnd() {
-    setShowEndConfirm(false);
-    await doWorkoutEnd();
+  function handleWorkoutEnd() {
+    const msg = rows.some(r => r.done)
+      ? '現在の種目のデータを保存して終了しますか？'
+      : '現在の種目はまだ記録されていません。終了しますか？';
+    Alert.alert('ワークアウトを終了', msg, [
+      { text: 'キャンセル', style: 'cancel' },
+      { text: '終了する', style: 'destructive', onPress: () => doWorkoutEnd() },
+    ]);
   }
 
   // 過去セッション履歴
@@ -705,19 +708,25 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
       {/* セット一覧とボタンのセパレーター */}
       <View style={styles.bottomSeparator} />
 
-      {/* 種目完了 / ワークアウト終了（固定） */}
-      <TouchableOpacity
-        style={[styles.doneBtn, styles.doneBtnDone]}
-        onPress={handleExerciseComplete}
-        accessibilityLabel={isLastExercise ? 'ワークアウトを完了する' : '次の種目へ'}
-      >
-        <Text style={styles.doneBtnText}>
-          {isLastExercise ? '種目完了 · 終了' : `種目完了 → 次へ（${currentIndex + 2}/${exerciseIds.length}）`}
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.endBtn} onPress={handleWorkoutEnd} accessibilityLabel="ワークアウトを終了する">
-        <Text style={styles.endBtnText}>ワークアウト終了</Text>
-      </TouchableOpacity>
+      {/* 種目完了 / ワークアウト終了（固定・横並び） */}
+      <View style={styles.btnRow}>
+        <TouchableOpacity
+          style={[styles.doneBtn, styles.doneBtnDone, styles.btnRowItem]}
+          onPress={handleExerciseComplete}
+          accessibilityLabel={isLastExercise ? '種目完了' : '次の種目へ'}
+        >
+          <Text style={styles.doneBtnText}>
+            {isLastExercise ? '種目完了' : '次の種目へ'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.endBtn, styles.btnRowItem]}
+          onPress={handleWorkoutEnd}
+          accessibilityLabel="ワークアウトを終了する"
+        >
+          <Text style={styles.endBtnText}>終了</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -907,8 +916,9 @@ function makeStyles(c: TanrenThemeColors) {
     gap: 10,
   },
   actHeaderRight: {
-    alignItems: 'flex-end',
-    gap: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     flexShrink: 0,
   },
   backBtn: {
@@ -1023,6 +1033,17 @@ function makeStyles(c: TanrenThemeColors) {
     includeFontPadding: false,
   },
 
+  btnRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginHorizontal: SPACING.contentMargin,
+    marginBottom: 8,
+  },
+  btnRowItem: {
+    flex: 1,
+    marginHorizontal: 0,
+    marginBottom: 0,
+  },
   doneBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1340,7 +1361,13 @@ export function WorkoutCompleteScreen({ navigation, route }: WorkoutCompleteProp
   const hasPR = reportItems.some(r => r.isPR);
 
   function handleGoHome() {
-    // Drawer 経由でホームに戻る（スタックをリセット）
+    // WorkoutStack をリセットしてから Home へ遷移（再表示防止）
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'ExerciseSelect' }],
+      })
+    );
     navigation.getParent()?.navigate('Home');
   }
 
