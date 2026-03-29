@@ -65,7 +65,8 @@ const S = StyleSheet.create({
   },
   filterScrollContent: {
     paddingHorizontal: SPACING.contentMargin,
-    paddingVertical: SPACING.sm,
+    paddingTop: SPACING.sm,
+    paddingBottom: 0,
     gap: SPACING.xs,
     flexDirection: 'row',
   },
@@ -79,7 +80,7 @@ const S = StyleSheet.create({
   exListRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.sm,
+    paddingVertical: 10,
     gap: SPACING.sm,
   },
   exListIconBox: {
@@ -426,6 +427,12 @@ type BPDetailSession = {
   volume: number;
 };
 
+type DayGroup = {
+  date: string;
+  workoutId: string;
+  items: BPDetailSession[];
+};
+
 function BodyPartDetailView({
   bodyPart,
   onBack,
@@ -486,6 +493,21 @@ function BodyPartDetailView({
     return result;
   }, [workouts, bodyPart]);
 
+  // 日付でグループ化
+  const dayGroups = useMemo<DayGroup[]>(() => {
+    const groups: DayGroup[] = [];
+    let currentDate = '';
+    for (const s of sessions) {
+      if (s.date !== currentDate) {
+        currentDate = s.date;
+        groups.push({ date: s.date, workoutId: s.workoutId, items: [s] });
+      } else {
+        groups[groups.length - 1].items.push(s);
+      }
+    }
+    return groups;
+  }, [sessions]);
+
   return (
     <View style={{ flex: 1 }}>
       {/* 戻るボタン */}
@@ -508,8 +530,8 @@ function BodyPartDetailView({
       </TouchableOpacity>
 
       <FlatList
-        data={sessions}
-        keyExtractor={item => item.key}
+        data={dayGroups}
+        keyExtractor={group => group.date}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: SPACING.xl }}
         ListHeaderComponent={
@@ -527,49 +549,59 @@ function BodyPartDetailView({
           </View>
         }
         ItemSeparatorComponent={() => (
-          <View style={{ height: 1, marginHorizontal: SPACING.contentMargin, backgroundColor: colors.separator }} />
+          <View style={{ height: SPACING.sm }} />
         )}
-        renderItem={({ item }) => (
+        renderItem={({ item: group }) => (
           <TouchableOpacity
-            style={{ paddingHorizontal: SPACING.contentMargin, paddingVertical: SPACING.sm }}
-            onPress={() => navigation.navigate('DayDetail', { workoutId: item.workoutId })}
+            style={{ paddingHorizontal: SPACING.contentMargin }}
+            onPress={() => navigation.navigate('DayDetail', { workoutId: group.workoutId })}
             activeOpacity={0.6}
             accessibilityRole="button"
-            accessibilityLabel={`${formatDate(item.date)}の詳細`}
+            accessibilityLabel={`${formatDate(group.date)}の詳細`}
           >
+            {/* 日付ヘッダー */}
             <Text style={{
               fontSize: TYPOGRAPHY.caption,
-              fontWeight: TYPOGRAPHY.semiBold,
-              color: colors.textSecondary,
-              marginBottom: 3,
+              fontWeight: TYPOGRAPHY.bold,
+              color: colors.textPrimary,
+              paddingVertical: SPACING.sm,
+              borderBottomWidth: StyleSheet.hairlineWidth,
+              borderBottomColor: colors.separator,
+              marginBottom: 2,
             }}>
-              {formatDate(item.date)}
+              {formatDate(group.date)}
             </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-              <Text style={{
-                fontSize: TYPOGRAPHY.caption,
-                fontWeight: TYPOGRAPHY.bold,
-                color: colors.textPrimary,
-                flex: 1,
-              }} numberOfLines={1}>
-                {item.exerciseName}
-              </Text>
-              <View style={{ flexDirection: 'row', gap: SPACING.xs }}>
-                <Text style={{ fontSize: TYPOGRAPHY.captionSmall, color: colors.textTertiary, fontVariant: ['tabular-nums'] }}>
-                  {item.setCount}セット
+            {/* 種目リスト */}
+            {group.items.map(item => (
+              <View
+                key={item.key}
+                style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingVertical: SPACING.xs }}
+              >
+                <Text style={{
+                  fontSize: TYPOGRAPHY.caption,
+                  fontWeight: TYPOGRAPHY.semiBold,
+                  color: colors.textSecondary,
+                  flex: 1,
+                }} numberOfLines={1}>
+                  {item.exerciseName}
                 </Text>
-                {item.maxWeight !== null && (
+                <View style={{ flexDirection: 'row', gap: SPACING.xs }}>
                   <Text style={{ fontSize: TYPOGRAPHY.captionSmall, color: colors.textTertiary, fontVariant: ['tabular-nums'] }}>
-                    {item.maxWeight}kg
+                    {item.setCount}セット
                   </Text>
-                )}
-                {item.volume > 0 && (
-                  <Text style={{ fontSize: TYPOGRAPHY.captionSmall, color: colors.textTertiary, fontVariant: ['tabular-nums'] }}>
-                    {item.volume.toLocaleString()}vol
-                  </Text>
-                )}
+                  {item.maxWeight !== null && (
+                    <Text style={{ fontSize: TYPOGRAPHY.captionSmall, color: colors.textTertiary, fontVariant: ['tabular-nums'] }}>
+                      {item.maxWeight}kg
+                    </Text>
+                  )}
+                  {item.volume > 0 && (
+                    <Text style={{ fontSize: TYPOGRAPHY.captionSmall, color: colors.textTertiary, fontVariant: ['tabular-nums'] }}>
+                      {item.volume.toLocaleString()}vol
+                    </Text>
+                  )}
+                </View>
               </View>
-            </View>
+            ))}
           </TouchableOpacity>
         )}
         ListEmptyComponent={
