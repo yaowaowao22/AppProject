@@ -1,10 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, TextInput, View, Text, StyleSheet } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Modal, Platform, TextInput, View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DraggableFlatList, {
-  ScaleDecorator,
-  RenderItemParams,
-} from 'react-native-draggable-flatlist';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -49,6 +45,24 @@ export default function OrderConfirmScreen({ navigation, route }: Props) {
   const [templateName, setTemplateName] = useState('');
   const [saving, setSaving] = useState(false);
 
+  function moveUp(index: number) {
+    if (index === 0) return;
+    setData(prev => {
+      const next = [...prev];
+      [next[index - 1], next[index]] = [next[index], next[index - 1]];
+      return next;
+    });
+  }
+
+  function moveDown(index: number) {
+    if (index === data.length - 1) return;
+    setData(prev => {
+      const next = [...prev];
+      [next[index], next[index + 1]] = [next[index + 1], next[index]];
+      return next;
+    });
+  }
+
   function handleConfirm() {
     navigation.navigate('ActiveWorkout', {
       exerciseIds: data.map(item => item.id),
@@ -69,37 +83,54 @@ export default function OrderConfirmScreen({ navigation, route }: Props) {
     Alert.alert('保存しました', `「${name}」をテンプレートとして保存しました。`);
   }
 
-  const renderItem = ({ item, drag, isActive }: RenderItemParams<ExerciseItem>) => (
-    <ScaleDecorator>
-      <View
-        style={[styles.row, isActive && styles.rowActive]}
-        accessibilityLabel={`${item.name}、長押しで並び替え`}
-      >
+  const renderItem = ({ item, index }: { item: ExerciseItem; index: number }) => {
+    const isFirst = index === 0;
+    const isLast = index === data.length - 1;
+    return (
+      <View style={styles.row} accessibilityLabel={item.name}>
         <View style={styles.rowLeft}>
           <Text style={styles.rowName}>{item.name}</Text>
           <Text style={styles.rowEquip}>{item.equipment}</Text>
         </View>
-        <TouchableOpacity
-          onLongPress={drag}
-          delayLongPress={150}
-          style={styles.handle}
-          accessibilityRole="button"
-          accessibilityLabel="並び替えハンドル"
-        >
-          <Ionicons name="reorder-three-outline" size={22} color={colors.textSecondary} />
-        </TouchableOpacity>
+        <View style={styles.sortBtns}>
+          <TouchableOpacity
+            style={[styles.sortBtn, isFirst && styles.sortBtnDisabled]}
+            onPress={() => moveUp(index)}
+            disabled={isFirst}
+            accessibilityRole="button"
+            accessibilityLabel="上に移動"
+          >
+            <Ionicons
+              name="chevron-up"
+              size={16}
+              color={isFirst ? colors.textTertiary : colors.textSecondary}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.sortBtn, isLast && styles.sortBtnDisabled]}
+            onPress={() => moveDown(index)}
+            disabled={isLast}
+            accessibilityRole="button"
+            accessibilityLabel="下に移動"
+          >
+            <Ionicons
+              name="chevron-down"
+              size={16}
+              color={isLast ? colors.textTertiary : colors.textSecondary}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
-    </ScaleDecorator>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader title="順序確認" showBack />
       <Text style={styles.description}>選択した種目をこの順番でトレーニングします</Text>
 
-      <DraggableFlatList
+      <FlatList
         data={data}
-        onDragEnd={({ data: reordered }) => setData(reordered)}
         keyExtractor={item => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
@@ -204,10 +235,6 @@ function makeStyles(c: TanrenThemeColors) {
       marginBottom: SPACING.cardGap,
       minHeight: 60,
     },
-    rowActive: {
-      backgroundColor: c.surface2,
-      opacity: 0.95,
-    },
     rowLeft: {
       flex: 1,
       gap: SPACING.xs,
@@ -223,12 +250,21 @@ function makeStyles(c: TanrenThemeColors) {
       fontWeight: TYPOGRAPHY.regular,
       color: c.textTertiary,
     },
-    handle: {
-      width: BUTTON_HEIGHT.icon,
-      height: BUTTON_HEIGHT.icon,
+    sortBtns: {
+      flexDirection: 'column',
+      gap: 4,
+      marginLeft: SPACING.sm,
+    },
+    sortBtn: {
+      width: 32,
+      height: 32,
+      borderRadius: 8,
+      backgroundColor: c.surface2,
       alignItems: 'center',
       justifyContent: 'center',
-      marginLeft: SPACING.sm,
+    },
+    sortBtnDisabled: {
+      opacity: 0.4,
     },
 
     footer: {
@@ -262,7 +298,7 @@ function makeStyles(c: TanrenThemeColors) {
     confirmText: {
       fontSize: 17,
       fontWeight: TYPOGRAPHY.bold,
-      color: c.textPrimary,
+      color: c.onAccent,
       letterSpacing: -0.2,
     },
     description: {
