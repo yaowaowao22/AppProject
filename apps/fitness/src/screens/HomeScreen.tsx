@@ -399,9 +399,14 @@ export default function HomeScreen() {
                       accessibilityRole="button"
                       accessibilityLabel={exercise.name}
                     >
-                      <View style={styles.menuCardRow}>
-                        <Text style={styles.menuName} numberOfLines={1}>{exercise.name}</Text>
-                        <View style={styles.menuBadges}>
+                      <View style={styles.menuCardInner}>
+                        {/* 1行目: 種目名 + シェブロン */}
+                        <View style={styles.menuCardRow1}>
+                          <Text style={styles.menuName} numberOfLines={1}>{exercise.name}</Text>
+                          <Text style={styles.chevron}>›</Text>
+                        </View>
+                        {/* 2行目: バッジ群 */}
+                        <View style={styles.menuCardRow2}>
                           {bodyPartLabel !== '' && (
                             <View style={styles.menuChip}>
                               <Text style={styles.menuChipText}>{bodyPartLabel}</Text>
@@ -425,7 +430,6 @@ export default function HomeScreen() {
                             </View>
                           )}
                         </View>
-                        <Text style={styles.chevron}>›</Text>
                       </View>
                     </TouchableOpacity>
                   </SwipeableRow>
@@ -615,10 +619,18 @@ function makeStyles(c: TanrenThemeColors) {
       minHeight: 44,
       justifyContent: 'center',
     },
-    menuCardRow: {
+    menuCardInner: {
+      gap: 6,
+    },
+    menuCardRow1: {
       flexDirection: 'row',
+      justifyContent: 'space-between',
       alignItems: 'center',
-      gap: SPACING.sm,
+    },
+    menuCardRow2: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 4,
     },
     menuName: {
       fontSize: TYPOGRAPHY.body,
@@ -626,13 +638,6 @@ function makeStyles(c: TanrenThemeColors) {
       color: c.textPrimary,
       letterSpacing: -0.2,
       flex: 1,
-    },
-    menuBadges: {
-      flexDirection: 'row',
-      gap: 4,
-      alignItems: 'center',
-      flexShrink: 1,
-      flexWrap: 'wrap',
     },
     menuChip: {
       backgroundColor: c.surface2,
@@ -655,7 +660,6 @@ function makeStyles(c: TanrenThemeColors) {
     chevron: {
       fontSize: 20,
       color: c.textTertiary,
-      marginLeft: SPACING.sm,
     },
     emptyContainer: {
       paddingHorizontal: SPACING.contentMargin,
