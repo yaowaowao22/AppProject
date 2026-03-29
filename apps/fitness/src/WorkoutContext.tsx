@@ -34,6 +34,7 @@ interface WorkoutContextValue {
   deleteWorkout: (id: string) => Promise<void>;
   deleteSessionFromWorkout: (workoutId: string, exerciseId: string) => Promise<void>;
   saveTemplate: (name: string, exerciseIds: string[]) => Promise<void>;
+  updateTemplate: (id: string, name: string, exerciseIds: string[]) => Promise<void>;
   deleteTemplate: (id: string) => Promise<void>;
   workoutConfig: WorkoutConfig;
   updateWorkoutConfig: (partial: Partial<WorkoutConfig>) => Promise<void>;
@@ -43,7 +44,10 @@ interface WorkoutContextValue {
 // ── ヘルパー ──────────────────────────────────────────────────────────────────
 
 function toDateStr(d: Date): string {
-  return d.toISOString().split('T')[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function newId(): string {
@@ -91,6 +95,7 @@ const WorkoutContext = createContext<WorkoutContextValue>({
   deleteWorkout: async () => {},
   deleteSessionFromWorkout: async () => {},
   saveTemplate: async () => {},
+  updateTemplate: async () => {},
   deleteTemplate: async () => {},
   workoutConfig: DEFAULT_WORKOUT_CONFIG,
   updateWorkoutConfig: async () => {},
@@ -283,6 +288,15 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     await saveTemplates(updated);
   }, [templates]);
 
+  // テンプレート更新
+  const updateTemplate = useCallback(async (id: string, name: string, exerciseIds: string[]) => {
+    const updated = templates.map(t =>
+      t.id === id ? { ...t, name, exerciseIds } : t
+    );
+    setTemplates(updated);
+    await saveTemplates(updated);
+  }, [templates]);
+
   // テンプレート削除
   const deleteTemplate = useCallback(async (id: string) => {
     const updated = templates.filter(t => t.id !== id);
@@ -318,7 +332,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <WorkoutContext.Provider
-      value={{ workouts, personalRecords, currentSession, weeklyStats, templates, startSession, addSet, completeSession, deleteWorkout, deleteSessionFromWorkout, saveTemplate, deleteTemplate, workoutConfig, updateWorkoutConfig, updateSession }}
+      value={{ workouts, personalRecords, currentSession, weeklyStats, templates, startSession, addSet, completeSession, deleteWorkout, deleteSessionFromWorkout, saveTemplate, updateTemplate, deleteTemplate, workoutConfig, updateWorkoutConfig, updateSession }}
     >
       {children}
     </WorkoutContext.Provider>

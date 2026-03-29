@@ -54,7 +54,7 @@ export const APP = {
   SPARK_MAX_SESSIONS: 6,
   // Progress 画面の棒グラフ表示日数
   VOLUME_CHART_DAYS: 7,
-  DEFAULT_APP_SETTINGS: { showCalendar: true, showQuickStart: true },
+  DEFAULT_APP_SETTINGS: { showCalendar: true, showQuickStart: false },
 } as const;
 
 // ── カレンダー設定 ────────────────────────────────────────────────────────────
