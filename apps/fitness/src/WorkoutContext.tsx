@@ -39,6 +39,7 @@ interface WorkoutContextValue {
   workoutConfig: WorkoutConfig;
   updateWorkoutConfig: (partial: Partial<WorkoutConfig>) => Promise<void>;
   updateSession: (workoutId: string, session: WorkoutSession) => Promise<void>;
+  resetAll: () => Promise<void>;
 }
 
 // ── ヘルパー ──────────────────────────────────────────────────────────────────
@@ -100,6 +101,7 @@ const WorkoutContext = createContext<WorkoutContextValue>({
   workoutConfig: DEFAULT_WORKOUT_CONFIG,
   updateWorkoutConfig: async () => {},
   updateSession: async () => {},
+  resetAll: async () => {},
 });
 
 // ── Provider ──────────────────────────────────────────────────────────────────
@@ -304,6 +306,17 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     await saveTemplates(updated);
   }, [templates]);
 
+  // 全データリセット
+  const resetAll = useCallback(async () => {
+    await AsyncStorage.clear();
+    setWorkouts([]);
+    setPersonalRecords([]);
+    setCurrentSession(null);
+    setWeeklyStats(DEFAULT_WEEKLY_STATS);
+    setTemplates([]);
+    setWorkoutConfig(DEFAULT_WORKOUT_CONFIG);
+  }, []);
+
   // ワークアウト削除
   const deleteWorkout = useCallback(async (id: string) => {
     const updatedWorkouts = workouts.filter(w => w.id !== id);
@@ -332,7 +345,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <WorkoutContext.Provider
-      value={{ workouts, personalRecords, currentSession, weeklyStats, templates, startSession, addSet, completeSession, deleteWorkout, deleteSessionFromWorkout, saveTemplate, updateTemplate, deleteTemplate, workoutConfig, updateWorkoutConfig, updateSession }}
+      value={{ workouts, personalRecords, currentSession, weeklyStats, templates, startSession, addSet, completeSession, deleteWorkout, deleteSessionFromWorkout, saveTemplate, updateTemplate, deleteTemplate, workoutConfig, updateWorkoutConfig, updateSession, resetAll }}
     >
       {children}
     </WorkoutContext.Provider>

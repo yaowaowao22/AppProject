@@ -13,6 +13,7 @@ interface ScreenHeaderProps {
   title: string;
   subtitle?: string;
   showBack?: boolean;
+  onBack?: () => void;
   showHamburger?: boolean;
   rightAction?: ReactNode;
 }
@@ -23,6 +24,7 @@ export function ScreenHeader({
   title,
   subtitle,
   showBack,
+  onBack,
   showHamburger,
   rightAction,
 }: ScreenHeaderProps) {
@@ -46,7 +48,7 @@ export function ScreenHeader({
         ) : showBack ? (
           <TouchableOpacity
             style={styles.iconBtn}
-            onPress={() => navigation.goBack()}
+            onPress={onBack ?? (() => navigation.goBack())}
             accessibilityRole="button"
             accessibilityLabel="戻る"
           >

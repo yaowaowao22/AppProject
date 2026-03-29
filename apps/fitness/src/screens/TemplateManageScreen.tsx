@@ -203,6 +203,7 @@ export default function TemplateManageScreen() {
       <ScreenHeader
         title={isCreating ? 'テンプレート作成' : 'テンプレート編集'}
         showBack
+        onBack={() => { setEditingTemplateId(null); setIsCreating(false); }}
         rightAction={
           <TouchableOpacity
             style={styles.saveBtn}
