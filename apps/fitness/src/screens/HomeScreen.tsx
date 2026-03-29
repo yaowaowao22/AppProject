@@ -616,11 +616,11 @@ function makeStyles(c: TanrenThemeColors) {
       backgroundColor: c.surface1,
       borderRadius: RADIUS.card,
       padding: SPACING.cardPadding,
-      minHeight: 44,
+      minHeight: 56,
       justifyContent: 'center',
     },
     menuCardInner: {
-      gap: 6,
+      gap: 8,
     },
     menuCardRow1: {
       flexDirection: 'row',
@@ -630,7 +630,7 @@ function makeStyles(c: TanrenThemeColors) {
     menuCardRow2: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 4,
+      gap: 6,
     },
     menuName: {
       fontSize: TYPOGRAPHY.body,
