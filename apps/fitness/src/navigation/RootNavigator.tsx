@@ -144,7 +144,8 @@ export function RootNavigator() {
         listeners={({ navigation }) => ({
           // ドロワーで再選択されたとき WorkoutStack をリセット（完了画面の再表示を防止）
           focus: () => {
-            navigation.navigate('WorkoutStack' as never, { screen: 'ExerciseSelect' } as never);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (navigation as any).navigate('WorkoutStack', { screen: 'ExerciseSelect' });
           },
         })}
       />
