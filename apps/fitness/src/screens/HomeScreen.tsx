@@ -185,6 +185,26 @@ export default function HomeScreen() {
     });
   }
 
+  function handleMenuItemPress(exerciseId: string) {
+    const todayWorkout = workoutByDate.get(todayStr);
+    const existingSession = todayWorkout?.sessions.find(s => s.exerciseId === exerciseId);
+    if (existingSession && todayWorkout) {
+      (navigation as any).navigate('WorkoutStack', {
+        screen: 'ActiveWorkout',
+        params: {
+          exerciseIds: [exerciseId],
+          existingWorkoutId: todayWorkout.id,
+          existingSession,
+        },
+      });
+    } else {
+      (navigation as any).navigate('WorkoutStack', {
+        screen: 'ActiveWorkout',
+        params: { exerciseIds: [exerciseId] },
+      });
+    }
+  }
+
   const monthLabel = calendarMonth.toLocaleDateString('ja-JP', {
     year: 'numeric',
     month: 'long',
@@ -394,7 +414,7 @@ export default function HomeScreen() {
                   >
                     <TouchableOpacity
                       style={styles.menuCard}
-                      onPress={() => handleChipPress(exercise.id)}
+                      onPress={() => handleMenuItemPress(exercise.id)}
                       activeOpacity={0.72}
                       accessibilityRole="button"
                       accessibilityLabel={exercise.name}

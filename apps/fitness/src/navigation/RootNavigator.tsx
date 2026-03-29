@@ -10,7 +10,7 @@ import {
   ActiveWorkoutScreen,
   WorkoutCompleteScreen,
 } from '../screens/WorkoutScreen';
-import type { ReportItem } from '../types';
+import type { ReportItem, WorkoutSession } from '../types';
 import OrderConfirmScreen from '../screens/OrderConfirmScreen';
 import MonthlyReportScreen from '../screens/MonthlyReportScreen';
 import RMCalculatorScreen from '../screens/RMCalculatorScreen';
@@ -25,7 +25,7 @@ import { CustomDrawerContent } from '../components/CustomDrawerContent';
 export type WorkoutStackParamList = {
   ExerciseSelect:  undefined;
   OrderConfirm:    { exerciseIds: string[] };
-  ActiveWorkout:   { exerciseIds: string[] };
+  ActiveWorkout:   { exerciseIds: string[]; existingWorkoutId?: string; existingSession?: WorkoutSession };
   WorkoutComplete: { reportItems: ReportItem[]; startedAt: string };
 };
 

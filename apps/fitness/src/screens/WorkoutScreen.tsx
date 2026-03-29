@@ -18,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BODY_PARTS, EXERCISES_BY_PART, EXERCISES } from '../exerciseDB';
-import type { BodyPart, ReportItem } from '../types';
+import type { BodyPart, ReportItem, WorkoutSession, WorkoutSet } from '../types';
 import { SPACING, TYPOGRAPHY, RADIUS, BUTTON_HEIGHT } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
@@ -221,6 +221,33 @@ const REST_DURATION = 60;
 
 type SetRow = { weight: number | null; reps: number | null; done: boolean };
 
+function newId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+/** 既存セッションと完了済み行から更新後の WorkoutSession を生成する */
+function buildUpdatedSession(
+  existingSession: WorkoutSession,
+  doneRows: SetRow[],
+): WorkoutSession {
+  const existingSetCount = existingSession.sets.length;
+  const sets: WorkoutSet[] = doneRows.map((row, i) => {
+    if (i < existingSetCount) {
+      // 既存セットのメタデータを保持しつつ、行の値で上書き
+      return { ...existingSession.sets[i], weight: row.weight, reps: row.reps };
+    }
+    // 新規セット
+    return {
+      id: newId(),
+      weight: row.weight,
+      reps: row.reps,
+      completedAt: new Date().toISOString(),
+      isPersonalRecord: false,
+    };
+  });
+  return { ...existingSession, sets };
+}
+
 function buildRows(
   prevSets: Array<{ weight: number | null; reps: number | null }> | null,
   defaultSets: number,
@@ -244,8 +271,8 @@ function buildRows(
 }
 
 export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
-  const { exerciseIds } = route.params;
-  const { workouts, startSession, addSet, completeSession, workoutConfig } = useWorkout();
+  const { exerciseIds, existingWorkoutId, existingSession } = route.params;
+  const { workouts, startSession, addSet, completeSession, updateSession, workoutConfig } = useWorkout();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -273,14 +300,23 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
   // 種目切り替え：セッション開始 + 前回データで行初期化
   useEffect(() => {
-    startSession(exerciseId);
-
-    const prev = workouts
-      .flatMap(w => w.sessions.map(s => ({ ...s, date: w.date })))
-      .filter(s => s.exerciseId === exerciseId && !!s.completedAt)
-      .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
-
-    setRows(buildRows(prev?.sets ?? null, workoutConfig.defaultSets, workoutConfig.defaultWeight, workoutConfig.defaultReps));
+    const isFirst = currentIndex === 0;
+    if (isFirst && existingSession != null) {
+      // update mode: 既存セッションの行を done=true で初期化し、空行を1つ追加
+      const existingRows: SetRow[] = existingSession.sets.map(s => ({
+        weight: s.weight,
+        reps: s.reps,
+        done: true,
+      }));
+      setRows([...existingRows, { weight: null, reps: null, done: false }]);
+    } else {
+      startSession(exerciseId);
+      const prev = workouts
+        .flatMap(w => w.sessions.map(s => ({ ...s, date: w.date })))
+        .filter(s => s.exerciseId === exerciseId && !!s.completedAt)
+        .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
+      setRows(buildRows(prev?.sets ?? null, workoutConfig.defaultSets, workoutConfig.defaultWeight, workoutConfig.defaultReps));
+    }
     setManualActiveIdx(null);
     setSetDone(false);
     setRestSeconds(null);
@@ -300,6 +336,9 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   activeIdxRef.current = activeIdx;
   const allDone   = activeIdx < 0;
   const activeRow = allDone ? rows[rows.length - 1] : rows[activeIdx];
+
+  // 既存セッション更新モード（本日のメニューから遷移した場合）
+  const isUpdateMode = currentIndex === 0 && existingSession != null && existingWorkoutId != null;
 
   const bump = useCallback((anim: Animated.Value) => {
     anim.setValue(1);
@@ -403,22 +442,30 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
     if (allDone) return;
     const idx = activeIdxRef.current;
     const { weight, reps } = activeRow;
-    addSet(weight ?? 0, reps ?? 0);
+
+    let newRows: SetRow[] = [];
     setRows(prev => {
       const updated = prev.map((r, i) => i === idx ? { ...r, done: true } : r);
       const nextIdx = updated.findIndex(r => !r.done);
       if (nextIdx >= 0) {
-        const next = updated[nextIdx];
-        // ユーザーが既に値を入力済みの場合は上書きしない
-        return updated.map((r, i) => i === nextIdx ? {
-          ...r,
-          weight: next.weight !== null ? next.weight : weight,
-          reps:   next.reps   !== null ? next.reps   : reps,
-        } : r);
+        // 次の未完了行は値をコピーしない（ユーザーが手動入力するまで null のまま）
+        newRows = updated;
+        return updated;
       }
-      // 最後の行を完了 → 次の行を自動追加
-      return [...updated, { weight, reps, done: false }];
+      // 最後の行を完了 → 空の新規行を追加（値なし）
+      const result = [...updated, { weight: null, reps: null, done: false }];
+      newRows = result;
+      return result;
     });
+
+    if (isUpdateMode) {
+      // update mode: addSet は使わず updateSession で既存セッションを更新
+      const doneRows = newRows.filter(r => r.done);
+      void updateSession(existingWorkoutId!, buildUpdatedSession(existingSession!, doneRows));
+    } else {
+      addSet(weight ?? 0, reps ?? 0);
+    }
+
     setManualActiveIdx(null);
     setSetDone(true);
     startRestTimer();

@@ -51,10 +51,13 @@ export function TanrenThemeProvider({ children }: { children: React.ReactNode })
     AsyncStorage.setItem(STORAGE_KEY, id).catch(() => {});
   }, []);
 
-  const colors = useMemo(
-    () => THEME_PRESETS[currentThemeId].colors,
-    [currentThemeId],
-  );
+  const colors = useMemo((): TanrenThemeColors => {
+    const preset = THEME_PRESETS[currentThemeId];
+    return {
+      ...preset.colors,
+      cardBackground: preset.meta.isLight === true ? '#FFFFFF' : preset.colors.surface1,
+    };
+  }, [currentThemeId]);
 
   const themeList = useMemo(
     () =>
