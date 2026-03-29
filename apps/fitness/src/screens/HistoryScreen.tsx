@@ -65,8 +65,8 @@ const S = StyleSheet.create({
   },
   filterScrollContent: {
     paddingHorizontal: SPACING.contentMargin,
-    paddingTop: SPACING.sm,
-    paddingBottom: 0,
+    paddingTop: SPACING.xs,
+    paddingBottom: SPACING.xs,
     gap: SPACING.xs,
     flexDirection: 'row',
   },
@@ -685,6 +685,7 @@ function ExerciseListView({ onSelect }: { onSelect: (exerciseId: string) => void
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={S.filterScrollContent}
+        style={{ flexGrow: 0 }}
       >
         {BP_FILTERS.map(f => {
           const active = filter === f.id;
@@ -814,7 +815,7 @@ function ExerciseDetailView({
   const renderSetTable = (session: WorkoutSession) => (
     <View style={{ paddingBottom: SPACING.sm }}>
       {/* ヘッダー行 */}
-      <View style={[S.setTableHeader, { borderTopWidth: 1, borderTopColor: colors.separator, paddingTop: 8 }]}>
+      <View style={[S.setTableHeader, { backgroundColor: colors.surface2, paddingTop: 8, paddingBottom: 6 }]}>
         <Text style={[S.setColNo, { fontSize: TYPOGRAPHY.captionSmall, fontWeight: TYPOGRAPHY.semiBold, color: colors.textTertiary }]}>
           SET
         </Text>
@@ -912,9 +913,9 @@ function ExerciseDetailView({
         }
         ItemSeparatorComponent={() => <View style={{ height: SPACING.sm }} />}
         renderItem={({ item }) => (
-          <View style={[S.sessionBlock, { backgroundColor: colors.surface2 }]}>
+          <View style={[S.sessionBlock, { backgroundColor: colors.surface1 }]}>
             {/* セッションヘッダー */}
-            <View style={S.sessionHeader}>
+            <View style={[S.sessionHeader, { borderBottomWidth: 1, borderBottomColor: colors.separator }]}>
               <Text style={{ fontSize: TYPOGRAPHY.caption, fontWeight: TYPOGRAPHY.semiBold, color: colors.textSecondary }}>
                 {formatDate(item.date)}
               </Text>
