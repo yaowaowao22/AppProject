@@ -170,29 +170,21 @@ export default function TemplateManageScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`テンプレート: ${item.name}`}
               >
+                <View style={styles.templateIcon}>
+                  <Text style={styles.templateIconText}>
+                    {item.name.charAt(0)}
+                  </Text>
+                </View>
                 <View style={styles.templateInfo}>
                   <Text style={styles.templateName} numberOfLines={1}>
                     {item.name}
                   </Text>
                   <Text style={styles.templateMeta} numberOfLines={1}>
-                    {item.exerciseIds.length}種目　{metaStr}
+                    {item.exerciseIds.length}種目 · {metaStr}
                   </Text>
                 </View>
                 <View style={styles.templateTrailing}>
-                  <TouchableOpacity
-                    onPress={() => handleDelete(item.id, item.name)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    accessibilityRole="button"
-                    accessibilityLabel="削除"
-                  >
-                    <Ionicons name="trash-outline" size={20} color={colors.error} />
-                  </TouchableOpacity>
-                  <Ionicons
-                    name="chevron-forward-outline"
-                    size={18}
-                    color={colors.textTertiary}
-                    style={{ marginLeft: 8 }}
-                  />
+                  <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
                 </View>
               </TouchableOpacity>
             );
@@ -366,33 +358,46 @@ function makeStyles(c: TanrenThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: SPACING.contentMargin,
-      paddingVertical: SPACING.sm,
-      minHeight: 64,
-      backgroundColor: c.surface1,
+      paddingVertical: 11,
+      minHeight: 56,
+      gap: 12,
+    },
+    templateIcon: {
+      width: 28,
+      height: 28,
+      borderRadius: 8,
+      backgroundColor: c.accentDim,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    templateIconText: {
+      fontSize: TYPOGRAPHY.caption,
+      fontWeight: TYPOGRAPHY.bold,
+      color: c.accent,
     },
     templateInfo: {
       flex: 1,
-      marginRight: SPACING.sm,
     },
     templateName: {
       fontSize: TYPOGRAPHY.body,
       fontWeight: TYPOGRAPHY.semiBold,
       color: c.textPrimary,
-      marginBottom: 3,
     },
     templateMeta: {
-      fontSize: TYPOGRAPHY.caption,
+      fontSize: TYPOGRAPHY.captionSmall,
       color: c.textTertiary,
+      marginTop: 2,
     },
     templateTrailing: {
-      flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
     },
 
     separator: {
       height: StyleSheet.hairlineWidth,
       backgroundColor: c.separator,
-      marginLeft: SPACING.contentMargin,
+      marginLeft: SPACING.contentMargin + 28 + 12,
     },
 
     // ── 編集フォーム ──
