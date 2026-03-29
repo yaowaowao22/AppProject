@@ -85,8 +85,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#1C1B18',
       textSecondary: '#6B6560',
       textTertiary:  '#938A80',
-      accent:        '#A87A15',
-      accentDim:     'rgba(168,122,21,0.10)',
+      accent:        '#946B12',
+      accentDim:     'rgba(148,107,18,0.10)',
       success:       '#2D8E4E',
       separator:     'rgba(0,0,0,0.08)',
       error:         '#C53929',
@@ -105,8 +105,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#171A21',
       textSecondary: '#5C6478',
       textTertiary:  '#838A9E',
-      accent:        '#2D5AA0',
-      accentDim:     'rgba(45,90,160,0.10)',
+      accent:        '#284F8D',
+      accentDim:     'rgba(40,79,141,0.10)',
       success:       '#2D8E4E',
       separator:     'rgba(0,0,0,0.08)',
       error:         '#CC3425',
@@ -125,8 +125,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#1E171A',
       textSecondary: '#74606A',
       textTertiary:  '#988890',
-      accent:        '#B5446A',
-      accentDim:     'rgba(181,68,106,0.10)',
+      accent:        '#9F3C5D',
+      accentDim:     'rgba(159,60,93,0.10)',
       success:       '#2D8E4E',
       separator:     'rgba(0,0,0,0.08)',
       error:         '#C53929',
@@ -145,8 +145,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#151C17',
       textSecondary: '#546D5A',
       textTertiary:  '#567260',  // P1修正: #7D9584(CR≈2.94) → #567260(CR≈4.97, WCAG AA合格)
-      accent:        '#2E7A50',
-      accentDim:     'rgba(46,122,80,0.10)',
+      accent:        '#286B46',
+      accentDim:     'rgba(40,107,70,0.10)',
       success:       '#3D9455',
       separator:     'rgba(0,0,0,0.08)',
       error:         '#CC3425',
@@ -165,8 +165,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#1A171E',
       textSecondary: '#68607A',
       textTertiary:  '#8D84A0',
-      accent:        '#6E48A8',
-      accentDim:     'rgba(110,72,168,0.10)',
+      accent:        '#613F94',
+      accentDim:     'rgba(97,63,148,0.10)',
       success:       '#2D8E4E',
       separator:     'rgba(0,0,0,0.08)',
       error:         '#C53929',
@@ -187,8 +187,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#1A1A1A',
       textSecondary: '#6B6B6B',
       textTertiary:  '#999999',
-      accent:        '#333333',
-      accentDim:     'rgba(51,51,51,0.10)',
+      accent:        '#2D2D2D',
+      accentDim:     'rgba(45,45,45,0.10)',
       success:       '#5A5A5A',
       separator:     'rgba(0,0,0,0.08)',
       error:         '#A04040',
@@ -207,8 +207,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#E8E8E8',
       textSecondary: 'rgba(232,232,232,0.58)',
       textTertiary:  'rgba(232,232,232,0.36)',
-      accent:        '#9E9E9E',
-      accentDim:     'rgba(158,158,158,0.12)',
+      accent:        '#8B8B8B',
+      accentDim:     'rgba(139,139,139,0.12)',
       success:       '#8A8A8A',
       separator:     'rgba(255,255,255,0.07)',
       error:         '#C47070',
@@ -229,8 +229,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#F5F5F7',
       textSecondary: 'rgba(245,245,247,0.60)',  // M-1: 0.45→0.60 (WCAG AA)
       textTertiary:  'rgba(245,245,247,0.38)',  // M-2: 0.22→0.38 (大テキスト AA)
-      accent:        '#FF6200',
-      accentDim:     'rgba(255,98,0,0.12)',
+      accent:        '#D4610F',
+      accentDim:     'rgba(212,97,15,0.12)',
       success:       '#2DB55D',
       separator:     'rgba(255,255,255,0.07)',
       error:         '#FF453A',
@@ -249,8 +249,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#E8ECF2',
       textSecondary: 'rgba(232,236,242,0.60)',  // M-1
       textTertiary:  'rgba(232,236,242,0.38)',  // M-2
-      accent:        '#4DABDB',
-      accentDim:     'rgba(77,171,219,0.12)',
+      accent:        '#4496C1',
+      accentDim:     'rgba(68,150,193,0.12)',
       success:       '#2DB55D',
       separator:     'rgba(180,200,230,0.07)',
       error:         '#FF5252',
@@ -269,8 +269,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#F5F0ED',
       textSecondary: 'rgba(245,240,237,0.60)',  // M-1
       textTertiary:  'rgba(245,240,237,0.38)',  // M-2
-      accent:        '#C83C3C',
-      accentDim:     'rgba(200,60,60,0.12)',
+      accent:        '#B03535',
+      accentDim:     'rgba(176,53,53,0.12)',
       success:       '#2DB55D',
       separator:     'rgba(255,220,210,0.07)',
       error:         '#FF8A65',
@@ -289,8 +289,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#E8F0EA',
       textSecondary: 'rgba(232,240,234,0.60)',  // M-1
       textTertiary:  'rgba(232,240,234,0.38)',  // M-2
-      accent:        '#43A566',
-      accentDim:     'rgba(67,165,102,0.12)',
+      accent:        '#3B915A',
+      accentDim:     'rgba(59,145,90,0.12)',
       success:       '#6ECF8A',
       separator:     'rgba(180,230,200,0.07)',
       error:         '#FF453A',
@@ -309,8 +309,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#E8ECF4',
       textSecondary: 'rgba(232,236,244,0.60)',  // M-1
       textTertiary:  'rgba(232,236,244,0.38)',  // M-2
-      accent:        '#82AAFF',
-      accentDim:     'rgba(130,170,255,0.12)',
+      accent:        '#7296E0',
+      accentDim:     'rgba(114,150,224,0.12)',
       success:       '#2DB55D',
       separator:     'rgba(190,210,240,0.07)',
       error:         '#FF5252',
@@ -329,8 +329,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#F0ECF5',
       textSecondary: 'rgba(240,236,245,0.60)',  // M-1
       textTertiary:  'rgba(240,236,245,0.38)',  // M-2
-      accent:        '#A366FF',
-      accentDim:     'rgba(163,102,255,0.12)',
+      accent:        '#8F5AE0',
+      accentDim:     'rgba(143,90,224,0.12)',
       success:       '#2DB55D',
       separator:     'rgba(200,190,230,0.07)',
       error:         '#FF453A',
@@ -349,8 +349,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#F0EDE8',
       textSecondary: 'rgba(240,237,232,0.60)',  // M-1
       textTertiary:  'rgba(240,237,232,0.38)',  // M-2
-      accent:        '#C9A84C',
-      accentDim:     'rgba(201,168,76,0.12)',
+      accent:        '#B19443',
+      accentDim:     'rgba(177,148,67,0.12)',
       success:       '#6B9E78',
       separator:     'rgba(230,220,200,0.07)',
       error:         '#E8634A',
@@ -369,8 +369,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#E4EFF2',
       textSecondary: 'rgba(228,239,242,0.60)',  // M-1
       textTertiary:  'rgba(228,239,242,0.38)',  // M-2
-      accent:        '#2BBAA0',
-      accentDim:     'rgba(43,186,160,0.12)',
+      accent:        '#26A48D',
+      accentDim:     'rgba(38,164,141,0.12)',
       success:       '#5CC879',
       separator:     'rgba(160,210,220,0.07)',
       error:         '#FF5252',
@@ -391,8 +391,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#F5EFF2',
       textSecondary: 'rgba(245,239,242,0.60)',  // M-1適用済み
       textTertiary:  'rgba(245,239,242,0.38)',  // M-2適用済み
-      accent:        '#D4698A',
-      accentDim:     'rgba(212,105,138,0.12)',
+      accent:        '#BB5C79',
+      accentDim:     'rgba(187,92,121,0.12)',
       success:       '#2DB55D',
       separator:     'rgba(230,200,215,0.07)',
       error:         '#FF453A',
@@ -411,8 +411,8 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       textPrimary:   '#EFF2E8',
       textSecondary: 'rgba(239,242,232,0.60)',  // M-1適用済み
       textTertiary:  'rgba(239,242,232,0.38)',  // M-2適用済み
-      accent:        '#8DB83A',
-      accentDim:     'rgba(141,184,58,0.12)',
+      accent:        '#7CA233',
+      accentDim:     'rgba(124,162,51,0.12)',
       success:       '#6ECF8A',
       separator:     'rgba(210,230,180,0.07)',
       error:         '#FF453A',
