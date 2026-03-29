@@ -137,7 +137,17 @@ export function RootNavigator() {
       }}
     >
       <Drawer.Screen name="Home"          component={HomeScreen}              options={{ title: 'ホーム' }} />
-      <Drawer.Screen name="WorkoutStack"  component={WorkoutStackNavigator}   options={{ title: 'トレーニング' }} />
+      <Drawer.Screen
+        name="WorkoutStack"
+        component={WorkoutStackNavigator}
+        options={{ title: 'トレーニング' }}
+        listeners={({ navigation }) => ({
+          // ドロワーで再選択されたとき WorkoutStack をリセット（完了画面の再表示を防止）
+          focus: () => {
+            navigation.navigate('WorkoutStack' as never, { screen: 'ExerciseSelect' } as never);
+          },
+        })}
+      />
       <Drawer.Screen name="HistoryStack"  component={HistoryStackNavigator}   options={{ title: '履歴' }} />
       <Drawer.Screen name="ProgressStack" component={ProgressStackNavigator}  options={{ title: '進捗' }} />
       <Drawer.Screen name="MonthlyReport" component={MonthlyReportScreen}     options={{ title: '月別レポート' }} />
