@@ -620,7 +620,7 @@ function makeStyles(c: TanrenThemeColors) {
       justifyContent: 'center',
     },
     menuCardInner: {
-      gap: 8,
+      gap: SPACING.sm,
     },
     menuCardRow1: {
       flexDirection: 'row',
@@ -631,6 +631,7 @@ function makeStyles(c: TanrenThemeColors) {
       flexDirection: 'row',
       flexWrap: 'wrap',
       gap: 6,
+      marginTop: SPACING.xs,
     },
     menuName: {
       fontSize: TYPOGRAPHY.body,
@@ -649,7 +650,7 @@ function makeStyles(c: TanrenThemeColors) {
       backgroundColor: c.accentDim,
     },
     menuChipText: {
-      fontSize: 11,
+      fontSize: TYPOGRAPHY.caption,
       fontWeight: TYPOGRAPHY.regular,
       color: c.textSecondary,
     },
