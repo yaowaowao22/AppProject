@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RADIUS, SPACING, TYPOGRAPHY } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
@@ -125,7 +124,7 @@ const stepperStyles = StyleSheet.create({
 
 export default function SettingsScreen() {
   const { colors, setTheme, themeList, currentThemeId } = useTheme();
-  const { workoutConfig, updateWorkoutConfig } = useWorkout();
+  const { workoutConfig, updateWorkoutConfig, resetAll } = useWorkout();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [appSettings, setAppSettings] = useState<AppSettings>({ showCalendar: true, showQuickStart: true });
@@ -149,17 +148,17 @@ export default function SettingsScreen() {
   const handleDeleteAll = () => {
     Alert.alert(
       '全データを削除',
-      'すべてのトレーニングデータが削除されます。この操作は元に戻せません。',
+      'すべてのトレーニングデータが削除されます。テーマ設定も初期化されます。この操作は元に戻せません。',
       [
         { text: 'キャンセル', style: 'cancel' },
         {
           text: '削除する',
           style: 'destructive',
           onPress: async () => {
-            await AsyncStorage.clear();
+            await resetAll();
             Alert.alert(
               '削除完了',
-              'データをすべて削除しました。アプリを再起動してください。',
+              'データをすべて削除しました。',
             );
           },
         },
