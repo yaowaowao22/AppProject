@@ -372,7 +372,7 @@ function makeStyles(c: TanrenThemeColors) {
       flexShrink: 0,
     },
     templateIconText: {
-      fontSize: TYPOGRAPHY.caption,
+      fontSize: TYPOGRAPHY.captionSmall,
       fontWeight: TYPOGRAPHY.bold,
       color: c.accent,
     },

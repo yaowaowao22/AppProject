@@ -1,0 +1,47 @@
+============================
+UI/UX 修正レビュー結果
+2026-03-30
+============================
+
+【HomeScreen.tsx】 ✅ OK
+- menuCard.minHeight: 56 ✓
+- menuCardInner.gap: 8 ✓
+- menuCardRow2.gap: 6 ✓
+- すべての色は c.xxx テーマ変数を使用（ハードコード色なし）✓
+- SPACING / TYPOGRAPHY / RADIUS 一貫使用 ✓
+- iOS HIG: ctaButton height=50、chip minHeight=44 ✓
+- console.log なし ✓
+
+【WorkoutScreen.tsx】 ✅ OK
+- isFuture 判定: `!row.done && i !== activeIdx && row.weight === null && row.reps === null`
+  → データ入力済み行はタップしても値が消えない ✓
+- handlePreviousExercise: async、完了セットがあれば await completeSession() を呼んでからインデックスを戻す ✓
+- prevBtn: height=BUTTON_HEIGHT.secondary(50pt)、surface1 背景、textSecondary テキスト ✓
+- currentIndex > 0 のときのみ「前の種目」ボタン表示 ✓
+- btnRow.alignItems: 'stretch' で全ボタンが等高 ✓
+- console.log なし ✓
+
+【HistoryScreen.tsx】 ✅ OK
+- filterScrollContent.paddingTop/paddingBottom: SPACING.xs(4) ✓
+- filterScrollContent ScrollView に style={{ flexGrow: 0 }} ✓
+- sessionBlock 背景: colors.surface1 ✓
+- sessionHeader に borderBottomWidth:1, borderBottomColor:colors.separator ✓
+- setTableHeader に backgroundColor: colors.surface2 ✓
+- console.log なし ✓
+
+【TemplateManageScreen.tsx】 ⚠️ 要修正 → 修正済み
+- 問題: templateIconText.fontSize が TYPOGRAPHY.caption(12pt) になっていた
+  仕様: captionSmall(11pt) が正しい（頭文字アイコン用の小サイズ）
+- 対応: TYPOGRAPHY.captionSmall に修正 ✓
+- その他:
+  - templateRow: paddingVertical=11, minHeight=56, gap=12, 背景色なし（透明）✓
+  - templateIcon: 28×28, borderRadius=8, accentDim 背景 ✓
+  - templateMeta: captionSmall, marginTop=2 ✓
+  - separator.marginLeft: contentMargin + 28 + 12（テキスト開始位置揃え）✓
+  - chevron-forward サイズ 16 ✓
+
+============================
+総評: 軽微な fontSize 不整合（1箇所）を修正。TypeScript 型エラーなし、
+ハードコード色なし、console.log なし。全画面で iOS HIG 44pt 最小タップ
+ターゲットを満たしている。
+============================
