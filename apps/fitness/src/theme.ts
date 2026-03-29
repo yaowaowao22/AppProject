@@ -20,6 +20,9 @@ export interface TanrenThemeColors {
   scrim:        string;   // モーダル・ドロワーのバックドロップ色
   tabBarBg:     string;   // ボトムタブバー背景
   tabBarBorder: string;   // タブバー上端ボーダー
+
+  // カード背景（ライト=#FFFFFF, ダーク=surface1） ThemeContextで自動導出
+  cardBackground: string;
 }
 
 // ── テーマID型 ────────────────────────────────────────────────────────────────
