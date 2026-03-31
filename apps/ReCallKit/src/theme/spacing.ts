@@ -37,3 +37,36 @@ export const CardShadow = {
   shadowRadius: 3,
   elevation: 2, // Android
 } as const;
+
+// カード影 2層目（強調カード用）
+export const CardShadowStrong = {
+  shadowColor: '#000000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.14,
+  shadowRadius: 10,
+  elevation: 5,
+} as const;
+
+// サイドバーレイアウト定数
+export const SidebarLayout = {
+  // ドロワー幅
+  width: 280,
+  // ドロワー下端のオフセット（タブバー高さ分）
+  bottomOffset: 83,
+  // アイテム行の高さ
+  itemHeight: 48,
+  // アイテム行の左右パディング
+  itemPaddingH: 16,
+  // アイテム行のアイコンとラベルの間隔
+  itemIconGap: 14,
+  // アイコンサイズ
+  iconSize: 22,
+  // バッジの最小幅
+  badgeMinWidth: 22,
+  // セクションヘッダー行の高さ
+  sectionHeaderHeight: 32,
+  // フッターエリアの高さ
+  footerHeight: 56,
+  // 開閉アニメーション時間 (ms)
+  animationDuration: 280,
+} as const;

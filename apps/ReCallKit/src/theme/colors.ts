@@ -14,6 +14,52 @@ export const SystemColors = {
   orange: '#FF9F0A',  // 復習遅延（警告）
   red: '#FF3B30',     // 不正解・Again
   blue: '#0A84FF',    // リンク・情報
+  indigo: '#5E5CE6',  // デッキカテゴリー等の補助強調
+  purple: '#BF5AF2',  // タグ等の補助強調
+  teal: '#5AC8FA',    // 進捗インジケーター補助
+} as const;
+
+// サイドバー専用カラートークン
+export const SidebarColors = {
+  light: {
+    // 背景（和紙の透過感: #EAEAEF ベース）
+    background: 'rgba(234,234,239,0.92)',
+    backgroundSolid: '#EAEAEF',
+    // オーバーレイ（ドロワー背後の暗幕）
+    overlay: 'rgba(0,0,0,0.30)',
+    // アクティブアイテム
+    activeBackground: 'rgba(196,127,23,0.12)', // Recall Amber 12%
+    activeTint: RecallAmber.light,
+    // 非アクティブアイテム
+    inactiveTint: 'rgba(60,60,67,0.80)',
+    // バッジ（カウント表示）
+    badgeBackground: RecallAmber.light,
+    badgeText: '#FFFFFF',
+    // セクションヘッダー
+    sectionHeader: 'rgba(60,60,67,0.50)',
+    // 区切り線
+    separator: 'rgba(60,60,67,0.18)',
+    // フッターアイコン
+    footerTint: 'rgba(60,60,67,0.60)',
+    // タグチップ背景
+    tagBackground: 'rgba(60,60,67,0.08)',
+    tagText: 'rgba(60,60,67,0.80)',
+  },
+  dark: {
+    background: 'rgba(22,22,24,0.95)',
+    backgroundSolid: '#161618',
+    overlay: 'rgba(0,0,0,0.50)',
+    activeBackground: 'rgba(245,166,35,0.15)',
+    activeTint: RecallAmber.dark,
+    inactiveTint: 'rgba(235,235,245,0.75)',
+    badgeBackground: RecallAmber.dark,
+    badgeText: '#000000',
+    sectionHeader: 'rgba(235,235,245,0.40)',
+    separator: 'rgba(84,84,88,0.40)',
+    footerTint: 'rgba(235,235,245,0.50)',
+    tagBackground: 'rgba(235,235,245,0.10)',
+    tagText: 'rgba(235,235,245,0.75)',
+  },
 } as const;
 
 // ライトモード
