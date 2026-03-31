@@ -14,7 +14,7 @@ import { SwipeableRow } from '../components/SwipeableRow';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { useWorkout } from '../WorkoutContext';
 import { EXERCISES } from '../exerciseDB';
-import { RADIUS, SPACING, TYPOGRAPHY } from '../theme';
+import { SPACING, TYPOGRAPHY } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
 import type { HistoryStackParamList } from '../navigation/RootNavigator';
@@ -163,17 +163,11 @@ function makeStyles(c: TanrenThemeColors) {
       alignItems: 'center',
       gap: SPACING.sm,
     },
-    prBadge: {
-      backgroundColor: c.accentDim,
-      borderRadius: RADIUS.badge,
-      paddingHorizontal: 5,
-      paddingVertical: 2,
-    },
+    prBadge: {},
     prText: {
-      fontSize: 9,
-      fontWeight: TYPOGRAPHY.heavy,
+      fontSize: TYPOGRAPHY.captionSmall,
+      fontWeight: '600',
       color: c.accent,
-      letterSpacing: 0.3,
     },
     chevron: {
       fontSize: 22,
