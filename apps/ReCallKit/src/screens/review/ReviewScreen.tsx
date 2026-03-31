@@ -11,7 +11,6 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../../hooks/useDatabase';
 import {
@@ -52,6 +51,26 @@ export function ReviewScreen({ navigation }: Props) {
       }
     })();
   }, [db, isReady]);
+
+  // ヘッダーオプションをナビゲーションに反映
+  useEffect(() => {
+    navigation.setOptions({
+      headerTitle:
+        !loading && !isComplete && items.length > 0
+          ? `${currentIndex + 1} / ${items.length}`
+          : '復習',
+      headerRight: () => (
+        <Pressable
+          onPress={() => navigation.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel="閉じる"
+          hitSlop={{ top: 4, right: 4, bottom: 4, left: 4 }}
+        >
+          <Text style={[TypeScale.body, { color: colors.accent }]}>閉じる</Text>
+        </Pressable>
+      ),
+    });
+  }, [navigation, colors, currentIndex, items.length, isComplete, loading]);
 
   const currentItem = items[currentIndex];
 
@@ -96,7 +115,7 @@ export function ReviewScreen({ navigation }: Props) {
   if (isComplete) {
     const completedCount = items.length;
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.completeContainer}>
           <Text style={styles.completeEmoji}>
             {completedCount > 0 ? '🎉' : '📚'}
@@ -117,30 +136,14 @@ export function ReviewScreen({ navigation }: Props) {
             <Text style={styles.doneButtonText}>閉じる</Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   const progressRatio = currentIndex / items.length;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      {/* ヘッダー */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={styles.headerSide}
-          accessibilityRole="button"
-          accessibilityLabel="閉じる"
-        >
-          <Text style={[styles.closeText, { color: colors.accent }]}>閉じる</Text>
-        </Pressable>
-        <Text style={[styles.progressText, { color: colors.labelSecondary }]}>
-          {currentIndex + 1} / {items.length}
-        </Text>
-        <View style={styles.headerSide} />
-      </View>
-
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* プログレスバー */}
       <View style={[styles.progressTrack, { backgroundColor: colors.backgroundSecondary }]}>
         <View
@@ -174,12 +177,12 @@ export function ReviewScreen({ navigation }: Props) {
           </Text>
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
   },
   center: {
@@ -188,28 +191,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // ヘッダー
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.m,
-    paddingVertical: Spacing.s,
-  },
-  headerSide: {
-    minWidth: 60,
-  },
-  closeText: {
-    ...TypeScale.body,
-  },
-  progressText: {
-    ...TypeScale.subheadline,
-  },
-
   // プログレスバー
   progressTrack: {
     height: 4,
     marginHorizontal: Spacing.m,
+    marginTop: Spacing.xs,
     borderRadius: Radius.full,
     overflow: 'hidden',
   },

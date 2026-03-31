@@ -12,7 +12,6 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -122,6 +121,22 @@ export function QuizScreen({ navigation, route }: Props) {
     })();
   }, [db, isReady, itemId]);
 
+  // ヘッダーオプションをナビゲーションに反映
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          onPress={() => navigation.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel="閉じる"
+          hitSlop={{ top: 4, right: 4, bottom: 4, left: 4 }}
+        >
+          <Text style={[TypeScale.body, { color: colors.accent }]}>閉じる</Text>
+        </Pressable>
+      ),
+    });
+  }, [navigation, colors]);
+
   const chunks = reviewable ? parseCloze(reviewable.item.content) : [];
 
   // ---- フリップアニメーション ----
@@ -201,7 +216,7 @@ export function QuizScreen({ navigation, route }: Props) {
   // ---- アイテム未発見 ----
   if (!reviewable) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.center}>
           <Text style={[styles.emptyText, { color: colors.labelSecondary }]}>
             アイテムが見つかりません
@@ -213,14 +228,14 @@ export function QuizScreen({ navigation, route }: Props) {
             <Text style={styles.closeButtonText}>閉じる</Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   // ---- 完了画面 ----
   if (done) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.center}>
           <Text style={styles.doneEmoji}>✅</Text>
           <Text style={[styles.doneTitle, { color: colors.label }]}>評価完了！</Text>
@@ -232,7 +247,7 @@ export function QuizScreen({ navigation, route }: Props) {
             <Text style={styles.closeButtonText}>閉じる</Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -243,23 +258,7 @@ export function QuizScreen({ navigation, route }: Props) {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      {/* ヘッダー */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={styles.headerSide}
-          accessibilityRole="button"
-          accessibilityLabel="閉じる"
-        >
-          <Text style={[styles.closeText, { color: colors.accent }]}>閉じる</Text>
-        </Pressable>
-        <View style={[styles.badge, { backgroundColor: colors.backgroundSecondary }]}>
-          <Text style={[styles.badgeText, { color: SystemColors.purple }]}>穴埋めクイズ</Text>
-        </View>
-        <View style={styles.headerSide} />
-      </View>
-
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* タイトル */}
       <Text
         style={[styles.itemTitle, { color: colors.labelSecondary }]}
@@ -361,14 +360,14 @@ export function QuizScreen({ navigation, route }: Props) {
           </Text>
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const CARD_HEIGHT = 300;
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
+  container: { flex: 1 },
   center: {
     flex: 1,
     alignItems: 'center',
@@ -377,30 +376,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
 
-  // ヘッダー
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.m,
-    paddingVertical: Spacing.s,
-  },
-  headerSide: { minWidth: 60 },
-  closeText: { ...TypeScale.body },
-  badge: {
-    paddingHorizontal: Spacing.s,
-    paddingVertical: 4,
-    borderRadius: Radius.full,
-  },
-  badgeText: {
-    ...TypeScale.caption1,
-    fontWeight: '600',
-  },
-
   // タイトル
   itemTitle: {
     ...TypeScale.subheadline,
     paddingHorizontal: Spacing.m,
+    marginTop: Spacing.xs,
     marginBottom: Spacing.s,
   },
 

@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { LightColors, DarkColors } from '../../theme/colors';
 import { ReviewScreen } from '../../screens/review/ReviewScreen';
 import { QuizScreen } from '../../screens/review/QuizScreen';
+import { makeNavigatorOptions, makeLargeTitleOptions } from '../sharedScreenOptions';
 import type { ReviewStackParamList } from '../types';
 
 const Stack = createNativeStackNavigator<ReviewStackParamList>();
@@ -16,10 +17,7 @@ export function ReviewStack() {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors.accent,
-        headerTitleStyle: { color: colors.label },
-        headerShadowVisible: false,
+        ...makeNavigatorOptions(colors),
         contentStyle: { backgroundColor: colors.backgroundGrouped },
       }}
     >
@@ -27,18 +25,18 @@ export function ReviewStack() {
         name="Review"
         component={ReviewScreen}
         options={{
+          ...makeLargeTitleOptions(colors),
           title: '復習',
           presentation: 'fullScreenModal',
-          headerShown: false,
         }}
       />
       <Stack.Screen
         name="Quiz"
         component={QuizScreen}
         options={{
+          ...makeLargeTitleOptions(colors),
           title: 'クイズ',
           presentation: 'fullScreenModal',
-          headerShown: false,
         }}
       />
     </Stack.Navigator>
