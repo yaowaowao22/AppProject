@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { DrawerNavigationProp } from '@react-navigation/drawer';
 import { useDatabase } from '../../hooks/useDatabase';
 import {
   getDueItems,
@@ -28,7 +28,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { useSidebarFilter } from '../../hooks/useSidebarFilter';
-import type { HomeStackParamList, MainTabParamList } from '../../navigation/types';
+import type { HomeStackParamList, DrawerParamList } from '../../navigation/types';
 import type { ItemType } from '../../types';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
@@ -122,8 +122,7 @@ export function HomeScreen({ navigation }: Props) {
   }, [sidebarFilter, db]);
 
   const handleStartReview = () => {
-    const tabNav = navigation.getParent<BottomTabNavigationProp<MainTabParamList>>();
-    tabNav?.navigate('ReviewTab' as never);
+    navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate('Review');
   };
 
   // サイドバーフィルターを dueItems に適用
@@ -401,7 +400,7 @@ export function HomeScreen({ navigation }: Props) {
           { backgroundColor: colors.card, opacity: pressed ? 0.7 : 1 },
           cardShadow,
         ]}
-        onPress={() => navigation.navigate('Journal')}
+        onPress={() => navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate('Journal')}
         accessibilityRole="button"
         accessibilityLabel="学びジャーナルを開く"
       >
