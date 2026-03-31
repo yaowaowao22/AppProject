@@ -55,3 +55,6 @@ export type SidebarFilter =
   | { kind: 'smart'; id: 'today' | 'overdue' | 'recent' }
   | { kind: 'tag'; tagId: number; tagName: string }
   | { kind: 'collection'; collectionId: string; collectionName: string };
+
+// Bedrock URL解析結果
+export type { QAPair, AnalysisResult } from './analysis';
