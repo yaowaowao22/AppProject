@@ -238,6 +238,17 @@ describe('addSet', () => {
 
     expect(result.current.currentSession?.sets).toHaveLength(3);
   });
+
+  it('currentSession が null のとき addSet を呼んでも何もしない', async () => {
+    const { result } = renderHook(() => useWorkout(), { wrapper });
+    await act(async () => {});
+
+    // currentSession = null の状態で addSet を呼ぶ
+    act(() => result.current.addSet(100, 5));
+
+    // currentSession は null のまま
+    expect(result.current.currentSession).toBeNull();
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
