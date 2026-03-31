@@ -28,11 +28,11 @@ import type {
   HistoryTabType,
 } from '../types';
 import type { HistoryStackParamList } from '../navigation/RootNavigator';
+import { LineChart } from '../components/LineChart';
 
 // ── 定数 ──────────────────────────────────────────────────────────────────────
 
-const SCREEN_W = Dimensions.get('window').width;
-const CHART_H  = 120;
+const CHART_H = 120;
 
 const WEEK_DAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
@@ -100,16 +100,6 @@ const S = StyleSheet.create({
     borderRadius: RADIUS.card,
     padding: SPACING.sm,
     overflow: 'hidden',
-  },
-  chartBars: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 3,
-  },
-  chartLabels: {
-    flexDirection: 'row',
-    marginTop: 4,
-    gap: 3,
   },
   detailBackRow: {
     flexDirection: 'row',
@@ -190,49 +180,6 @@ function getWeekMonday(dateStr: string): string {
 // ── ナビ型 ────────────────────────────────────────────────────────────────────
 
 type NavProp = NativeStackNavigationProp<HistoryStackParamList, 'HistoryList'>;
-
-// ── View棒グラフ（SVG不使用） ─────────────────────────────────────────────────
-
-interface ChartBar { label: string; value: number }
-
-function BarChart({ data, colors }: { data: ChartBar[]; colors: TanrenThemeColors }) {
-  if (data.length === 0) return null;
-  const visible = data.slice(-12);
-  const maxVal = Math.max(...visible.map(d => d.value), 1);
-
-  return (
-    <View style={[S.chartWrap, { backgroundColor: colors.surface2 }]}>
-      <View style={[S.chartBars, { height: CHART_H - 24 }]}>
-        {visible.map((d, i) => {
-          const h = d.value > 0 ? Math.max((d.value / maxVal) * (CHART_H - 32), 3) : 3;
-          return (
-            <View key={i} style={{ flex: 1, justifyContent: 'flex-end', height: CHART_H - 24 }}>
-              <View
-                style={{
-                  height: h,
-                  backgroundColor: colors.accent,
-                  borderRadius: 2,
-                  opacity: d.value > 0 ? 0.85 : 0.18,
-                }}
-              />
-            </View>
-          );
-        })}
-      </View>
-      <View style={S.chartLabels}>
-        {visible.map((d, i) => (
-          <Text
-            key={i}
-            style={{ flex: 1, textAlign: 'center', fontSize: 8, color: colors.textTertiary }}
-            numberOfLines={1}
-          >
-            {d.label}
-          </Text>
-        ))}
-      </View>
-    </View>
-  );
-}
 
 // ── 日別タブ ──────────────────────────────────────────────────────────────────
 
@@ -442,7 +389,7 @@ function BodyPartDetailView({
   const bp = BODY_PARTS.find(b => b.id === bodyPart)!;
 
   // 週別ボリューム（直近8週）
-  const chartData = useMemo<ChartBar[]>(() => {
+  const chartData = useMemo(() => {
     const today = new Date();
     const weekKeys: string[] = [];
     for (let i = 7; i >= 0; i--) {
@@ -531,7 +478,18 @@ function BodyPartDetailView({
         contentContainerStyle={{ paddingBottom: SPACING.xl }}
         ListHeaderComponent={
           <View style={{ marginBottom: SPACING.sm }}>
-            <BarChart data={chartData} colors={colors} />
+            <View style={[S.chartWrap, { backgroundColor: colors.surface2 }]}>
+              <LineChart
+                data={chartData}
+                height={CHART_H}
+                lineColor={colors.accent}
+                fillColor={colors.accentDim}
+                gridColor={colors.separator}
+                labelColor={colors.textTertiary}
+                highlightLast
+                highlightColor={colors.accent}
+              />
+            </View>
             <Text style={{
               marginHorizontal: SPACING.contentMargin,
               fontSize: TYPOGRAPHY.captionSmall,
@@ -777,9 +735,9 @@ function ExerciseDetailView({
   const pr  = personalRecords.find(p => p.exerciseId === exerciseId);
 
   // 最大重量推移チャート（直近12回）
-  const chartData = useMemo<ChartBar[]>(() => {
+  const chartData = useMemo(() => {
     const sorted = [...workouts].sort((a, b) => a.date.localeCompare(b.date));
-    const result: ChartBar[] = [];
+    const result: { label: string; value: number }[] = [];
     for (const w of sorted) {
       const matched = w.sessions.filter(s => s.exerciseId === exerciseId);
       for (const session of matched) {
@@ -890,7 +848,18 @@ function ExerciseDetailView({
         contentContainerStyle={{ paddingBottom: SPACING.xl }}
         ListHeaderComponent={
           <View style={{ marginBottom: SPACING.sm }}>
-            <BarChart data={chartData} colors={colors} />
+            <View style={[S.chartWrap, { backgroundColor: colors.surface2 }]}>
+              <LineChart
+                data={chartData}
+                height={CHART_H}
+                lineColor={colors.accent}
+                fillColor={colors.accentDim}
+                gridColor={colors.separator}
+                labelColor={colors.textTertiary}
+                highlightLast
+                highlightColor={colors.accent}
+              />
+            </View>
             <Text style={{
               marginHorizontal: SPACING.contentMargin,
               fontSize: TYPOGRAPHY.captionSmall,
