@@ -9,7 +9,7 @@
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
         "StringEquals": {
-          "cognito-identity.amazonaws.com:aud": "PLACEHOLDER_IDENTITY_POOL_ID"
+          "cognito-identity.amazonaws.com:aud": "ap-northeast-1:30376610-eefd-4443-b7eb-6cf0cfcdb1ab"
         },
         "ForAnyValue:StringLike": {
           "cognito-identity.amazonaws.com:amr": "unauthenticated"

@@ -48,7 +48,8 @@
         "iam:GetRolePolicy",
         "iam:DeleteRolePolicy",
         "iam:ListAttachedRolePolicies",
-        "iam:PassRole"
+        "iam:PassRole",
+        "iam:UpdateAssumeRolePolicy"
       ],
       "Resource": "arn:aws:iam::376408658186:role/recall-kit-*"
     },
