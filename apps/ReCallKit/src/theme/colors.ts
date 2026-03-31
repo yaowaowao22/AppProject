@@ -30,35 +30,49 @@ export const SidebarColors = {
     // アクティブアイテム
     activeBackground: 'rgba(196,127,23,0.12)', // Recall Amber 12%
     activeTint: RecallAmber.light,
-    // 非アクティブアイテム
-    inactiveTint: 'rgba(60,60,67,0.80)',
+    // 非アクティブアイテム（--text-secondary: rgba(60,60,67,0.6)）
+    inactiveTint: 'rgba(60,60,67,0.60)',
     // バッジ（カウント表示）
     badgeBackground: RecallAmber.light,
     badgeText: '#FFFFFF',
-    // セクションヘッダー
-    sectionHeader: 'rgba(60,60,67,0.50)',
-    // 区切り線
-    separator: 'rgba(60,60,67,0.18)',
+    // セクションヘッダー（--text-tertiary: rgba(60,60,67,0.3)）
+    sectionHeader: 'rgba(60,60,67,0.30)',
+    // 区切り線（--separator: rgba(60,60,67,0.12)）
+    separator: 'rgba(60,60,67,0.12)',
     // フッターアイコン
     footerTint: 'rgba(60,60,67,0.60)',
     // タグチップ背景
     tagBackground: 'rgba(60,60,67,0.08)',
     tagText: 'rgba(60,60,67,0.80)',
+    // テキスト階層（--sidebar-text-primary/tertiary）
+    textPrimary: '#000000',
+    textTertiary: 'rgba(60,60,67,0.30)',
+    // プレス状態背景（--system-gray5 light）
+    pressedBackground: 'rgba(142,142,147,0.12)',
   },
   dark: {
-    background: 'rgba(22,22,24,0.95)',
+    // dark background: rgba(22,22,24,0.92) に修正
+    background: 'rgba(22,22,24,0.92)',
     backgroundSolid: '#161618',
     overlay: 'rgba(0,0,0,0.50)',
     activeBackground: 'rgba(245,166,35,0.15)',
     activeTint: RecallAmber.dark,
-    inactiveTint: 'rgba(235,235,245,0.75)',
+    // 非アクティブアイテム（--text-secondary: rgba(235,235,245,0.6)）
+    inactiveTint: 'rgba(235,235,245,0.60)',
     badgeBackground: RecallAmber.dark,
     badgeText: '#000000',
-    sectionHeader: 'rgba(235,235,245,0.40)',
-    separator: 'rgba(84,84,88,0.40)',
+    // セクションヘッダー（--text-tertiary: rgba(235,235,245,0.3)）
+    sectionHeader: 'rgba(235,235,245,0.30)',
+    // 区切り線（--separator: rgba(84,84,88,0.65)）
+    separator: 'rgba(84,84,88,0.65)',
     footerTint: 'rgba(235,235,245,0.50)',
     tagBackground: 'rgba(235,235,245,0.10)',
     tagText: 'rgba(235,235,245,0.75)',
+    // テキスト階層（--sidebar-text-primary/tertiary）
+    textPrimary: '#FFFFFF',
+    textTertiary: 'rgba(235,235,245,0.30)',
+    // プレス状態背景（--system-gray5 dark）
+    pressedBackground: 'rgba(142,142,147,0.24)',
   },
 } as const;
 
@@ -87,6 +101,14 @@ export const LightColors = {
   // タブバー
   tabBarActive: RecallAmber.light,
   tabBarInactive: 'rgba(60,60,67,0.60)',
+
+  // ナビゲーションバー（--nav-bg / --tab-border）
+  navBarBackground: 'rgba(249,249,249,0.94)',
+  navBarBorder: 'rgba(60,60,67,0.12)',
+
+  // フィルターバッジ（--accent-light / --accent）
+  filterBadgeBg: 'rgba(196,127,23,0.12)',
+  filterBadgeText: RecallAmber.light,
 
   // 状態色
   success: SystemColors.green,
@@ -120,6 +142,14 @@ export const DarkColors = {
   // タブバー
   tabBarActive: RecallAmber.dark,
   tabBarInactive: 'rgba(235,235,245,0.60)',
+
+  // ナビゲーションバー（--nav-bg / --tab-border dark）
+  navBarBackground: 'rgba(30,30,30,0.94)',
+  navBarBorder: 'rgba(84,84,88,0.65)',
+
+  // フィルターバッジ（--accent-light / --accent dark）
+  filterBadgeBg: 'rgba(245,166,35,0.15)',
+  filterBadgeText: RecallAmber.dark,
 
   // 状態色
   success: SystemColors.green,
