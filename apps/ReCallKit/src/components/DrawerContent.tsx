@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import { SidebarLayout, Spacing, Radius } from '../theme/spacing';
 import { useTheme } from '../theme/ThemeContext';
 import type { SidebarColorSet } from '../theme/themes';
+import { SidebarColors } from '../theme/colors';
 import { useDatabase } from '../hooks/useDatabase';
 import { useSidebarFilter } from '../hooks/useSidebarFilter';
 

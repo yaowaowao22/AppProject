@@ -12,7 +12,22 @@
       "Bash(npx expo:*)",
       "Read(//c/tmp/**)",
       "Bash(npm install:*)",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(powershell.exe -Command \"Get-NetTCPConnection -LocalPort 8081 -ErrorAction SilentlyContinue | Select-Object OwningProcess\")",
+      "Bash(powershell.exe -Command \"Get-Process -Id 23576 | Select-Object ProcessName, Id\")",
+      "Bash(powershell.exe -Command \"Stop-Process -Id 23576 -Force\")",
+      "Bash(grep -r \"privacy\\\\|terms\\\\|policy\\\\|PRIVACY\\\\|TERMS\" C:UsersytataAppProjectbaseProjectappsfitness --include=*.ts --include=*.tsx --include=*.json)",
+      "Bash(grep -r \"push\\\\|notification\\\\|firebase\\\\|apns\\\\|expo-notifications\" C:UsersytataAppProjectbaseProjectappsfitness --include=*.ts --include=*.tsx --include=*.json)",
+      "Bash(grep -r \"purchase\\\\|subscription\\\\|revenucat\\\\|stripe\\\\|iap\\\\|storekit\" C:UsersytataAppProjectbaseProjectappsfitness --include=*.ts --include=*.tsx --include=*.json)",
+      "Bash(grep -r \"auth\\\\|Auth\\\\|login\\\\|Login\\\\|token\\\\|Token\" C:UsersytataAppProjectbaseProjectappsfitnesssrc --include=*.ts --include=*.tsx)",
+      "Bash(find /c/Users/ytata/AppProject/baseProject/apps -maxdepth 2 -name eas.json -o -name app.json -o -name .env*)",
+      "Bash(grep -r \"PRIVACY\\\\|TERMS\\\\|EULA\\\\|privacy.html\\\\|terms.html\" C:UsersytataAppProjectbaseProject --include=*.md --include=*.txt)",
+      "Bash(find /c/Users/ytata/AppProject/baseProject/apps/push-notify -maxdepth 1 -type f -name *.env* -o -name *credential* -o -name *secret* -o -name *.p8 -o -name *.p12)",
+      "Bash(git -C /c/Users/ytata/AppProject/baseProject log --oneline -10)",
+      "Bash(grep -r \"google-analytics\\\\|amplitude\\\\|mixpanel\\\\|segment\\\\|analytics\" C:UsersytataAppProjectbaseProjectappsfitness --include=*.ts --include=*.tsx --include=*.json)",
+      "Bash(find C:UsersytataAppProjectbaseProjectpackagesanalytics -type f -name *.ts -o -name *.tsx -o -name *.json)",
+      "Bash(grep -r \"firebase\\\\|Firebase\" C:UsersytataAppProjectbaseProjectappsfitness --include=*.json --include=*.ts --include=*.tsx)",
+      "Bash(npx eas:*)"
     ]
   }
 }

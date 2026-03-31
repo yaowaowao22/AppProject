@@ -9,7 +9,7 @@
     "newArchEnabled": true,
     "extra": {
       "eas": {
-        "projectId": ""
+        "projectId": "136412e9-9744-499f-a942-41d0597e67ec"
       }
     },
     "splash": {
@@ -36,7 +36,14 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "updates": {
+      "url": "https://u.expo.dev/136412e9-9744-499f-a942-41d0597e67ec"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "plugins": [
+      "expo-updates",
       [
         "expo-build-properties",
         {

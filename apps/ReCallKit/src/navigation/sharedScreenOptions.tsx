@@ -1,6 +1,6 @@
 import React from 'react';
 import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
-import type { ColorScheme } from '../theme/colors';
+import type { ColorScheme } from '../theme/themes';
 import { HeaderHamburger } from '../components/HeaderHamburger';
 
 /**

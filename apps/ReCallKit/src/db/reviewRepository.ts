@@ -22,6 +22,7 @@ interface DueRow {
   content: string;
   source_url: string | null;
   excerpt: string | null;
+  category: string | null;
   created_at: string;
   updated_at: string;
   archived: 0 | 1;
@@ -41,7 +42,7 @@ interface DueRow {
 export async function getDueItems(db: SQLiteDatabase): Promise<ReviewableItem[]> {
   const rows = await db.getAllAsync<DueRow>(`
     SELECT
-      i.id, i.type, i.title, i.content, i.source_url, i.excerpt,
+      i.id, i.type, i.title, i.content, i.source_url, i.excerpt, i.category,
       i.created_at, i.updated_at, i.archived,
       r.id as review_id, r.repetitions, r.easiness_factor,
       r.interval_days, r.next_review_at, r.last_reviewed_at, r.quality_history
@@ -61,6 +62,7 @@ export async function getDueItems(db: SQLiteDatabase): Promise<ReviewableItem[]>
       content: row.content,
       source_url: row.source_url,
       excerpt: row.excerpt,
+      category: row.category,
       created_at: row.created_at,
       updated_at: row.updated_at,
       archived: row.archived,
