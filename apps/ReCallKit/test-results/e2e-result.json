@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-03-31T21:52:09+09:00",
+  "timestamp": "2026-03-31T22:20:25+09:00",
   "overall": "FAIL",
-  "identity_id": "",
-  "access_key_prefix": "",
+  "identity_id": "ap-northeast-1:57a3b451-0ae3-ccbb-f0e5-f970657edad5",
+  "access_key_prefix": "ASIAVPI5UK...",
   "lambda_response": {},
-  "error": "Cognito クレデンシャル取得に失敗しました。",
+  "error": "一部ステップが失敗しました。詳細は steps を参照してください。",
   "steps": [
     {
       "step": "aws.ts 設定値チェック",
@@ -14,8 +14,20 @@
     },
     {
       "step": "Cognito getCredentialsForIdentity",
+      "status": "PASS",
+      "detail": "IdentityId: ap-northeast-1:57a3b451-0ae3-ccbb-f0e5-f970657edad5\nAccessKeyId: ASIAVPI5UK...\nExpiration: 2026-03-31 23:20:25+09:00",
+      "elapsed_ms": 360.4
+    },
+    {
+      "step": "Lambda Function URL (SigV4)",
       "status": "FAIL",
-      "detail": "InvalidIdentityPoolConfigurationException: Invalid identity pool configuration. Check assigned IAM roles for this pool.",
+      "detail": "HTTP 500: Internal Server Error\n{\"error\": \"Bedrock エラー: ValidationException\"}",
+      "elapsed_ms": 0.0
+    },
+    {
+      "step": "レスポンス構造検証",
+      "status": "SKIP",
+      "detail": "Lambda呼び出し失敗のためスキップ",
       "elapsed_ms": 0.0
     }
   ]
