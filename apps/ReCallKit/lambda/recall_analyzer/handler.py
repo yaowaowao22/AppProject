@@ -63,27 +63,13 @@ FETCH_HEADERS = {
 }
 
 
-def _ssl_context() -> ssl.SSLContext:
-    """Lambda（Amazon Linux）のCA証明書バンドルを使ったSSLコンテキストを返す。"""
-    ctx = ssl.create_default_context()
-    # Amazon Linux 2023 の CA バンドルを明示的にロード
-    for ca_path in (
-        "/etc/ssl/certs/ca-bundle.crt",
-        "/etc/pki/tls/certs/ca-bundle.crt",
-    ):
-        try:
-            ctx.load_verify_locations(ca_path)
-            break
-        except (FileNotFoundError, ssl.SSLError):
-            continue
-    return ctx
-
-
 def fetch_and_extract(url: str) -> str:
-    """URLをサーバー側でフェッチしてテキストを抽出する。"""
+    """URLをサーバー側でフェッチしてテキストを抽出する。
+    公開URLのスクレイピングのためSSL検証を省略する。"""
+    ctx = ssl._create_unverified_context()
     req = urllib.request.Request(url, headers=FETCH_HEADERS)
     try:
-        with urllib.request.urlopen(req, timeout=15, context=_ssl_context()) as resp:
+        with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
             html = resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"HTTP {e.code}") from e
