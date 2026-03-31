@@ -1,9 +1,9 @@
 // ============================================================
 // LibraryScreen - ライブラリ一覧
-// タグチップフィルター + 日付グループ + カードレイアウト
+// タグ/カテゴリチップフィルター + 日付グループ + 複数選択削除
 // ============================================================
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   TextInput,
   StyleSheet,
   ActivityIndicator,
+  Alert,
   Platform,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -23,15 +24,17 @@ import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import {
   useItems,
+  useTags,
+  useCategories,
   useMemoFilter,
   type LibraryFilterType,
   type ReviewStatusFilter,
   type DateRangeFilter,
 } from '../../hooks/useLibrary';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSidebarFilter } from '../../hooks/useSidebarFilter';
 import type { LibraryStackParamList } from '../../navigation/types';
 import type { ItemWithMeta } from '../../types';
+import { useDB } from '../../hooks/useDatabase';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'Library'>;
 
@@ -148,13 +151,24 @@ function FilterChip({
 export function LibraryScreen({ navigation }: Props) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
+  const db = useDB();
+
+  // ---- フィルター状態 ----
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<LibraryFilterType>('all');
   const [dateRange, setDateRange] = useState<DateRangeFilter>('all');
   const [reviewStatus, setReviewStatus] = useState<ReviewStatusFilter>('all');
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const filter = useMemoFilter(search, typeFilter, [], reviewStatus, dateRange);
-  const { items, isLoading } = useItems(filter);
+  // ---- 選択削除モード状態 ----
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+  const filter = useMemoFilter(search, typeFilter, selectedTagIds, reviewStatus, dateRange, selectedCategory);
+  const { items, isLoading, refresh } = useItems(filter);
+  const { tags } = useTags();
+  const { categories } = useCategories();
 
   const sections = useMemo(() => groupByDate(items), [items]);
   const cardShadow = isDark ? {} : CardShadow;
@@ -165,11 +179,89 @@ export function LibraryScreen({ navigation }: Props) {
   const chipTextActive = '#FFFFFF';
   const chipTextInactive = colors.labelSecondary;
 
+  // ---- タグ選択トグル ----
+  const toggleTag = useCallback((tagId: number) => {
+    if (Platform.OS !== 'web') {
+      try { Haptics.selectionAsync(); } catch {}
+    }
+    setSelectedTagIds((prev) =>
+      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+    );
+  }, []);
+
+  // ---- カテゴリ選択トグル ----
+  const toggleCategory = useCallback((cat: string) => {
+    if (Platform.OS !== 'web') {
+      try { Haptics.selectionAsync(); } catch {}
+    }
+    setSelectedCategory((prev) => (prev === cat ? null : cat));
+  }, []);
+
+  // ---- 選択モード開始（ロングプレス） ----
+  const enterSelectionMode = useCallback((itemId: number) => {
+    if (Platform.OS !== 'web') {
+      try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch {}
+    }
+    setSelectionMode(true);
+    setSelectedIds(new Set([itemId]));
+  }, []);
+
+  // ---- 選択モード終了 ----
+  const exitSelectionMode = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  // ---- アイテム選択トグル ----
+  const toggleItemSelection = useCallback((itemId: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  }, []);
+
+  // ---- 選択アイテム削除（アーカイブ） ----
+  const deleteSelected = useCallback(async () => {
+    const count = selectedIds.size;
+    Alert.alert(
+      '削除確認',
+      `選択した${count}件を削除しますか？`,
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '削除',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const ids = Array.from(selectedIds);
+              const placeholders = ids.map(() => '?').join(',');
+              await db.runAsync(
+                `UPDATE items SET archived = 1, updated_at = datetime('now','localtime') WHERE id IN (${placeholders})`,
+                ids
+              );
+              exitSelectionMode();
+              refresh();
+            } catch (err) {
+              console.error('[LibraryScreen] delete error:', err);
+              Alert.alert('エラー', '削除に失敗しました');
+            }
+          },
+        },
+      ]
+    );
+  }, [selectedIds, db, exitSelectionMode, refresh]);
+
   // ---- カードレンダラー ----
   const renderItem = ({ item }: { item: ItemWithMeta }) => {
     const rs = getReviewStatus(item);
     const iconName = TYPE_ICONS[item.type] ?? 'document-outline';
     const typeLabel = TYPE_LABELS[item.type] ?? item.type;
+    const isSelected = selectedIds.has(item.id);
 
     return (
       <Pressable
@@ -178,15 +270,48 @@ export function LibraryScreen({ navigation }: Props) {
           { backgroundColor: colors.card },
           cardShadow,
           pressed && { opacity: 0.85 },
+          isSelected && { borderWidth: 2, borderColor: colors.accent },
         ]}
-        onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}
+        onPress={() => {
+          if (selectionMode) {
+            toggleItemSelection(item.id);
+          } else {
+            navigation.navigate('ItemDetail', { itemId: item.id });
+          }
+        }}
+        onLongPress={() => {
+          if (!selectionMode) {
+            enterSelectionMode(item.id);
+          }
+        }}
+        delayLongPress={400}
       >
+        {/* 選択チェックマーク */}
+        {selectionMode && (
+          <View style={[
+            styles.checkCircle,
+            { borderColor: isSelected ? colors.accent : colors.separator },
+            isSelected && { backgroundColor: colors.accent },
+          ]}>
+            {isSelected && (
+              <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+            )}
+          </View>
+        )}
+
         {/* メタ行: タイプアイコン + ラベル + 復習バッジ */}
         <View style={styles.cardMeta}>
           <Ionicons name={iconName} size={13} color={colors.labelTertiary} />
           <Text style={[styles.cardMetaType, { color: colors.labelTertiary }]}>
             {typeLabel}
           </Text>
+          {item.category ? (
+            <View style={[styles.categoryBadge, { backgroundColor: colors.accent + '22' }]}>
+              <Text style={[styles.categoryBadgeText, { color: colors.accent }]}>
+                {item.category}
+              </Text>
+            </View>
+          ) : null}
           {rs && (
             <View
               style={[
@@ -320,6 +445,54 @@ export function LibraryScreen({ navigation }: Props) {
           activeColor={chipActiveColor} bgColor={chipBgColor} textActiveColor={chipTextActive} textInactiveColor={chipTextInactive} />
       </ScrollView>
 
+      {/* タグチップ行（タグが存在する場合のみ表示） */}
+      {tags.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.chipScroll}
+          contentContainerStyle={styles.chipScrollContent}
+        >
+          <Ionicons name="pricetag-outline" size={14} color={colors.labelTertiary} style={styles.chipRowIcon} />
+          {tags.map((tag) => (
+            <FilterChip
+              key={tag.id}
+              label={`${tag.name} ${tag.count}`}
+              active={selectedTagIds.includes(tag.id)}
+              onPress={() => toggleTag(tag.id)}
+              activeColor={chipActiveColor}
+              bgColor={chipBgColor}
+              textActiveColor={chipTextActive}
+              textInactiveColor={chipTextInactive}
+            />
+          ))}
+        </ScrollView>
+      )}
+
+      {/* カテゴリチップ行（カテゴリが存在する場合のみ表示） */}
+      {categories.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.chipScroll}
+          contentContainerStyle={styles.chipScrollContent}
+        >
+          <Ionicons name="folder-outline" size={14} color={colors.labelTertiary} style={styles.chipRowIcon} />
+          {categories.map((cat) => (
+            <FilterChip
+              key={cat}
+              label={cat}
+              active={selectedCategory === cat}
+              onPress={() => toggleCategory(cat)}
+              activeColor={chipActiveColor}
+              bgColor={chipBgColor}
+              textActiveColor={chipTextActive}
+              textInactiveColor={chipTextInactive}
+            />
+          ))}
+        </ScrollView>
+      )}
+
       {isLoading ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.accent} />
@@ -342,26 +515,60 @@ export function LibraryScreen({ navigation }: Props) {
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
           renderSectionHeader={renderSectionHeader}
-          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 56 + Spacing.l }]}
+          contentContainerStyle={[
+            styles.list,
+            { paddingBottom: insets.bottom + 56 + Spacing.l + (selectionMode ? 64 : 0) },
+          ]}
           showsVerticalScrollIndicator={false}
           stickySectionHeadersEnabled={false}
         />
       )}
 
-      {/* FAB: アイテム追加 */}
-      <Pressable
-        style={[styles.fab, { backgroundColor: colors.accent, bottom: insets.bottom + Spacing.l }]}
-        onPress={() => {
-          if (Platform.OS !== 'web') {
-            try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
-          }
-          navigation.navigate('AddItem', {});
-        }}
-        accessibilityRole="button"
-        accessibilityLabel="アイテムを追加"
-      >
-        <Ionicons name="add" size={28} color="#FFFFFF" />
-      </Pressable>
+      {/* FAB: アイテム追加（選択モード中は非表示） */}
+      {!selectionMode && (
+        <Pressable
+          style={[styles.fab, { backgroundColor: colors.accent, bottom: insets.bottom + Spacing.l }]}
+          onPress={() => {
+            if (Platform.OS !== 'web') {
+              try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
+            }
+            navigation.navigate('AddItem', {});
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="アイテムを追加"
+        >
+          <Ionicons name="add" size={28} color="#FFFFFF" />
+        </Pressable>
+      )}
+
+      {/* 選択モード時のボトムバー */}
+      {selectionMode && (
+        <View
+          style={[
+            styles.selectionBar,
+            {
+              backgroundColor: colors.card,
+              bottom: insets.bottom,
+              borderTopColor: colors.separator,
+            },
+          ]}
+        >
+          <Pressable style={styles.selectionBarBtn} onPress={exitSelectionMode} hitSlop={8}>
+            <Text style={[styles.selectionBarCancel, { color: colors.accent }]}>キャンセル</Text>
+          </Pressable>
+          <Text style={[styles.selectionBarCount, { color: colors.label }]}>
+            {selectedIds.size}件選択
+          </Text>
+          <Pressable
+            style={[styles.selectionBarBtn, { opacity: selectedIds.size === 0 ? 0.4 : 1 }]}
+            onPress={deleteSelected}
+            disabled={selectedIds.size === 0}
+            hitSlop={8}
+          >
+            <Ionicons name="trash-outline" size={22} color={colors.error} />
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -410,6 +617,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.xs,
   },
+  chipRowIcon: {
+    marginRight: 2,
+  },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: Spacing.xs,
@@ -452,7 +662,21 @@ const styles = StyleSheet.create({
     gap: Spacing.s,
   },
 
-  // メタ行（タイプ + 復習バッジ）
+  // 選択チェックサークル
+  checkCircle: {
+    position: 'absolute',
+    top: Spacing.s,
+    right: Spacing.s,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+
+  // メタ行（タイプ + カテゴリ + 復習バッジ）
   cardMeta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -461,6 +685,15 @@ const styles = StyleSheet.create({
   cardMetaType: {
     ...TypeScale.caption2,
     flex: 1,
+  },
+  categoryBadge: {
+    paddingHorizontal: Spacing.s,
+    paddingVertical: 2,
+    borderRadius: Radius.full,
+  },
+  categoryBadgeText: {
+    ...TypeScale.caption2,
+    fontWeight: '500' as const,
   },
   reviewBadge: {
     paddingHorizontal: Spacing.s,
@@ -536,5 +769,30 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 4,
+  },
+
+  // ---- 選択モードボトムバー ----
+  selectionBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.l,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  selectionBarBtn: {
+    minWidth: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectionBarCancel: {
+    ...TypeScale.body,
+  },
+  selectionBarCount: {
+    ...TypeScale.subheadline,
+    fontWeight: '600',
   },
 });
