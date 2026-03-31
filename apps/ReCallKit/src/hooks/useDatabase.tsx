@@ -48,6 +48,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
           setIsReady(true);
         }
       } catch (err) {
+        console.error('[DatabaseProvider] DB initialization failed:', err);
         if (!cancelled) {
           setError(err instanceof Error ? err : new Error(String(err)));
         }
