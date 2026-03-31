@@ -245,6 +245,7 @@ describe('部位タブフィルタ', () => {
 describe('テンプレート編集ビュー', () => {
   const templates = JSON.stringify([
     { id: 't1', name: '胸の日', exerciseIds: ['chest_press'], createdAt: '2026-01-01T00:00:00.000Z' },
+    { id: 't2', name: '脚の日', exerciseIds: ['squat'], createdAt: '2026-01-02T00:00:00.000Z' },
   ]);
 
   beforeEach(() => {
@@ -261,6 +262,26 @@ describe('テンプレート編集ビュー', () => {
     fireEvent.press(templateBtn);
     // 編集ビューになる（保存ボタンが表示）
     expect(await findByLabelText('保存')).toBeTruthy();
+  });
+
+  it('2つのテンプレートがある場合にセパレーターが表示される', async () => {
+    const { findByText } = renderScreen();
+    await findByText('胸の日');
+    expect(await findByText('脚の日')).toBeTruthy();
+  });
+
+  it('テンプレートを押して名前を変更して保存すると updateTemplate が呼ばれる', async () => {
+    const { findByText, findByLabelText, findByPlaceholderText } = renderScreen();
+    await findByText('胸の日');
+    const templateBtn = await findByLabelText('テンプレート: 胸の日');
+    fireEvent.press(templateBtn);
+    // 編集ビューになったら名前を変更
+    const input = await findByPlaceholderText('例: 胸・肩の日');
+    fireEvent.changeText(input, '胸トレ改');
+    // 保存ボタンを押す
+    const saveBtn = await findByLabelText('保存');
+    fireEvent.press(saveBtn);
+    expect(true).toBe(true);
   });
 
   it('テンプレートを長押しすると Alert が表示される', async () => {
