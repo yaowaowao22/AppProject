@@ -78,7 +78,7 @@ create_function() {
     --function-name "${FUNCTION_NAME}" \
     --runtime "${RUNTIME}" \
     --handler "${HANDLER}" \
-    --zip-file "fileb://${ZIP_FILE}" \
+    --zip-file "fileb://$(cygpath -w "${ZIP_FILE}")" \
     --role "${LAMBDA_ROLE_ARN}" \
     --timeout "${TIMEOUT}" \
     --memory-size "${MEMORY_SIZE}" \
@@ -95,7 +95,7 @@ create_function() {
 update_code_only() {
   aws lambda update-function-code \
     --function-name "${FUNCTION_NAME}" \
-    --zip-file "fileb://${ZIP_FILE}" \
+    --zip-file "fileb://$(cygpath -w "${ZIP_FILE}")" \
     --region "${REGION}"
   echo "      → コードを更新しました"
 }
