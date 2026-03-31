@@ -28,9 +28,6 @@ import {
   useTags,
   useCategories,
   useMemoFilter,
-  type LibraryFilterType,
-  type ReviewStatusFilter,
-  type DateRangeFilter,
 } from '../../hooks/useLibrary';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { LibraryStackParamList } from '../../navigation/types';
@@ -116,9 +113,6 @@ export function LibraryScreen({ navigation }: Props) {
 
   // ---- フィルター状態 ----
   const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState<LibraryFilterType>('all');
-  const [dateRange, setDateRange] = useState<DateRangeFilter>('all');
-  const [reviewStatus, setReviewStatus] = useState<ReviewStatusFilter>('all');
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -126,7 +120,7 @@ export function LibraryScreen({ navigation }: Props) {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
-  const filter = useMemoFilter(search, typeFilter, selectedTagIds, reviewStatus, dateRange, selectedCategory);
+  const filter = useMemoFilter(search, 'all', selectedTagIds, 'all', 'all', selectedCategory);
   const { items, isLoading, refresh } = useItems(filter);
   const { tags } = useTags();
   const { categories } = useCategories();
@@ -395,44 +389,6 @@ export function LibraryScreen({ navigation }: Props) {
         )}
       </View>
 
-      {/* フィルターチップ行 */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.chipScroll}
-        contentContainerStyle={styles.chipScrollContent}
-      >
-        {/* タイプフィルター */}
-        <FilterChip label="全て" active={typeFilter === 'all'} onPress={() => setTypeFilter('all')}
-          activeColor={chipActiveColor} bgColor={chipBgColor} textActiveColor={chipTextActive} textInactiveColor={chipTextInactive} />
-        <FilterChip label="URL" active={typeFilter === 'url'} onPress={() => setTypeFilter('url')}
-          activeColor={chipActiveColor} bgColor={chipBgColor} textActiveColor={chipTextActive} textInactiveColor={chipTextInactive} />
-        <FilterChip label="テキスト" active={typeFilter === 'text'} onPress={() => setTypeFilter('text')}
-          activeColor={chipActiveColor} bgColor={chipBgColor} textActiveColor={chipTextActive} textInactiveColor={chipTextInactive} />
-        <FilterChip label="画像" active={typeFilter === 'screenshot'} onPress={() => setTypeFilter('screenshot')}
-          activeColor={chipActiveColor} bgColor={chipBgColor} textActiveColor={chipTextActive} textInactiveColor={chipTextInactive} />
-
-        <View style={[styles.chipDivider, { backgroundColor: colors.separator }]} />
-
-        {/* 日付フィルター */}
-        <FilterChip label="全期間" active={dateRange === 'all'} onPress={() => setDateRange('all')}
-          activeColor={chipActiveColor} bgColor={chipBgColor} textActiveColor={chipTextActive} textInactiveColor={chipTextInactive} />
-        <FilterChip label="7日以内" active={dateRange === '7d'} onPress={() => setDateRange('7d')}
-          activeColor={chipActiveColor} bgColor={chipBgColor} textActiveColor={chipTextActive} textInactiveColor={chipTextInactive} />
-        <FilterChip label="30日以内" active={dateRange === '30d'} onPress={() => setDateRange('30d')}
-          activeColor={chipActiveColor} bgColor={chipBgColor} textActiveColor={chipTextActive} textInactiveColor={chipTextInactive} />
-
-        <View style={[styles.chipDivider, { backgroundColor: colors.separator }]} />
-
-        {/* 復習ステータスフィルター */}
-        <FilterChip label="全て" active={reviewStatus === 'all'} onPress={() => setReviewStatus('all')}
-          activeColor={chipActiveColor} bgColor={chipBgColor} textActiveColor={chipTextActive} textInactiveColor={chipTextInactive} />
-        <FilterChip label="復習待ち" active={reviewStatus === 'pending'} onPress={() => setReviewStatus('pending')}
-          activeColor={chipActiveColor} bgColor={chipBgColor} textActiveColor={chipTextActive} textInactiveColor={chipTextInactive} />
-        <FilterChip label="復習済" active={reviewStatus === 'done'} onPress={() => setReviewStatus('done')}
-          activeColor={chipActiveColor} bgColor={chipBgColor} textActiveColor={chipTextActive} textInactiveColor={chipTextInactive} />
-      </ScrollView>
-
       {/* タグチップ行（タグが存在する場合のみ表示） */}
       {tags.length > 0 && (
         <ScrollView
@@ -628,12 +584,6 @@ const styles = StyleSheet.create({
   chipRowIcon: {
     marginRight: 2,
   },
-  chipDivider: {
-    width: StyleSheet.hairlineWidth,
-    height: 18,
-    marginHorizontal: Spacing.xs,
-  },
-
   // ---- リスト ----
   list: {
     paddingHorizontal: Spacing.m,
