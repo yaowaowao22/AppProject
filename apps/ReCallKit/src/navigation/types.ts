@@ -40,6 +40,13 @@ export type LibraryStackParamList = {
   Library: { filterTag?: string };
   ItemDetail: { itemId: number };
   AddItem: { clipboardText?: string };
+  QAPreview: {
+    url: string;
+    title: string;
+    summary: string;
+    qa_pairs: { question: string; answer: string }[];
+    category: string;
+  };
 };
 
 // ---- Review Stack ----
