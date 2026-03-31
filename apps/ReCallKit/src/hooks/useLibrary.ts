@@ -2,6 +2,7 @@
 // useLibrary — ライブラリ一覧・タグ取得フック
 // ============================================================
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { useDB } from './useDatabase';
 import type { ItemWithMeta, Tag, ItemType, Review } from '../types';
 
@@ -230,9 +231,9 @@ export function useTags() {
     }
   }, [db]);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     fetchTags();
-  }, [fetchTags]);
+  }, [fetchTags]));
 
   return { tags, isLoading, refresh: fetchTags };
 }

@@ -4,7 +4,7 @@
 // ios-uiux準拠・ローディングステップ表示・エラーカード付き
 // ============================================================
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Keyboard,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,6 +45,31 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
   const stepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isValidUrl = URL_PATTERN.test(url.trim());
+
+  const handleBack = useCallback(() => {
+    if (loading) {
+      Alert.alert(
+        '取り込み終了',
+        '解析を中断しますか？',
+        [
+          { text: 'キャンセル', style: 'cancel' },
+          { text: 'OK', onPress: () => navigation.getParent()?.getParent()?.navigate('Home' as never) },
+        ],
+      );
+    } else {
+      navigation.goBack();
+    }
+  }, [loading, navigation]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <Pressable onPress={handleBack} hitSlop={8} accessibilityLabel="戻る">
+          <Ionicons name="chevron-back" size={24} color={colors.accent} />
+        </Pressable>
+      ),
+    });
+  }, [navigation, handleBack, colors.accent]);
 
   const handleAnalyze = useCallback(async () => {
     if (!isValidUrl || loading) return;

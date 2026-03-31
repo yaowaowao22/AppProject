@@ -193,7 +193,7 @@ export function QAPreviewScreen({ route, navigation }: Props) {
       Alert.alert(
         '保存完了',
         `${targets.length}件のQ&Aをライブラリに追加しました`,
-        [{ text: 'OK', onPress: () => navigation.popToTop() }],
+        [{ text: 'OK', onPress: () => navigation.getParent()?.getParent()?.navigate('Home' as never) }],
       );
     } catch (err) {
       Alert.alert('エラー', '保存に失敗しました');
@@ -204,7 +204,14 @@ export function QAPreviewScreen({ route, navigation }: Props) {
   }, [db, url, summary, editedQAs, selected, catConfig, navigation]);
 
   const handleCancel = useCallback(() => {
-    navigation.goBack();
+    Alert.alert(
+      '取り込み終了',
+      '取り込みを終了しますか？作成中のQ&Aは破棄されます。',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: 'OK', onPress: () => navigation.getParent()?.getParent()?.navigate('Home' as never) },
+      ],
+    );
   }, [navigation]);
 
   return (
