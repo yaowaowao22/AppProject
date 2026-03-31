@@ -314,7 +314,7 @@ describe('ActiveWorkoutScreen', () => {
   const mockGoBack = jest.fn();
   const mockStartSession = jest.fn();
   const mockAddSet = jest.fn();
-  const mockCompleteSession = jest.fn().mockResolvedValue([]);
+  const mockCompleteSession = jest.fn().mockResolvedValue(undefined);
   const mockDispatch = jest.fn();
   const mockGetParent = jest.fn(() => ({ navigate: mockNavigate }));
 
@@ -516,9 +516,11 @@ describe('ActiveWorkoutScreen', () => {
       params: { exerciseIds: ['chest_001'], existingWorkoutId: undefined, existingSession: undefined },
     } as any;
     const { getByLabelText } = render(<ActiveWorkoutScreen navigation={navigation} route={route} />);
-    fireEvent.press(getByLabelText('種目完了'));
-    // completeSession は非同期 - マイクロタスクをフラッシュして完了を待つ
-    await act(async () => { await Promise.resolve(); });
+    await act(async () => {
+      fireEvent.press(getByLabelText('種目完了'));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
     expect(mockCompleteSession).toHaveBeenCalled();
   });
 
@@ -535,8 +537,11 @@ describe('ActiveWorkoutScreen', () => {
       params: { exerciseIds: ['chest_001', 'back_001'], existingWorkoutId: undefined, existingSession: undefined },
     } as any;
     const { getByLabelText } = render(<ActiveWorkoutScreen navigation={navigation} route={route} />);
-    fireEvent.press(getByLabelText('次の種目へ'));
-    await act(async () => { await Promise.resolve(); });
+    await act(async () => {
+      fireEvent.press(getByLabelText('次の種目へ'));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
     expect(mockCompleteSession).toHaveBeenCalled();
   });
 });
