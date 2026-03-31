@@ -393,7 +393,7 @@ function makeStyles(c: TanrenThemeColors) {
 
   // ── 月間サマリーカード（2×2グリッド）────────────────────────────────────────
   summaryCard: {
-    backgroundColor: c.surface1,
+    backgroundColor: c.cardBackground,
     borderRadius: RADIUS.card,
     marginHorizontal: SPACING.contentMargin,
     overflow: 'hidden',
@@ -441,7 +441,7 @@ function makeStyles(c: TanrenThemeColors) {
 
   // ── 部位別ボリューム分布 ──────────────────────────────────────────────────
   bodyPartCard: {
-    backgroundColor: c.surface1,
+    backgroundColor: c.cardBackground,
     borderRadius: RADIUS.card,
     padding: SPACING.md,
     marginHorizontal: SPACING.contentMargin,
@@ -487,7 +487,7 @@ function makeStyles(c: TanrenThemeColors) {
 
   // ── 週別ボリュームバーチャート（ProgressScreen準拠）────────────────────────
   chartBox: {
-    backgroundColor: c.surface1,
+    backgroundColor: c.cardBackground,
     borderRadius: RADIUS.card,
     padding: SPACING.cardPadding,
     marginHorizontal: SPACING.contentMargin,
@@ -544,7 +544,7 @@ function makeStyles(c: TanrenThemeColors) {
 
   // ── 種目別ランキング TOP5 ─────────────────────────────────────────────────
   rankCard: {
-    backgroundColor: c.surface1,
+    backgroundColor: c.cardBackground,
     borderRadius: RADIUS.card,
     marginHorizontal: SPACING.contentMargin,
     overflow: 'hidden',
