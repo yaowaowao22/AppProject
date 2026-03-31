@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-03-31T21:16:07+09:00",
+  "overall": "FAIL",
+  "identity_id": "",
+  "access_key_prefix": "",
+  "lambda_response": {},
+  "error": "aws.ts にプレースホルダー値が残っています。AWSリソースを作成してから再実行してください。",
+  "steps": [
+    {
+      "step": "aws.ts 設定値チェック",
+      "status": "FAIL",
+      "detail": "未設定項目:\n  - COGNITO_IDENTITY_POOL_ID（プレースホルダーのまま）\n  - LAMBDA_FUNCTION_URL（プレースホルダーのまま）\n\nAWSリソースを先に作成してください:\n  bash lambda/setup-iam-role.sh\n  bash lambda/setup-cognito-pool.sh\n  bash lambda/deploy.sh create",
+      "elapsed_ms": 0.0
+    }
+  ]
+}
