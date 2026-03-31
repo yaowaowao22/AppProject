@@ -133,18 +133,10 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
     } else {
       setSidebarFilter({ kind: 'smart', id });
       if (id === 'recent') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (navigation as any).navigate('MainTabs', {
-          screen: 'LibraryTab',
-          params: { screen: 'Library', params: {} },
-        });
+        navigation.navigate('Library' as never);
       } else {
         // 'today' / 'overdue' は HomeScreen で表示
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (navigation as any).navigate('MainTabs', {
-          screen: 'HomeTab',
-          params: { screen: 'Home', params: {} },
-        });
+        navigation.navigate('Home' as never);
       }
     }
     navigation.closeDrawer();

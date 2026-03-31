@@ -26,13 +26,12 @@ export type DrawerParamList = {
   Review: NavigatorScreenParams<ReviewStackParamList>;
   Map: NavigatorScreenParams<MapStackParamList>;
   Journal: NavigatorScreenParams<JournalStackParamList>;
-  Settings: undefined;
+  Settings: NavigatorScreenParams<SettingsStackParamList>;
 };
 
 // ---- Home Stack ----
 export type HomeStackParamList = {
   Home: undefined;
-  Journal: undefined;
 };
 
 // ---- Library Stack ----
@@ -54,7 +53,12 @@ export type MapStackParamList = {
   ItemDetail: { itemId: number };
 };
 
-// ---- Journal Stack (将来用・非表示) ----
+// ---- Journal Stack ----
 export type JournalStackParamList = {
   Journal: undefined;
+};
+
+// ---- Settings Stack ----
+export type SettingsStackParamList = {
+  Settings: undefined;
 };
