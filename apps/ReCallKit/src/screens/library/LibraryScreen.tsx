@@ -33,6 +33,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { LibraryStackParamList } from '../../navigation/types';
 import type { ItemWithMeta } from '../../types';
 import { useDB } from '../../hooks/useDatabase';
+import { HeaderHamburger } from '../../components/HeaderHamburger';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'Library'>;
 
@@ -228,7 +229,7 @@ export function LibraryScreen({ navigation }: Props) {
       });
     } else {
       navigation.setOptions({
-        headerLeft: undefined,
+        headerLeft: () => <HeaderHamburger />,
         headerRight: () => (
           <Pressable onPress={() => setSelectionMode(true)} hitSlop={8}>
             <Text style={{ ...TypeScale.body, color: colors.accent }}>選択</Text>
@@ -322,13 +323,13 @@ export function LibraryScreen({ navigation }: Props) {
           {item.title}
         </Text>
 
-        {/* エクサープト */}
-        {item.excerpt ? (
+        {/* 答え / エクサープト */}
+        {(item.content || item.excerpt) ? (
           <Text
             style={[styles.cardExcerpt, { color: colors.labelSecondary }]}
             numberOfLines={2}
           >
-            {item.excerpt}
+            {item.content || item.excerpt}
           </Text>
         ) : null}
 
@@ -572,6 +573,7 @@ const styles = StyleSheet.create({
   // ---- フィルターチップ ----
   chipScroll: {
     flexGrow: 0,
+    flexShrink: 0,
     marginBottom: Spacing.xs,
   },
   chipScrollContent: {
