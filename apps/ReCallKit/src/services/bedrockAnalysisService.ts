@@ -88,7 +88,6 @@ export async function getTemporaryCredentials(): Promise<CachedCredentials> {
 
 export async function analyzeUrl(
   url: string,
-  text: string,
 ): Promise<AnalysisResult> {
   const credentials = await getTemporaryCredentials();
 
@@ -101,13 +100,13 @@ export async function analyzeUrl(
   });
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30_000);
+  const timeoutId = setTimeout(() => controller.abort(), 45_000);
 
   try {
     const response = await awsClient.fetch(LAMBDA_FUNCTION_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, text }),
+      body: JSON.stringify({ url }),
       signal: controller.signal,
     });
 

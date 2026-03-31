@@ -31,7 +31,9 @@ recall-kit-analyzer Lambda ハンドラー
 
 import json
 import logging
-import os
+import re
+import urllib.request
+import urllib.error
 import boto3
 from botocore.exceptions import ClientError
 
@@ -48,6 +50,54 @@ LONG_TEXT_HEAD = 2000
 LONG_TEXT_TAIL = 2000
 
 bedrock = boto3.client("bedrock-runtime", region_name=BEDROCK_REGION)
+
+FETCH_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
+}
+
+
+def fetch_and_extract(url: str) -> str:
+    """URLをサーバー側でフェッチしてテキストを抽出する。"""
+    req = urllib.request.Request(url, headers=FETCH_HEADERS)
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            html = resp.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"HTTP {e.code}") from e
+    except Exception as e:
+        raise RuntimeError(str(e)) from e
+
+    # script / style / noscript を除去
+    html = re.sub(r"<(script|style|noscript)[^>]*>[\s\S]*?</\1>", "", html, flags=re.IGNORECASE)
+
+    # article → main → p タグの順で抽出
+    for tag in ("article", "main"):
+        m = re.search(rf"<{tag}[^>]*>([\s\S]*?)</{tag}>", html, re.IGNORECASE)
+        if m:
+            text = re.sub(r"<[^>]+>", " ", m.group(1))
+            text = re.sub(r"\s+", " ", text).strip()
+            if len(text) > 100:
+                return text[:4000]
+
+    # <p> タグを全結合
+    paragraphs = re.findall(r"<p[^>]*>([\s\S]*?)</p>", html, re.IGNORECASE)
+    if paragraphs:
+        text = " ".join(re.sub(r"<[^>]+>", " ", p) for p in paragraphs)
+        text = re.sub(r"\s+", " ", text).strip()
+        if text:
+            return text[:4000]
+
+    # fallback: body 全体
+    m = re.search(r"<body[^>]*>([\s\S]*?)</body>", html, re.IGNORECASE)
+    raw = m.group(1) if m else html
+    text = re.sub(r"<[^>]+>", " ", raw)
+    return re.sub(r"\s+", " ", text).strip()[:4000]
 
 
 def truncate_text(text: str) -> str:
@@ -122,11 +172,28 @@ def lambda_handler(event, context):
     url = body.get("url", "")
     text = body.get("text", "")
 
+    # text が未提供の場合は Lambda 側でURLをフェッチしてテキストを抽出する
     if not text:
-        return {
-            "statusCode": 400,
-            "body": json.dumps({"error": "text フィールドが必要です"}, ensure_ascii=False),
-        }
+        if not url:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"error": "url フィールドが必要です"}, ensure_ascii=False),
+            }
+        try:
+            text = fetch_and_extract(url)
+        except RuntimeError as e:
+            logger.error("URLフェッチ失敗: %s - %s", url, e)
+            return {
+                "statusCode": 400,
+                "body": json.dumps(
+                    {"error": f"ページの読み込みに失敗しました: {e}"}, ensure_ascii=False
+                ),
+            }
+        if not text:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"error": "本文を抽出できませんでした"}, ensure_ascii=False),
+            }
 
     # テキスト切り詰め
     original_length = len(text)
