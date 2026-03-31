@@ -815,9 +815,9 @@ function ExerciseDetailView({
   }, [workouts, exerciseId]);
 
   const renderSetTable = (session: WorkoutSession) => (
-    <View style={{ paddingBottom: SPACING.sm, backgroundColor: colors.background }}>
+    <View style={{ paddingBottom: SPACING.sm, backgroundColor: colors.cardBackground }}>
       {/* ヘッダー行 */}
-      <View style={[S.setTableHeader, { backgroundColor: colors.surface2, paddingTop: 8, paddingBottom: 6 }]}>
+      <View style={[S.setTableHeader, { paddingTop: 8, paddingBottom: 6 }]}>
         <Text style={[S.setColNo, { fontSize: TYPOGRAPHY.captionSmall, fontWeight: TYPOGRAPHY.semiBold, color: colors.textTertiary }]}>
           SET
         </Text>
@@ -915,7 +915,7 @@ function ExerciseDetailView({
         }
         ItemSeparatorComponent={() => <View style={{ height: SPACING.sm }} />}
         renderItem={({ item }) => (
-          <View style={[S.sessionBlock, { backgroundColor: colors.surface1 }]}>
+          <View style={[S.sessionBlock, { backgroundColor: colors.cardBackground }]}>
             {/* セッションヘッダー */}
             <View style={[S.sessionHeader, { borderBottomWidth: 1, borderBottomColor: colors.separator }]}>
               <Text style={{ fontSize: TYPOGRAPHY.caption, fontWeight: TYPOGRAPHY.semiBold, color: colors.textSecondary }}>
