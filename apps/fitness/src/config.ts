@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
   TEMPLATES:       'tanren_templates',         // WorkoutTemplate[]
   WORKOUT_CONFIG:  'tanren_workout_config',    // WorkoutConfig（ユーザーカスタム設定）
   APP_SETTINGS:    'tanren_app_settings',      // AppSettings
+  LAUNCH_DATES:    'tanren_launch_dates',      // string[] (ISO date 'YYYY-MM-DD')
 } as const;
 
 // ── アニメーション ────────────────────────────────────────────────────────────
