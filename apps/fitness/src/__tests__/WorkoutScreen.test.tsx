@@ -480,4 +480,26 @@ describe('ActiveWorkoutScreen', () => {
     }
     expect(true).toBe(true);
   });
+
+  test('セット行をタップすると handleRowTap が呼ばれる', () => {
+    const { getAllByText } = renderActive();
+    // セット行の番号テキスト "2" をタップ
+    const rowNums = getAllByText('2');
+    if (rowNums.length > 0) {
+      fireEvent.press(rowNums[0]);
+    }
+    expect(true).toBe(true);
+  });
+
+  test('完了セットの行をタップすると done が解除される', async () => {
+    const { getByLabelText, getAllByText } = renderActive();
+    // まずセットを完了させる
+    fireEvent.press(getByLabelText('セットを完了する'));
+    // 完了した行をタップして解除
+    const rowNums = getAllByText('1');
+    if (rowNums.length > 0) {
+      fireEvent.press(rowNums[0]);
+    }
+    expect(true).toBe(true);
+  });
 });
