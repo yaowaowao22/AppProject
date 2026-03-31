@@ -1,6 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
+import { ReviewSelectScreen } from '../../screens/review/ReviewSelectScreen';
 import { ReviewScreen } from '../../screens/review/ReviewScreen';
 import { QuizScreen } from '../../screens/review/QuizScreen';
 import { makeNavigatorOptions, makeLargeTitleOptions } from '../sharedScreenOptions';
@@ -18,22 +19,33 @@ export function ReviewStack() {
         contentStyle: { backgroundColor: colors.backgroundGrouped },
       }}
     >
+      {/* 復習内容選択（ドロワータブのルート画面） */}
+      <Stack.Screen
+        name="ReviewSelect"
+        component={ReviewSelectScreen}
+        options={{
+          ...makeLargeTitleOptions(colors),
+          title: '復習',
+        }}
+      />
+      {/* 復習実行（モーダル: ハンバーガー非表示） */}
       <Stack.Screen
         name="Review"
         component={ReviewScreen}
         options={{
-          ...makeLargeTitleOptions(colors),
           title: '復習',
           presentation: 'fullScreenModal',
+          headerLeft: () => null,
         }}
       />
+      {/* クイズ実行（モーダル: ハンバーガー非表示） */}
       <Stack.Screen
         name="Quiz"
         component={QuizScreen}
         options={{
-          ...makeLargeTitleOptions(colors),
           title: 'クイズ',
           presentation: 'fullScreenModal',
+          headerLeft: () => null,
         }}
       />
     </Stack.Navigator>

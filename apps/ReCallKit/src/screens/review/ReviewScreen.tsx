@@ -29,9 +29,10 @@ import type { ReviewStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'Review'>;
 
-export function ReviewScreen({ navigation }: Props) {
+export function ReviewScreen({ navigation, route }: Props) {
   const { db, isReady } = useDatabase();
   const { colors } = useTheme();
+  const reviewIds = route.params?.reviewIds;
 
   const [items, setItems] = useState<ReviewableItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -44,21 +45,22 @@ export function ReviewScreen({ navigation }: Props) {
     (async () => {
       try {
         const due = await getDueItems(db);
-        setItems(due);
-        if (due.length === 0) setIsComplete(true);
+        // reviewIds 指定時は対象アイテムに絞り込む
+        const filtered = reviewIds && reviewIds.length > 0
+          ? due.filter((ri) => reviewIds.includes(ri.item.id))
+          : due;
+        setItems(filtered);
+        if (filtered.length === 0) setIsComplete(true);
       } finally {
         setLoading(false);
       }
     })();
   }, [db, isReady]);
 
-  // ヘッダーオプションをナビゲーションに反映
+  // ヘッダー: タイトル固定 + 閉じるボタン
   useEffect(() => {
     navigation.setOptions({
-      headerTitle:
-        !loading && !isComplete && items.length > 0
-          ? `${currentIndex + 1} / ${items.length}`
-          : '復習',
+      headerTitle: '復習',
       headerRight: () => (
         <Pressable
           onPress={() => navigation.goBack()}
@@ -70,7 +72,7 @@ export function ReviewScreen({ navigation }: Props) {
         </Pressable>
       ),
     });
-  }, [navigation, colors, currentIndex, items.length, isComplete, loading]);
+  }, [navigation, colors]);
 
   const currentItem = items[currentIndex];
 
@@ -144,17 +146,22 @@ export function ReviewScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* プログレスバー */}
-      <View style={[styles.progressTrack, { backgroundColor: colors.backgroundSecondary }]}>
-        <View
-          style={[
-            styles.progressFill,
-            {
-              backgroundColor: colors.accent,
-              width: `${progressRatio * 100}%`,
-            },
-          ]}
-        />
+      {/* プログレスセクション（バー + カウンター） */}
+      <View style={styles.progressSection}>
+        <View style={[styles.progressTrack, { backgroundColor: colors.backgroundSecondary }]}>
+          <View
+            style={[
+              styles.progressFill,
+              {
+                backgroundColor: colors.accent,
+                width: `${progressRatio * 100}%`,
+              },
+            ]}
+          />
+        </View>
+        <Text style={[styles.progressCount, { color: colors.labelSecondary }]}>
+          {currentIndex + 1} / {items.length}
+        </Text>
       </View>
 
       {/* カードエリア */}
@@ -191,17 +198,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // プログレスバー
-  progressTrack: {
-    height: 4,
+  // プログレスセクション
+  progressSection: {
     marginHorizontal: Spacing.m,
-    marginTop: Spacing.xs,
+    marginTop: Spacing.s,
+    gap: Spacing.xs,
+  },
+  progressTrack: {
+    height: 6,
     borderRadius: Radius.full,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     borderRadius: Radius.full,
+  },
+  progressCount: {
+    ...TypeScale.caption1,
+    textAlign: 'right',
   },
 
   // カードエリア
