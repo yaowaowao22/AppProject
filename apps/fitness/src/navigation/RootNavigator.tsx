@@ -34,17 +34,10 @@ export type HistoryStackParamList = {
   SessionEdit: { workoutId: string; exerciseId: string };
 };
 
-export type ProgressStackParamList = {
-  ProgressHome: undefined;
-  DayDetail:    { workoutId: string };
-  SessionEdit:  { workoutId: string; exerciseId: string };
-};
-
 export type RootDrawerParamList = {
   Home:          undefined;
   WorkoutStack:  undefined;
   HistoryStack:  undefined;
-  ProgressStack: undefined;
   MonthlyReport: undefined;
   RMCalculator:    undefined;
   TemplateManage:  undefined;
@@ -56,7 +49,6 @@ export type RootDrawerParamList = {
 const Drawer        = createDrawerNavigator<RootDrawerParamList>();
 const WorkoutStack  = createNativeStackNavigator<WorkoutStackParamList>();
 const HistoryStack  = createNativeStackNavigator<HistoryStackParamList>();
-const ProgressStack = createNativeStackNavigator<ProgressStackParamList>();
 
 // ── WorkoutStack ──────────────────────────────────────────────────────────────
 
@@ -104,24 +96,6 @@ function HistoryStackNavigator() {
   );
 }
 
-// ── ProgressStack ─────────────────────────────────────────────────────────────
-
-function ProgressStackNavigator() {
-  const { colors } = useTheme();
-  return (
-    <ProgressStack.Navigator
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.background },
-      }}
-    >
-      <ProgressStack.Screen name="ProgressHome" component={ProgressScreen} />
-      <ProgressStack.Screen name="DayDetail"    component={DayDetailScreen} />
-      <ProgressStack.Screen name="SessionEdit"  component={SessionEditScreen} />
-    </ProgressStack.Navigator>
-  );
-}
-
 // ── RootNavigator ─────────────────────────────────────────────────────────────
 
 export function RootNavigator() {
@@ -149,7 +123,6 @@ export function RootNavigator() {
         })}
       />
       <Drawer.Screen name="HistoryStack"  component={HistoryStackNavigator}   options={{ title: '履歴' }} />
-      <Drawer.Screen name="ProgressStack" component={ProgressStackNavigator}  options={{ title: '進捗' }} />
       <Drawer.Screen name="MonthlyReport" component={MonthlyReportScreen}     options={{ title: '月別レポート' }} />
       <Drawer.Screen name="RMCalculator"    component={RMCalculatorScreen}      options={{ title: 'RM計算機' }} />
       <Drawer.Screen name="TemplateManage" component={TemplateManageScreen}    options={{ title: 'テンプレート管理', headerShown: false }} />

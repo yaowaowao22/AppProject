@@ -28,7 +28,6 @@ const NAV_ITEMS: NavItem[] = [
   { routeName: 'Home',          label: 'ホーム',         icon: 'barbell-outline',     iconActive: 'barbell' },
   { routeName: 'WorkoutStack',  label: 'トレーニング',   icon: 'fitness-outline',     iconActive: 'fitness' },
   { routeName: 'HistoryStack',  label: '履歴',           icon: 'time-outline',        iconActive: 'time' },
-  { routeName: 'ProgressStack', label: '進捗',           icon: 'stats-chart-outline', iconActive: 'stats-chart' },
   { routeName: 'MonthlyReport', label: '月別レポート',   icon: 'calendar-outline',    iconActive: 'calendar' },
   { routeName: 'RMCalculator',  label: 'RM計算機',       icon: 'calculator-outline',       iconActive: 'calculator' },
   { routeName: 'TemplateManage', label: 'テンプレート', icon: 'document-text-outline',    iconActive: 'document-text' },
