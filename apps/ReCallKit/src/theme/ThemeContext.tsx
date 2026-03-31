@@ -27,12 +27,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const systemScheme = useColorScheme();
   const [themePreference, setThemePref] = useState<ThemePreference>('system');
 
-  // DB から保存済みテーマを読み込む
+  // DB から保存済みテーマを読み込む（失敗してもデフォルトテーマで継続）
   useEffect(() => {
     (async () => {
-      const db = await getDatabase();
-      const saved = await getSetting(db, 'theme');
-      setThemePref(saved as ThemePreference);
+      try {
+        const db = await getDatabase();
+        const saved = await getSetting(db, 'theme');
+        setThemePref(saved as ThemePreference);
+      } catch {
+        // Web で SharedArrayBuffer が利用不可など DB 初期化失敗時はデフォルト値を使用
+      }
     })();
   }, []);
 
