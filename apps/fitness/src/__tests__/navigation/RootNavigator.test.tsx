@@ -61,12 +61,14 @@ const mockDrawerNavigator = {
     listeners,
   }: {
     name: string;
-    component: unknown;
+    component: React.ComponentType<any>;
     options?: object;
     listeners?: unknown;
   }) => {
     mockDrawerScreens.push({ name, component, options, listeners });
-    return null;
+    // コンポーネントをレンダリングして、ネストされたナビゲーターを有効にする
+    const C = component;
+    return C ? <C /> : null;
   },
 };
 
@@ -111,22 +113,22 @@ beforeEach(() => {
   mockHistoryStackScreens.length = 0;
   mockDrawerNavigatorOptions = null;
   mockWorkoutStackNavigatorOptions = null;
-  nativeStackCallCount = 0;
+  mockNativeStackCallCount = 0;
 });
 
 // ── テスト ─────────────────────────────────────────────────────────────────────
 
 describe('型定義エクスポート', () => {
-  test('WorkoutStackParamList がエクスポートされている', async () => {
-    const mod = await import('../../navigation/RootNavigator');
+  test('WorkoutStackParamList がエクスポートされている', () => {
+    const mod = require('../../navigation/RootNavigator');
     // TypeScript 型なので存在チェックは undefined にならないことで確認
     expect(mod).toBeDefined();
     // エクスポート名が含まれることを確認（型はランタイムに残らないが、他エクスポートと共存確認）
     expect(typeof mod.RootNavigator).toBe('function');
   });
 
-  test('HistoryStackParamList・RootDrawerParamList のエクスポートファイルが正しく読み込まれる', async () => {
-    const mod = await import('../../navigation/RootNavigator');
+  test('HistoryStackParamList・RootDrawerParamList のエクスポートファイルが正しく読み込まれる', () => {
+    const mod = require('../../navigation/RootNavigator');
     expect(mod.RootNavigator).toBeDefined();
   });
 });

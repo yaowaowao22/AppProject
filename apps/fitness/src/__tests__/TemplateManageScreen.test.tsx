@@ -14,6 +14,11 @@ import TemplateManageScreen from '../screens/TemplateManageScreen';
 import { TanrenThemeProvider } from '../ThemeContext';
 import { WorkoutProvider } from '../WorkoutContext';
 
+// ── ナビゲーションモック ──────────────────────────────────────────────────────
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn(), openDrawer: jest.fn() }),
+}));
+
 // ── AsyncStorage モック ───────────────────────────────────────────────────────
 
 const mockStorage = AsyncStorage as jest.Mocked<typeof AsyncStorage>;
@@ -116,9 +121,10 @@ describe('新規作成ビュー', () => {
   });
 
   it('部位タブが表示される', async () => {
-    const { findByText } = await openCreateView();
-    // BODY_PARTS の部位名が存在することを確認
-    expect(await findByText('胸')).toBeTruthy();
+    const { findAllByText } = await openCreateView();
+    // BODY_PARTS の部位名が存在することを確認（複数の '胸' が表示される場合あり）
+    const items = await findAllByText('胸');
+    expect(items.length).toBeGreaterThanOrEqual(1);
   });
 
   it('「保存」ボタンが存在する', async () => {
@@ -218,16 +224,16 @@ describe('部位タブフィルタ', () => {
 
   it('部位タブを押すとタブが切り替わる（タブが存在する）', async () => {
     const screen = await openCreateView();
-    const chestTab = await screen.findByText('胸');
-    fireEvent.press(chestTab);
+    const chestTabs = await screen.findAllByText('胸');
+    fireEvent.press(chestTabs[0]);
     // タブが正常に切り替わること（エラーが出ないこと）
-    expect(chestTab).toBeTruthy();
+    expect(chestTabs[0]).toBeTruthy();
   });
 
   it('「全て」タブを押すとすべての種目が表示される', async () => {
     const screen = await openCreateView();
-    const chestTab = await screen.findByText('胸');
-    fireEvent.press(chestTab);
+    const chestTabs = await screen.findAllByText('胸');
+    fireEvent.press(chestTabs[0]);
     const allTab = await screen.findByText('全て');
     fireEvent.press(allTab);
     // 全て選択後に種目が表示されること

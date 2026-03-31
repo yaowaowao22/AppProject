@@ -1,15 +1,21 @@
 {
-  "timestamp": "2026-03-31T21:16:07+09:00",
+  "timestamp": "2026-03-31T21:52:09+09:00",
   "overall": "FAIL",
   "identity_id": "",
   "access_key_prefix": "",
   "lambda_response": {},
-  "error": "aws.ts にプレースホルダー値が残っています。AWSリソースを作成してから再実行してください。",
+  "error": "Cognito クレデンシャル取得に失敗しました。",
   "steps": [
     {
       "step": "aws.ts 設定値チェック",
+      "status": "PASS",
+      "detail": "COGNITO_IDENTITY_POOL_ID: ap-northeast-1:30376610-eefd-4443-b7eb-6cf0cfcdb1ab\nLAMBDA_FUNCTION_URL: https://zqw7yo7u7mp7ctxi3elwx4pmda0vorub.lambda-url.ap-northeast-1.on.aws/",
+      "elapsed_ms": 0.0
+    },
+    {
+      "step": "Cognito getCredentialsForIdentity",
       "status": "FAIL",
-      "detail": "未設定項目:\n  - COGNITO_IDENTITY_POOL_ID（プレースホルダーのまま）\n  - LAMBDA_FUNCTION_URL（プレースホルダーのまま）\n\nAWSリソースを先に作成してください:\n  bash lambda/setup-iam-role.sh\n  bash lambda/setup-cognito-pool.sh\n  bash lambda/deploy.sh create",
+      "detail": "InvalidIdentityPoolConfigurationException: Invalid identity pool configuration. Check assigned IAM roles for this pool.",
       "elapsed_ms": 0.0
     }
   ]

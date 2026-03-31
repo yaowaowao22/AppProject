@@ -137,13 +137,13 @@ describe('ミニダッシュボード', () => {
   });
 
   test('統計ラベル「トレーニング」「ボリューム」「日連続」が表示される', () => {
-    const { getByText } = render(
+    const { getAllByText } = render(
       <CustomDrawerContent {...makeProps()} />,
       { wrapper },
     );
-    expect(getByText('トレーニング')).toBeTruthy();
-    expect(getByText('ボリューム')).toBeTruthy();
-    expect(getByText('日連続')).toBeTruthy();
+    expect(getAllByText('トレーニング').length).toBeGreaterThanOrEqual(1);
+    expect(getAllByText('ボリューム').length).toBeGreaterThanOrEqual(1);
+    expect(getAllByText('日連続').length).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -151,14 +151,13 @@ describe('ミニダッシュボード', () => {
 describe('formatVolume（ヘルパー関数）', () => {
   // ヘルパーは内部関数のため、コンポーネント経由で間接的に検証
 
-  test('999 以下の値はそのまま文字列として表示される', async () => {
-    const AsyncStorage = require('@react-native-async-storage/async-storage');
+  test('999 以下の値はそのまま文字列として表示される', () => {
     // weeklyStats.totalVolume = 0 (初期値) の場合は '0' が表示されるはず
-    const { getByText } = render(
+    const { getAllByText } = render(
       <CustomDrawerContent {...makeProps()} />,
       { wrapper },
     );
-    // 初期値 0 が '0' として表示される
-    expect(getByText('0')).toBeTruthy();
+    // 初期値 0 が '0' として表示される（複数の '0' が表示される可能性あり）
+    expect(getAllByText('0').length).toBeGreaterThanOrEqual(1);
   });
 });

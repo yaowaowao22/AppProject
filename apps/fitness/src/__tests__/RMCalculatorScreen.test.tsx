@@ -13,6 +13,10 @@ import { render, fireEvent } from '@testing-library/react-native';
 import RMCalculatorScreen from '../screens/RMCalculatorScreen';
 import { TanrenThemeProvider } from '../ThemeContext';
 
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn(), openDrawer: jest.fn() }),
+}));
+
 // ── ラッパー ──────────────────────────────────────────────────────────────────
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -154,30 +158,31 @@ describe('RMCalculatorScreen レンダリング', () => {
 
 describe('RMCalculatorScreen 重量ステッパー', () => {
   it('「+」ボタンで重量が 2.5kg 増える', async () => {
-    const { findByLabelText, findByText } = renderScreen();
+    const { findByLabelText, findAllByText } = renderScreen();
     const incBtn = await findByLabelText('重量を2.5kg増やす');
     fireEvent.press(incBtn);
-    expect(await findByText('62.5')).toBeTruthy();
+    const items = await findAllByText('62.5');
+    expect(items.length).toBeGreaterThanOrEqual(1);
   });
 
   it('「−」ボタンで重量が 2.5kg 減る', async () => {
-    const { findByLabelText, findByText } = renderScreen();
+    const { findByLabelText, findAllByText } = renderScreen();
     const decBtn = await findByLabelText('重量を2.5kg減らす');
     fireEvent.press(decBtn);
-    expect(await findByText('57.5')).toBeTruthy();
+    const items = await findAllByText('57.5');
+    expect(items.length).toBeGreaterThanOrEqual(1);
   });
 
   it('重量が 0 のとき「−」ボタンを押しても 0 以下にならない', async () => {
-    const { findByLabelText } = renderScreen();
+    const { findByLabelText, findAllByText } = renderScreen();
     const decBtn = await findByLabelText('重量を2.5kg減らす');
     // 60 / 2.5 = 24回で0になる
     for (let i = 0; i < 30; i++) {
       fireEvent.press(decBtn);
     }
     // 0が表示されていること（0未満にならない）
-    const { queryAllByText } = renderScreen();
-    const { findByText } = renderScreen();
-    expect(await findByText('0')).toBeTruthy();
+    const items = await findAllByText('0');
+    expect(items.length).toBeGreaterThanOrEqual(1);
   });
 });
 

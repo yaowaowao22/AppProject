@@ -121,10 +121,11 @@ describe('ハンバーガーボタン', () => {
 // ── rightAction ────────────────────────────────────────────────────────────────
 describe('rightAction', () => {
   test('rightAction に ReactNode を渡すと表示される', () => {
+    const { Text: RNText } = require('react-native');
     const { getByText } = render(
       <ScreenHeader
         title="設定"
-        rightAction={<>完了</>}
+        rightAction={<RNText>完了</RNText>}
       />,
       { wrapper },
     );
