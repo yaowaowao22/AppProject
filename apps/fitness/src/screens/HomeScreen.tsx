@@ -55,8 +55,11 @@ function buildCalendarWeeks(year: number, month: number): Date[][] {
   const start = new Date(firstDay);
   start.setDate(firstDay.getDate() - daysToMonday);
 
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const weeksNeeded = Math.ceil((daysToMonday + daysInMonth) / 7);
+
   const weeks: Date[][] = [];
-  for (let w = 0; w < CALENDAR.WEEKS_TO_SHOW; w++) {
+  for (let w = 0; w < weeksNeeded; w++) {
     const week: Date[] = [];
     for (let d = 0; d < 7; d++) {
       const date = new Date(start);
