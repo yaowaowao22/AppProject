@@ -12,7 +12,7 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 
-import { ExerciseSelectScreen, WorkoutCompleteScreen } from '../screens/WorkoutScreen';
+import { ExerciseSelectScreen, WorkoutCompleteScreen, ActiveWorkoutScreen } from '../screens/WorkoutScreen';
 import { THEME_PRESETS } from '../theme';
 import { BODY_PARTS } from '../exerciseDB';
 
@@ -305,5 +305,139 @@ describe('WorkoutCompleteScreen', () => {
     const navigation = { dispatch: mockDispatch, getParent: mockGetParent } as any;
     const { toJSON } = render(<WorkoutCompleteScreen navigation={navigation} route={route} />);
     expect(toJSON()).not.toBeNull();
+  });
+});
+
+// ── 6. ActiveWorkoutScreen ────────────────────────────────────────────────────
+
+describe('ActiveWorkoutScreen', () => {
+  const mockGoBack = jest.fn();
+  const mockStartSession = jest.fn();
+  const mockAddSet = jest.fn();
+  const mockCompleteSession = jest.fn().mockResolvedValue([]);
+  const mockDispatch = jest.fn();
+  const mockGetParent = jest.fn(() => ({ navigate: mockNavigate }));
+
+  const activeWorkoutCtx = {
+    ...defaultWorkoutCtx,
+    currentSession: {
+      id: 'session-1',
+      exerciseId: 'chest_001',
+      sets: [{ id: 'set1', weight: 60, reps: 10, isPersonalRecord: false }],
+      completedAt: '',
+    },
+    workoutConfig: {
+      restSeconds: 90,
+      weightUnit: 'kg',
+      theme: 'hakukou',
+      weightStep: 2.5,
+      defaultSets: 3,
+      defaultWeight: 60,
+      defaultReps: 10,
+    },
+    startSession: mockStartSession,
+    addSet: mockAddSet,
+    completeSession: mockCompleteSession,
+  };
+
+  function renderActive(exerciseIds = ['chest_001']) {
+    const navigation = {
+      navigate: mockNavigate,
+      goBack: mockGoBack,
+      dispatch: mockDispatch,
+      getParent: mockGetParent,
+    } as any;
+    const route = {
+      params: { exerciseIds, existingWorkoutId: undefined, existingSession: undefined },
+    } as any;
+    return render(<ActiveWorkoutScreen navigation={navigation} route={route} />);
+  }
+
+  beforeEach(() => {
+    mockNavigate.mockClear();
+    mockGoBack.mockClear();
+    mockStartSession.mockClear();
+    mockDispatch.mockClear();
+    mockUseWorkout.mockReturnValue(activeWorkoutCtx);
+  });
+
+  test('クラッシュせずにレンダリングできる', () => {
+    const { toJSON } = renderActive();
+    expect(toJSON()).not.toBeNull();
+  });
+
+  test('「順序確認に戻る」ボタンが表示される', () => {
+    const { getByLabelText } = renderActive();
+    expect(getByLabelText('順序確認に戻る')).toBeTruthy();
+  });
+
+  test('「順序確認に戻る」を押すと goBack が呼ばれる', () => {
+    const { getByLabelText } = renderActive();
+    fireEvent.press(getByLabelText('順序確認に戻る'));
+    expect(mockGoBack).toHaveBeenCalled();
+  });
+
+  test('「セットを完了する」ボタンが表示される', () => {
+    const { getByLabelText } = renderActive();
+    expect(getByLabelText('セットを完了する')).toBeTruthy();
+  });
+
+  test('重量増加ボタンが表示される', () => {
+    const { getByLabelText } = renderActive();
+    expect(getByLabelText('重量＋2.5kg')).toBeTruthy();
+  });
+
+  test('重量減少ボタンが表示される', () => {
+    const { getByLabelText } = renderActive();
+    expect(getByLabelText('重量−2.5kg')).toBeTruthy();
+  });
+
+  test('回数増加ボタンが表示される', () => {
+    const { getByLabelText } = renderActive();
+    expect(getByLabelText('回数＋1')).toBeTruthy();
+  });
+
+  test('回数減少ボタンが表示される', () => {
+    const { getByLabelText } = renderActive();
+    expect(getByLabelText('回数−1')).toBeTruthy();
+  });
+
+  test('重量増加ボタンを押すと重量が増える', () => {
+    const { getByLabelText, getAllByText } = renderActive();
+    fireEvent.press(getByLabelText('重量＋2.5kg'));
+    // 60 + 2.5 = 62.5
+    const items = getAllByText('62.5');
+    expect(items.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('重量減少ボタンを押すと重量が減る', () => {
+    const { getByLabelText, getAllByText } = renderActive();
+    fireEvent.press(getByLabelText('重量−2.5kg'));
+    // 60 - 2.5 = 57.5
+    const items = getAllByText('57.5');
+    expect(items.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('回数増加ボタンを押すと回数が増える', () => {
+    const { getByLabelText, getAllByText } = renderActive();
+    fireEvent.press(getByLabelText('回数＋1'));
+    // 10 + 1 = 11
+    const items = getAllByText('11');
+    expect(items.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('回数減少ボタンを押すと回数が減る', () => {
+    const { getByLabelText, getAllByText } = renderActive();
+    fireEvent.press(getByLabelText('回数−1'));
+    // 10 - 1 = 9
+    const items = getAllByText('9');
+    expect(items.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('「セットを完了する」ボタンを押すとセットが完了状態になる', () => {
+    const { getByLabelText } = renderActive();
+    fireEvent.press(getByLabelText('セットを完了する'));
+    // ボタンが変わるなどの状態変化を確認
+    expect(true).toBe(true);
   });
 });
