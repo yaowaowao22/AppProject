@@ -61,9 +61,7 @@ describe('HomeScreen → WorkoutStack 遷移', () => {
 
   jest.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ navigate: mockNavigate }),
-    useFocusEffect: (cb: () => void) => {
-      React.useEffect(() => { cb(); }, []);
-    },
+    useFocusEffect: (cb: () => void) => { cb(); },
   }));
 
   jest.mock('../../WorkoutContext', () => ({
@@ -122,9 +120,7 @@ describe('HistoryScreen → DayDetail 遷移パラメータ', () => {
 
   jest.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ navigate: mockNavigate }),
-    useFocusEffect: (cb: () => void) => {
-      React.useEffect(() => { cb(); }, []);
-    },
+    useFocusEffect: (cb: () => void) => { cb(); },
   }));
 
   const workout = {

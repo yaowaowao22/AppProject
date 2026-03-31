@@ -83,7 +83,8 @@ jest.mock('@react-navigation/native', () => ({
 jest.mock('../navigation/RootNavigator', () => ({
   RootNavigator: () => {
     renderLog.push('RootNavigator');
-    return <Text>RootNavigator</Text>;
+    const { Text: RNText } = require('react-native');
+    return <RNText>RootNavigator</RNText>;
   },
 }));
 

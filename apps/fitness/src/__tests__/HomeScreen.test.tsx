@@ -21,10 +21,7 @@ const mockNavigate = jest.fn();
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: mockNavigate }),
-  useFocusEffect: (cb: () => void) => {
-    // フォーカス時のコールバックを即実行
-    React.useEffect(() => { cb(); }, []);
-  },
+  useFocusEffect: (cb: () => void) => { cb(); },
 }));
 
 jest.mock('react-native-safe-area-context', () => ({

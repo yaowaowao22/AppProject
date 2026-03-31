@@ -21,12 +21,7 @@ import { BODY_PARTS } from '../exerciseDB';
 const mockNavigate = jest.fn();
 
 jest.mock('@react-navigation/native', () => ({
-  useFocusEffect: (cb: () => () => void) => {
-    React.useEffect(() => {
-      const cleanup = cb();
-      return cleanup;
-    }, []);
-  },
+  useFocusEffect: (cb: () => () => void) => { cb(); },
 }));
 
 jest.mock('react-native-safe-area-context', () => ({
