@@ -16,7 +16,7 @@ import { useDatabase } from '../hooks/useDatabase';
 import { useSidebarFilter } from '../hooks/useSidebarFilter';
 
 // ============================================================
-// データ型
+// 型定義
 // ============================================================
 
 type SC = typeof SidebarColors.light | typeof SidebarColors.dark;
@@ -34,8 +34,48 @@ const MOCK_COLLECTIONS = [
   { id: 'col-books',   label: '読書メモ',             count: 6  },
 ] as const;
 
+// ---- Screen Navigation 定義 ----
+// タブバーを置き換えるプライマリナビゲーション（仕様 §2.3）
+const SCREEN_ITEMS = [
+  {
+    name: 'Home'    as const,
+    label: '今日',
+    iconOutline: 'calendar-outline'    as const,
+    iconFilled:  'calendar'            as const,
+    showBadge: true,  // todayCount を表示
+  },
+  {
+    name: 'Library' as const,
+    label: 'ライブラリ',
+    iconOutline: 'library-outline'     as const,
+    iconFilled:  'library'             as const,
+    showBadge: false,
+  },
+  {
+    name: 'Review'  as const,
+    label: '復習',
+    iconOutline: 'repeat-outline'      as const,
+    iconFilled:  'repeat'              as const,
+    showBadge: false,
+  },
+  {
+    name: 'Map'     as const,
+    label: 'マップ',
+    iconOutline: 'map-outline'         as const,
+    iconFilled:  'map'                 as const,
+    showBadge: false,
+  },
+  {
+    name: 'Journal' as const,
+    label: 'ジャーナル',
+    iconOutline: 'book-outline'        as const,
+    iconFilled:  'book'                as const,
+    showBadge: false,
+  },
+] as const;
+
 // ============================================================
-// DrawerContent
+// DrawerContent — "余白の沈黙" (DDP: Marginal Silence) 準拠
 // ============================================================
 
 export function DrawerContent({ navigation }: DrawerContentComponentProps) {
@@ -44,7 +84,7 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
   const insets = useSafeAreaInsets();
   const { db, isReady } = useDatabase();
 
-  // グローバルフィルター Context を使用
+  // グローバルフィルター Context
   const { sidebarFilter, setSidebarFilter, clearFilter } = useSidebarFilter();
 
   const [todayCount,   setTodayCount]   = useState(0);
@@ -56,7 +96,6 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
   const fetchData = useCallback(async () => {
     if (!db || !isReady) return;
     try {
-      // 今日の復習件数（next_review_at が今日）
       const todayRes = await db.getFirstAsync<{ count: number }>(
         `SELECT COUNT(*) as count
          FROM reviews r JOIN items i ON i.id = r.item_id
@@ -65,7 +104,6 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
       );
       setTodayCount(todayRes?.count ?? 0);
 
-      // 期限切れ件数（next_review_at が今日より前）
       const overdueRes = await db.getFirstAsync<{ count: number }>(
         `SELECT COUNT(*) as count
          FROM reviews r JOIN items i ON i.id = r.item_id
@@ -74,7 +112,6 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
       );
       setOverdueCount(overdueRes?.count ?? 0);
 
-      // タグ一覧 + 非アーカイブ紐付けアイテム数
       const tagRows = await db.getAllAsync<TagWithCount>(
         `SELECT t.id, t.name, COUNT(it.item_id) as count
          FROM tags t
@@ -85,14 +122,12 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
       );
       setTags(tagRows);
 
-      // 総カード数
       const totalRes = await db.getFirstAsync<{ count: number }>(
         `SELECT COUNT(*) as count FROM items WHERE archived = 0`
       );
       const total = totalRes?.count ?? 0;
       setTotalCards(total);
 
-      // マスター率（interval_days >= 7 = 安定した記憶）
       if (total > 0) {
         const masteredRes = await db.getFirstAsync<{ count: number }>(
           `SELECT COUNT(*) as count
@@ -106,85 +141,92 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
     }
   }, [db, isReady]);
 
-  // 初回ロード
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // ドロワーが開くたびに再取得
+  // ドロワーが開くたびに最新データを取得
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const unsubscribe = (navigation as any).addListener('drawerOpen', fetchData);
     return unsubscribe;
   }, [navigation, fetchData]);
 
-  // アクティブな項目 ID を sidebarFilter から導出
-  const activeId = (() => {
+  // ---- アクティブ画面名（ドロワー state から導出）----
+  const drawerState = navigation.getState();
+  const activeScreenName = drawerState?.routes[drawerState.index]?.name ?? 'Home';
+
+  // ---- フィルターアクティブ ID ----
+  const activeFilterId = (() => {
     if (!sidebarFilter) return null;
-    if (sidebarFilter.kind === 'smart') return sidebarFilter.id;
-    if (sidebarFilter.kind === 'tag')   return `tag-${sidebarFilter.tagId}`;
+    if (sidebarFilter.kind === 'smart')      return sidebarFilter.id;
+    if (sidebarFilter.kind === 'tag')        return `tag-${sidebarFilter.tagId}`;
     return sidebarFilter.collectionId;
   })();
 
+  // ---- Screen Navigation ハンドラ ----
+  function handleScreenNav(screenName: typeof SCREEN_ITEMS[number]['name']) {
+    // フィルターはリセットしない（画面遷移のみ）
+    navigation.navigate(screenName as never);
+    navigation.closeDrawer();
+  }
+
+  // ---- Smart Filter ハンドラ ----
   function handleSmartFilter(id: 'today' | 'overdue' | 'recent') {
-    if (activeId === id) {
-      // 同じアイテムを再タップ → フィルター解除（トグル）
+    if (activeFilterId === id) {
       clearFilter();
     } else {
       setSidebarFilter({ kind: 'smart', id });
       if (id === 'recent') {
         navigation.navigate('Library' as never);
       } else {
-        // 'today' / 'overdue' は HomeScreen で表示
         navigation.navigate('Home' as never);
       }
     }
     navigation.closeDrawer();
   }
 
+  // ---- Tag ハンドラ ----
   function handleTag(tag: TagWithCount) {
     const tagItemId = `tag-${tag.id}`;
-    if (activeId === tagItemId) {
-      // トグル解除
+    if (activeFilterId === tagItemId) {
       clearFilter();
     } else {
       setSidebarFilter({ kind: 'tag', tagId: tag.id, tagName: tag.name });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (navigation as any).navigate('MainTabs', {
-        screen: 'LibraryTab',
-        params: { screen: 'Library', params: {} },
-      });
+      navigation.navigate('Library' as never);
     }
     navigation.closeDrawer();
   }
 
+  // ---- Collection ハンドラ ----
   function handleCollection(col: typeof MOCK_COLLECTIONS[number]) {
-    if (activeId === col.id) {
-      // トグル解除
+    if (activeFilterId === col.id) {
       clearFilter();
     } else {
       setSidebarFilter({ kind: 'collection', collectionId: col.id, collectionName: col.label });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (navigation as any).navigate('MainTabs', {
-        screen: 'LibraryTab',
-        params: { screen: 'Library', params: {} },
-      });
+      navigation.navigate('Library' as never);
     }
     navigation.closeDrawer();
   }
 
-  const headerContentHeight = 64;
+  // ---- Settings ハンドラ ----
+  function handleSettings() {
+    navigation.navigate('Settings' as never);
+    navigation.closeDrawer();
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: sc.backgroundSolid }]}>
 
-      {/* ---- Header ---- */}
+      {/* ================================================================
+          HEADER — アプリ名 + 閉じるボタン
+          ================================================================ */}
       <View style={[
         styles.header,
         {
-          paddingTop: insets.top + 12, // safeArea + 上余白
+          paddingTop: insets.top + 12,
           paddingBottom: SidebarLayout.headerPaddingBottom,
-          height: insets.top + headerContentHeight,
+          height: insets.top + 64,
         },
       ]}>
         <Text
@@ -201,15 +243,13 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
           onPress={() => navigation.closeDrawer()}
           accessibilityLabel="サイドバーを閉じる"
         >
-          <Ionicons
-            name="close"
-            size={SidebarLayout.closeBtnIconSize}
-            color={sc.inactiveTint}
-          />
+          <Ionicons name="close" size={SidebarLayout.closeBtnIconSize} color={sc.inactiveTint} />
         </Pressable>
       </View>
 
-      {/* ---- Scrollable content ---- */}
+      {/* ================================================================
+          SCROLLABLE CONTENT
+          ================================================================ */}
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -217,12 +257,41 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
         bounces
       >
 
-        {/* Smart Filters セクション（最初: paddingTop 0） */}
+        {/* ---- Screen Navigation（ヘッダーなし：最上位、自明） ---- */}
+        {/* 仕様 §2.3: Screen Navigation セクションにはヘッダーを付けない */}
         <View style={styles.section}>
+          {SCREEN_ITEMS.map((item) => {
+            const isActive = activeScreenName === item.name;
+            const badgeCount = item.showBadge ? todayCount : 0;
+            return (
+              <NavItem
+                key={item.name}
+                isActive={isActive}
+                onPress={() => handleScreenNav(item.name)}
+                sc={sc}
+              >
+                <View style={styles.iconSlot}>
+                  <Ionicons
+                    name={isActive ? item.iconFilled : item.iconOutline}
+                    size={SidebarLayout.iconSize}
+                    color={isActive ? sc.activeTint : sc.inactiveTint}
+                  />
+                </View>
+                <ItemLabel label={item.label} isActive={isActive} sc={sc} />
+                {item.showBadge && badgeCount > 0 && (
+                  <CountBadge count={badgeCount} isActive={isActive} sc={sc} />
+                )}
+              </NavItem>
+            );
+          })}
+        </View>
+
+        {/* ---- Smart Filters（24pt gap） ---- */}
+        <View style={[styles.section, styles.sectionGap]}>
           <SectionHeading label="Smart Filters" color={sc.sectionHeader} />
 
           <NavItem
-            isActive={activeId === 'today'}
+            isActive={activeFilterId === 'today'}
             onPress={() => handleSmartFilter('today')}
             sc={sc}
           >
@@ -230,17 +299,17 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
               <Ionicons
                 name="calendar-outline"
                 size={SidebarLayout.iconSize}
-                color={activeId === 'today' ? sc.activeTint : sc.inactiveTint}
+                color={activeFilterId === 'today' ? sc.activeTint : sc.inactiveTint}
               />
             </View>
-            <ItemLabel label="今日の復習" isActive={activeId === 'today'} sc={sc} />
+            <ItemLabel label="今日の復習" isActive={activeFilterId === 'today'} sc={sc} />
             {todayCount > 0 && (
-              <CountBadge count={todayCount} isActive={activeId === 'today'} sc={sc} />
+              <CountBadge count={todayCount} isActive={activeFilterId === 'today'} sc={sc} />
             )}
           </NavItem>
 
           <NavItem
-            isActive={activeId === 'overdue'}
+            isActive={activeFilterId === 'overdue'}
             onPress={() => handleSmartFilter('overdue')}
             sc={sc}
           >
@@ -248,17 +317,17 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
               <Ionicons
                 name="time-outline"
                 size={SidebarLayout.iconSize}
-                color={activeId === 'overdue' ? sc.activeTint : sc.inactiveTint}
+                color={activeFilterId === 'overdue' ? sc.activeTint : sc.inactiveTint}
               />
             </View>
-            <ItemLabel label="期限切れ" isActive={activeId === 'overdue'} sc={sc} />
+            <ItemLabel label="期限切れ" isActive={activeFilterId === 'overdue'} sc={sc} />
             {overdueCount > 0 && (
-              <CountBadge count={overdueCount} isActive={activeId === 'overdue'} sc={sc} />
+              <CountBadge count={overdueCount} isActive={activeFilterId === 'overdue'} sc={sc} />
             )}
           </NavItem>
 
           <NavItem
-            isActive={activeId === 'recent'}
+            isActive={activeFilterId === 'recent'}
             onPress={() => handleSmartFilter('recent')}
             sc={sc}
           >
@@ -266,15 +335,14 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
               <Ionicons
                 name="add-circle-outline"
                 size={SidebarLayout.iconSize}
-                color={activeId === 'recent' ? sc.activeTint : sc.inactiveTint}
+                color={activeFilterId === 'recent' ? sc.activeTint : sc.inactiveTint}
               />
             </View>
-            <ItemLabel label="最近追加" isActive={activeId === 'recent'} sc={sc} />
-            {/* 最近追加: 件数表示なし */}
+            <ItemLabel label="最近追加" isActive={activeFilterId === 'recent'} sc={sc} />
           </NavItem>
         </View>
 
-        {/* Tags セクション（paddingTop: 24px） */}
+        {/* ---- Tags（24pt gap） ---- */}
         <View style={[styles.section, styles.sectionGap]}>
           <SectionHeading label="Tags" color={sc.sectionHeader} />
           {tags.map((tag) => {
@@ -282,28 +350,27 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
             return (
               <NavItem
                 key={tagId}
-                isActive={activeId === tagId}
+                isActive={activeFilterId === tagId}
                 onPress={() => handleTag(tag)}
                 sc={sc}
               >
                 <View style={styles.iconSlot}>
-                  <TagDot isActive={activeId === tagId} sc={sc} />
+                  <TagDot isActive={activeFilterId === tagId} sc={sc} />
                 </View>
-                <ItemLabel label={tag.name} isActive={activeId === tagId} sc={sc} />
-                <CountBadge count={tag.count} isActive={activeId === tagId} sc={sc} />
+                <ItemLabel label={tag.name} isActive={activeFilterId === tagId} sc={sc} />
+                <CountBadge count={tag.count} isActive={activeFilterId === tagId} sc={sc} />
               </NavItem>
             );
           })}
         </View>
 
-        {/* Collections セクション（paddingTop: 24px） */}
-        {/* TODO: collectionsテーブル追加後に実データへ切り替え */}
+        {/* ---- Collections（24pt gap） ---- */}
         <View style={[styles.section, styles.sectionGap]}>
           <SectionHeading label="Collections" color={sc.sectionHeader} />
           {MOCK_COLLECTIONS.map((col) => (
             <NavItem
               key={col.id}
-              isActive={activeId === col.id}
+              isActive={activeFilterId === col.id}
               onPress={() => handleCollection(col)}
               sc={sc}
             >
@@ -311,24 +378,52 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
                 <Ionicons
                   name="folder-outline"
                   size={SidebarLayout.iconSize}
-                  color={activeId === col.id ? sc.activeTint : sc.inactiveTint}
+                  color={activeFilterId === col.id ? sc.activeTint : sc.inactiveTint}
                 />
               </View>
-              <ItemLabel label={col.label} isActive={activeId === col.id} sc={sc} />
-              <CountBadge count={col.count} isActive={activeId === col.id} sc={sc} />
+              <ItemLabel label={col.label} isActive={activeFilterId === col.id} sc={sc} />
+              <CountBadge count={col.count} isActive={activeFilterId === col.id} sc={sc} />
             </NavItem>
           ))}
         </View>
 
-        {/* スクロール下部の余白 */}
+        {/* スクロール底部余白 */}
         <View style={styles.scrollBottom} />
       </ScrollView>
 
-      {/* ---- Footer: 知識の蓄積の控えめな可視化 ---- */}
-      <View style={[styles.footer, { borderTopColor: sc.separator }]}>
-        <Text style={[styles.footerText, { color: sc.textTertiary }]}>
-          {totalCards} cards · {masterRate}% mastered
-        </Text>
+      {/* ================================================================
+          FOOTER — 統計情報 + Settings リンク（仕様 §2.5）
+          ================================================================ */}
+      <View style={[styles.footer, { borderTopColor: sc.separator, paddingBottom: insets.bottom }]}>
+        {/* 統計行 */}
+        <View style={styles.footerStats}>
+          <Text style={[styles.footerStatsText, { color: sc.textTertiary }]}>
+            {totalCards} cards · {masterRate}% mastered
+          </Text>
+        </View>
+
+        {/* hairline separator */}
+        <View style={[styles.footerDivider, { backgroundColor: sc.separator }]} />
+
+        {/* Settings リンク */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.footerSettings,
+            pressed && { backgroundColor: sc.pressedBackground },
+          ]}
+          onPress={handleSettings}
+          accessibilityRole="menuitem"
+          accessibilityLabel="設定を開く"
+        >
+          <Ionicons
+            name="settings-outline"
+            size={SidebarLayout.iconSize}
+            color={sc.inactiveTint}
+          />
+          <Text style={[styles.footerSettingsLabel, { color: sc.inactiveTint }]}>
+            設定
+          </Text>
+        </Pressable>
       </View>
 
     </View>
@@ -420,7 +515,7 @@ function TagDot({ isActive, sc }: { isActive: boolean; sc: SC }) {
 }
 
 // ============================================================
-// Styles
+// Styles — 8pt グリッド厳守 / 骨格の不可視性
 // ============================================================
 
 const styles = StyleSheet.create({
@@ -462,7 +557,7 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   sectionGap: {
-    paddingTop: Spacing.l,
+    paddingTop: Spacing.l, // 24pt — 呼吸の切れ目
   },
   sectionHeading: {
     height: SidebarLayout.sectionHeaderHeight,
@@ -536,16 +631,34 @@ const styles = StyleSheet.create({
     borderWidth: SidebarLayout.tagDotBorderWidth,
   },
 
-  // --- Footer ---
+  // --- Footer（統計 + Settings）---
   footer: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  footerStats: {
     height: SidebarLayout.footerHeight,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: SidebarLayout.footerPaddingH,
-    borderTopWidth: StyleSheet.hairlineWidth,
   },
-  footerText: {
+  footerStatsText: {
     fontSize: 12,
+    fontWeight: '400',
+  },
+  footerDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginHorizontal: Spacing.m,
+  },
+  footerSettings: {
+    height: SidebarLayout.footerHeight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: SidebarLayout.itemPaddingLeft,
+    paddingRight: SidebarLayout.itemPaddingH,
+    gap: SidebarLayout.itemGap,
+  },
+  footerSettingsLabel: {
+    fontSize: 15,
     fontWeight: '400',
   },
 });
