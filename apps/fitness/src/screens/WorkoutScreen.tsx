@@ -542,28 +542,22 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader title="トレーニング" showHamburger />
-      {/* 種目情報行: 戻るボタン + 種目名 + セットバッジ */}
-      <View style={styles.exerciseInfoRow}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="順序確認に戻る"
-          style={{ marginRight: 4 }}
-        >
-          <Ionicons name="chevron-back" size={20} color={colors.accent} />
-        </TouchableOpacity>
-        <Text style={styles.exInfoName}>{exercise?.name ?? 'ワークアウト'}</Text>
+      {/* 種目情報行: 戻るボタン + 戻り先ラベル + 種目名・進捗 */}
+      <TouchableOpacity
+        style={styles.detailBackRow}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="順序確認に戻る"
+      >
+        <Ionicons name="chevron-back" size={20} color={colors.accent} />
+        <Text style={styles.detailBackText}>順序確認</Text>
         <View style={{ flex: 1 }} />
-        <View style={styles.setBadge}>
-          <Text style={styles.setBadgeText}>
-            {exerciseIds.length > 1
-              ? <Text><Text style={styles.setBadgeNum}>{currentIndex + 1}</Text>{`/${exerciseIds.length}`}</Text>
-              : <Text>{'セット '}<Text style={styles.setBadgeNum}>{allDone ? rows.length : activeIdx + 1}</Text></Text>
-            }
-          </Text>
-        </View>
-      </View>
+        <Text style={styles.detailBackInfo}>
+          {exercise?.name ?? 'ワークアウト'}
+          {exerciseIds.length > 1 ? `　${currentIndex + 1}/${exerciseIds.length}` : ''}
+        </Text>
+      </TouchableOpacity>
 
       {/* 数値コントロール（アクティブ行を反映・固定） */}
       <View style={styles.numCtrl}>
@@ -946,14 +940,18 @@ function makeStyles(c: TanrenThemeColors) {
     fontWeight: TYPOGRAPHY.semiBold,
     color: c.accent,
   },
+  detailBackInfo: {
+    fontSize: TYPOGRAPHY.caption,
+    fontWeight: TYPOGRAPHY.semiBold,
+    color: c.textTertiary,
+  },
 
   // ── アクティブワークアウト ────────────────────────────────────────────────────
   exerciseInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: c.surface1,
+    paddingHorizontal: SPACING.contentMargin,
+    paddingVertical: SPACING.sm,
     gap: SPACING.xs,
   },
   exInfoIcon: {
