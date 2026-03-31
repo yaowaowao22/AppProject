@@ -4,8 +4,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { LightColors, DarkColors } from '../../theme/colors';
 import { SettingsScreen } from '../../screens/settings/SettingsScreen';
 import { HeaderHamburger } from '../../components/HeaderHamburger';
+import type { SettingsStackParamList } from '../types';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<SettingsStackParamList>();
 
 export function SettingsStack() {
   const scheme = useColorScheme();

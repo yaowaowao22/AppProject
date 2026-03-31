@@ -3,7 +3,6 @@ import { useColorScheme } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { LightColors, DarkColors } from '../../theme/colors';
 import { HomeScreen } from '../../screens/home/HomeScreen';
-import { JournalScreen } from '../../screens/journal/JournalScreen';
 import { HeaderHamburger } from '../../components/HeaderHamburger';
 import type { HomeStackParamList } from '../types';
 
@@ -36,15 +35,6 @@ export function HomeStack() {
             fontWeight: '700',
           },
           headerLeft: () => <HeaderHamburger />,
-        }}
-      />
-      <Stack.Screen
-        name="Journal"
-        component={JournalScreen}
-        options={{
-          title: '学びジャーナル',
-          headerLargeTitle: true,
-          headerLargeTitleStyle: { color: colors.label },
         }}
       />
     </Stack.Navigator>

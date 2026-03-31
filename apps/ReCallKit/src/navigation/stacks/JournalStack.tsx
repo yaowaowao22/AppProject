@@ -3,6 +3,7 @@ import { useColorScheme } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { LightColors, DarkColors } from '../../theme/colors';
 import { JournalScreen } from '../../screens/journal/JournalScreen';
+import { HeaderHamburger } from '../../components/HeaderHamburger';
 import type { JournalStackParamList } from '../types';
 
 const Stack = createNativeStackNavigator<JournalStackParamList>();
@@ -28,7 +29,12 @@ export function JournalStack() {
         options={{
           title: 'ジャーナル',
           headerLargeTitle: true,
-          headerLargeTitleStyle: { color: colors.label },
+          headerLargeTitleStyle: {
+            color: colors.label,
+            fontSize: 34,
+            fontWeight: '700',
+          },
+          headerLeft: () => <HeaderHamburger />,
         }}
       />
     </Stack.Navigator>
