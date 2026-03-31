@@ -20,8 +20,25 @@ config.resolver.nodeModulesPaths = [
 // expo-sqlite Web: .wasm ファイルをアセットとして解決する
 config.resolver.assetExts = [...(config.resolver.assetExts ?? []), 'wasm'];
 
-// @babel/runtime 7.29+ の exports フィールドが Metro と非互換のため無効化
-config.resolver.unstable_enablePackageExports = false;
+// apps/ReCallKit/node_modules/ は Metro の HasteFS にインデックスされないため、
+// ローカル npm install された @babel/runtime (7.29.x) の helpers が
+// fileSystemLookup で "does not exist" と判定されバンドルが失敗する。
+// resolveRequest で @babel/runtime を pnpm 管理のルート版 (7.28.x) に強制リダイレクト。
+const rootNodeModules = path.resolve(monorepoRoot, 'node_modules');
+const originalResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === '@babel/runtime' || moduleName.startsWith('@babel/runtime/')) {
+    const redirected = moduleName.replace(
+      '@babel/runtime',
+      path.join(rootNodeModules, '@babel/runtime'),
+    );
+    return context.resolveRequest(context, redirected, platform);
+  }
+  if (originalResolveRequest) {
+    return originalResolveRequest(context, moduleName, platform);
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
 
 // Web向け: SharedArrayBuffer を使用する場合に必要な COOP/COEP ヘッダー
 config.server = {
