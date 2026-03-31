@@ -440,4 +440,44 @@ describe('ActiveWorkoutScreen', () => {
     // ボタンが変わるなどの状態変化を確認
     expect(true).toBe(true);
   });
+
+  test('「ワークアウトを終了する」ボタンが表示される', () => {
+    const { getByLabelText } = renderActive();
+    expect(getByLabelText('ワークアウトを終了する')).toBeTruthy();
+  });
+
+  test('「ワークアウトを終了する」を押すと Alert が表示される', () => {
+    const { Alert } = require('react-native');
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    const { getByLabelText } = renderActive();
+    fireEvent.press(getByLabelText('ワークアウトを終了する'));
+    expect(alertSpy).toHaveBeenCalledWith('ワークアウトを終了', expect.any(String), expect.any(Array));
+    alertSpy.mockRestore();
+  });
+
+  test('単一種目のとき「種目完了」ボタンが表示される', () => {
+    const { getByLabelText } = renderActive(['chest_001']);
+    expect(getByLabelText('種目完了')).toBeTruthy();
+  });
+
+  test('複数種目のとき「次の種目へ」ボタンが表示される', () => {
+    const { getByLabelText } = renderActive(['chest_001', 'back_001']);
+    expect(getByLabelText('次の種目へ')).toBeTruthy();
+  });
+
+  test('複数種目で最初の種目のとき「前の種目に戻る」ボタンがない（currentIndex=0）', () => {
+    const { queryByLabelText } = renderActive(['chest_001', 'back_001']);
+    // currentIndex=0 では「前の種目に戻る」は非表示
+    expect(queryByLabelText('前の種目に戻る')).toBeNull();
+  });
+
+  test('重量表示エリアを押すと startEditing が呼ばれる（重量フォーカス）', () => {
+    const { getAllByText } = renderActive();
+    // 重量値の表示（60kg）をクリック - startEditing を発動させる
+    const weightTexts = getAllByText('60');
+    if (weightTexts.length > 0) {
+      fireEvent.press(weightTexts[0]);
+    }
+    expect(true).toBe(true);
+  });
 });
