@@ -5,8 +5,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { LightColors, DarkColors } from '../theme/colors';
 import { HomeStack } from './stacks/HomeStack';
 import { LibraryStack } from './stacks/LibraryStack';
+import { ReviewStack } from './stacks/ReviewStack';
 import { MapStack } from './stacks/MapStack';
-import { JournalStack } from './stacks/JournalStack';
+import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import type { MainTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -54,6 +55,16 @@ export function MainTabs() {
         }}
       />
       <Tab.Screen
+        name="ReviewTab"
+        component={ReviewStack}
+        options={{
+          tabBarLabel: '復習',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="repeat-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
         name="MapTab"
         component={MapStack}
         options={{
@@ -64,12 +75,12 @@ export function MainTabs() {
         }}
       />
       <Tab.Screen
-        name="JournalTab"
-        component={JournalStack}
+        name="SettingsTab"
+        component={SettingsScreen}
         options={{
-          tabBarLabel: 'ジャーナル',
+          tabBarLabel: '設定',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="journal-outline" size={size} color={color} />
+            <Ionicons name="settings-outline" size={size} color={color} />
           ),
         }}
       />

@@ -2,13 +2,13 @@
 // ReCallKit ナビゲーション型定義
 // 構造:
 //   Root (NativeStack)
-//   └── DrawerNavigator
-//       ├── MainTabs (BottomTabs)
-//       │   ├── HomeTab     → HomeStack
-//       │   ├── LibraryTab  → LibraryStack
-//       │   ├── MapTab      → MapStack
-//       │   └── JournalTab  → JournalStack
-//       └── Settings        → SettingsScreen
+//   └── DrawerNavigator (サイドバーラッパー)
+//       └── MainTabs (BottomTabs)
+//           ├── HomeTab     → HomeStack
+//           ├── LibraryTab  → LibraryStack
+//           ├── ReviewTab   → ReviewStack
+//           ├── MapTab      → MapStack
+//           └── SettingsTab → SettingsScreen
 // ============================================================
 
 import type { NavigatorScreenParams } from '@react-navigation/native';
@@ -22,22 +22,20 @@ export type RootStackParamList = {
 // ---- Drawer ----
 export type DrawerParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList>;
-  Settings: undefined;
 };
 
 // ---- Bottom Tabs ----
 export type MainTabParamList = {
   HomeTab: NavigatorScreenParams<HomeStackParamList>;
   LibraryTab: NavigatorScreenParams<LibraryStackParamList>;
+  ReviewTab: NavigatorScreenParams<ReviewStackParamList>;
   MapTab: NavigatorScreenParams<MapStackParamList>;
-  JournalTab: NavigatorScreenParams<JournalStackParamList>;
+  SettingsTab: undefined;
 };
 
 // ---- Home Stack ----
 export type HomeStackParamList = {
   Home: undefined;
-  Review: { reviewIds?: number[] };
-  Quiz: { itemId: number };
 };
 
 // ---- Library Stack ----
@@ -47,13 +45,19 @@ export type LibraryStackParamList = {
   AddItem: { clipboardText?: string };
 };
 
+// ---- Review Stack ----
+export type ReviewStackParamList = {
+  Review: { reviewIds?: number[] };
+  Quiz: { itemId: number };
+};
+
 // ---- Map Stack ----
 export type MapStackParamList = {
   KnowledgeMap: undefined;
   ItemDetail: { itemId: number };
 };
 
-// ---- Journal Stack ----
+// ---- Journal Stack (将来用・非表示) ----
 export type JournalStackParamList = {
   Journal: undefined;
 };

@@ -2,12 +2,13 @@ import React from 'react';
 import { useColorScheme } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { LightColors, DarkColors } from '../../theme/colors';
-import { HomeScreen } from '../../screens/home/HomeScreen';
-import type { HomeStackParamList } from '../types';
+import { ReviewScreen } from '../../screens/review/ReviewScreen';
+import { QuizScreen } from '../../screens/review/QuizScreen';
+import type { ReviewStackParamList } from '../types';
 
-const Stack = createNativeStackNavigator<HomeStackParamList>();
+const Stack = createNativeStackNavigator<ReviewStackParamList>();
 
-export function HomeStack() {
+export function ReviewStack() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const colors = isDark ? DarkColors : LightColors;
@@ -23,12 +24,21 @@ export function HomeStack() {
       }}
     >
       <Stack.Screen
-        name="Home"
-        component={HomeScreen}
+        name="Review"
+        component={ReviewScreen}
         options={{
-          title: '今日',
-          headerLargeTitle: true,
-          headerLargeTitleStyle: { color: colors.label },
+          title: '復習',
+          presentation: 'fullScreenModal',
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="Quiz"
+        component={QuizScreen}
+        options={{
+          title: 'クイズ',
+          presentation: 'fullScreenModal',
+          headerShown: false,
         }}
       />
     </Stack.Navigator>
