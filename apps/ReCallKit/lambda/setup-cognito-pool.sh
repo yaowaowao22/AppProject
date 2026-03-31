@@ -21,7 +21,7 @@ POOL_JSON=$(aws cognito-identity create-identity-pool \
 echo "作成完了:"
 echo "${POOL_JSON}"
 
-IDENTITY_POOL_ID=$(echo "${POOL_JSON}" | python3 -c "import sys, json; print(json.load(sys.stdin)['IdentityPoolId'])")
+IDENTITY_POOL_ID=$(echo "${POOL_JSON}" | python -c "import sys, json; print(json.load(sys.stdin)['IdentityPoolId'])")
 echo ""
 echo "Identity Pool ID: ${IDENTITY_POOL_ID}"
 
@@ -38,7 +38,7 @@ echo "ロール紐付け完了: ${UNAUTH_ROLE_ARN}"
 # .aws-account-info.json に Identity Pool ID を追記
 echo ""
 echo "=== ${INFO_FILE} を更新 ==="
-python3 - <<EOF
+python - <<EOF
 import json
 
 with open("${INFO_FILE}", "r") as f:

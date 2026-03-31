@@ -38,7 +38,7 @@ echo "  アタッチ完了"
 
 # 3. .aws-account-info.json にロールARNを追記
 echo "[3/3] .aws-account-info.json を更新中..."
-python3 - <<PYEOF
+python - <<PYEOF
 import json
 
 with open("$INFO_FILE", "r") as f:

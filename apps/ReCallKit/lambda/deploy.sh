@@ -155,7 +155,7 @@ save_function_url() {
 
   # .aws-account-info.json に FunctionUrl を保存
   if [[ -f "${INFO_FILE}" ]]; then
-    python3 - <<PYEOF
+    python - <<PYEOF
 import json
 
 with open("${INFO_FILE}", "r") as f:
