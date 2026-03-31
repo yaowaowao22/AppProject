@@ -17,15 +17,6 @@ import { useWorkout } from '../WorkoutContext';
 
 // ── ヘルパー ──────────────────────────────────────────────────────────────────
 
-function getWeekStart(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  const dow = d.getDay();
-  const diff = dow === 0 ? -6 : 1 - dow; // 月曜始まり
-  d.setDate(d.getDate() + diff);
-  return d;
-}
-
 function toDateStr(d: Date): string {
   return d.toISOString().split('T')[0];
 }
@@ -101,58 +92,26 @@ export default function MonthlyReportScreen() {
     }));
   }, [monthWorkouts]);
 
-  // ── 週別ボリューム（選択月内の各週）────────────────────────────────────────
-  const weeklyData = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const currentWkStart = toDateStr(getWeekStart(today));
-
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    lastDay.setHours(23, 59, 59, 999);
-
-    const weeks: {
-      start: Date;
-      end: Date;
-      label: string;
-      volume: number;
-      isCurrent: boolean;
-    }[] = [];
-
-    let cursor = getWeekStart(firstDay);
-    let wNum = 1;
-    while (cursor <= lastDay) {
-      const end = new Date(cursor);
-      end.setDate(cursor.getDate() + 6);
-      end.setHours(23, 59, 59, 999);
-      weeks.push({
-        start: new Date(cursor),
-        end: new Date(end),
-        label: `${wNum}W`,
-        volume: 0,
-        isCurrent: toDateStr(cursor) === currentWkStart,
-      });
-      cursor = new Date(cursor);
-      cursor.setDate(cursor.getDate() + 7);
-      wNum++;
-    }
-
-    for (const daily of monthWorkouts) {
-      const d = new Date(daily.date + 'T12:00:00');
-      for (const week of weeks) {
-        if (d >= week.start && d <= week.end) {
-          week.volume += daily.totalVolume;
-          break;
-        }
-      }
-    }
-
-    return weeks;
+  // ── 日別ボリューム（選択月の各日）────────────────────────────────────────
+  const dailyData = useMemo(() => {
+    const todayStr = toDateStr(new Date());
+    const lastDayNum = new Date(year, month + 1, 0).getDate();
+    return Array.from({ length: lastDayNum }, (_, i) => {
+      const d = i + 1;
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const daily = monthWorkouts.find(w => w.date === dateStr);
+      return {
+        dateStr,
+        label: `${month + 1}/${d}`,
+        volume: daily?.totalVolume ?? 0,
+        isToday: dateStr === todayStr,
+      };
+    });
   }, [monthWorkouts, year, month]);
 
-  const maxWeeklyVol = useMemo(
-    () => Math.max(...weeklyData.map(w => w.volume), 1),
-    [weeklyData],
+  const maxDailyVol = useMemo(
+    () => Math.max(...dailyData.map(d => d.volume), 1),
+    [dailyData],
   );
 
   // ── 種目別ランキング TOP5 ─────────────────────────────────────────────────
@@ -294,41 +253,44 @@ export default function MonthlyReportScreen() {
             ))}
           </View>
 
-          {/* ── 週別ボリューム推移 ── */}
-          {/* アクセント箇所2: 当週バー accent */}
-          <Text style={styles.sectionLabel}>週別推移</Text>
+          {/* ── 日別ボリューム推移 ── */}
+          {/* アクセント箇所2: 当日バー accent */}
+          <Text style={styles.sectionLabel}>日別推移</Text>
           <View style={styles.chartBox}>
-            <Text style={styles.chartTitle}>{monthLabel}の週別ボリューム</Text>
+            <Text style={styles.chartTitle}>{monthLabel}の日別ボリューム</Text>
             <View style={styles.chartBars}>
-              {weeklyData.map((week, idx) => {
-                const ratio = week.volume / maxWeeklyVol;
-                const barH = Math.max(ratio * 72, week.volume > 0 ? 4 : 0);
+              {dailyData.map((day, idx) => {
+                const ratio = day.volume / maxDailyVol;
+                const barH = Math.max(ratio * 72, day.volume > 0 ? 4 : 0);
+                const showLabel = idx === 0 || (idx + 1) % 7 === 0 || idx === dailyData.length - 1;
                 return (
                   <View key={idx} style={styles.barCol}>
-                    {week.volume > 0 && (
+                    {day.volume > 0 && (showLabel || day.isToday) && (
                       <Text
                         style={[
                           styles.barTopVal,
-                          week.isCurrent && styles.barTopValCurrent,
+                          day.isToday && styles.barTopValCurrent,
                         ]}
+                        numberOfLines={1}
                       >
-                        {fmtVol(week.volume)}
+                        {fmtVol(day.volume)}
                       </Text>
                     )}
                     <View
                       style={[
                         styles.weekBarFill,
                         { height: barH },
-                        week.isCurrent ? styles.weekBarCurrent : styles.weekBarDefault,
+                        day.isToday ? styles.weekBarCurrent : styles.weekBarDefault,
                       ]}
                     />
                     <Text
                       style={[
                         styles.barLabel,
-                        week.isCurrent && styles.barLabelCurrent,
+                        day.isToday && styles.barLabelCurrent,
                       ]}
+                      numberOfLines={1}
                     >
-                      {week.label}
+                      {showLabel ? day.label : ''}
                     </Text>
                   </View>
                 );
@@ -540,7 +502,7 @@ function makeStyles(c: TanrenThemeColors) {
     flexDirection: 'row',
     alignItems: 'flex-end',
     height: 96,
-    gap: 5,
+    gap: 2,
   },
   barCol: {
     flex: 1,

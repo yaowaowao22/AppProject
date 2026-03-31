@@ -1,0 +1,1936 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ReCallKit — iOS UI Mock</title>
+<!--
+  ============================================================
+  ReCallKit iOS UI Mock
+  Design Concept: "静かに積み上がる知識"
+  MA (間) dominant — whitespace-first, content-first, minimal chrome
+  Recall Amber accent on neutral canvas
+  ============================================================
+-->
+<style>
+/* ============================================================
+   CSS VARIABLES & THEME
+   ============================================================ */
+:root {
+  /* Light Mode (default) */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F2F2F7;
+  --bg-grouped: #F2F2F7;
+  --bg-card: #FFFFFF;
+  --text-primary: #000000;
+  --text-secondary: rgba(60,60,67,0.6);
+  --text-tertiary: rgba(60,60,67,0.3);
+  --separator: rgba(60,60,67,0.12);
+  --accent: #C47F17;
+  --accent-light: rgba(196,127,23,0.12);
+  --system-green: #30D158;
+  --system-red: #FF3B30;
+  --system-orange: #FF9F0A;
+  --system-blue: #0A84FF;
+  --system-purple: #BF5AF2;
+  --system-pink: #FF375F;
+  --system-gray5: rgba(142,142,147,0.12);
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --card-border: none;
+  --tab-bg: rgba(249,249,249,0.94);
+  --tab-border: rgba(60,60,67,0.12);
+  --nav-bg: rgba(249,249,249,0.94);
+  --search-bg: rgba(142,142,147,0.12);
+  --switch-bg: #E9E9EA;
+  --again-bg: rgba(255,59,48,0.15);
+  --hard-bg: rgba(255,159,10,0.15);
+  --good-bg: rgba(48,209,88,0.15);
+  --easy-bg: rgba(10,132,255,0.15);
+}
+
+[data-theme="dark"] {
+  --bg-primary: #000000;
+  --bg-secondary: #1C1C1E;
+  --bg-grouped: #000000;
+  --bg-card: #1C1C1E;
+  --text-primary: #FFFFFF;
+  --text-secondary: rgba(235,235,245,0.6);
+  --text-tertiary: rgba(235,235,245,0.3);
+  --separator: rgba(84,84,88,0.65);
+  --accent: #F5A623;
+  --accent-light: rgba(245,166,35,0.15);
+  --system-green: #30D158;
+  --system-red: #FF453A;
+  --system-orange: #FF9F0A;
+  --system-blue: #0A84FF;
+  --system-purple: #BF5AF2;
+  --system-pink: #FF375F;
+  --system-gray5: rgba(142,142,147,0.24);
+  --card-shadow: none;
+  --card-border: 1px solid rgba(84,84,88,0.35);
+  --tab-bg: rgba(30,30,30,0.94);
+  --tab-border: rgba(84,84,88,0.65);
+  --nav-bg: rgba(30,30,30,0.94);
+  --search-bg: rgba(118,118,128,0.24);
+  --switch-bg: #39393D;
+  --again-bg: rgba(255,69,58,0.2);
+  --hard-bg: rgba(255,159,10,0.2);
+  --good-bg: rgba(48,209,88,0.2);
+  --easy-bg: rgba(10,132,255,0.2);
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+  background: #1a1a1a;
+  font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', 'Hiragino Kaku Gothic ProN', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* ============================================================
+   DEVICE FRAME
+   ============================================================ */
+.device-frame {
+  position: relative;
+  width: 390px;
+  height: 844px;
+  margin: 20px auto;
+  background: var(--bg-primary);
+  border-radius: 47px;
+  overflow: hidden;
+  box-shadow: 0 0 0 3px #1a1a1a, 0 0 0 6px #333, 0 25px 60px rgba(0,0,0,0.5);
+  transition: background-color 0.3s ease;
+}
+
+/* Dynamic Island */
+.dynamic-island {
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 126px;
+  height: 37px;
+  background: #000;
+  border-radius: 20px;
+  z-index: 1000;
+}
+
+/* Status Bar */
+.status-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 54px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 28px 4px;
+  z-index: 999;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  pointer-events: none;
+}
+.status-bar .time { font-weight: 700; font-size: 16px; }
+.status-bar .icons { display: flex; gap: 5px; align-items: center; font-size: 13px; }
+
+/* ============================================================
+   NAVIGATION BAR
+   ============================================================ */
+.nav-bar {
+  position: absolute;
+  top: 54px;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 8px 16px 12px;
+  background: var(--nav-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: background-color 0.3s ease;
+}
+.nav-bar .nav-title {
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.4px;
+  line-height: 1.1;
+  transition: color 0.3s ease;
+}
+.nav-bar .nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.nav-bar .nav-icon {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  font-size: 22px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+.nav-bar .nav-icon:active { background: var(--system-gray5); }
+
+/* ============================================================
+   SCREEN CONTENT AREA
+   ============================================================ */
+.screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding-top: 110px;
+  padding-bottom: 83px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  background: var(--bg-primary);
+}
+.screen.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.screen.no-tab-padding { padding-bottom: 0; }
+
+.screen-inner {
+  padding: 0 16px 24px;
+}
+
+/* ============================================================
+   TAB BAR
+   ============================================================ */
+.tab-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 83px;
+  background: var(--tab-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 0.5px solid var(--tab-border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-around;
+  padding-top: 6px;
+  z-index: 200;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+.tab-bar.hidden { transform: translateY(100%); }
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  padding: 4px 0;
+  min-width: 60px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.tab-item .tab-icon {
+  font-size: 22px;
+  line-height: 1;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+.tab-item .tab-label {
+  font-size: 10px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.tab-item .tab-icon, .tab-item .tab-label { color: var(--text-tertiary); }
+.tab-item.active .tab-icon, .tab-item.active .tab-label { color: var(--accent); }
+
+/* Home indicator */
+.home-indicator {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 134px;
+  height: 5px;
+  background: var(--text-primary);
+  border-radius: 3px;
+  opacity: 0.2;
+  z-index: 1001;
+}
+
+/* ============================================================
+   COMMON COMPONENTS
+   ============================================================ */
+.card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+  padding: 16px;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease, border 0.3s ease;
+}
+
+.section-header {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  margin-top: 24px;
+}
+
+.tag-chip {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--system-gray5);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.tag-chip.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-primary {
+  display: block;
+  width: 100%;
+  padding: 14px 24px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: opacity 0.2s, transform 0.1s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.btn-primary:active { opacity: 0.85; transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.4; cursor: default; transform: none; }
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--system-gray5);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress-bar .fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================================
+   1. TODAY SCREEN
+   ============================================================ */
+#today .streak-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+#today .streak-ring-wrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+}
+#today .streak-ring-wrap svg {
+  width: 80px;
+  height: 80px;
+  transform: rotate(-90deg);
+}
+#today .streak-ring-wrap .ring-bg {
+  fill: none;
+  stroke: var(--system-gray5);
+  stroke-width: 6;
+}
+#today .streak-ring-wrap .ring-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 201;
+  stroke-dashoffset: 201;
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#today .streak-ring-wrap .ring-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+#today .streak-info { flex: 1; }
+#today .streak-info .streak-label {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+#today .streak-info .streak-sub {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+#today .review-list { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+#today .review-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+  transition: all 0.3s ease;
+}
+#today .review-item .status-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  width: 22px;
+  text-align: center;
+}
+#today .review-item .item-info { flex: 1; min-width: 0; }
+#today .review-item .item-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+#today .review-item.done .item-title {
+  text-decoration: line-through;
+  color: var(--text-tertiary);
+}
+#today .review-item .item-meta {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#today .review-item .item-meta .meta-tag {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* ============================================================
+   2. LIBRARY SCREEN
+   ============================================================ */
+#library .search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--search-bg);
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+#library .search-bar .search-icon {
+  color: var(--text-tertiary);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+#library .search-bar input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 17px;
+  color: var(--text-primary);
+  font-family: inherit;
+  outline: none;
+}
+#library .search-bar input::placeholder { color: var(--text-tertiary); }
+
+#library .filter-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+}
+#library .filter-row::-webkit-scrollbar { display: none; }
+
+#library .tag-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 16px;
+  scrollbar-width: none;
+}
+#library .tag-row::-webkit-scrollbar { display: none; }
+
+#library .date-section { margin-top: 16px; }
+#library .date-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+#library .lib-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+}
+#library .lib-card .card-icon {
+  font-size: 20px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+#library .lib-card .card-body { flex: 1; min-width: 0; }
+#library .lib-card .card-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+#library .lib-card .card-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+#library .lib-card .card-sub .card-tag {
+  color: var(--accent);
+  font-weight: 500;
+}
+#library .lib-card .card-next {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+/* ============================================================
+   3. REVIEW SCREEN
+   ============================================================ */
+#review { padding-top: 0; background: var(--bg-primary); }
+#review .review-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 58px 16px 12px;
+  background: var(--bg-primary);
+  transition: background-color 0.3s ease;
+}
+#review .review-header .header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+#review .review-header .close-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 50%;
+  background: var(--system-gray5);
+  border: none;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+#review .review-header .close-btn:active { background: var(--separator); }
+#review .review-header .counter {
+  font-size: 15px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+#review .review-progress {
+  height: 3px;
+  background: var(--system-gray5);
+  border-radius: 1.5px;
+  overflow: hidden;
+}
+#review .review-progress .fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 1.5px;
+  transition: width 0.4s ease;
+}
+
+#review .flashcard-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 420px;
+  padding: 20px 16px;
+  perspective: 1200px;
+}
+
+.flashcard {
+  width: 100%;
+  max-width: 340px;
+  min-height: 320px;
+  position: relative;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.flashcard.flipped { transform: rotateY(180deg); }
+
+.flashcard-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 16px;
+  background: var(--bg-card);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.3s ease;
+}
+
+.flashcard-front {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.flashcard-front .fc-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.flashcard-front .fc-tag {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 500;
+  margin-bottom: 24px;
+}
+.flashcard-front .fc-hint {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.flashcard-back {
+  transform: rotateY(180deg);
+  overflow-y: auto;
+}
+.flashcard-back .fc-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+.flashcard-back .fc-divider {
+  height: 1px;
+  background: var(--separator);
+  margin-bottom: 12px;
+}
+.flashcard-back .fc-body {
+  font-size: 16px;
+  color: var(--text-primary);
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+.flashcard-back .fc-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  color: var(--system-blue);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+#review .rating-buttons {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 34px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.3s ease 0.2s, transform 0.3s ease 0.2s;
+  pointer-events: none;
+}
+#review .rating-buttons.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.rating-btn {
+  flex: 1;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 4px 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-family: inherit;
+  transition: transform 0.1s, opacity 0.2s;
+}
+.rating-btn:active { transform: scale(0.95); }
+.rating-btn .r-label { font-size: 15px; font-weight: 600; }
+.rating-btn .r-interval { font-size: 11px; opacity: 0.7; }
+.rating-btn.again { background: var(--again-bg); }
+.rating-btn.again .r-label, .rating-btn.again .r-interval { color: var(--system-red); }
+.rating-btn.hard { background: var(--hard-bg); }
+.rating-btn.hard .r-label, .rating-btn.hard .r-interval { color: var(--system-orange); }
+.rating-btn.good { background: var(--good-bg); }
+.rating-btn.good .r-label, .rating-btn.good .r-interval { color: var(--system-green); }
+.rating-btn.easy { background: var(--easy-bg); }
+.rating-btn.easy .r-label, .rating-btn.easy .r-interval { color: var(--system-blue); }
+
+/* ============================================================
+   4. QUIZ SCREEN
+   ============================================================ */
+#quiz { padding-top: 0; background: var(--bg-primary); }
+#quiz .quiz-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 58px 16px 12px;
+  background: var(--bg-primary);
+  transition: background-color 0.3s ease;
+}
+#quiz .quiz-header .header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+#quiz .quiz-header .header-row .quiz-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+#quiz .quiz-content {
+  padding: 20px 16px;
+}
+#quiz .quiz-instruction {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+#quiz .quiz-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+  padding: 24px 20px;
+  margin-bottom: 24px;
+  font-size: 17px;
+  color: var(--text-primary);
+  line-height: 1.8;
+  transition: all 0.3s ease;
+}
+#quiz .quiz-blank {
+  display: inline;
+  padding: 2px 6px;
+  border-bottom: 2px solid var(--accent);
+  background: var(--accent-light);
+  border-radius: 4px;
+  min-width: 80px;
+  color: transparent;
+  font-weight: 600;
+  transition: color 0.4s ease, background 0.4s ease;
+}
+#quiz .quiz-blank.revealed {
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+#quiz .quiz-input-wrap {
+  margin-bottom: 16px;
+}
+#quiz .quiz-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--separator);
+  border-radius: 12px;
+  font-size: 17px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  outline: none;
+  transition: border-color 0.2s, background 0.3s;
+}
+#quiz .quiz-input:focus { border-color: var(--accent); }
+#quiz .quiz-input::placeholder { color: var(--text-tertiary); }
+
+#quiz .quiz-feedback {
+  text-align: center;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 600;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.3s, transform 0.3s;
+}
+#quiz .quiz-feedback.show {
+  opacity: 1;
+  transform: scale(1);
+}
+#quiz .quiz-feedback.correct {
+  background: rgba(48,209,88,0.12);
+  color: var(--system-green);
+}
+#quiz .quiz-feedback.incorrect {
+  background: rgba(255,59,48,0.12);
+  color: var(--system-red);
+}
+#quiz .quiz-answer-info {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  font-weight: 400;
+}
+
+/* ============================================================
+   5. KNOWLEDGE MAP SCREEN
+   ============================================================ */
+#map .map-container {
+  width: 100%;
+  height: calc(100% - 60px);
+  position: relative;
+  overflow: hidden;
+}
+#map .map-container svg {
+  width: 100%;
+  height: 100%;
+}
+#map .map-footer {
+  text-align: center;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+#map .map-footer .pro-link {
+  color: var(--accent);
+  font-weight: 500;
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+/* ============================================================
+   6. JOURNAL SCREEN
+   ============================================================ */
+#journal .journal-list { display: flex; flex-direction: column; gap: 20px; }
+#journal .journal-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+#journal .journal-entry {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border-radius: 0 12px 12px 0;
+  box-shadow: var(--card-shadow);
+  border-right: var(--card-border);
+  border-top: var(--card-border);
+  border-bottom: var(--card-border);
+  transition: all 0.3s ease;
+}
+#journal .journal-entry .je-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+#journal .journal-entry .je-note {
+  font-size: 16px;
+  color: var(--text-primary);
+  line-height: 1.7;
+}
+#journal .journal-entry .je-time {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 6px;
+}
+
+/* ============================================================
+   7. SETTINGS SCREEN
+   ============================================================ */
+#settings { background: var(--bg-grouped); }
+#settings .settings-inner { padding: 0 16px 24px; }
+
+.settings-group {
+  margin-top: 24px;
+}
+.settings-group-label {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0 16px 6px;
+}
+.settings-list {
+  background: var(--bg-card);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+  transition: all 0.3s ease;
+}
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  min-height: 44px;
+  font-size: 17px;
+  color: var(--text-primary);
+  transition: color 0.3s ease;
+}
+.settings-item + .settings-item {
+  border-top: 0.5px solid var(--separator);
+}
+.settings-item .s-value {
+  color: var(--text-secondary);
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.settings-item .s-chevron {
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+/* iOS Toggle */
+.ios-toggle {
+  position: relative;
+  width: 51px;
+  height: 31px;
+  border-radius: 16px;
+  background: var(--switch-bg);
+  cursor: pointer;
+  transition: background 0.3s;
+  flex-shrink: 0;
+}
+.ios-toggle.on { background: var(--system-green); }
+.ios-toggle .toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ios-toggle.on .toggle-knob { transform: translateX(20px); }
+
+/* Segmented Control */
+.segmented-control {
+  display: flex;
+  background: var(--system-gray5);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 0;
+}
+.seg-btn {
+  flex: 1;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: center;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.seg-btn.active {
+  background: var(--bg-card);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.settings-footer {
+  text-align: center;
+  margin-top: 32px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  line-height: 1.8;
+}
+
+/* ============================================================
+   SCROLLBAR HIDE
+   ============================================================ */
+.screen { scrollbar-width: none; }
+.screen::-webkit-scrollbar { display: none; }
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+.animate-in { animation: fadeInUp 0.5s ease forwards; }
+.animate-in:nth-child(1) { animation-delay: 0.05s; }
+.animate-in:nth-child(2) { animation-delay: 0.1s; }
+.animate-in:nth-child(3) { animation-delay: 0.15s; }
+.animate-in:nth-child(4) { animation-delay: 0.2s; }
+.animate-in:nth-child(5) { animation-delay: 0.25s; }
+.animate-in:nth-child(6) { animation-delay: 0.3s; }
+
+/* SVG node interaction */
+.map-node { cursor: grab; }
+.map-node:active { cursor: grabbing; }
+.map-node-label {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--text-primary);
+  pointer-events: none;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+.map-edge {
+  stroke: var(--separator);
+  stroke-width: 1.5;
+  fill: none;
+  opacity: 0.5;
+}
+</style>
+</head>
+<body>
+
+<div class="device-frame" id="app">
+  <div class="dynamic-island"></div>
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <span class="icons">
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="5" y="2" width="3" height="10" rx="1"/><rect x="10" y="0" width="3" height="12" rx="1"/></svg>
+      <svg width="15" height="12" viewBox="0 0 15 12" fill="currentColor"><path d="M7.5 3C10 3 12.2 4 13.8 5.7L15 4.5C13 2.5 10.4 1.2 7.5 1.2S2 2.5 0 4.5L1.2 5.7C2.8 4 5 3 7.5 3z"/><path d="M7.5 6.6c1.6 0 3 .6 4.1 1.7l1.2-1.2c-1.4-1.4-3.3-2.2-5.3-2.2s-3.9.8-5.3 2.2l1.2 1.2c1.1-1.1 2.5-1.7 4.1-1.7z"/><circle cx="7.5" cy="10.5" r="1.5"/></svg>
+      <svg width="27" height="12" viewBox="0 0 27 12" fill="none"><rect x="0.5" y="0.5" width="23" height="11" rx="3.5" stroke="currentColor" opacity="0.35"/><rect x="25" y="3.5" width="1.5" height="5" rx="0.75" fill="currentColor" opacity="0.35"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/></svg>
+    </span>
+  </div>
+
+  <!-- ============================================================
+       SCREEN: TODAY
+       ============================================================ -->
+  <div class="screen active" id="today">
+    <div class="nav-bar">
+      <div class="nav-row">
+        <span class="nav-title">Today</span>
+        <span class="nav-icon" onclick="switchTab('settings')">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </span>
+      </div>
+    </div>
+    <div class="screen-inner">
+      <!-- Streak Card -->
+      <div class="card streak-card animate-in" style="opacity:0">
+        <div class="streak-ring-wrap">
+          <svg viewBox="0 0 80 80">
+            <circle class="ring-bg" cx="40" cy="40" r="32"/>
+            <circle class="ring-fill" id="progressRing" cx="40" cy="40" r="32"/>
+          </svg>
+          <div class="ring-text">3/5</div>
+        </div>
+        <div class="streak-info">
+          <div class="streak-label">🔥 12日連続</div>
+          <div class="streak-sub">今日の復習: あと2件</div>
+          <div style="margin-top:8px">
+            <div class="progress-bar">
+              <div class="fill" id="todayProgress" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA Button -->
+      <button class="btn-primary animate-in" style="margin-bottom:24px;opacity:0" onclick="switchTab('review')">復習を始める</button>
+
+      <!-- Section: Today's Reviews -->
+      <div class="section-header">今日の復習</div>
+      <div class="review-list">
+        <div class="review-item done animate-in" style="opacity:0">
+          <span class="status-icon">✅</span>
+          <div class="item-info">
+            <div class="item-title">React Hooksの基礎</div>
+            <div class="item-meta"><span class="meta-tag">#フロントエンド</span><span>·</span><span>3月28日</span></div>
+          </div>
+        </div>
+        <div class="review-item done animate-in" style="opacity:0">
+          <span class="status-icon">✅</span>
+          <div class="item-info">
+            <div class="item-title">SQLインデックスの仕組み</div>
+            <div class="item-meta"><span class="meta-tag">#データベース</span><span>·</span><span>3月25日</span></div>
+          </div>
+        </div>
+        <div class="review-item done animate-in" style="opacity:0">
+          <span class="status-icon">✅</span>
+          <div class="item-info">
+            <div class="item-title">認知バイアスの種類</div>
+            <div class="item-meta"><span class="meta-tag">#心理学</span><span>·</span><span>3月20日</span></div>
+          </div>
+        </div>
+        <div class="review-item animate-in" style="opacity:0">
+          <span class="status-icon" style="opacity:0.35">○</span>
+          <div class="item-info">
+            <div class="item-title">Rustの所有権モデル</div>
+            <div class="item-meta"><span class="meta-tag">#プログラミング</span><span>·</span><span>3月18日</span></div>
+          </div>
+        </div>
+        <div class="review-item animate-in" style="opacity:0">
+          <span class="status-icon" style="opacity:0.35">○</span>
+          <div class="item-info">
+            <div class="item-title">デザインシンキング5段階</div>
+            <div class="item-meta"><span class="meta-tag">#デザイン</span><span>·</span><span>3月15日</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCREEN: LIBRARY
+       ============================================================ -->
+  <div class="screen" id="library">
+    <div class="nav-bar">
+      <span class="nav-title">ライブラリ</span>
+    </div>
+    <div class="screen-inner">
+      <!-- Search Bar -->
+      <div class="search-bar">
+        <span class="search-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+        </span>
+        <input type="text" placeholder="タイトル、タグ、本文を検索...">
+      </div>
+
+      <!-- Type Filter Chips -->
+      <div class="filter-row">
+        <span class="tag-chip active">すべて</span>
+        <span class="tag-chip" onclick="this.classList.toggle('active')">URL</span>
+        <span class="tag-chip" onclick="this.classList.toggle('active')">テキスト</span>
+        <span class="tag-chip" onclick="this.classList.toggle('active')">スクショ</span>
+      </div>
+
+      <!-- Tag Chips -->
+      <div class="tag-row">
+        <span class="tag-chip">フロントエンド</span>
+        <span class="tag-chip">データベース</span>
+        <span class="tag-chip">心理学</span>
+        <span class="tag-chip">プログラミング</span>
+        <span class="tag-chip" style="background:var(--accent-light);color:var(--accent)">+3</span>
+      </div>
+
+      <!-- Date Section: Today -->
+      <div class="date-section">
+        <div class="date-label">今日</div>
+        <div class="lib-card">
+          <span class="card-icon">🔗</span>
+          <div class="card-body">
+            <div class="card-title">TypeScriptの型ガード完全解説</div>
+            <div class="card-sub"><span>zenn.dev</span><span>·</span><span class="card-tag">#フロントエンド</span></div>
+            <div class="card-next">次回復習: 4月2日</div>
+          </div>
+        </div>
+        <div class="lib-card">
+          <span class="card-icon">📝</span>
+          <div class="card-body">
+            <div class="card-title">GraphQLスキーマ設計パターン</div>
+            <div class="card-sub"><span>テキスト</span><span>·</span><span class="card-tag">#バックエンド</span></div>
+            <div class="card-next">次回復習: 4月3日</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Date Section: Yesterday -->
+      <div class="date-section">
+        <div class="date-label">昨日</div>
+        <div class="lib-card">
+          <span class="card-icon">📝</span>
+          <div class="card-body">
+            <div class="card-title">ドメイン駆動設計のメモ</div>
+            <div class="card-sub"><span>テキスト</span><span>·</span><span class="card-tag">#設計</span></div>
+            <div class="card-next">次回復習: 4月5日</div>
+          </div>
+        </div>
+        <div class="lib-card">
+          <span class="card-icon">📷</span>
+          <div class="card-body">
+            <div class="card-title">AWS構成図のスクショ</div>
+            <div class="card-sub"><span>スクリーンショット</span><span>·</span><span class="card-tag">#AWS</span></div>
+            <div class="card-next">次回復習: 4月1日</div>
+          </div>
+        </div>
+        <div class="lib-card">
+          <span class="card-icon">🔗</span>
+          <div class="card-body">
+            <div class="card-title">Rustのライフタイム徹底解説</div>
+            <div class="card-sub"><span>qiita.com</span><span>·</span><span class="card-tag">#プログラミング</span></div>
+            <div class="card-next">次回復習: 4月7日</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Date Section: 3月28日 -->
+      <div class="date-section">
+        <div class="date-label">3月28日</div>
+        <div class="lib-card">
+          <span class="card-icon">🔗</span>
+          <div class="card-body">
+            <div class="card-title">認知バイアスの完全ガイド</div>
+            <div class="card-sub"><span>note.com</span><span>·</span><span class="card-tag">#心理学</span></div>
+            <div class="card-next">次回復習: 4月10日</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCREEN: REVIEW
+       ============================================================ -->
+  <div class="screen" id="review">
+    <div class="review-header">
+      <div class="header-row">
+        <button class="close-btn" onclick="switchTab('today')">✕</button>
+        <span class="counter" id="reviewCounter">3 / 5</span>
+      </div>
+      <div class="review-progress">
+        <div class="fill" id="reviewProgress" style="width:60%"></div>
+      </div>
+    </div>
+
+    <div class="flashcard-area">
+      <div class="flashcard" id="flashcard" onclick="flipCard()">
+        <div class="flashcard-face flashcard-front">
+          <div class="fc-title" id="fcTitle">React Hooksの基礎</div>
+          <div class="fc-tag">#フロントエンド</div>
+          <div class="fc-hint">タップしてめくる</div>
+        </div>
+        <div class="flashcard-face flashcard-back">
+          <div class="fc-title">React Hooksの基礎</div>
+          <div class="fc-divider"></div>
+          <div class="fc-body">useStateはコンポーネントに状態を追加する最も基本的なHook。useEffectは副作用（API呼び出し、サブスクリプション等）を管理する。カスタムHookでロジックを再利用可能な関数に抽出できる。依存配列の正しい指定がパフォーマンスとバグ防止の鍵。</div>
+          <a class="fc-link">🔗 元記事を開く</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="rating-buttons" id="ratingButtons">
+      <button class="rating-btn again" onclick="rateCard('again')">
+        <span class="r-label">Again</span>
+        <span class="r-interval">&lt;1日</span>
+      </button>
+      <button class="rating-btn hard" onclick="rateCard('hard')">
+        <span class="r-label">Hard</span>
+        <span class="r-interval">3日</span>
+      </button>
+      <button class="rating-btn good" onclick="rateCard('good')">
+        <span class="r-label">Good</span>
+        <span class="r-interval">7日</span>
+      </button>
+      <button class="rating-btn easy" onclick="rateCard('easy')">
+        <span class="r-label">Easy</span>
+        <span class="r-interval">14日</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCREEN: QUIZ
+       ============================================================ -->
+  <div class="screen" id="quiz">
+    <div class="quiz-header">
+      <div class="header-row">
+        <button class="close-btn" onclick="switchTab('today')" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text-secondary);cursor:pointer;border-radius:50%;background:var(--system-gray5);border:none">✕</button>
+        <span class="quiz-title">QuizMode</span>
+        <span class="counter" style="font-size:15px;color:var(--text-secondary);font-weight:500" id="quizCounter">1 / 5</span>
+      </div>
+      <div class="review-progress">
+        <div class="fill" id="quizProgress" style="width:20%"></div>
+      </div>
+    </div>
+
+    <div class="quiz-content">
+      <div class="quiz-instruction">次の文章の空欄を埋めてください</div>
+
+      <div class="quiz-card" id="quizCard">
+        useStateはコンポーネントに <span class="quiz-blank" id="quizBlank">状態</span> を追加する最も基本的なHookです。
+      </div>
+
+      <div class="quiz-feedback" id="quizFeedback"></div>
+
+      <div class="quiz-input-wrap" id="quizInputWrap">
+        <input type="text" class="quiz-input" id="quizInput" placeholder="回答を入力...">
+      </div>
+
+      <button class="btn-primary" id="quizSubmitBtn" onclick="submitQuiz()">回答する</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCREEN: KNOWLEDGE MAP
+       ============================================================ -->
+  <div class="screen" id="map">
+    <div class="nav-bar">
+      <span class="nav-title">マップ</span>
+    </div>
+    <div class="map-container">
+      <svg id="mapSvg" viewBox="0 0 358 520"></svg>
+    </div>
+    <div class="map-footer">
+      45 / 50 アイテム表示中 <span class="pro-link">Proにアップグレード →</span>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCREEN: JOURNAL
+       ============================================================ -->
+  <div class="screen" id="journal">
+    <div class="nav-bar">
+      <span class="nav-title">ジャーナル</span>
+    </div>
+    <div class="screen-inner">
+      <div class="journal-list">
+        <!-- March 31 -->
+        <div>
+          <div class="journal-date">3月31日 — 月曜日</div>
+          <div class="journal-entry">
+            <div class="je-title">React Hooksの基礎</div>
+            <div class="je-note">useEffectのクリーンアップ関数の重要性を再認識。メモリリークの原因になりうる。</div>
+            <div class="je-time">08:15</div>
+          </div>
+        </div>
+
+        <!-- March 30 -->
+        <div>
+          <div class="journal-date">3月30日 — 日曜日</div>
+          <div class="journal-entry">
+            <div class="je-title">SQLインデックスの仕組み</div>
+            <div class="je-note">複合インデックスの列順序がクエリ性能に直結する。最左プレフィックスの原則。</div>
+            <div class="je-time">08:32</div>
+          </div>
+          <div class="journal-entry" style="margin-top:8px">
+            <div class="je-title">GraphQLスキーマ設計</div>
+            <div class="je-note">N+1問題はDataLoaderパターンで解決。バッチ処理の考え方が重要。</div>
+            <div class="je-time">21:05</div>
+          </div>
+        </div>
+
+        <!-- March 28 -->
+        <div>
+          <div class="journal-date">3月28日 — 金曜日</div>
+          <div class="journal-entry">
+            <div class="je-title">認知バイアスの種類</div>
+            <div class="je-note">確証バイアスは日常の意思決定に想像以上に影響している。意識的に反証を探す習慣が必要。</div>
+            <div class="je-time">08:20</div>
+          </div>
+        </div>
+
+        <!-- March 25 -->
+        <div>
+          <div class="journal-date">3月25日 — 火曜日</div>
+          <div class="journal-entry">
+            <div class="je-title">Rustの所有権モデル</div>
+            <div class="je-note">借用チェッカーの厳しさがメモリ安全性を保証する。GCなしでメモリ安全を実現する設計思想に感銘。</div>
+            <div class="je-time">08:45</div>
+          </div>
+        </div>
+
+        <!-- March 22 -->
+        <div>
+          <div class="journal-date">3月22日 — 土曜日</div>
+          <div class="journal-entry">
+            <div class="je-title">デザインシンキング5段階</div>
+            <div class="je-note">共感フェーズこそが最重要。ユーザーインタビューの質が後工程すべてに影響。</div>
+            <div class="je-time">09:10</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCREEN: SETTINGS
+       ============================================================ -->
+  <div class="screen" id="settings">
+    <div class="nav-bar">
+      <span class="nav-title">設定</span>
+    </div>
+    <div class="settings-inner">
+      <!-- Review Settings -->
+      <div class="settings-group">
+        <div class="settings-group-label">復習設定</div>
+        <div class="settings-list">
+          <div class="settings-item">
+            <span>復習時間</span>
+            <span class="s-value">08:00 <span class="s-chevron">›</span></span>
+          </div>
+          <div class="settings-item">
+            <span>1日の復習件数</span>
+            <span class="s-value">5件 <span class="s-chevron">›</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="settings-group">
+        <div class="settings-group-label">通知</div>
+        <div class="settings-list">
+          <div class="settings-item">
+            <span>復習リマインダー</span>
+            <div class="ios-toggle on" onclick="this.classList.toggle('on')">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+          <div class="settings-item">
+            <span>ストリーク通知</span>
+            <div class="ios-toggle on" onclick="this.classList.toggle('on')">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Display -->
+      <div class="settings-group">
+        <div class="settings-group-label">表示</div>
+        <div class="settings-list">
+          <div class="settings-item" style="flex-direction:column;align-items:stretch;gap:10px">
+            <span>テーマ</span>
+            <div class="segmented-control" id="themeControl">
+              <button class="seg-btn active" onclick="setTheme('light',this)">ライト</button>
+              <button class="seg-btn" onclick="setTheme('dark',this)">ダーク</button>
+              <button class="seg-btn" onclick="setTheme('system',this)">システム</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data -->
+      <div class="settings-group">
+        <div class="settings-group-label">データ</div>
+        <div class="settings-list">
+          <div class="settings-item" style="cursor:pointer">
+            <span>データをエクスポート</span>
+            <span class="s-value">JSON <span class="s-chevron">›</span></span>
+          </div>
+          <div class="settings-item" style="cursor:pointer">
+            <span>データをインポート</span>
+            <span class="s-value"><span class="s-chevron">›</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- About -->
+      <div class="settings-group">
+        <div class="settings-group-label">アプリ情報</div>
+        <div class="settings-list">
+          <div class="settings-item">
+            <span>バージョン</span>
+            <span class="s-value">0.1.0</span>
+          </div>
+          <div class="settings-item">
+            <span>ビルド</span>
+            <span class="s-value">2026.03.31</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-footer">
+        ReCallKit v0.1.0<br>
+        &copy; 2026 ReCallKit
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       TAB BAR
+       ============================================================ -->
+  <div class="tab-bar" id="tabBar">
+    <div class="tab-item active" data-tab="today" onclick="switchTab('today')">
+      <span class="tab-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/><line x1="12" y1="12" x2="12" y2="16"/></svg>
+      </span>
+      <span class="tab-label">Today</span>
+    </div>
+    <div class="tab-item" data-tab="library" onclick="switchTab('library')">
+      <span class="tab-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      </span>
+      <span class="tab-label">Library</span>
+    </div>
+    <div class="tab-item" data-tab="review" onclick="switchTab('review')">
+      <span class="tab-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="16" height="16" rx="2"/><rect x="6" y="2" width="16" height="16" rx="2" fill="var(--bg-primary)"/><rect x="6" y="2" width="16" height="16" rx="2"/></svg>
+      </span>
+      <span class="tab-label">Review</span>
+    </div>
+    <div class="tab-item" data-tab="map" onclick="switchTab('map')">
+      <span class="tab-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="8" r="3"/><circle cx="12" cy="18" r="3"/><line x1="8.5" y1="7.5" x2="15.5" y2="9.5" opacity="0.5"/><line x1="7" y1="9" x2="11" y2="15.5" opacity="0.5"/><line x1="15" y1="10.5" x2="13" y2="15.5" opacity="0.5"/></svg>
+      </span>
+      <span class="tab-label">Map</span>
+    </div>
+    <div class="tab-item" data-tab="settings" onclick="switchTab('settings')">
+      <span class="tab-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </span>
+      <span class="tab-label">Settings</span>
+    </div>
+  </div>
+
+  <div class="home-indicator"></div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+// ============================================================
+// Tab Navigation
+// ============================================================
+let currentTab = 'today';
+const fullscreenTabs = ['review', 'quiz'];
+
+function switchTab(tabName) {
+  // Special: quiz is accessed differently
+  if (tabName === currentTab && !fullscreenTabs.includes(tabName)) return;
+
+  // Hide all screens
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+
+  // Show target
+  const target = document.getElementById(tabName);
+  if (target) target.classList.add('active');
+
+  // Update tab bar active state
+  document.querySelectorAll('.tab-item').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tabName);
+  });
+
+  // Show/hide tab bar for fullscreen modes
+  const tabBar = document.getElementById('tabBar');
+  if (fullscreenTabs.includes(tabName)) {
+    tabBar.classList.add('hidden');
+  } else {
+    tabBar.classList.remove('hidden');
+  }
+
+  currentTab = tabName;
+
+  // Reset flashcard when entering review
+  if (tabName === 'review') {
+    resetFlashcard();
+  }
+
+  // Init knowledge map when entering map tab
+  if (tabName === 'map') {
+    initMap();
+  }
+
+  // Trigger animations for today screen
+  if (tabName === 'today') {
+    animateToday();
+  }
+}
+
+// ============================================================
+// Today Screen Animations
+// ============================================================
+function animateToday() {
+  // Progress ring
+  setTimeout(() => {
+    const ring = document.getElementById('progressRing');
+    if (ring) {
+      // 3/5 = 60%
+      const circumference = 2 * Math.PI * 32; // ~201
+      ring.style.strokeDashoffset = circumference * (1 - 0.6);
+    }
+  }, 300);
+
+  // Progress bar
+  setTimeout(() => {
+    const bar = document.getElementById('todayProgress');
+    if (bar) bar.style.width = '60%';
+  }, 500);
+}
+
+// ============================================================
+// Flashcard
+// ============================================================
+let cardFlipped = false;
+
+function flipCard() {
+  const card = document.getElementById('flashcard');
+  cardFlipped = !cardFlipped;
+  card.classList.toggle('flipped', cardFlipped);
+
+  // Show rating buttons when flipped
+  const btns = document.getElementById('ratingButtons');
+  if (cardFlipped) {
+    btns.classList.add('visible');
+  } else {
+    btns.classList.remove('visible');
+  }
+}
+
+function resetFlashcard() {
+  cardFlipped = false;
+  const card = document.getElementById('flashcard');
+  if (card) card.classList.remove('flipped');
+  const btns = document.getElementById('ratingButtons');
+  if (btns) btns.classList.remove('visible');
+}
+
+function rateCard(rating) {
+  // Brief visual feedback
+  const btns = document.getElementById('ratingButtons');
+  btns.querySelectorAll('.rating-btn').forEach(b => {
+    b.style.opacity = '0.4';
+    b.style.pointerEvents = 'none';
+  });
+
+  // Flash the selected button
+  const selectedBtn = btns.querySelector(`.rating-btn.${rating}`);
+  if (selectedBtn) {
+    selectedBtn.style.opacity = '1';
+    selectedBtn.style.transform = 'scale(1.05)';
+  }
+
+  // After brief delay, reset card for next review item
+  setTimeout(() => {
+    resetFlashcard();
+    btns.querySelectorAll('.rating-btn').forEach(b => {
+      b.style.opacity = '';
+      b.style.pointerEvents = '';
+      b.style.transform = '';
+    });
+  }, 600);
+}
+
+// ============================================================
+// Quiz Mode
+// ============================================================
+let quizAnswered = false;
+
+function submitQuiz() {
+  if (quizAnswered) {
+    // Next question
+    resetQuiz();
+    return;
+  }
+
+  const input = document.getElementById('quizInput');
+  const answer = input.value.trim();
+  if (!answer) return;
+
+  quizAnswered = true;
+  const correct = answer === '状態';
+  const feedback = document.getElementById('quizFeedback');
+  const blank = document.getElementById('quizBlank');
+  const btn = document.getElementById('quizSubmitBtn');
+
+  // Reveal blank
+  blank.classList.add('revealed');
+
+  // Show feedback
+  if (correct) {
+    feedback.textContent = '✅ 正解！';
+    feedback.className = 'quiz-feedback show correct';
+  } else {
+    feedback.innerHTML = '❌ 不正解<div class="quiz-answer-info">あなたの回答: ' + answer + '<br>正答: 状態</div>';
+    feedback.className = 'quiz-feedback show incorrect';
+  }
+
+  // Change button
+  btn.textContent = '次の問題 →';
+
+  // Hide input
+  document.getElementById('quizInputWrap').style.opacity = '0.4';
+  document.getElementById('quizInputWrap').style.pointerEvents = 'none';
+}
+
+function resetQuiz() {
+  quizAnswered = false;
+  document.getElementById('quizInput').value = '';
+  document.getElementById('quizFeedback').className = 'quiz-feedback';
+  document.getElementById('quizFeedback').textContent = '';
+  document.getElementById('quizBlank').classList.remove('revealed');
+  document.getElementById('quizSubmitBtn').textContent = '回答する';
+  document.getElementById('quizInputWrap').style.opacity = '';
+  document.getElementById('quizInputWrap').style.pointerEvents = '';
+}
+
+// ============================================================
+// Knowledge Map (Force-Directed Graph)
+// ============================================================
+let mapInitialized = false;
+let mapNodes = [];
+let mapEdges = [];
+let mapAnimFrame = null;
+
+function initMap() {
+  if (mapInitialized) return;
+  mapInitialized = true;
+
+  const svg = document.getElementById('mapSvg');
+  const W = 358, H = 520;
+
+  // Define nodes (tags)
+  const nodeDefs = [
+    { id: 'frontend',   label: 'フロントエンド', r: 28, color: '#0A84FF', x: W*0.35, y: H*0.15 },
+    { id: 'react',      label: 'React',         r: 24, color: '#0A84FF', x: W*0.2,  y: H*0.28 },
+    { id: 'typescript', label: 'TypeScript',    r: 22, color: '#0A84FF', x: W*0.55, y: H*0.25 },
+    { id: 'hooks',      label: 'Hooks',         r: 18, color: '#0A84FF', x: W*0.35, y: H*0.38 },
+    { id: 'state',      label: '状態管理',       r: 16, color: '#FF9F0A', x: W*0.15, y: H*0.45 },
+    { id: 'db',         label: 'データベース',    r: 26, color: '#30D158', x: W*0.7,  y: H*0.5  },
+    { id: 'sql',        label: 'SQL',           r: 20, color: '#30D158', x: W*0.55, y: H*0.6  },
+    { id: 'nosql',      label: 'NoSQL',         r: 15, color: '#30D158', x: W*0.85, y: H*0.62 },
+    { id: 'index',      label: 'インデックス',    r: 14, color: '#30D158', x: W*0.5,  y: H*0.72 },
+    { id: 'psychology', label: '心理学',         r: 22, color: '#BF5AF2', x: W*0.2,  y: H*0.65 },
+    { id: 'bias',       label: 'バイアス',       r: 16, color: '#BF5AF2', x: W*0.1,  y: H*0.78 },
+    { id: 'design',     label: 'デザイン',       r: 20, color: '#FF375F', x: W*0.75, y: H*0.35 },
+    { id: 'rust',       label: 'Rust',          r: 18, color: '#FF9F0A', x: W*0.8,  y: H*0.18 },
+    { id: 'ownership',  label: '所有権',         r: 14, color: '#FF9F0A', x: W*0.65, y: H*0.12 },
+  ];
+
+  const edgeDefs = [
+    ['frontend', 'react'], ['frontend', 'typescript'], ['react', 'hooks'],
+    ['typescript', 'hooks'], ['react', 'state'], ['hooks', 'state'],
+    ['db', 'sql'], ['db', 'nosql'], ['sql', 'index'],
+    ['psychology', 'bias'], ['frontend', 'design'],
+    ['rust', 'ownership'], ['typescript', 'rust'],
+  ];
+
+  // Add velocity to nodes
+  mapNodes = nodeDefs.map(n => ({
+    ...n,
+    vx: 0, vy: 0,
+    targetX: n.x, targetY: n.y,
+  }));
+
+  mapEdges = edgeDefs.map(([src, tgt]) => ({ source: src, target: tgt }));
+
+  // Create SVG elements
+  // Edges
+  const edgeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  mapEdges.forEach((e, i) => {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.id = `edge-${i}`;
+    line.setAttribute('class', 'map-edge');
+    edgeGroup.appendChild(line);
+  });
+  svg.appendChild(edgeGroup);
+
+  // Nodes
+  const nodeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  mapNodes.forEach(n => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', 'map-node');
+    g.id = `node-${n.id}`;
+
+    // Glow
+    const glow = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    glow.setAttribute('r', n.r + 4);
+    glow.setAttribute('fill', n.color);
+    glow.setAttribute('opacity', '0.12');
+    g.appendChild(glow);
+
+    // Circle
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('r', n.r);
+    circle.setAttribute('fill', n.color);
+    circle.setAttribute('opacity', '0.85');
+    g.appendChild(circle);
+
+    // Label
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('class', 'map-node-label');
+    text.setAttribute('dy', '0.35em');
+    text.setAttribute('fill', '#fff');
+    text.setAttribute('font-size', n.r < 18 ? '9' : '11');
+    text.textContent = n.label;
+    g.appendChild(text);
+
+    nodeGroup.appendChild(g);
+
+    // Drag handling
+    let dragging = false, offsetX = 0, offsetY = 0;
+    g.addEventListener('pointerdown', (ev) => {
+      dragging = true;
+      offsetX = ev.clientX;
+      offsetY = ev.clientY;
+      g.style.cursor = 'grabbing';
+      ev.preventDefault();
+    });
+    window.addEventListener('pointermove', (ev) => {
+      if (!dragging) return;
+      const svgRect = svg.getBoundingClientRect();
+      const scaleX = W / svgRect.width;
+      const scaleY = H / svgRect.height;
+      n.x += (ev.clientX - offsetX) * scaleX;
+      n.y += (ev.clientY - offsetY) * scaleY;
+      n.targetX = n.x;
+      n.targetY = n.y;
+      offsetX = ev.clientX;
+      offsetY = ev.clientY;
+    });
+    window.addEventListener('pointerup', () => {
+      if (dragging) {
+        dragging = false;
+        g.style.cursor = '';
+      }
+    });
+  });
+  svg.appendChild(nodeGroup);
+
+  // Animate
+  function tick() {
+    const damping = 0.92;
+    const springK = 0.008;
+
+    // Simple spring to target + gentle float
+    const t = Date.now() * 0.001;
+    mapNodes.forEach((n, i) => {
+      // Add gentle float
+      const floatX = Math.sin(t * 0.5 + i * 1.3) * 0.3;
+      const floatY = Math.cos(t * 0.4 + i * 1.7) * 0.3;
+
+      n.vx += floatX;
+      n.vy += floatY;
+      n.vx *= damping;
+      n.vy *= damping;
+      n.x += n.vx;
+      n.y += n.vy;
+
+      // Bounds
+      n.x = Math.max(n.r + 4, Math.min(W - n.r - 4, n.x));
+      n.y = Math.max(n.r + 4, Math.min(H - n.r - 4, n.y));
+
+      // Update SVG
+      const g = document.getElementById(`node-${n.id}`);
+      if (g) g.setAttribute('transform', `translate(${n.x},${n.y})`);
+    });
+
+    // Update edges
+    mapEdges.forEach((e, i) => {
+      const src = mapNodes.find(n => n.id === e.source);
+      const tgt = mapNodes.find(n => n.id === e.target);
+      if (!src || !tgt) return;
+      const line = document.getElementById(`edge-${i}`);
+      if (line) {
+        line.setAttribute('x1', src.x);
+        line.setAttribute('y1', src.y);
+        line.setAttribute('x2', tgt.x);
+        line.setAttribute('y2', tgt.y);
+      }
+    });
+
+    mapAnimFrame = requestAnimationFrame(tick);
+  }
+
+  tick();
+}
+
+// ============================================================
+// Theme Switching
+// ============================================================
+function setTheme(mode, btn) {
+  // Update segmented control
+  document.querySelectorAll('#themeControl .seg-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  if (mode === 'dark') {
+    document.getElementById('app').setAttribute('data-theme', 'dark');
+  } else if (mode === 'light') {
+    document.getElementById('app').removeAttribute('data-theme');
+  } else {
+    // System: check prefers-color-scheme
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.getElementById('app').setAttribute('data-theme', 'dark');
+    } else {
+      document.getElementById('app').removeAttribute('data-theme');
+    }
+  }
+}
+
+// ============================================================
+// Init
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  // Animate today screen on load
+  setTimeout(animateToday, 400);
+});
+</script>
+
+</body>
+</html>
