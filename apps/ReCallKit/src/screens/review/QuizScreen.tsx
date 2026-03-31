@@ -9,9 +9,9 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
-import type { HomeStackParamList } from '../../navigation/types';
+import type { ReviewStackParamList } from '../../navigation/types';
 
-type Props = NativeStackScreenProps<HomeStackParamList, 'Quiz'>;
+type Props = NativeStackScreenProps<ReviewStackParamList, 'Quiz'>;
 
 export function QuizScreen({ navigation }: Props) {
   const { colors } = useTheme();

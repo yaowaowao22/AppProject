@@ -26,9 +26,9 @@ import { RatingButtons } from '../../components/RatingButtons';
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
-import type { HomeStackParamList } from '../../navigation/types';
+import type { ReviewStackParamList } from '../../navigation/types';
 
-type Props = NativeStackScreenProps<HomeStackParamList, 'Review'>;
+type Props = NativeStackScreenProps<ReviewStackParamList, 'Review'>;
 
 export function ReviewScreen({ navigation }: Props) {
   const { db, isReady } = useDatabase();

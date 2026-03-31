@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useDatabase } from '../../hooks/useDatabase';
 import {
   getDueItems,
@@ -25,7 +26,7 @@ import { StreakBadge } from '../../components/StreakBadge';
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
-import type { HomeStackParamList } from '../../navigation/types';
+import type { HomeStackParamList, MainTabParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
@@ -66,7 +67,9 @@ export function HomeScreen({ navigation }: Props) {
   );
 
   const handleStartReview = () => {
-    navigation.navigate('Review', {});
+    // Review は ReviewTab/ReviewStack に移動したためクロスタブナビゲーション
+    const tabNav = navigation.getParent<BottomTabNavigationProp<MainTabParamList>>();
+    tabNav?.navigate('ReviewTab' as never);
   };
 
   if (!isReady || loading) {
