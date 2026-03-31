@@ -3,7 +3,7 @@
 // タグ/カテゴリチップフィルター + 日付グループ + 複数選択削除
 // ============================================================
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -255,6 +255,33 @@ export function LibraryScreen({ navigation }: Props) {
       ]
     );
   }, [selectedIds, db, exitSelectionMode, refresh]);
+
+  // ---- ヘッダーボタン動的設定 ----
+  useEffect(() => {
+    if (selectionMode) {
+      navigation.setOptions({
+        headerLeft: () => (
+          <Text style={{ ...TypeScale.subheadline, fontWeight: '600' as const, color: colors.label }}>
+            {selectedIds.size}件選択中
+          </Text>
+        ),
+        headerRight: () => (
+          <Pressable onPress={exitSelectionMode} hitSlop={8}>
+            <Text style={{ ...TypeScale.body, color: colors.accent }}>キャンセル</Text>
+          </Pressable>
+        ),
+      });
+    } else {
+      navigation.setOptions({
+        headerLeft: undefined,
+        headerRight: () => (
+          <Pressable onPress={() => setSelectionMode(true)} hitSlop={8}>
+            <Text style={{ ...TypeScale.body, color: colors.accent }}>選択</Text>
+          </Pressable>
+        ),
+      });
+    }
+  }, [selectionMode, selectedIds.size, colors, navigation, exitSelectionMode]);
 
   // ---- カードレンダラー ----
   const renderItem = ({ item }: { item: ItemWithMeta }) => {
@@ -570,12 +597,13 @@ export function LibraryScreen({ navigation }: Props) {
             },
           ]}
         >
-          <Pressable style={styles.selectionBarBtn} onPress={exitSelectionMode} hitSlop={8}>
-            <Text style={[styles.selectionBarCancel, { color: colors.accent }]}>キャンセル</Text>
+          <Pressable
+            style={styles.selectionBarBtn}
+            onPress={() => setSelectedIds(new Set(items.map((item) => item.id)))}
+            hitSlop={8}
+          >
+            <Text style={[styles.selectionBarCancel, { color: colors.accent }]}>全選択</Text>
           </Pressable>
-          <Text style={[styles.selectionBarCount, { color: colors.label }]}>
-            {selectedIds.size}件選択
-          </Text>
           <Pressable
             style={[styles.selectionBarBtn, { opacity: selectedIds.size === 0 ? 0.4 : 1 }]}
             onPress={deleteSelected}
@@ -606,14 +634,16 @@ const styles = StyleSheet.create({
 
   // ---- 検索バー ----
   searchBar: {
+    flex: 0,
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: Spacing.m,
     marginTop: Spacing.s,
     marginBottom: Spacing.xs,
-    paddingHorizontal: Spacing.s,
+    paddingHorizontal: Spacing.m,
     borderRadius: Radius.s,
-    height: 36,
+    height: 44,
+    minHeight: 44,
     gap: Spacing.xs,
   },
   searchInput: {
