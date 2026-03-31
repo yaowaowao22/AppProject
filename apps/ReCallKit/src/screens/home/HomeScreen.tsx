@@ -1,6 +1,6 @@
 // ============================================================
 // HomeScreen - 今日のダッシュボード
-// ストリーク・復習件数・スタートボタン・統計を表示
+// ストリークリング・フィルターバッジ・復習カードリスト
 // ============================================================
 
 import React, { useState, useCallback } from 'react';
@@ -11,6 +11,7 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  FlatList,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -21,24 +22,51 @@ import {
   getStreakDays,
   getTodayCompletedCount,
   getTotalItemCount,
+  type ReviewableItem,
 } from '../../db/reviewRepository';
-import { StreakBadge } from '../../components/StreakBadge';
+import { StreakRing } from '../../components/StreakRing';
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import type { HomeStackParamList, MainTabParamList } from '../../navigation/types';
+import type { ItemType } from '../../types';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
+
+// フィルター選択肢
+type FilterKey = 'all' | ItemType;
+const FILTERS: { key: FilterKey; label: string }[] = [
+  { key: 'all', label: '全て' },
+  { key: 'url', label: 'URL' },
+  { key: 'text', label: 'テキスト' },
+  { key: 'screenshot', label: 'スクショ' },
+];
+
+// next_review_at から「何日遅れか」を返す
+function getOverdueDays(nextReviewAt: string): number {
+  const due = new Date(nextReviewAt.replace(' ', 'T'));
+  const now = new Date();
+  const diff = now.getTime() - due.getTime();
+  return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+}
+
+// アイテムタイプのラベルと色
+const TYPE_META: Record<ItemType, { label: string; color: string; bg: string }> = {
+  url: { label: 'URL', color: '#0A84FF', bg: 'rgba(10,132,255,0.12)' },
+  text: { label: 'テキスト', color: '#30D158', bg: 'rgba(48,209,88,0.12)' },
+  screenshot: { label: '画像', color: '#BF5AF2', bg: 'rgba(191,90,242,0.12)' },
+};
 
 export function HomeScreen({ navigation }: Props) {
   const { db, isReady } = useDatabase();
   const { colors, isDark } = useTheme();
 
-  const [dueCount, setDueCount] = useState(0);
+  const [dueItems, setDueItems] = useState<ReviewableItem[]>([]);
   const [streakDays, setStreakDays] = useState(0);
   const [todayCompleted, setTodayCompleted] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
 
   const loadData = useCallback(async () => {
     if (!db || !isReady) return;
@@ -50,7 +78,7 @@ export function HomeScreen({ navigation }: Props) {
         getTodayCompletedCount(db),
         getTotalItemCount(db),
       ]);
-      setDueCount(due.length);
+      setDueItems(due);
       setStreakDays(streak);
       setTodayCompleted(completed);
       setTotalItems(total);
@@ -59,7 +87,6 @@ export function HomeScreen({ navigation }: Props) {
     }
   }, [db, isReady]);
 
-  // 復習完了後に戻ってきたときもデータを更新する
   useFocusEffect(
     useCallback(() => {
       loadData();
@@ -67,7 +94,6 @@ export function HomeScreen({ navigation }: Props) {
   );
 
   const handleStartReview = () => {
-    // Review は ReviewTab/ReviewStack に移動したためクロスタブナビゲーション
     const tabNav = navigation.getParent<BottomTabNavigationProp<MainTabParamList>>();
     tabNav?.navigate('ReviewTab' as never);
   };
@@ -81,6 +107,19 @@ export function HomeScreen({ navigation }: Props) {
   }
 
   const cardShadow = isDark ? {} : CardShadow;
+  const dueCount = dueItems.length;
+
+  // フィルター後のリスト
+  const filteredItems =
+    activeFilter === 'all'
+      ? dueItems
+      : dueItems.filter((ri) => ri.item.type === activeFilter);
+
+  // フィルターごとの件数
+  const countByFilter = (key: FilterKey): number =>
+    key === 'all'
+      ? dueItems.length
+      : dueItems.filter((ri) => ri.item.type === key).length;
 
   return (
     <ScrollView
@@ -88,22 +127,29 @@ export function HomeScreen({ navigation }: Props) {
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
-      {/* ストリークバッジ */}
-      {streakDays > 0 && (
-        <View style={styles.streakRow}>
-          <StreakBadge days={streakDays} />
+      {/* ――― ヒーローセクション: ストリークリング + 今日の復習 ――― */}
+      <View
+        style={[styles.heroCard, { backgroundColor: colors.card }, cardShadow]}
+      >
+        {/* 上段: ストリークリング + ヘッダー */}
+        <View style={styles.heroTop}>
+          <StreakRing days={streakDays} size={80} strokeWidth={6} showLabel />
+          <View style={styles.heroInfo}>
+            <Text style={[styles.heroLabel, { color: colors.labelSecondary }]}>
+              今日の復習
+            </Text>
+            <View style={styles.countRow}>
+              <Text style={[styles.countNumber, { color: colors.accent }]}>
+                {dueCount}
+              </Text>
+              <Text style={[styles.countUnit, { color: colors.labelSecondary }]}>
+                件
+              </Text>
+            </View>
+          </View>
         </View>
-      )}
 
-      {/* 今日の復習カード */}
-      <View style={[styles.reviewCard, { backgroundColor: colors.card }, cardShadow]}>
-        <Text style={[styles.cardLabel, { color: colors.labelSecondary }]}>今日の復習</Text>
-
-        <View style={styles.countRow}>
-          <Text style={[styles.countNumber, { color: colors.accent }]}>{dueCount}</Text>
-          <Text style={[styles.countUnit, { color: colors.labelSecondary }]}>件</Text>
-        </View>
-
+        {/* スタートボタン or 完了メッセージ */}
         {dueCount > 0 ? (
           <Pressable
             style={({ pressed }) => [
@@ -126,16 +172,156 @@ export function HomeScreen({ navigation }: Props) {
         )}
       </View>
 
-      {/* 統計セクション */}
-      <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>統計</Text>
+      {/* ――― 復習カードリスト ――― */}
+      {dueCount > 0 && (
+        <>
+          {/* フィルターバッジ横スクロール */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterRow}
+          >
+            {FILTERS.map((f) => {
+              const count = countByFilter(f.key);
+              const isActive = activeFilter === f.key;
+              return (
+                <Pressable
+                  key={f.key}
+                  onPress={() => setActiveFilter(f.key)}
+                  style={[
+                    styles.filterChip,
+                    {
+                      backgroundColor: isActive
+                        ? colors.accent
+                        : colors.backgroundSecondary,
+                      borderColor: isActive
+                        ? colors.accent
+                        : 'transparent',
+                    },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isActive }}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      { color: isActive ? '#FFFFFF' : colors.labelSecondary },
+                    ]}
+                  >
+                    {f.label}
+                  </Text>
+                  {count > 0 && (
+                    <View
+                      style={[
+                        styles.filterBadge,
+                        {
+                          backgroundColor: isActive
+                            ? 'rgba(255,255,255,0.25)'
+                            : colors.accent + '22',
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.filterBadgeText,
+                          { color: isActive ? '#FFFFFF' : colors.accent },
+                        ]}
+                      >
+                        {count}
+                      </Text>
+                    </View>
+                  )}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          {/* カードリスト */}
+          {filteredItems.length > 0 ? (
+            filteredItems.map((ri) => {
+              const meta = TYPE_META[ri.item.type];
+              const overdue = getOverdueDays(ri.item.review!.next_review_at);
+              return (
+                <Pressable
+                  key={ri.reviewId}
+                  style={({ pressed }) => [
+                    styles.itemCard,
+                    { backgroundColor: colors.card, opacity: pressed ? 0.75 : 1 },
+                    cardShadow,
+                  ]}
+                  onPress={handleStartReview}
+                  accessibilityRole="button"
+                >
+                  {/* タイプバッジ */}
+                  <View
+                    style={[
+                      styles.typeBadge,
+                      { backgroundColor: meta.bg },
+                    ]}
+                  >
+                    <Text style={[styles.typeBadgeText, { color: meta.color }]}>
+                      {meta.label}
+                    </Text>
+                  </View>
+
+                  {/* テキスト */}
+                  <View style={styles.itemTextArea}>
+                    <Text
+                      style={[styles.itemTitle, { color: colors.label }]}
+                      numberOfLines={2}
+                    >
+                      {ri.item.title}
+                    </Text>
+                    {overdue > 0 && (
+                      <Text
+                        style={[styles.overdueBadge, { color: colors.warning }]}
+                      >
+                        {overdue}日超過
+                      </Text>
+                    )}
+                  </View>
+
+                  {/* 矢印 */}
+                  <Text style={[styles.itemArrow, { color: colors.labelTertiary }]}>
+                    ›
+                  </Text>
+                </Pressable>
+              );
+            })
+          ) : (
+            <View style={[styles.emptyCard, { backgroundColor: colors.card }, cardShadow]}>
+              <Text style={[styles.emptyText, { color: colors.labelSecondary }]}>
+                このタイプのアイテムはありません
+              </Text>
+            </View>
+          )}
+        </>
+      )}
+
+      {/* ――― 統計セクション ――― */}
+      <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
+        統計
+      </Text>
       <View style={styles.statsRow}>
-        <View style={[styles.statCard, { backgroundColor: colors.card }, cardShadow]}>
-          <Text style={[styles.statValue, { color: colors.label }]}>{todayCompleted}</Text>
-          <Text style={[styles.statLabel, { color: colors.labelSecondary }]}>今日完了</Text>
+        <View
+          style={[styles.statCard, { backgroundColor: colors.card }, cardShadow]}
+        >
+          <Text style={[styles.statValue, { color: colors.label }]}>
+            {todayCompleted}
+          </Text>
+          <Text style={[styles.statLabel, { color: colors.labelSecondary }]}>
+            今日完了
+          </Text>
         </View>
-        <View style={[styles.statCard, { backgroundColor: colors.card }, cardShadow]}>
-          <Text style={[styles.statValue, { color: colors.label }]}>{totalItems}</Text>
-          <Text style={[styles.statLabel, { color: colors.labelSecondary }]}>総アイテム</Text>
+        <View
+          style={[styles.statCard, { backgroundColor: colors.card }, cardShadow]}
+        >
+          <Text style={[styles.statValue, { color: colors.label }]}>
+            {totalItems}
+          </Text>
+          <Text style={[styles.statLabel, { color: colors.labelSecondary }]}>
+            総アイテム
+          </Text>
         </View>
       </View>
     </ScrollView>
@@ -151,19 +337,25 @@ const styles = StyleSheet.create({
   container: {
     padding: Spacing.m,
     paddingBottom: Spacing.xxl,
-  },
-  streakRow: {
-    marginBottom: Spacing.m,
-  },
-
-  // 復習カード
-  reviewCard: {
-    borderRadius: Radius.l,
-    padding: Spacing.l,
-    marginBottom: Spacing.m,
     gap: Spacing.m,
   },
-  cardLabel: {
+
+  // ――― ヒーローカード ―――
+  heroCard: {
+    borderRadius: Radius.l,
+    padding: Spacing.l,
+    gap: Spacing.m,
+  },
+  heroTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.l,
+  },
+  heroInfo: {
+    flex: 1,
+    gap: Spacing.xs,
+  },
+  heroLabel: {
     ...TypeScale.subheadline,
   },
   countRow: {
@@ -172,9 +364,9 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   countNumber: {
-    fontSize: 56,
+    fontSize: 48,
     fontWeight: '700',
-    lineHeight: 64,
+    lineHeight: 56,
     letterSpacing: -2,
   },
   countUnit: {
@@ -203,13 +395,94 @@ const styles = StyleSheet.create({
     ...TypeScale.body,
   },
 
-  // 統計
+  // ――― フィルターバッジ ―――
+  filterRow: {
+    paddingRight: Spacing.m,
+    gap: Spacing.s,
+    flexDirection: 'row',
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.m,
+    paddingVertical: Spacing.s,
+    borderRadius: Radius.full,
+    gap: Spacing.xs,
+    borderWidth: 1,
+  },
+  filterChipText: {
+    ...TypeScale.subheadline,
+    fontWeight: '500' as const,
+  },
+  filterBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+  filterBadgeText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    lineHeight: 13,
+  },
+
+  // ――― アイテムカード ―――
+  itemCard: {
+    borderRadius: Radius.m,
+    padding: Spacing.m,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.m,
+  },
+  typeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Radius.xs,
+    minWidth: 44,
+    alignItems: 'center',
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    lineHeight: 14,
+  },
+  itemTextArea: {
+    flex: 1,
+    gap: 2,
+  },
+  itemTitle: {
+    ...TypeScale.subheadline,
+    fontWeight: '500' as const,
+  },
+  overdueBadge: {
+    ...TypeScale.caption1,
+    fontWeight: '500' as const,
+  },
+  itemArrow: {
+    fontSize: 22,
+    lineHeight: 24,
+    fontWeight: '300' as const,
+  },
+
+  // ――― 空状態 ―――
+  emptyCard: {
+    borderRadius: Radius.m,
+    padding: Spacing.l,
+    alignItems: 'center',
+  },
+  emptyText: {
+    ...TypeScale.footnote,
+  },
+
+  // ――― 統計 ―――
   sectionTitle: {
     ...TypeScale.footnote,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: Spacing.s,
     marginLeft: Spacing.xs,
+    marginBottom: -Spacing.xs,
   },
   statsRow: {
     flexDirection: 'row',
