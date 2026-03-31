@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   ScrollView,
   View,
@@ -6,7 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDB } from '../../hooks/useDatabase';
 import { useTheme } from '../../theme/ThemeContext';
@@ -21,6 +21,7 @@ export function ItemDetailScreen({ route }: Props) {
   const { itemId } = route.params;
   const db = useDB();
   const { colors, isDark } = useTheme();
+  const navigation = useNavigation();
 
   const [item, setItem] = useState<Item | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -59,6 +60,12 @@ export function ItemDetailScreen({ route }: Props) {
       loadItem();
     }, [loadItem])
   );
+
+  useEffect(() => {
+    if (item?.title) {
+      navigation.setOptions({ title: item.title });
+    }
+  }, [item, navigation]);
 
   if (loading || !item) {
     return (

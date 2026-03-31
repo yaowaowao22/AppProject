@@ -1,5 +1,5 @@
 import React from 'react';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Pressable, Text } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { LightColors, DarkColors } from '../../theme/colors';
 import { LibraryScreen } from '../../screens/library/LibraryScreen';
@@ -47,10 +47,20 @@ export function LibraryStack() {
       <Stack.Screen
         name="AddItem"
         component={AddItemScreen}
-        options={{
+        options={({ navigation: nav }) => ({
           title: '追加',
           presentation: 'modal',
-        }}
+          headerLeft: () => (
+            <Pressable
+              onPress={() => nav.goBack()}
+              accessibilityLabel="キャンセル"
+              accessibilityRole="button"
+              hitSlop={8}
+            >
+              <Text style={{ color: colors.accent, fontSize: 17 }}>キャンセル</Text>
+            </Pressable>
+          ),
+        })}
       />
     </Stack.Navigator>
   );
