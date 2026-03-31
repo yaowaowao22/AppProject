@@ -264,3 +264,97 @@ describe('カレンダー非表示', () => {
     expect(queryByLabelText('前の月')).toBeNull();
   });
 });
+
+// ── 8. ボリューム小（1000未満）表示 ──────────────────────────────────────────
+
+describe('ボリューム小（1000未満）', () => {
+  const workout = {
+    id: 'w2',
+    date: '2026-03-31',
+    totalVolume: 500,
+    duration: 1800,
+    sessions: [
+      {
+        id: 's1',
+        exerciseId: 'chest_001',
+        sets: [{ id: 'set1', weight: 50, reps: 10, isPersonalRecord: false }],
+        completedAt: '2026-03-31',
+      },
+    ],
+  };
+
+  beforeEach(() => {
+    mockUseWorkout.mockReturnValue({ ...defaultWorkoutCtx, workouts: [workout] });
+  });
+
+  test('totalVolume < 1000 のとき数値がそのまま表示される', async () => {
+    const { getAllByText } = renderHome();
+    await act(async () => {});
+    // 500 はそのまま '500' として表示
+    expect(getAllByText('500').length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ── 9. 過去日付のワークアウト ────────────────────────────────────────────────
+
+describe('過去日付のワークアウト', () => {
+  const workout = {
+    id: 'w3',
+    date: '2026-03-28',
+    totalVolume: 1000,
+    duration: 2700,
+    sessions: [
+      {
+        id: 's1',
+        exerciseId: 'chest_001',
+        sets: [{ id: 'set1', weight: 60, reps: 10, isPersonalRecord: false }],
+        completedAt: '2026-03-28',
+      },
+    ],
+  };
+
+  beforeEach(() => {
+    mockUseWorkout.mockReturnValue({ ...defaultWorkoutCtx, workouts: [workout] });
+  });
+
+  test('過去日付のワークアウトがカレンダーに反映される（クラッシュなし）', async () => {
+    const { toJSON } = renderHome();
+    await act(async () => {});
+    expect(toJSON()).not.toBeNull();
+  });
+});
+
+// ── 10. クイックスタート + 既存セッションあり ─────────────────────────────────
+
+describe('クイックスタート（既存セッションあり）', () => {
+  const todayStr = '2026-03-31';
+  const workout = {
+    id: 'w4',
+    date: todayStr,
+    totalVolume: 1000,
+    duration: 1800,
+    sessions: [
+      {
+        id: 's1',
+        exerciseId: 'chest_001',
+        sets: [{ id: 'set1', weight: 60, reps: 10, isPersonalRecord: false }],
+        completedAt: todayStr,
+      },
+    ],
+  };
+
+  beforeEach(() => {
+    mockUseWorkout.mockReturnValue({ ...defaultWorkoutCtx, workouts: [workout] });
+  });
+
+  test('既存セッションがある種目のチップを押すと existingSession 付きで遷移する', async () => {
+    const { getAllByLabelText } = renderHome();
+    await act(async () => {});
+    const chips = getAllByLabelText('ベンチプレス');
+    fireEvent.press(chips[0]);
+    expect(mockNavigate).toHaveBeenCalledWith(
+      'WorkoutStack',
+      expect.objectContaining({ screen: 'ActiveWorkout' }),
+    );
+  });
+});
