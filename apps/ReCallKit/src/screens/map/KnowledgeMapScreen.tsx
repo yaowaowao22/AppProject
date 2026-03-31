@@ -1,7 +1,7 @@
 // ============================================================
-// KnowledgeMapScreen — SVG 力学グラフ
-// ・フォースシミュレーション（反発・引力・中心力）
-// ・ノードドラッグ & タップで詳細カード表示
+// KnowledgeMapScreen — カテゴリグループ表示
+// ・カテゴリごとにノードをクラスター配置
+// ・タップで詳細カード表示
 // ・タグ ID に基づくカラーパレットで色分け
 // ============================================================
 import React, {
@@ -34,7 +34,7 @@ import type { ItemWithMeta, Tag } from '../../types';
 
 type Props = NativeStackScreenProps<MapStackParamList, 'KnowledgeMap'>;
 
-// ── カラーパレット（10色）─────────────────────────────────────
+// ── タグカラーパレット（ノード色）────────────────────────────
 const TAG_COLORS = [
   SystemColors.indigo,
   SystemColors.purple,
@@ -48,8 +48,36 @@ const TAG_COLORS = [
   '#00C7BE',
 ] as const;
 
+// ── カテゴリグループ背景色 ────────────────────────────────────
+const CAT_BG = [
+  'rgba(99,102,241,0.10)',
+  'rgba(168,85,247,0.10)',
+  'rgba(20,184,166,0.10)',
+  'rgba(59,130,246,0.10)',
+  'rgba(34,197,94,0.10)',
+  'rgba(249,115,22,0.10)',
+  'rgba(234,179,8,0.10)',
+  'rgba(239,68,68,0.10)',
+  'rgba(236,72,153,0.10)',
+  'rgba(0,199,190,0.10)',
+] as const;
+
+const CAT_STROKE = [
+  'rgba(99,102,241,0.30)',
+  'rgba(168,85,247,0.30)',
+  'rgba(20,184,166,0.30)',
+  'rgba(59,130,246,0.30)',
+  'rgba(34,197,94,0.30)',
+  'rgba(249,115,22,0.30)',
+  'rgba(234,179,8,0.30)',
+  'rgba(239,68,68,0.30)',
+  'rgba(236,72,153,0.30)',
+  'rgba(0,199,190,0.30)',
+] as const;
+
 const NODE_R = 22;
 const LABEL_CHARS = 10;
+const CAT_LABEL_CHARS = 12;
 
 function tagColor(tagId: number): string {
   return TAG_COLORS[Math.abs(tagId) % TAG_COLORS.length];
@@ -59,15 +87,22 @@ function nodeColor(tags: Tag[]): string {
   return tags.length > 0 ? tagColor(tags[0].id) : '#8E8E93';
 }
 
+function catBg(idx: number): string {
+  return CAT_BG[idx % CAT_BG.length];
+}
+
+function catStroke(idx: number): string {
+  return CAT_STROKE[idx % CAT_STROKE.length];
+}
+
 // ── グラフデータ型 ─────────────────────────────────────────────
 interface GNode {
   id: number;
   title: string;
   tags: Tag[];
+  category: string;
   x: number;
   y: number;
-  vx: number;
-  vy: number;
 }
 
 interface GEdge {
@@ -77,26 +112,81 @@ interface GEdge {
   tagId: number;
 }
 
-// ── グラフ構築 ────────────────────────────────────────────────
-function buildGraph(
+interface CategoryGroup {
+  category: string;
+  cx: number;
+  cy: number;
+  bgR: number;
+  colorIdx: number;
+}
+
+// ── カテゴリグループレイアウト構築 ────────────────────────────
+function buildGroupedLayout(
   items: ItemWithMeta[],
   w: number,
   h: number,
-  existingPositions: Map<number, { x: number; y: number }>,
-): { nodes: GNode[]; edges: GEdge[] } {
-  const nodes: GNode[] = items.map((item) => {
-    const pos = existingPositions.get(item.id);
-    return {
-      id: item.id,
-      title: item.title,
-      tags: item.tags,
-      x: pos?.x ?? w / 2 + (Math.random() - 0.5) * w * 0.65,
-      y: pos?.y ?? h / 2 + (Math.random() - 0.5) * h * 0.65,
-      vx: 0,
-      vy: 0,
-    };
+): { nodes: GNode[]; edges: GEdge[]; groups: CategoryGroup[] } {
+  // カテゴリ別にグループ化（null は「未分類」へ）
+  const catMap = new Map<string, ItemWithMeta[]>();
+  for (const item of items) {
+    const key = item.category ?? '未分類';
+    if (!catMap.has(key)) catMap.set(key, []);
+    catMap.get(key)!.push(item);
+  }
+
+  const cats = [...catMap.keys()];
+  const n = cats.length;
+
+  // グリッド列数を決定
+  const cols =
+    n <= 1 ? 1 : n <= 2 ? 2 : n <= 4 ? 2 : n <= 6 ? 3 : Math.ceil(Math.sqrt(n));
+  const rows = Math.ceil(n / cols);
+
+  const cellW = w / cols;
+  const cellH = h / rows;
+
+  // ラベルスペース（上部 24px）を除いた使用可能半径
+  const maxBgR = Math.min(cellW, cellH) / 2 - 28;
+
+  const groups: CategoryGroup[] = [];
+  const nodes: GNode[] = [];
+
+  cats.forEach((cat, idx) => {
+    const col = idx % cols;
+    const row = Math.floor(idx / cols);
+    // セル中心（ラベルスペース分、下にオフセット）
+    const cx = cellW * col + cellW / 2;
+    const cy = cellH * row + cellH / 2 + 12;
+
+    const catItems = catMap.get(cat)!;
+
+    // アイテム配置円の半径（1件の場合は中心に配置）
+    const itemR =
+      catItems.length <= 1
+        ? 0
+        : Math.min(maxBgR - NODE_R - 12, NODE_R * 1.4 + catItems.length * NODE_R * 0.55);
+
+    const bgR = Math.max(NODE_R + 20, Math.min(maxBgR, itemR + NODE_R + 16));
+
+    groups.push({ category: cat, cx, cy, bgR, colorIdx: idx });
+
+    catItems.forEach((item, i) => {
+      const angle =
+        catItems.length === 1
+          ? 0
+          : (2 * Math.PI * i) / catItems.length - Math.PI / 2;
+      nodes.push({
+        id: item.id,
+        title: item.title,
+        tags: item.tags,
+        category: cat,
+        x: cx + itemR * Math.cos(angle),
+        y: cy + itemR * Math.sin(angle),
+      });
+    });
   });
 
+  // エッジ（共通タグを持つアイテムを接続）
   const edges: GEdge[] = [];
   const edgeSet = new Set<string>();
   const byTag = new Map<number, { itemId: number; tagId: number }[]>();
@@ -118,82 +208,19 @@ function buildGraph(
         const key = `${a}-${b}`;
         if (!edgeSet.has(key)) {
           edgeSet.add(key);
-          edges.push({ id: key, src: group[i].itemId, tgt: group[j].itemId, tagId: group[i].tagId });
+          edges.push({
+            id: key,
+            src: group[i].itemId,
+            tgt: group[j].itemId,
+            tagId: group[i].tagId,
+          });
           c++;
         }
       }
     }
   }
 
-  return { nodes, edges };
-}
-
-// ── フォースシミュレーション ───────────────────────────────────
-function simulate(nodes: GNode[], edges: GEdge[], w: number, h: number): GNode[] {
-  const nodeMap = new Map(nodes.map((n) => [n.id, { ...n }]));
-  const arr = [...nodeMap.values()];
-  const N = arr.length;
-
-  const KR = 7000;   // 反発力
-  const KA = 0.03;   // 引力（バネ定数）
-  const KC = 0.007;  // 中心引力
-  const RL = 120;    // バネの自然長
-  const DAMP = 0.88; // 減衰係数
-  const cx = w / 2;
-  const cy = h / 2;
-
-  for (let iter = 0; iter < 200; iter++) {
-    // 減衰
-    for (const n of arr) {
-      n.vx *= DAMP;
-      n.vy *= DAMP;
-    }
-
-    // ノード間反発力（クーロン則）
-    for (let i = 0; i < N; i++) {
-      for (let j = i + 1; j < N; j++) {
-        const a = arr[i];
-        const b = arr[j];
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const d = Math.max(Math.hypot(dx, dy), 1);
-        const f = KR / (d * d);
-        const fx = (dx / d) * f;
-        const fy = (dy / d) * f;
-        a.vx -= fx;
-        a.vy -= fy;
-        b.vx += fx;
-        b.vy += fy;
-      }
-    }
-
-    // エッジ引力（フックの法則）
-    for (const e of edges) {
-      const a = nodeMap.get(e.src);
-      const b = nodeMap.get(e.tgt);
-      if (!a || !b) continue;
-      const dx = b.x - a.x;
-      const dy = b.y - a.y;
-      const d = Math.max(Math.hypot(dx, dy), 1);
-      const f = KA * (d - RL);
-      const fx = (dx / d) * f;
-      const fy = (dy / d) * f;
-      a.vx += fx;
-      a.vy += fy;
-      b.vx -= fx;
-      b.vy -= fy;
-    }
-
-    // 中心力 & 座標更新
-    for (const n of arr) {
-      n.vx += (cx - n.x) * KC;
-      n.vy += (cy - n.y) * KC;
-      n.x = Math.max(NODE_R + 4, Math.min(w - NODE_R - 4, n.x + n.vx));
-      n.y = Math.max(NODE_R + 4, Math.min(h - NODE_R - 4, n.y + n.vy));
-    }
-  }
-
-  return arr;
+  return { nodes, edges, groups };
 }
 
 // ── メインコンポーネント ───────────────────────────────────────
@@ -202,16 +229,7 @@ export function KnowledgeMapScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { items, isLoading, refresh } = useKnowledgeMap();
 
-  // グラフ状態
-  const nodesRef = useRef<GNode[]>([]);
-  const [edges, setEdges] = useState<GEdge[]>([]);
   const [graphSize, setGraphSize] = useState({ w: 0, h: 0 });
-  const graphSizeRef = useRef({ w: 0, h: 0 });
-  const [renderKey, forceUpdate] = useState(0);
-
-  // インタラクション状態
-  const draggingId = useRef<number | null>(null);
-  const dragStartNode = useRef({ x: 0, y: 0 });
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   // カードアニメーション
@@ -225,28 +243,19 @@ export function KnowledgeMapScreen({ navigation }: Props) {
     }, [refresh]),
   );
 
-  // items or サイズが揃ったらグラフを構築
-  useEffect(() => {
+  // グループレイアウトを useMemo で計算
+  const { nodes, edges, groups } = useMemo(() => {
     if (!items.length || !graphSize.w || !graphSize.h) {
-      if (!items.length && !isLoading) {
-        nodesRef.current = [];
-        setEdges([]);
-        forceUpdate((k) => k + 1);
-      }
-      return;
+      return { nodes: [], edges: [], groups: [] };
     }
-    // 既存位置を引き継ぐ
-    const existingPos = new Map(nodesRef.current.map((n) => [n.id, { x: n.x, y: n.y }]));
-    const { nodes: initNodes, edges: initEdges } = buildGraph(items, graphSize.w, graphSize.h, existingPos);
-    // 新規ノードのみシミュレーション対象に（既存位置は保持）
-    const hasNewNodes = initNodes.some((n) => !existingPos.has(n.id));
-    nodesRef.current = hasNewNodes
-      ? simulate(initNodes, initEdges, graphSize.w, graphSize.h)
-      : initNodes;
-    setEdges(initEdges);
-    forceUpdate((k) => k + 1);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return buildGroupedLayout(items, graphSize.w, graphSize.h);
   }, [items, graphSize.w, graphSize.h]);
+
+  // PanResponder から最新 nodes を参照するための ref
+  const nodesRef = useRef<GNode[]>([]);
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
 
   // カードアニメーション
   useEffect(() => {
@@ -268,46 +277,39 @@ export function KnowledgeMapScreen({ navigation }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
-  // PanResponder（ドラッグ & タップ）
+  // PanResponder（タップのみ・ドラッグなし）
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: (evt) => {
         const { locationX, locationY } = evt.nativeEvent;
-        for (const n of nodesRef.current) {
-          if (Math.hypot(n.x - locationX, n.y - locationY) <= NODE_R + 8) {
-            draggingId.current = n.id;
-            dragStartNode.current = { x: n.x, y: n.y };
-            return true;
-          }
-        }
-        setSelectedId(null);
-        return false;
-      },
-      onPanResponderMove: (_, gs) => {
-        if (draggingId.current === null) return;
-        const { w, h } = graphSizeRef.current;
-        const nx = Math.max(NODE_R + 4, Math.min(w - NODE_R - 4, dragStartNode.current.x + gs.dx));
-        const ny = Math.max(NODE_R + 4, Math.min(h - NODE_R - 4, dragStartNode.current.y + gs.dy));
-        nodesRef.current = nodesRef.current.map((n) =>
-          n.id === draggingId.current ? { ...n, x: nx, y: ny } : n,
+        const hit = nodesRef.current.some(
+          (n) => Math.hypot(n.x - locationX, n.y - locationY) <= NODE_R + 8,
         );
-        forceUpdate((k) => k + 1);
+        if (!hit) setSelectedId(null);
+        return hit;
       },
-      onPanResponderRelease: (_, gs) => {
-        if (Math.hypot(gs.dx, gs.dy) < 8 && draggingId.current !== null) {
-          setSelectedId(draggingId.current);
+      onPanResponderRelease: (evt, gs) => {
+        if (Math.abs(gs.dx) < 8 && Math.abs(gs.dy) < 8) {
+          const { locationX, locationY } = evt.nativeEvent;
+          const hit = nodesRef.current.find(
+            (n) => Math.hypot(n.x - locationX, n.y - locationY) <= NODE_R + 8,
+          );
+          if (hit) setSelectedId(hit.id);
         }
-        draggingId.current = null;
       },
     }),
   ).current;
 
-  const handleLayout = useCallback((e: { nativeEvent: { layout: { width: number; height: number } } }) => {
-    const { width, height } = e.nativeEvent.layout;
-    if (width === graphSizeRef.current.w && height === graphSizeRef.current.h) return;
-    graphSizeRef.current = { w: width, h: height };
-    setGraphSize({ w: width, h: height });
-  }, []);
+  const handleLayout = useCallback(
+    (e: { nativeEvent: { layout: { width: number; height: number } } }) => {
+      const { width, height } = e.nativeEvent.layout;
+      setGraphSize((prev) => {
+        if (prev.w === width && prev.h === height) return prev;
+        return { w: width, h: height };
+      });
+    },
+    [],
+  );
 
   // タグ凡例（重複排除・id順）
   const allTags = useMemo(() => {
@@ -325,15 +327,13 @@ export function KnowledgeMapScreen({ navigation }: Props) {
     [items, selectedId],
   );
 
-  // レンダリング用スナップショット（renderKey で更新トリガー）
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const nodes = useMemo(() => nodesRef.current, [renderKey]);
   const nodeById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
 
   const edgeColor = isDark ? 'rgba(235,235,245,0.12)' : 'rgba(0,0,0,0.08)';
   const labelColor = isDark ? 'rgba(235,235,245,0.80)' : 'rgba(60,60,67,0.80)';
+  const catLabelColor = isDark ? 'rgba(235,235,245,0.65)' : 'rgba(60,60,67,0.65)';
 
-  const showLoading = isLoading || (items.length > 0 && nodes.length === 0 && graphSize.w > 0);
+  const showLoading = isLoading;
   const showEmpty = !isLoading && items.length === 0;
 
   return (
@@ -361,6 +361,36 @@ export function KnowledgeMapScreen({ navigation }: Props) {
 
         {!showLoading && !showEmpty && graphSize.w > 0 && (
           <Svg width={graphSize.w} height={graphSize.h}>
+            {/* カテゴリグループ背景 */}
+            {groups.map((g) => {
+              const labelText =
+                g.category.length > CAT_LABEL_CHARS
+                  ? g.category.slice(0, CAT_LABEL_CHARS) + '…'
+                  : g.category;
+              return (
+                <React.Fragment key={g.category}>
+                  <Circle
+                    cx={g.cx}
+                    cy={g.cy}
+                    r={g.bgR}
+                    fill={catBg(g.colorIdx)}
+                    stroke={catStroke(g.colorIdx)}
+                    strokeWidth={1}
+                  />
+                  <SvgText
+                    x={g.cx}
+                    y={g.cy - g.bgR + 15}
+                    textAnchor="middle"
+                    fill={catLabelColor}
+                    fontSize={11}
+                    fontWeight="600"
+                  >
+                    {labelText}
+                  </SvgText>
+                </React.Fragment>
+              );
+            })}
+
             {/* エッジ（共通タグを持つアイテムを接続） */}
             {edges.map((edge) => {
               const src = nodeById.get(edge.src);

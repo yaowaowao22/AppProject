@@ -13,6 +13,7 @@ interface ItemRow {
   content: string;
   source_url: string | null;
   excerpt: string | null;
+  category: string | null;
   created_at: string;
   updated_at: string;
   archived: 0 | 1;
@@ -81,6 +82,7 @@ export function useKnowledgeMap() {
           content: row.content,
           source_url: row.source_url,
           excerpt: row.excerpt,
+          category: row.category,
           created_at: row.created_at,
           updated_at: row.updated_at,
           archived: row.archived,
