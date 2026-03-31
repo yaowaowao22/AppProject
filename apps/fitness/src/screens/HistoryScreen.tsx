@@ -232,14 +232,14 @@ function DailyTab({ styles, colors }: { styles: ReturnType<typeof makeStyles>; c
 
           {item.sessions.map(session => {
             const ex = EXERCISES.find(e => e.id === session.exerciseId);
-            const maxW = getMaxWeight(session);
+            const vol = Math.round(getVolume(session));
             return (
               <View key={session.id} style={styles.exerciseRow}>
                 <Text style={styles.exerciseName} numberOfLines={1}>
                   {ex?.name ?? session.exerciseId}
                 </Text>
                 <Text style={styles.exerciseStat}>
-                  {session.sets.length}セット{maxW !== null ? ` · ${maxW}kg` : ' · 自重'}
+                  {session.sets.length}セット{vol > 0 ? ` · ${vol.toLocaleString()}kg` : ' · 自重'}
                 </Text>
               </View>
             );
