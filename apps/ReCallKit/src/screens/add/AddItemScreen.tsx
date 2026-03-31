@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   ScrollView,
   View,
@@ -7,6 +7,7 @@ import {
   Pressable,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDB } from '../../hooks/useDatabase';
@@ -15,6 +16,7 @@ import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
 import type { LibraryStackParamList } from '../../navigation/types';
 import type { ItemType } from '../../types';
+import { fetchUrlMetadata } from '../../services/urlMetadataService';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'AddItem'>;
 
@@ -23,6 +25,9 @@ const ITEM_TYPES: { value: ItemType; label: string }[] = [
   { value: 'url', label: 'URL' },
 ];
 
+const URL_PATTERN = /^https?:\/\/.+/i;
+const DEBOUNCE_MS = 800;
+
 export function AddItemScreen({ navigation }: Props) {
   const db = useDB();
   const { colors } = useTheme();
@@ -30,8 +35,77 @@ export function AddItemScreen({ navigation }: Props) {
   const [type, setType] = useState<ItemType>('text');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [excerpt, setExcerpt] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // OGP自動取得の状態
+  const [fetching, setFetching] = useState(false);
+  const [titleAutoFilled, setTitleAutoFilled] = useState(false);
+  const [contentAutoFilled, setContentAutoFilled] = useState(false);
+
+  // debounce用タイマー
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchMetadata = useCallback(async (url: string) => {
+    if (!URL_PATTERN.test(url)) return;
+
+    setFetching(true);
+    const metadata = await fetchUrlMetadata(url);
+    setFetching(false);
+
+    if (!metadata) return;
+
+    // タイトルが空の場合のみ自動入力
+    if (metadata.title) {
+      setTitle((prev) => {
+        if (prev.trim() === '') {
+          setTitleAutoFilled(true);
+          return metadata.title ?? '';
+        }
+        return prev;
+      });
+    }
+
+    // descriptionをcontentとexcerptに自動入力（空の場合のみ）
+    if (metadata.description) {
+      setContent((prev) => {
+        if (prev.trim() === '') {
+          setContentAutoFilled(true);
+          return metadata.description ?? '';
+        }
+        return prev;
+      });
+      setExcerpt(metadata.description);
+    }
+  }, []);
+
+  const handleUrlChange = useCallback(
+    (text: string) => {
+      setSourceUrl(text);
+
+      // 自動入力フラグをリセット（URL変更時）
+      setTitleAutoFilled(false);
+      setContentAutoFilled(false);
+
+      // debounce
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      debounceTimer.current = setTimeout(() => {
+        fetchMetadata(text);
+      }, DEBOUNCE_MS);
+    },
+    [fetchMetadata]
+  );
+
+  const handleTitleChange = (text: string) => {
+    setTitle(text);
+    setTitleAutoFilled(false); // 手動入力でフラグ解除
+  };
+
+  const handleContentChange = (text: string) => {
+    setContent(text);
+    setContentAutoFilled(false);
+  };
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -46,9 +120,9 @@ export function AddItemScreen({ navigation }: Props) {
     setSaving(true);
     try {
       const result = await db.runAsync(
-        `INSERT INTO items (type, title, content, source_url, created_at, updated_at, archived)
-         VALUES (?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), 0)`,
-        [type, title.trim(), content.trim(), sourceUrl.trim() || null]
+        `INSERT INTO items (type, title, content, excerpt, source_url, created_at, updated_at, archived)
+         VALUES (?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), 0)`,
+        [type, title.trim(), content.trim(), excerpt.trim() || null, sourceUrl.trim() || null]
       );
 
       // 復習スケジュールを作成（即座に復習対象にする）
@@ -99,34 +173,60 @@ export function AddItemScreen({ navigation }: Props) {
         ))}
       </View>
 
-      {/* タイトル */}
-      <Text style={[styles.label, { color: colors.labelSecondary }]}>タイトル</Text>
-      <TextInput
-        style={[styles.input, { backgroundColor: colors.card, color: colors.label, borderColor: colors.separator }]}
-        value={title}
-        onChangeText={setTitle}
-        placeholder="タイトルを入力"
-        placeholderTextColor={colors.labelTertiary}
-      />
-
       {/* URL（URLタイプの場合） */}
       {type === 'url' && (
         <>
-          <Text style={[styles.label, { color: colors.labelSecondary }]}>ソースURL</Text>
+          <View style={styles.labelRow}>
+            <Text style={[styles.label, { color: colors.labelSecondary }]}>ソースURL</Text>
+            {fetching && (
+              <ActivityIndicator
+                size="small"
+                color={colors.accent}
+                style={styles.fetchingIndicator}
+              />
+            )}
+          </View>
           <TextInput
-            style={[styles.input, { backgroundColor: colors.card, color: colors.label, borderColor: colors.separator }]}
+            style={[
+              styles.input,
+              { backgroundColor: colors.card, color: colors.label, borderColor: colors.separator },
+            ]}
             value={sourceUrl}
-            onChangeText={setSourceUrl}
+            onChangeText={handleUrlChange}
             placeholder="https://..."
             placeholderTextColor={colors.labelTertiary}
             keyboardType="url"
             autoCapitalize="none"
+            autoCorrect={false}
           />
         </>
       )}
 
+      {/* タイトル */}
+      <View style={styles.labelRow}>
+        <Text style={[styles.label, { color: colors.labelSecondary }]}>タイトル</Text>
+        {titleAutoFilled && (
+          <Text style={[styles.autoTag, { color: colors.accent }]}>自動取得</Text>
+        )}
+      </View>
+      <TextInput
+        style={[
+          styles.input,
+          { backgroundColor: colors.card, color: colors.label, borderColor: colors.separator },
+        ]}
+        value={title}
+        onChangeText={handleTitleChange}
+        placeholder="タイトルを入力"
+        placeholderTextColor={colors.labelTertiary}
+      />
+
       {/* 内容 */}
-      <Text style={[styles.label, { color: colors.labelSecondary }]}>内容</Text>
+      <View style={styles.labelRow}>
+        <Text style={[styles.label, { color: colors.labelSecondary }]}>内容</Text>
+        {contentAutoFilled && (
+          <Text style={[styles.autoTag, { color: colors.accent }]}>自動取得</Text>
+        )}
+      </View>
       <TextInput
         style={[
           styles.input,
@@ -134,7 +234,7 @@ export function AddItemScreen({ navigation }: Props) {
           { backgroundColor: colors.card, color: colors.label, borderColor: colors.separator },
         ]}
         value={content}
-        onChangeText={setContent}
+        onChangeText={handleContentChange}
         placeholder="覚えたい内容を入力..."
         placeholderTextColor={colors.labelTertiary}
         multiline
@@ -162,11 +262,23 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xxl,
     gap: Spacing.s,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.s,
+    marginTop: Spacing.s,
+  },
   label: {
     ...TypeScale.footnote,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginTop: Spacing.s,
+  },
+  autoTag: {
+    ...TypeScale.caption2,
+    fontWeight: '500',
+  },
+  fetchingIndicator: {
+    marginLeft: Spacing.xs,
   },
   typeRow: {
     flexDirection: 'row',
