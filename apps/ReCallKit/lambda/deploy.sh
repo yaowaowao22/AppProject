@@ -43,14 +43,15 @@ COMMAND="${1:-update}"
 package() {
   echo "[1/3] ZIP パッケージングを開始..."
   rm -f "${ZIP_FILE}"
-  # Windows の Git Bash では zip コマンドが存在しないため Python で代替
-  python - <<PYEOF
-import zipfile, os
-src = r"${SRC_DIR}/handler.py"
-dst = r"${ZIP_FILE}"
+  # Git Bash パスを Windows パスに変換してから Python に渡す
+  WIN_SRC=$(cygpath -w "${SRC_DIR}/handler.py")
+  WIN_ZIP=$(cygpath -w "${ZIP_FILE}")
+  python - "${WIN_SRC}" "${WIN_ZIP}" <<'PYEOF'
+import sys, zipfile
+src, dst = sys.argv[1], sys.argv[2]
 with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as zf:
     zf.write(src, "handler.py")
-print("      → ${ZIP_FILE} を作成しました")
+print(f"      → {dst} を作成しました")
 PYEOF
 }
 
