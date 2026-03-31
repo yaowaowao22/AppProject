@@ -318,6 +318,17 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 160,
   },
+  aiAnalyzeButton: {
+    borderRadius: Radius.m,
+    paddingVertical: Spacing.s,
+    alignItems: 'center',
+    marginTop: Spacing.xs,
+  },
+  aiAnalyzeButtonText: {
+    ...TypeScale.subheadline,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
   saveButton: {
     borderRadius: Radius.m,
     paddingVertical: Spacing.m,
