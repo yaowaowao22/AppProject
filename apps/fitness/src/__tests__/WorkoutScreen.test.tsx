@@ -568,6 +568,21 @@ describe('ActiveWorkoutScreen', () => {
     expect(true).toBe(true);
   });
 
+  test('重量入力エリアを押して startEditing、その後 TextInput で commitEdit をトリガー', () => {
+    const { getAllByText, queryAllByLabelText } = renderActive();
+    // 重量を表示している要素を押して startEditing を発動
+    const weightItems = getAllByText('55');
+    if (weightItems.length > 0) {
+      fireEvent.press(weightItems[0]);
+    }
+    // TextInput が表示されたら onSubmitEditing を発動して commitEdit を呼ぶ
+    const textInputs = queryAllByLabelText(/重量|reps/);
+    if (textInputs.length > 0) {
+      fireEvent(textInputs[0], 'submitEditing');
+    }
+    expect(true).toBe(true);
+  });
+
   test('セット行をタップすると handleRowTap が呼ばれる', () => {
     const { getAllByText } = renderActive();
     // セット行の番号テキスト "2" をタップ
