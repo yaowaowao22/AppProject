@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
@@ -36,6 +37,7 @@ const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 // ============================================================
 export function SettingsScreen() {
   const { colors, themePreference, setThemePreference } = useTheme();
+  const insets = useSafeAreaInsets();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempHour, setTempHour] = useState(8);
@@ -118,7 +120,7 @@ export function SettingsScreen() {
   return (
     <ScrollView
       style={[styles.scroll, { backgroundColor: colors.backgroundGrouped }]}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xxl }]}
       showsVerticalScrollIndicator={false}
     >
       {/* ── 復習設定 ─────────────────────────────────────── */}
@@ -361,7 +363,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingTop: Spacing.m,
-    paddingBottom: Spacing.xxl,
     paddingHorizontal: Spacing.m,
     gap: Spacing.xs,
   },

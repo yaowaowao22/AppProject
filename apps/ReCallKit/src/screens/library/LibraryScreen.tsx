@@ -28,6 +28,7 @@ import {
   type ReviewStatusFilter,
   type DateRangeFilter,
 } from '../../hooks/useLibrary';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSidebarFilter } from '../../hooks/useSidebarFilter';
 import type { LibraryStackParamList } from '../../navigation/types';
 import type { ItemWithMeta } from '../../types';
@@ -146,6 +147,7 @@ function FilterChip({
 // ---- メインコンポーネント ------------------------------------
 export function LibraryScreen({ navigation }: Props) {
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<LibraryFilterType>('all');
   const [dateRange, setDateRange] = useState<DateRangeFilter>('all');
@@ -340,7 +342,7 @@ export function LibraryScreen({ navigation }: Props) {
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
           renderSectionHeader={renderSectionHeader}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 56 + Spacing.l }]}
           showsVerticalScrollIndicator={false}
           stickySectionHeadersEnabled={false}
         />
@@ -348,7 +350,7 @@ export function LibraryScreen({ navigation }: Props) {
 
       {/* FAB: アイテム追加 */}
       <Pressable
-        style={[styles.fab, { backgroundColor: colors.accent }]}
+        style={[styles.fab, { backgroundColor: colors.accent, bottom: insets.bottom + Spacing.l }]}
         onPress={() => {
           if (Platform.OS !== 'web') {
             try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
@@ -428,7 +430,6 @@ const styles = StyleSheet.create({
   // ---- リスト ----
   list: {
     paddingHorizontal: Spacing.m,
-    paddingBottom: 100,
   },
 
   // ---- セクションヘッダー ----
@@ -525,7 +526,6 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: Spacing.m,
-    bottom: Spacing.l,
     width: 56,
     height: 56,
     borderRadius: 28,

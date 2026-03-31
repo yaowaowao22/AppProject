@@ -107,6 +107,7 @@ export function JournalScreen({ navigation: _navigation }: Props) {
       keyExtractor={(item) => String(item.id)}
       stickySectionHeadersEnabled
       showsVerticalScrollIndicator={false}
+      contentInsetAdjustmentBehavior="automatic"
       renderSectionHeader={({ section }) => (
         <View style={[styles.sectionHeader, { backgroundColor: colors.backgroundGrouped }]}>
           <Text style={[styles.sectionHeaderText, { color: colors.labelSecondary }]}>

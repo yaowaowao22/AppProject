@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDB } from '../../hooks/useDatabase';
@@ -21,6 +22,7 @@ export function ItemDetailScreen({ route }: Props) {
   const { itemId } = route.params;
   const db = useDB();
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
   const [item, setItem] = useState<Item | null>(null);
@@ -80,7 +82,7 @@ export function ItemDetailScreen({ route }: Props) {
   return (
     <ScrollView
       style={{ backgroundColor: colors.backgroundGrouped }}
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + Spacing.xxl }]}
     >
       {/* タイトル */}
       <Text style={[styles.title, { color: colors.label }]}>{item.title}</Text>
