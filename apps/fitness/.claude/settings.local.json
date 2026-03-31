@@ -27,7 +27,9 @@
       "Bash(grep -r \"google-analytics\\\\|amplitude\\\\|mixpanel\\\\|segment\\\\|analytics\" C:UsersytataAppProjectbaseProjectappsfitness --include=*.ts --include=*.tsx --include=*.json)",
       "Bash(find C:UsersytataAppProjectbaseProjectpackagesanalytics -type f -name *.ts -o -name *.tsx -o -name *.json)",
       "Bash(grep -r \"firebase\\\\|Firebase\" C:UsersytataAppProjectbaseProjectappsfitness --include=*.json --include=*.ts --include=*.tsx)",
-      "Bash(npx eas:*)"
+      "Bash(npx eas:*)",
+      "Bash(git -C \"C:/Users/ytata/AppProject/baseProject\" diff HEAD -- apps/fitness/app.json apps/fitness/eas.json)",
+      "Bash(git -C \"C:/Users/ytata/AppProject/baseProject\" status)"
     ]
   }
 }
