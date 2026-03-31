@@ -27,27 +27,7 @@
       "package": "com.recallkit.app"
     },
     "plugins": [
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/icon.png",
-          "color": "#C47F17"
-        }
-      ],
-      "expo-sqlite",
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "useFrameworks": "static"
-          }
-        }
-      ]
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
-      }
-    }
+      "expo-sqlite"
+    ]
   }
 }
