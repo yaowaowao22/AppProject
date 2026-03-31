@@ -151,4 +151,17 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
   }
 }
 
+// ============================================================
+// 全データ削除
+// app_settings は保持し、ユーザーデータのみ消去する
+// ============================================================
+export async function deleteAllData(db: SQLiteDatabase): Promise<void> {
+  await db.execAsync(`
+    DELETE FROM items;
+    DELETE FROM tags;
+    DELETE FROM collections;
+    DELETE FROM review_groups;
+  `);
+}
+
 export { SCHEMA_VERSION };
