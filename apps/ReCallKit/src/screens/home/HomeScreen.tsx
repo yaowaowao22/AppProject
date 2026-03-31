@@ -12,6 +12,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -166,6 +167,28 @@ export function HomeScreen({ navigation }: Props) {
     key === 'all'
       ? sidebarFilteredItems.length
       : sidebarFilteredItems.filter((ri) => ri.item.type === key).length;
+
+  // ---- 空状態（アイテムが0件） ----
+  if (totalItems === 0) {
+    return (
+      <View style={[styles.center, { backgroundColor: colors.backgroundGrouped }]}>
+        <Ionicons name="archive-outline" size={48} color={colors.labelTertiary} />
+        <Text style={[styles.emptyTitle, { color: colors.label }]}>
+          まだアイテムがありません
+        </Text>
+        <Text style={[styles.emptySubtitle, { color: colors.labelSecondary }]}>
+          まずライブラリにアイテムを追加しましょう
+        </Text>
+        <Pressable
+          style={[styles.emptyButton, { backgroundColor: colors.accent }]}
+          onPress={() => navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate('Library')}
+          accessibilityRole="button"
+        >
+          <Text style={styles.emptyButtonText}>ライブラリへ</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -388,6 +411,16 @@ export function HomeScreen({ navigation }: Props) {
             総アイテム
           </Text>
         </View>
+        <View
+          style={[styles.statCard, { backgroundColor: colors.card }, cardShadow]}
+        >
+          <Text style={[styles.statValue, { color: colors.label }]}>
+            {streakDays}
+          </Text>
+          <Text style={[styles.statLabel, { color: colors.labelSecondary }]}>
+            連続日数
+          </Text>
+        </View>
       </View>
 
       {/* ――― ジャーナル導線 ――― */}
@@ -423,6 +456,26 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: Spacing.m,
+    paddingHorizontal: Spacing.xl,
+  },
+  emptyTitle: {
+    ...TypeScale.headline,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    ...TypeScale.subheadline,
+    textAlign: 'center',
+  },
+  emptyButton: {
+    borderRadius: Radius.m,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.m,
+    marginTop: Spacing.s,
+  },
+  emptyButtonText: {
+    ...TypeScale.headline,
+    color: '#FFFFFF',
   },
   container: {
     padding: Spacing.m,

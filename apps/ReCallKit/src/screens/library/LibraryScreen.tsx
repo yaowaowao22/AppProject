@@ -13,7 +13,9 @@ import {
   TextInput,
   StyleSheet,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
@@ -323,9 +325,14 @@ export function LibraryScreen({ navigation }: Props) {
       ) : items.length === 0 ? (
         <View style={styles.center}>
           <Ionicons name="library-outline" size={48} color={colors.labelTertiary} />
-          <Text style={[styles.emptyText, { color: colors.labelSecondary }]}>
+          <Text style={[styles.emptyTitle, { color: colors.label }]}>
             {search ? '見つかりませんでした' : 'アイテムがありません'}
           </Text>
+          {!search && (
+            <Text style={[styles.emptySubtitle, { color: colors.labelSecondary }]}>
+              ＋ボタンからアイテムを追加してください
+            </Text>
+          )}
         </View>
       ) : (
         <SectionList
@@ -342,7 +349,12 @@ export function LibraryScreen({ navigation }: Props) {
       {/* FAB: アイテム追加 */}
       <Pressable
         style={[styles.fab, { backgroundColor: colors.accent }]}
-        onPress={() => navigation.navigate('AddItem', {})}
+        onPress={() => {
+          if (Platform.OS !== 'web') {
+            try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
+          }
+          navigation.navigate('AddItem', {});
+        }}
         accessibilityRole="button"
         accessibilityLabel="アイテムを追加"
       >

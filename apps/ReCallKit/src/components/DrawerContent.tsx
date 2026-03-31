@@ -5,10 +5,12 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { SidebarColors } from '../theme/colors';
 import { SidebarLayout, Spacing, Radius } from '../theme/spacing';
 import { useTheme } from '../theme/ThemeContext';
@@ -27,12 +29,16 @@ interface TagWithCount {
   count: number;
 }
 
-// Collections — TODO: DB に collections テーブルが追加された際に実データへ切り替え
-const MOCK_COLLECTIONS = [
-  { id: 'col-work',    label: '仕事で使う技術',      count: 15 },
-  { id: 'col-liberal', label: '教養・リベラルアーツ', count: 8  },
-  { id: 'col-books',   label: '読書メモ',             count: 6  },
-] as const;
+interface CollectionWithCount {
+  id: number;
+  name: string;
+  count: number;
+}
+
+async function triggerSelectionHaptic() {
+  if (Platform.OS === 'web') return;
+  try { await Haptics.selectionAsync(); } catch {}
+}
 
 // ---- Screen Navigation 定義 ----
 // タブバーを置き換えるプライマリナビゲーション（仕様 §2.3）
@@ -90,6 +96,7 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
   const [todayCount,   setTodayCount]   = useState(0);
   const [overdueCount, setOverdueCount] = useState(0);
   const [tags,         setTags]         = useState<TagWithCount[]>([]);
+  const [collections,  setCollections]  = useState<CollectionWithCount[]>([]);
   const [totalCards,   setTotalCards]   = useState(0);
   const [masterRate,   setMasterRate]   = useState(0);
 
@@ -121,6 +128,16 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
          ORDER BY count DESC, t.name ASC`
       );
       setTags(tagRows);
+
+      const colRows = await db.getAllAsync<CollectionWithCount>(
+        `SELECT c.id, c.name, COUNT(ic.item_id) as count
+         FROM collections c
+         LEFT JOIN item_collections ic ON ic.collection_id = c.id
+         LEFT JOIN items i ON i.id = ic.item_id AND i.archived = 0
+         GROUP BY c.id
+         ORDER BY c.name ASC`
+      );
+      setCollections(colRows);
 
       const totalRes = await db.getFirstAsync<{ count: number }>(
         `SELECT COUNT(*) as count FROM items WHERE archived = 0`
@@ -166,13 +183,14 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
 
   // ---- Screen Navigation ハンドラ ----
   function handleScreenNav(screenName: typeof SCREEN_ITEMS[number]['name']) {
-    // フィルターはリセットしない（画面遷移のみ）
+    triggerSelectionHaptic();
     navigation.navigate(screenName as never);
     navigation.closeDrawer();
   }
 
   // ---- Smart Filter ハンドラ ----
   function handleSmartFilter(id: 'today' | 'overdue' | 'recent') {
+    triggerSelectionHaptic();
     if (activeFilterId === id) {
       clearFilter();
     } else {
@@ -188,6 +206,7 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
 
   // ---- Tag ハンドラ ----
   function handleTag(tag: TagWithCount) {
+    triggerSelectionHaptic();
     const tagItemId = `tag-${tag.id}`;
     if (activeFilterId === tagItemId) {
       clearFilter();
@@ -199,11 +218,13 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
   }
 
   // ---- Collection ハンドラ ----
-  function handleCollection(col: typeof MOCK_COLLECTIONS[number]) {
-    if (activeFilterId === col.id) {
+  function handleCollection(col: CollectionWithCount) {
+    triggerSelectionHaptic();
+    const colId = String(col.id);
+    if (activeFilterId === colId) {
       clearFilter();
     } else {
-      setSidebarFilter({ kind: 'collection', collectionId: col.id, collectionName: col.label });
+      setSidebarFilter({ kind: 'collection', collectionId: colId, collectionName: col.name });
       navigation.navigate('Library' as never);
     }
     navigation.closeDrawer();
@@ -211,6 +232,7 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
 
   // ---- Settings ハンドラ ----
   function handleSettings() {
+    triggerSelectionHaptic();
     navigation.navigate('Settings' as never);
     navigation.closeDrawer();
   }
@@ -364,28 +386,33 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
           })}
         </View>
 
-        {/* ---- Collections（24pt gap） ---- */}
-        <View style={[styles.section, styles.sectionGap]}>
-          <SectionHeading label="Collections" color={sc.sectionHeader} />
-          {MOCK_COLLECTIONS.map((col) => (
-            <NavItem
-              key={col.id}
-              isActive={activeFilterId === col.id}
-              onPress={() => handleCollection(col)}
-              sc={sc}
-            >
-              <View style={styles.iconSlot}>
-                <Ionicons
-                  name="folder-outline"
-                  size={SidebarLayout.iconSize}
-                  color={activeFilterId === col.id ? sc.activeTint : sc.inactiveTint}
-                />
-              </View>
-              <ItemLabel label={col.label} isActive={activeFilterId === col.id} sc={sc} />
-              <CountBadge count={col.count} isActive={activeFilterId === col.id} sc={sc} />
-            </NavItem>
-          ))}
-        </View>
+        {/* ---- Collections（24pt gap、0件の場合は非表示） ---- */}
+        {collections.length > 0 && (
+          <View style={[styles.section, styles.sectionGap]}>
+            <SectionHeading label="Collections" color={sc.sectionHeader} />
+            {collections.map((col) => {
+              const colId = String(col.id);
+              return (
+                <NavItem
+                  key={col.id}
+                  isActive={activeFilterId === colId}
+                  onPress={() => handleCollection(col)}
+                  sc={sc}
+                >
+                  <View style={styles.iconSlot}>
+                    <Ionicons
+                      name="folder-outline"
+                      size={SidebarLayout.iconSize}
+                      color={activeFilterId === colId ? sc.activeTint : sc.inactiveTint}
+                    />
+                  </View>
+                  <ItemLabel label={col.name} isActive={activeFilterId === colId} sc={sc} />
+                  <CountBadge count={col.count} isActive={activeFilterId === colId} sc={sc} />
+                </NavItem>
+              );
+            })}
+          </View>
+        )}
 
         {/* スクロール底部余白 */}
         <View style={styles.scrollBottom} />

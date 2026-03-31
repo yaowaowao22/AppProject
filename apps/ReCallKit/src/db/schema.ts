@@ -3,7 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 // ============================================================
 // スキーマバージョン管理
 // ============================================================
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 const CREATE_TABLES_SQL = `
   -- アイテム（URL・テキスト・メモ）
@@ -106,11 +106,22 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
     await setSchemaVersion(db, 1);
   }
 
-  // 将来のマイグレーション例:
-  // if (currentVersion < 2) {
-  //   await db.execAsync(`ALTER TABLE items ADD COLUMN difficulty INTEGER DEFAULT 0`);
-  //   await setSchemaVersion(db, 2);
-  // }
+  if (currentVersion < 2) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS collections (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        name       TEXT    NOT NULL,
+        created_at TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+      );
+
+      CREATE TABLE IF NOT EXISTS item_collections (
+        item_id       INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+        collection_id INTEGER NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
+        PRIMARY KEY (item_id, collection_id)
+      );
+    `);
+    await setSchemaVersion(db, 2);
+  }
 }
 
 export { SCHEMA_VERSION };
