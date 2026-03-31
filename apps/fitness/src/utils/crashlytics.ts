@@ -4,7 +4,14 @@
 // でのみ動作する。Expo Go や Web では NativeModule が存在しないため、
 // 安全にフォールバックするラッパーを提供する。
 
-let crashlytics: ReturnType<typeof import('@react-native-firebase/crashlytics').default> | null = null;
+interface CrashlyticsModule {
+  setCrashlyticsCollectionEnabled(enabled: boolean): Promise<void>;
+  log(message: string): Promise<void>;
+  recordError(error: Error, jsErrorContext?: Record<string, unknown>): Promise<void>;
+  setUserId(userId: string): Promise<void>;
+}
+
+let crashlytics: CrashlyticsModule | null = null;
 
 function getModule() {
   if (crashlytics !== null) return crashlytics;
