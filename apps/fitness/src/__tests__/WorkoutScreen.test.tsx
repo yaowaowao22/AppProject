@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { render, fireEvent, act } from '@testing-library/react-native';
+import { render, fireEvent, act, waitFor } from '@testing-library/react-native';
 
 import { ExerciseSelectScreen, WorkoutCompleteScreen, ActiveWorkoutScreen } from '../screens/WorkoutScreen';
 import { THEME_PRESETS } from '../theme';
@@ -516,12 +516,8 @@ describe('ActiveWorkoutScreen', () => {
       params: { exerciseIds: ['chest_001'], existingWorkoutId: undefined, existingSession: undefined },
     } as any;
     const { getByLabelText } = render(<ActiveWorkoutScreen navigation={navigation} route={route} />);
-    await act(async () => {
-      fireEvent.press(getByLabelText('種目完了'));
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-    expect(mockCompleteSession).toHaveBeenCalled();
+    fireEvent.press(getByLabelText('種目完了'));
+    await waitFor(() => expect(mockCompleteSession).toHaveBeenCalled());
   });
 
   test('2種目で「次の種目へ」を押すと種目が切り替わる', async () => {
@@ -537,11 +533,7 @@ describe('ActiveWorkoutScreen', () => {
       params: { exerciseIds: ['chest_001', 'back_001'], existingWorkoutId: undefined, existingSession: undefined },
     } as any;
     const { getByLabelText } = render(<ActiveWorkoutScreen navigation={navigation} route={route} />);
-    await act(async () => {
-      fireEvent.press(getByLabelText('次の種目へ'));
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-    expect(mockCompleteSession).toHaveBeenCalled();
+    fireEvent.press(getByLabelText('次の種目へ'));
+    await waitFor(() => expect(mockCompleteSession).toHaveBeenCalled());
   });
 });
