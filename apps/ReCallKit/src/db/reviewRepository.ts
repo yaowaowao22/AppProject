@@ -143,6 +143,51 @@ export async function getTotalItemCount(db: SQLiteDatabase): Promise<number> {
 }
 
 /**
+ * 最近復習したアイテムを取得（直近5件）
+ */
+export async function getRecentlyReviewedItems(db: SQLiteDatabase): Promise<ReviewableItem[]> {
+  const rows = await db.getAllAsync<DueRow>(`
+    SELECT
+      i.id, i.type, i.title, i.content, i.source_url, i.excerpt,
+      i.created_at, i.updated_at, i.archived,
+      r.id as review_id, r.repetitions, r.easiness_factor,
+      r.interval_days, r.next_review_at, r.last_reviewed_at, r.quality_history
+    FROM items i
+    JOIN reviews r ON r.item_id = i.id
+    WHERE i.archived = 0
+      AND r.last_reviewed_at IS NOT NULL
+    ORDER BY r.last_reviewed_at DESC
+    LIMIT 5
+  `);
+
+  return rows.map((row) => ({
+    reviewId: row.review_id,
+    item: {
+      id: row.id,
+      type: row.type as 'url' | 'text' | 'screenshot',
+      title: row.title,
+      content: row.content,
+      source_url: row.source_url,
+      excerpt: row.excerpt,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      archived: row.archived,
+      tags: [],
+      review: {
+        id: row.review_id,
+        item_id: row.id,
+        repetitions: row.repetitions,
+        easiness_factor: row.easiness_factor,
+        interval_days: row.interval_days,
+        next_review_at: row.next_review_at,
+        last_reviewed_at: row.last_reviewed_at,
+        quality_history: row.quality_history,
+      },
+    },
+  }));
+}
+
+/**
  * アイテムIDで単一アイテム（＋レビュー状態）を取得
  */
 export async function getItemById(

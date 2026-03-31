@@ -89,6 +89,45 @@ export function SettingsScreen() {
     setShowThemePicker(false);
   };
 
+  // ── 全データ削除 ─────────────────────────────────────────
+  const handleDeleteAllData = () => {
+    Alert.alert(
+      '全データを削除',
+      'すべての学習データ（アイテム・タグ・復習履歴）を削除します。この操作は取り消せません。',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '削除する',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              '本当に削除しますか？',
+              'データを完全に消去します。元に戻せません。',
+              [
+                { text: 'キャンセル', style: 'cancel' },
+                {
+                  text: '完全に削除する',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setDeleting(true);
+                    try {
+                      const db = await getDatabase();
+                      await deleteAllData(db);
+                    } catch (e) {
+                      Alert.alert('削除失敗', String(e));
+                    } finally {
+                      setDeleting(false);
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
   // ── エクスポート ─────────────────────────────────────────
   const handleExport = async () => {
     setExporting(true);

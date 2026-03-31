@@ -15,6 +15,7 @@ export interface LibraryFilter {
   tagIds: number[];
   reviewStatus: ReviewStatusFilter;
   dateRange: DateRangeFilter;
+  category: string | null;
 }
 
 export const DEFAULT_FILTER: LibraryFilter = {
@@ -23,6 +24,7 @@ export const DEFAULT_FILTER: LibraryFilter = {
   tagIds: [],
   reviewStatus: 'all',
   dateRange: 'all',
+  category: null,
 };
 
 export interface TagWithCount extends Tag {
@@ -37,6 +39,7 @@ interface ItemRow {
   content: string;
   source_url: string | null;
   excerpt: string | null;
+  category: string | null;
   created_at: string;
   updated_at: string;
   archived: 0 | 1;
@@ -89,6 +92,10 @@ export function useItems(filter: LibraryFilter) {
         whereClauses.push("i.created_at >= datetime('now', 'localtime', '-7 days')");
       } else if (filter.dateRange === '30d') {
         whereClauses.push("i.created_at >= datetime('now', 'localtime', '-30 days')");
+      }
+      if (filter.category !== null) {
+        whereClauses.push('i.category = ?');
+        params.push(filter.category);
       }
 
       const where = `WHERE ${whereClauses.join(' AND ')}`;
@@ -163,6 +170,7 @@ export function useItems(filter: LibraryFilter) {
         content: row.content,
         source_url: row.source_url,
         excerpt: row.excerpt,
+        category: row.category,
         created_at: row.created_at,
         updated_at: row.updated_at,
         archived: row.archived,
@@ -188,7 +196,7 @@ export function useItems(filter: LibraryFilter) {
       setIsLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, filter.search, filter.type, tagIdsKey, filter.reviewStatus, filter.dateRange]);
+  }, [db, filter.search, filter.type, tagIdsKey, filter.reviewStatus, filter.dateRange, filter.category]);
 
   useEffect(() => {
     fetchItems();
@@ -235,7 +243,8 @@ export function hasActiveFilters(filter: LibraryFilter): boolean {
     filter.type !== 'all' ||
     filter.tagIds.length > 0 ||
     filter.reviewStatus !== 'all' ||
-    filter.dateRange !== 'all'
+    filter.dateRange !== 'all' ||
+    filter.category !== null
   );
 }
 
@@ -244,13 +253,39 @@ export function useMemoFilter(
   type: LibraryFilterType,
   tagIds: number[],
   reviewStatus: ReviewStatusFilter,
-  dateRange: DateRangeFilter
+  dateRange: DateRangeFilter,
+  category: string | null = null
 ): LibraryFilter {
   // tagIdsの参照が変わるたびに再生成しないようにメモ化
   const tagIdsKey = tagIds.join(',');
   return useMemo(
-    () => ({ search, type, tagIds, reviewStatus, dateRange }),
+    () => ({ search, type, tagIds, reviewStatus, dateRange, category }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search, type, tagIdsKey, reviewStatus, dateRange]
+    [search, type, tagIdsKey, reviewStatus, dateRange, category]
   );
+}
+
+// ---- useCategories ------------------------------------------
+export function useCategories() {
+  const db = useDB();
+  const [categories, setCategories] = useState<string[]>([]);
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const rows = await db.getAllAsync<{ category: string }>(
+        `SELECT DISTINCT category FROM items
+         WHERE category IS NOT NULL AND category != '' AND archived = 0
+         ORDER BY category ASC`
+      );
+      setCategories(rows.map((r) => r.category));
+    } catch (err) {
+      console.error('[useCategories] fetch error:', err);
+    }
+  }, [db]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
+  return { categories, refresh: fetchCategories };
 }
