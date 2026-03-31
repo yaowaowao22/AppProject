@@ -85,13 +85,14 @@ export function createInitialSM2State(): SM2State {
 }
 
 /**
- * UI用3段階評価 → SM-2品質値マッピング
- * ユーザーには「忘れた / 難しかった / 覚えてた」の3ボタンを表示
+ * UI用4段階評価 → SM-2品質値マッピング
+ * ユーザーには「もう一度 / 難しかった / 良かった / 簡単」の4ボタンを表示
  */
 export const SIMPLE_RATINGS = {
-  forgot: 1 as Quality,  // 「忘れた」
-  hard:   3 as Quality,  // 「難しかった」
-  easy:   5 as Quality,  // 「覚えてた」
+  again:   0 as Quality,  // 「もう一度」— 完全に忘れた
+  hard:    2 as Quality,  // 「難しかった」— 苦労したが思い出した
+  good:    4 as Quality,  // 「良かった」— 少し迷ったが正解
+  perfect: 5 as Quality,  // 「簡単」— 完璧に覚えていた
 } as const;
 
 export type SimpleRating = keyof typeof SIMPLE_RATINGS;
