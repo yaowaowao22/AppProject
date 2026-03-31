@@ -16,6 +16,7 @@ export function HeaderHamburger() {
       style={({ pressed }) => [styles.button, pressed && { backgroundColor: pressedBg }]}
       accessibilityLabel="メニューを開く"
       accessibilityRole="button"
+      hitSlop={{ top: 4, right: 4, bottom: 4, left: 4 }}
     >
       <Ionicons name="menu" size={22} color={colors.labelSecondary} />
     </Pressable>

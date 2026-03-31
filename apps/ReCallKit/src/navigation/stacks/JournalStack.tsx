@@ -1,25 +1,19 @@
 import React from 'react';
-import { useColorScheme } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { LightColors, DarkColors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { JournalScreen } from '../../screens/journal/JournalScreen';
-import { HeaderHamburger } from '../../components/HeaderHamburger';
+import { makeNavigatorOptions, makeLargeTitleOptions } from '../sharedScreenOptions';
 import type { JournalStackParamList } from '../types';
 
 const Stack = createNativeStackNavigator<JournalStackParamList>();
 
 export function JournalStack() {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
-  const colors = isDark ? DarkColors : LightColors;
+  const { colors } = useTheme();
 
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors.accent,
-        headerTitleStyle: { color: colors.label },
-        headerShadowVisible: false,
+        ...makeNavigatorOptions(colors),
         contentStyle: { backgroundColor: colors.backgroundGrouped },
       }}
     >
@@ -28,13 +22,7 @@ export function JournalStack() {
         component={JournalScreen}
         options={{
           title: 'ジャーナル',
-          headerLargeTitle: true,
-          headerLargeTitleStyle: {
-            color: colors.label,
-            fontSize: 34,
-            fontWeight: '700',
-          },
-          headerLeft: () => <HeaderHamburger />,
+          ...makeLargeTitleOptions(colors),
         }}
       />
     </Stack.Navigator>
