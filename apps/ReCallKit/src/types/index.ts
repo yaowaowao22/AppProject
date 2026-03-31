@@ -11,6 +11,7 @@ export interface Item {
   content: string;
   source_url: string | null;
   excerpt: string | null;
+  category: string | null;
   created_at: string;
   updated_at: string;
   archived: 0 | 1;
@@ -55,6 +56,19 @@ export type SidebarFilter =
   | { kind: 'smart'; id: 'today' | 'overdue' | 'recent' }
   | { kind: 'tag'; tagId: number; tagName: string }
   | { kind: 'collection'; collectionId: string; collectionName: string };
+
+export interface ReviewGroup {
+  id: number;
+  name: string;
+  description: string | null;
+  created_at: string;
+}
+
+export interface ReviewGroupItem {
+  group_id: number;
+  item_id: number;
+  added_at: string;
+}
 
 // Bedrock URL解析結果
 export type { QAPair, AnalysisResult } from './analysis';

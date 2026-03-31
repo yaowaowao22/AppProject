@@ -3,7 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 // ============================================================
 // スキーマバージョン管理
 // ============================================================
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 const CREATE_TABLES_SQL = `
   -- アイテム（URL・テキスト・メモ）
@@ -121,6 +121,33 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
       );
     `);
     await setSchemaVersion(db, 2);
+  }
+
+  if (currentVersion < 3) {
+    // items テーブルにカテゴリ列を追加
+    await db.execAsync(`
+      ALTER TABLE items ADD COLUMN category TEXT;
+    `);
+
+    // 復習グループテーブル
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS review_groups (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        name        TEXT    NOT NULL,
+        description TEXT,
+        created_at  TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+      );
+
+      CREATE TABLE IF NOT EXISTS review_group_items (
+        group_id  INTEGER NOT NULL REFERENCES review_groups(id) ON DELETE CASCADE,
+        item_id   INTEGER NOT NULL REFERENCES items(id)         ON DELETE CASCADE,
+        added_at  TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+        PRIMARY KEY (group_id, item_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_rgi_item ON review_group_items(item_id);
+    `);
+
+    await setSchemaVersion(db, 3);
   }
 }
 
