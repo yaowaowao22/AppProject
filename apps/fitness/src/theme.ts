@@ -22,7 +22,7 @@ export interface TanrenThemeColors {
   tabBarBorder: string;   // タブバー上端ボーダー
 
   // カード背景（ライト=#FFFFFF, ダーク=surface1） ThemeContextで自動導出
-  cardBackground: string;
+  cardBackground?: string;
 }
 
 // ── テーマID型 ────────────────────────────────────────────────────────────────
