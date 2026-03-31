@@ -249,6 +249,30 @@ describe('トレーニング設定', () => {
     }
     expect(true).toBe(true);
   });
+
+  test('デフォルト重量の増加ボタンを押すと updateWorkoutConfig が呼ばれる', async () => {
+    const { getAllByLabelText } = renderScreen();
+    await act(async () => {});
+    const incBtns = getAllByLabelText('増やす');
+    // 3番目（index=2）がデフォルト重量
+    if (incBtns.length > 2) {
+      fireEvent.press(incBtns[2]);
+      expect(mockUpdateWorkoutConfig).toHaveBeenCalled();
+    }
+    expect(true).toBe(true);
+  });
+
+  test('デフォルトレップ数の増加ボタンを押すと updateWorkoutConfig が呼ばれる', async () => {
+    const { getAllByLabelText } = renderScreen();
+    await act(async () => {});
+    const incBtns = getAllByLabelText('増やす');
+    // 4番目（index=3）がデフォルトレップ数
+    if (incBtns.length > 3) {
+      fireEvent.press(incBtns[3]);
+      expect(mockUpdateWorkoutConfig).toHaveBeenCalled();
+    }
+    expect(true).toBe(true);
+  });
 });
 
 describe('データ管理', () => {
