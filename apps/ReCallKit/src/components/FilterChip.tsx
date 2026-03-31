@@ -48,6 +48,7 @@ export function FilterChip({
           styles.chipText,
           { color: active ? textActiveColor : resolvedTextInactiveColor },
         ]}
+        numberOfLines={1}
       >
         {label}
       </Text>
@@ -60,7 +61,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: Spacing.xs,
     borderRadius: Radius.full,
-    height: 30,
+    flexShrink: 0,         // 横方向の潰れ防止
+    alignItems: 'center',
     justifyContent: 'center',
   },
   chipText: {
