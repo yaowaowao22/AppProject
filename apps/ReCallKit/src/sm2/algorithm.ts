@@ -96,6 +96,12 @@ export const SIMPLE_RATINGS = {
 
 export type SimpleRating = keyof typeof SIMPLE_RATINGS;
 
+function toSQLiteDateTime(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
 /**
  * SM-2状態をDB保存用フラットオブジェクトに変換
  */
@@ -109,6 +115,6 @@ export function sm2ResultToDBParams(result: SM2Result): {
     repetitions: result.repetitions,
     easiness_factor: result.easinessFactor,
     interval_days: result.intervalDays,
-    next_review_at: result.nextReviewAt.toISOString(),
+    next_review_at: toSQLiteDateTime(result.nextReviewAt),
   };
 }

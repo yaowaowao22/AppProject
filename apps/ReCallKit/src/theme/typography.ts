@@ -4,10 +4,7 @@
 // 日本語はヒラギノ角ゴシックにフォールバック
 // ============================================================
 
-import { Platform, TextStyle } from 'react-native';
-
-// SF Pro（iOS標準） / システムデフォルト（Android）
-const fontFamily = Platform.OS === 'ios' ? undefined : undefined; // RN がシステムフォントを自動選択
+import { TextStyle } from 'react-native';
 
 // iOS タイプスケール（8pt グリッド準拠）
 export const TypeScale = {

@@ -82,4 +82,4 @@ export const DarkColors = {
   info: SystemColors.blue,
 } as const;
 
-export type ColorScheme = typeof LightColors;
+export type ColorScheme = typeof LightColors | typeof DarkColors;
