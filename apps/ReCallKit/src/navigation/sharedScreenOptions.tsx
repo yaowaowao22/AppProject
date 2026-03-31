@@ -17,15 +17,14 @@ export function makeNavigatorOptions(colors: ColorScheme): NativeStackNavigation
 }
 
 /**
- * Drawer 各タブのルート画面に適用する Large Title + ハンバーガー共通 options。
- * iOS NativeStack の headerLargeTitle 動作（展開時タイトル下行・折りたたみ時同行）を維持する。
+ * Drawer 各タブのルート画面に適用するインラインタイトル + ハンバーガー共通 options。
+ * headerLargeTitle を使わずインライン表示にすることで、ハンバーガーとタイトルを同一行に配置する。
  */
 export function makeLargeTitleOptions(colors: ColorScheme): NativeStackNavigationOptions {
   return {
-    headerLargeTitle: true,
-    headerLargeTitleStyle: {
+    headerTitleStyle: {
       color: colors.label,
-      fontSize: 34,
+      fontSize: 20,
       fontWeight: '700',
     },
     headerLeft: () => <HeaderHamburger />,
