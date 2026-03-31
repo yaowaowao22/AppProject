@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, act } from '@testing-library/react-native';
 
 import { ExerciseSelectScreen, WorkoutCompleteScreen, ActiveWorkoutScreen } from '../screens/WorkoutScreen';
 import { THEME_PRESETS } from '../theme';
@@ -503,7 +503,7 @@ describe('ActiveWorkoutScreen', () => {
     expect(true).toBe(true);
   });
 
-  test('「種目完了」ボタンを押すと completeSession が呼ばれる', () => {
+  test('「種目完了」ボタンを押すと completeSession が呼ばれる', async () => {
     const mockReplace = jest.fn();
     const navigation = {
       navigate: mockNavigate,
@@ -517,7 +517,26 @@ describe('ActiveWorkoutScreen', () => {
     } as any;
     const { getByLabelText } = render(<ActiveWorkoutScreen navigation={navigation} route={route} />);
     fireEvent.press(getByLabelText('種目完了'));
-    // completeSession は非同期なので呼ばれることだけ確認
-    expect(true).toBe(true);
+    // completeSession は非同期 - マイクロタスクをフラッシュして完了を待つ
+    await act(async () => { await Promise.resolve(); });
+    expect(mockCompleteSession).toHaveBeenCalled();
+  });
+
+  test('2種目で「次の種目へ」を押すと種目が切り替わる', async () => {
+    const mockReplace = jest.fn();
+    const navigation = {
+      navigate: mockNavigate,
+      goBack: mockGoBack,
+      dispatch: mockDispatch,
+      getParent: mockGetParent,
+      replace: mockReplace,
+    } as any;
+    const route = {
+      params: { exerciseIds: ['chest_001', 'back_001'], existingWorkoutId: undefined, existingSession: undefined },
+    } as any;
+    const { getByLabelText } = render(<ActiveWorkoutScreen navigation={navigation} route={route} />);
+    fireEvent.press(getByLabelText('次の種目へ'));
+    await act(async () => { await Promise.resolve(); });
+    expect(mockCompleteSession).toHaveBeenCalled();
   });
 });
