@@ -90,7 +90,10 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="種目選択" showBack />
+      <ScreenHeader title="トレーニング" showHamburger />
+      <View style={styles.subHeaderRow}>
+        <Text style={styles.subHeaderTitle}>種目選択</Text>
+      </View>
       {/* テンプレートセクション（1件以上ある場合のみ表示） */}
       {templates.length > 0 && (
         <View style={styles.tmplSection}>
@@ -561,7 +564,18 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="トレーニング" showBack />
+      <ScreenHeader title="トレーニング" showHamburger />
+      <TouchableOpacity
+        style={styles.detailBackRow}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="順序確認に戻る"
+      >
+        <Ionicons name="chevron-back" size={20} color={colors.accent} />
+        <Text style={styles.detailBackText}>順序確認</Text>
+        <View style={{ flex: 1 }} />
+      </TouchableOpacity>
       {/* 種目情報行: 種目アイコン + 種目名 + セットバッジ */}
       <View style={styles.exerciseInfoRow}>
         <View style={styles.exInfoIcon}>
@@ -958,6 +972,30 @@ function makeStyles(c: TanrenThemeColors) {
     color: c.textTertiary,
   },
 
+  subHeaderRow: {
+    paddingHorizontal: SPACING.contentMargin,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.xs,
+  },
+  subHeaderTitle: {
+    fontSize: TYPOGRAPHY.exerciseName,
+    fontWeight: TYPOGRAPHY.bold,
+    color: c.textPrimary,
+    letterSpacing: -0.4,
+  },
+  detailBackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.contentMargin,
+    paddingVertical: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  detailBackText: {
+    fontSize: TYPOGRAPHY.bodySmall,
+    fontWeight: TYPOGRAPHY.semiBold,
+    color: c.accent,
+  },
+
   // ── アクティブワークアウト ────────────────────────────────────────────────────
   exerciseInfoRow: {
     flexDirection: 'row',
@@ -1265,7 +1303,7 @@ function makeStyles(c: TanrenThemeColors) {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    height: '100%',
+    height: 80,
   },
   histBar: {
     width: '80%',
