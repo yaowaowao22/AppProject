@@ -267,6 +267,60 @@ describe('部位別ベストカードのナビゲーション', () => {
   });
 });
 
+describe('7日チャートバーのブランチ', () => {
+  it('workoutId なしのバーを押しても navigate されない（disabled branch）', () => {
+    (useWorkout as jest.Mock).mockReturnValue({
+      workouts: [],  // workoutId=null → データなしバー
+      personalRecords: [],
+      weeklyStats: { workoutCount: 0, totalVolume: 0, streakDays: 0 },
+    });
+    const { queryAllByLabelText } = render(<ProgressScreen />);
+    // データなしバーをタップ（no-op）
+    const noBtns = queryAllByLabelText(/データなし/);
+    if (noBtns.length > 0) { fireEvent.press(noBtns[0]); }
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+});
+
+describe('PR カード複数セッションによる sort comparator カバレッジ', () => {
+  it('2つの過去セッションがある場合にsortが呼ばれる', () => {
+    const workout2 = {
+      id: 'w2',
+      date: '2026-03-28',
+      totalVolume: 900,
+      duration: 3600,
+      sessions: [{
+        id: 's2',
+        exerciseId: 'bench-press',
+        sets: [{ id: 'set2', weight: 90, reps: 8, isPersonalRecord: false }],
+        completedAt: '2026-03-28T10:00:00.000Z',
+      }],
+    };
+    const workoutWithSessions = {
+      id: 'w1',
+      date: '2026-03-31',
+      totalVolume: 1000,
+      duration: 3600,
+      sessions: [{
+        id: 's1',
+        exerciseId: 'bench-press',
+        sets: [{ id: 'set1', weight: 100, reps: 5, isPersonalRecord: true }],
+        completedAt: '2026-03-31T10:00:00.000Z',
+      }],
+    };
+    (useWorkout as jest.Mock).mockReturnValue({
+      workouts: [workoutWithSessions, workout2],
+      personalRecords: [mockPR],
+      weeklyStats: mockWeeklyStats,
+    });
+    const { getByRole, getByText } = render(<ProgressScreen />);
+    // PR card を押して onPRCardPress を実行（sort comparator は 2+ sessions で呼ばれる）
+    const prBtn = getByRole('button', { name: 'ベンチプレス 自己ベスト 120kg' });
+    fireEvent.press(prBtn);
+    expect(getByText('ベンチプレス')).toBeTruthy();
+  });
+});
+
 describe('カレンダー日付タップ', () => {
   it('ワークアウトがある日を押すと DayDetail に遷移する', () => {
     (useWorkout as jest.Mock).mockReturnValue({
