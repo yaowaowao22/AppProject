@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TimeGrain - Mock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== Reset & Page ===== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; background: #000; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; }
+body { display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+/* ===== Design Tokens ===== */
+:root {
+  --bg-primary: #0D1117;
+  --bg-secondary: #161B22;
+  --bg-tertiary: #1C2128;
+  --text-primary: #E6EDF3;
+  --text-secondary: #8B949E;
+  --text-tertiary: #484F58;
+  --separator: #21262D;
+  --accent: #C9A96E;
+  --cat-work-grain: #1E3A5F;
+  --cat-work-text: #4A8FD4;
+  --cat-rest-grain: #2D7D46;
+  --cat-rest-text: #4CAF6E;
+  --cat-travel: #E07B39;
+  --cat-sns-grain: #C0392B;
+  --cat-sns-text: #E06050;
+  --cat-unclass: #95A5A6;
+  --future-grain: #1A1F2E;
+  --radius-card: 12px;
+  --phone-w: 393px;
+  --phone-h: 852px;
+  --tab-h: 83px;
+}
+
+/* ===== Phone Frame ===== */
+.phone-frame {
+  width: var(--phone-w); height: var(--phone-h);
+  border-radius: 47px; border: 2px solid #333;
+  background: var(--bg-primary);
+  box-shadow: 0 0 60px rgba(0,0,0,.6), 0 0 0 8px #111;
+  overflow: hidden; position: relative;
+  flex-shrink: 0;
+}
+
+/* Responsive scale */
+@media (max-height: 880px) {
+  .phone-frame { transform: scale(calc(100vh / 880)); transform-origin: center center; }
+}
+@media (max-width: 420px) {
+  .phone-frame { transform: scale(calc(100vw / 420)); transform-origin: center center; }
+}
+
+/* ===== Status Bar ===== */
+.status-bar {
+  height: 54px; padding: 14px 24px 0; display: flex; align-items: flex-start; justify-content: space-between;
+  color: var(--text-primary); font-size: 14px; font-weight: 600;
+}
+.status-bar-left { flex: 1; }
+.status-bar-center { width: 120px; height: 34px; display: flex; align-items: flex-start; justify-content: center; }
+.dynamic-island { width: 120px; height: 34px; background: #000; border-radius: 20px; }
+.status-bar-right { flex: 1; display: flex; justify-content: flex-end; gap: 6px; align-items: center; }
+.status-bar-right svg { width: 16px; height: 16px; }
+
+/* ===== Screen containers ===== */
+.screen {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s ease;
+}
+.screen.active { opacity: 1; pointer-events: auto; }
+
+.screen-body {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  padding-bottom: var(--tab-h);
+  -webkit-overflow-scrolling: touch;
+}
+.screen-body::-webkit-scrollbar { display: none; }
+
+/* ===== Tab Bar ===== */
+.tab-bar {
+  position: absolute; bottom: 0; left: 0; width: 100%;
+  height: var(--tab-h); background: var(--bg-primary);
+  border-top: 1px solid var(--separator);
+  display: flex; align-items: flex-start; justify-content: space-around;
+  padding-top: 8px; z-index: 100;
+}
+.tab-item {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  cursor: pointer; background: none; border: none; outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.tab-item svg { width: 24px; height: 24px; }
+.tab-item .tab-label { font-size: 10px; font-weight: 500; }
+.tab-item.active svg { color: var(--accent); }
+.tab-item.active .tab-label { color: var(--accent); }
+.tab-item:not(.active) svg { color: var(--text-tertiary); }
+.tab-item:not(.active) .tab-label { color: var(--text-tertiary); }
+
+.home-indicator {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  width: 134px; height: 5px; background: var(--text-tertiary);
+  border-radius: 3px;
+}
+
+/* ===== Typography Helpers ===== */
+.large-title { font-size: 34px; font-weight: 700; color: var(--text-primary); }
+.title3 { font-size: 20px; font-weight: 600; color: var(--text-primary); }
+.headline { font-size: 17px; font-weight: 600; color: var(--text-primary); }
+.body-text { font-size: 17px; font-weight: 400; color: var(--text-primary); }
+.callout { font-size: 16px; font-weight: 400; color: var(--text-primary); }
+.caption1 { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
+
+/* ===== Cards ===== */
+.card {
+  background: var(--bg-secondary); border-radius: var(--radius-card);
+  padding: 16px; margin: 0 16px 12px;
+}
+
+/* ===== PAGE-LOAD FADE ===== */
+.phone-frame { animation: pageFadeIn .3s ease both; }
+@keyframes pageFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ============================================
+   SCREEN 1 — HOME
+   ============================================ */
+#screen-home .home-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 16px 8px;
+}
+
+/* TimeScore badge */
+.timescore-badge {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: rgba(201,169,110,.15); border: 1px solid rgba(201,169,110,.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; font-weight: 700; color: var(--accent);
+}
+.timescore-badge-sm {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(201,169,110,.15); border: 1px solid rgba(201,169,110,.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; color: var(--accent);
+}
+
+/* Grain viz area */
+.grain-area {
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px 0;
+  flex: 1;
+  min-height: 0;
+}
+
+.grain-container {
+  position: relative;
+  width: 220px;
+  height: 320px;
+}
+
+.grain-grid {
+  display: grid;
+  grid-template-columns: repeat(36, 5px);
+  gap: 1px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  clip-path: polygon(
+    0% 0%, 100% 0%,
+    100% 5%,
+    65% 46%,
+    65% 50%,
+    100% 95%,
+    100% 100%, 0% 100%,
+    0% 95%,
+    35% 50%,
+    35% 46%,
+    0% 5%
+  );
+}
+
+.grain {
+  width: 5px; height: 5px; border-radius: 1px;
+}
+
+.grain.animate-in {
+  opacity: 0;
+  transform: translateY(-3px);
+  animation: grainFall .5s ease-out forwards;
+}
+
+@keyframes grainFall {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Category Legend */
+.category-legend {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px 16px; padding: 12px 16px 16px;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text-secondary);
+}
+.legend-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.legend-item .legend-time {
+  margin-left: auto; font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary); font-size: 12px;
+}
+
+/* ============================================
+   SCREEN 2 — WEEKLY SUMMARY
+   ============================================ */
+#screen-weekly .screen-body { padding-top: 0; }
+
+.weekly-header {
+  padding: 4px 16px 16px;
+}
+.weekly-header .title3 { margin-bottom: 4px; }
+
+/* Chart card */
+.chart-card { position: relative; }
+.chart-card svg { width: 100%; }
+.chart-avg {
+  margin-top: 12px; font-size: 17px; font-weight: 600; color: var(--accent);
+}
+
+/* Bar chart */
+.bar-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+}
+.bar-row:last-child { margin-bottom: 0; }
+.bar-label { width: 80px; font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
+.bar-track { flex: 1; height: 24px; background: var(--bg-tertiary); border-radius: 6px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 6px; }
+.bar-value { width: 36px; text-align: right; font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+/* Insight */
+.insight-card { display: flex; gap: 12px; align-items: flex-start; }
+.insight-icon { font-size: 24px; flex-shrink: 0; line-height: 1; }
+.insight-text { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+
+/* ============================================
+   SCREEN 3 — DAILY DETAIL
+   ============================================ */
+#screen-detail .detail-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 16px 8px; min-height: 44px;
+}
+.back-btn {
+  background: none; border: none; color: var(--accent); font-size: 16px; font-weight: 500;
+  cursor: pointer; padding: 4px 0; display: flex; align-items: center; gap: 4px;
+}
+.back-btn svg { width: 16px; height: 16px; }
+.detail-title { font-size: 17px; font-weight: 600; color: var(--text-primary); }
+
+.timeline { padding: 0 16px; }
+.tl-block {
+  display: flex; gap: 12px; margin-bottom: 4px;
+}
+.tl-time { width: 46px; flex-shrink: 0; font-size: 12px; color: var(--text-secondary); padding-top: 6px; text-align: right; font-variant-numeric: tabular-nums; }
+.tl-bar-wrap { flex: 1; }
+.tl-bar {
+  border-radius: 8px; padding: 8px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  min-height: 32px;
+}
+.tl-bar-label { font-size: 14px; font-weight: 500; }
+.tl-bar-dur { font-size: 12px; opacity: .7; }
+.tl-bar.future { opacity: .35; }
+.tl-bar.unclass { border: 1px dashed var(--cat-unclass); }
+
+.unclass-bottom {
+  position: absolute; bottom: var(--tab-h); left: 0; width: 100%;
+  background: var(--bg-secondary); padding: 14px 16px;
+  font-size: 14px; color: var(--text-secondary);
+  border-top: 1px solid var(--separator); z-index: 50;
+}
+.unclass-bottom span { color: var(--accent); }
+
+/* ============================================
+   SCREEN 4 — SETTINGS
+   ============================================ */
+#screen-settings .screen-body { padding-top: 0; }
+
+.settings-header { padding: 4px 16px 8px; }
+
+.settings-section { margin-bottom: 20px; }
+.settings-section-title {
+  font-size: 13px; font-weight: 600; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: .5px;
+  padding: 0 16px 6px;
+}
+.settings-group {
+  margin: 0 16px; background: var(--bg-secondary); border-radius: var(--radius-card); overflow: hidden;
+}
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 16px; min-height: 44px;
+}
+.settings-row + .settings-row { border-top: 1px solid var(--separator); }
+.settings-row-left { display: flex; align-items: center; gap: 10px; font-size: 16px; color: var(--text-primary); }
+.settings-row-right { font-size: 14px; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; }
+.settings-row-right .chevron { color: var(--text-tertiary); }
+.cat-swatch { width: 14px; height: 14px; border-radius: 3px; }
+
+/* Toggle */
+.toggle { width: 51px; height: 31px; border-radius: 16px; background: #39393D; position: relative; cursor: pointer; transition: background .25s; flex-shrink: 0; }
+.toggle.on { background: #34C759; }
+.toggle::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 27px; height: 27px; border-radius: 50%; background: #fff;
+  transition: transform .25s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+.toggle.on::after { transform: translateX(20px); }
+</style>
+</head>
+<body>
+
+<div class="phone-frame" id="app">
+
+  <!-- ===== SCREEN 1: HOME ===== -->
+  <div class="screen active" id="screen-home">
+    <div class="status-bar">
+      <div class="status-bar-left">9:41</div>
+      <div class="status-bar-center"><div class="dynamic-island"></div></div>
+      <div class="status-bar-right">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 5.5a4.5 4.5 0 019 0 .5.5 0 01-1 0 3.5 3.5 0 00-7 0 .5.5 0 01-1 0zM3 7.5a2.5 2.5 0 015 0 .5.5 0 01-1 0 1.5 1.5 0 00-3 0 .5.5 0 01-1 0z"/><circle cx="5.5" cy="9.5" r="1.5"/></svg>
+        <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="4" width="3" height="8" rx="0.5"/><rect x="5" y="3" width="3" height="9" rx="0.5"/><rect x="9" y="1" width="3" height="11" rx="0.5"/></svg>
+        <svg viewBox="0 0 22 12" fill="currentColor"><rect x="0" y="1" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1" fill="none"/><rect x="19" y="4" width="2" height="4" rx="0.5"/><rect x="2" y="3" width="12" height="6" rx="1"/></svg>
+      </div>
+    </div>
+
+    <div class="screen-body" style="display:flex;flex-direction:column;">
+      <div class="home-header">
+        <span class="headline">Today, 3月31日（月）</span>
+        <div class="timescore-badge" id="homeScore">0</div>
+      </div>
+
+      <div class="grain-area">
+        <div class="grain-container">
+          <div class="grain-grid" id="grainGrid"></div>
+        </div>
+      </div>
+
+      <div class="category-legend">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--cat-work-text)"></span>仕事<span class="legend-time">4h12m</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--cat-rest-text)"></span>休息<span class="legend-time">2h30m</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--cat-travel)"></span>移動<span class="legend-time">45m</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--cat-sns-text)"></span>SNS<span class="legend-time">1h05m</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--cat-unclass)"></span>未分類<span class="legend-time">3h28m</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 2: WEEKLY ===== -->
+  <div class="screen" id="screen-weekly">
+    <div class="status-bar">
+      <div class="status-bar-left">9:41</div>
+      <div class="status-bar-center"><div class="dynamic-island"></div></div>
+      <div class="status-bar-right">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 5.5a4.5 4.5 0 019 0 .5.5 0 01-1 0 3.5 3.5 0 00-7 0 .5.5 0 01-1 0zM3 7.5a2.5 2.5 0 015 0 .5.5 0 01-1 0 1.5 1.5 0 00-3 0 .5.5 0 01-1 0z"/><circle cx="5.5" cy="9.5" r="1.5"/></svg>
+        <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="4" width="3" height="8" rx="0.5"/><rect x="5" y="3" width="3" height="9" rx="0.5"/><rect x="9" y="1" width="3" height="11" rx="0.5"/></svg>
+        <svg viewBox="0 0 22 12" fill="currentColor"><rect x="0" y="1" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1" fill="none"/><rect x="19" y="4" width="2" height="4" rx="0.5"/><rect x="2" y="3" width="12" height="6" rx="1"/></svg>
+      </div>
+    </div>
+
+    <div class="screen-body">
+      <div class="weekly-header">
+        <div class="title3">週次サマリー</div>
+        <div class="caption1" style="margin-top:4px;">3/25（月）〜 3/31（月）</div>
+      </div>
+
+      <!-- TimeScore Chart -->
+      <div class="card chart-card">
+        <div class="caption1" style="margin-bottom:8px;">TimeScore 推移</div>
+        <svg id="weeklyChart" viewBox="0 0 330 160" fill="none" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="chart-avg">週平均: 63 <span style="font-size:14px;">&#9650;+4</span></div>
+      </div>
+
+      <!-- Category Bar Chart -->
+      <div class="card">
+        <div class="caption1" style="margin-bottom:12px;">カテゴリ内訳</div>
+        <div class="bar-row">
+          <div class="bar-label">仕事</div>
+          <div class="bar-track"><div class="bar-fill" style="width:67%;background:var(--cat-work-text);"></div></div>
+          <div class="bar-value">32h</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">休息</div>
+          <div class="bar-track"><div class="bar-fill" style="width:37%;background:var(--cat-rest-text);"></div></div>
+          <div class="bar-value">18h</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">移動</div>
+          <div class="bar-track"><div class="bar-fill" style="width:12%;background:var(--cat-travel);"></div></div>
+          <div class="bar-value">6h</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">SNS</div>
+          <div class="bar-track"><div class="bar-fill" style="width:17%;background:var(--cat-sns-text);"></div></div>
+          <div class="bar-value">8h</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">未分類</div>
+          <div class="bar-track"><div class="bar-fill" style="width:25%;background:var(--cat-unclass);"></div></div>
+          <div class="bar-value">12h</div>
+        </div>
+      </div>
+
+      <!-- Insight -->
+      <div class="card insight-card">
+        <div class="insight-icon">&#128161;</div>
+        <div class="insight-text">先週より深い仕事が2.3時間増えました。水曜のスコアが最高でした。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 3: DAILY DETAIL ===== -->
+  <div class="screen" id="screen-detail">
+    <div class="status-bar">
+      <div class="status-bar-left">9:41</div>
+      <div class="status-bar-center"><div class="dynamic-island"></div></div>
+      <div class="status-bar-right">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 5.5a4.5 4.5 0 019 0 .5.5 0 01-1 0 3.5 3.5 0 00-7 0 .5.5 0 01-1 0zM3 7.5a2.5 2.5 0 015 0 .5.5 0 01-1 0 1.5 1.5 0 00-3 0 .5.5 0 01-1 0z"/><circle cx="5.5" cy="9.5" r="1.5"/></svg>
+        <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="4" width="3" height="8" rx="0.5"/><rect x="5" y="3" width="3" height="9" rx="0.5"/><rect x="9" y="1" width="3" height="11" rx="0.5"/></svg>
+        <svg viewBox="0 0 22 12" fill="currentColor"><rect x="0" y="1" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1" fill="none"/><rect x="19" y="4" width="2" height="4" rx="0.5"/><rect x="2" y="3" width="12" height="6" rx="1"/></svg>
+      </div>
+    </div>
+
+    <div class="detail-nav">
+      <button class="back-btn" id="backBtn">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 2L4 8l6 6"/></svg>
+        戻る
+      </button>
+      <span class="detail-title">3月31日（月）</span>
+      <div class="timescore-badge-sm" id="detailScore">73</div>
+    </div>
+
+    <div class="screen-body" style="padding-bottom:calc(var(--tab-h) + 52px);">
+      <div class="timeline" id="timeline"></div>
+    </div>
+
+    <div class="unclass-bottom">未分類: 3h28m — <span>タップしてカテゴリ割当</span></div>
+  </div>
+
+  <!-- ===== SCREEN 4: SETTINGS ===== -->
+  <div class="screen" id="screen-settings">
+    <div class="status-bar">
+      <div class="status-bar-left">9:41</div>
+      <div class="status-bar-center"><div class="dynamic-island"></div></div>
+      <div class="status-bar-right">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 5.5a4.5 4.5 0 019 0 .5.5 0 01-1 0 3.5 3.5 0 00-7 0 .5.5 0 01-1 0zM3 7.5a2.5 2.5 0 015 0 .5.5 0 01-1 0 1.5 1.5 0 00-3 0 .5.5 0 01-1 0z"/><circle cx="5.5" cy="9.5" r="1.5"/></svg>
+        <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="4" width="3" height="8" rx="0.5"/><rect x="5" y="3" width="3" height="9" rx="0.5"/><rect x="9" y="1" width="3" height="11" rx="0.5"/></svg>
+        <svg viewBox="0 0 22 12" fill="currentColor"><rect x="0" y="1" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1" fill="none"/><rect x="19" y="4" width="2" height="4" rx="0.5"/><rect x="2" y="3" width="12" height="6" rx="1"/></svg>
+      </div>
+    </div>
+
+    <div class="screen-body">
+      <div class="settings-header">
+        <div class="large-title">設定</div>
+      </div>
+
+      <!-- Category management -->
+      <div class="settings-section">
+        <div class="settings-section-title">カテゴリ管理</div>
+        <div class="settings-group">
+          <div class="settings-row"><div class="settings-row-left"><span class="cat-swatch" style="background:#1E3A5F"></span>仕事（深い集中）</div><div class="settings-row-right"><span class="chevron">&#8250;</span></div></div>
+          <div class="settings-row"><div class="settings-row-left"><span class="cat-swatch" style="background:#2D7D46"></span>休息・睡眠</div><div class="settings-row-right"><span class="chevron">&#8250;</span></div></div>
+          <div class="settings-row"><div class="settings-row-left"><span class="cat-swatch" style="background:#E07B39"></span>移動</div><div class="settings-row-right"><span class="chevron">&#8250;</span></div></div>
+          <div class="settings-row"><div class="settings-row-left"><span class="cat-swatch" style="background:#C0392B"></span>SNS・娯楽</div><div class="settings-row-right"><span class="chevron">&#8250;</span></div></div>
+          <div class="settings-row"><div class="settings-row-left"><span class="cat-swatch" style="background:#95A5A6"></span>未分類</div><div class="settings-row-right"><span class="chevron">&#8250;</span></div></div>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="settings-section">
+        <div class="settings-section-title">通知</div>
+        <div class="settings-group">
+          <div class="settings-row"><div class="settings-row-left">週次サマリー通知</div><div class="settings-row-right"><div class="toggle on" id="toggleNotif"></div></div></div>
+          <div class="settings-row"><div class="settings-row-left">通知時刻</div><div class="settings-row-right">日曜 20:00</div></div>
+        </div>
+      </div>
+
+      <!-- Calendar -->
+      <div class="settings-section">
+        <div class="settings-section-title">カレンダー</div>
+        <div class="settings-group">
+          <div class="settings-row"><div class="settings-row-left">カレンダー権限</div><div class="settings-row-right">許可済</div></div>
+          <div class="settings-row"><div class="settings-row-left">同期カレンダー</div><div class="settings-row-right">3件選択 <span class="chevron">&#8250;</span></div></div>
+        </div>
+      </div>
+
+      <!-- About -->
+      <div class="settings-section">
+        <div class="settings-section-title">アプリについて</div>
+        <div class="settings-group">
+          <div class="settings-row"><div class="settings-row-left">バージョン</div><div class="settings-row-right">1.0.0</div></div>
+          <div class="settings-row"><div class="settings-row-left">プライバシーポリシー</div><div class="settings-row-right"><span class="chevron">&#8250;</span></div></div>
+        </div>
+      </div>
+
+      <div style="height:24px;"></div>
+    </div>
+  </div>
+
+  <!-- ===== TAB BAR ===== -->
+  <div class="tab-bar">
+    <button class="tab-item active" data-screen="screen-home" data-detail="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 3h14a1 1 0 011 1v0a1 1 0 01-1 1H5a1 1 0 01-1-1v0a1 1 0 011-1z"/>
+        <path d="M5 19h14a1 1 0 011 1v0a1 1 0 01-1 1H5a1 1 0 01-1-1v0a1 1 0 011-1z"/>
+        <path d="M9.5 5l-1 7h7l-1-7"/>
+        <path d="M8.5 19l1-7h5l1 7"/>
+      </svg>
+      <span class="tab-label">Today</span>
+    </button>
+    <button class="tab-item" data-screen="screen-weekly">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="8" width="4" height="12" rx="1"/>
+        <rect x="10" y="4" width="4" height="16" rx="1"/>
+        <rect x="17" y="10" width="4" height="10" rx="1"/>
+      </svg>
+      <span class="tab-label">サマリー</span>
+    </button>
+    <button class="tab-item" data-screen="screen-settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+      </svg>
+      <span class="tab-label">設定</span>
+    </button>
+    <div class="home-indicator"></div>
+  </div>
+
+</div><!-- /phone-frame -->
+
+<script>
+(function() {
+  'use strict';
+
+  /* ==============================
+     TAB NAVIGATION
+     ============================== */
+  const tabs = document.querySelectorAll('.tab-item');
+  const screens = document.querySelectorAll('.screen');
+  let currentScreen = 'screen-home';
+
+  function switchScreen(id) {
+    screens.forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    tabs.forEach(t => {
+      t.classList.toggle('active', t.dataset.screen === id ||
+        (id === 'screen-detail' && t.dataset.screen === 'screen-home'));
+    });
+    currentScreen = id;
+  }
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.screen;
+      if (target) switchScreen(target);
+    });
+  });
+
+  // Back button on detail screen
+  document.getElementById('backBtn').addEventListener('click', () => {
+    switchScreen('screen-home');
+  });
+
+  // Toggle switch
+  document.getElementById('toggleNotif').addEventListener('click', function() {
+    this.classList.toggle('on');
+  });
+
+  /* ==============================
+     SAND GRAIN VISUALIZATION
+     ============================== */
+  const COLS = 36;
+  const TOTAL = 1440;
+  const CURRENT_MINUTE = 14 * 60 + 30; // 14:30
+
+  // Time schedule: [startMin, endMin, colorVar]
+  const schedule = [
+    [0, 390, '#2D7D46'],       // 00:00-06:30 rest
+    [390, 450, '#E07B39'],     // 06:30-07:30 travel
+    [450, 630, '#1E3A5F'],     // 07:30-10:30 work
+    [630, 660, '#95A5A6'],     // 10:30-11:00 unclass
+    [660, 720, '#1E3A5F'],     // 11:00-12:00 work
+    [720, 780, '#2D7D46'],     // 12:00-13:00 rest
+    [780, 900, '#1E3A5F'],     // 13:00-15:00 work
+    [900, 960, '#C0392B'],     // 15:00-16:00 sns
+    [960, 1080, '#1E3A5F'],    // 16:00-18:00 work
+    [1080, 1110, '#E07B39'],   // 18:00-18:30 travel
+    [1110, 1170, '#2D7D46'],   // 18:30-19:30 rest
+    [1170, 1260, '#C0392B'],   // 19:30-21:00 sns
+    [1260, 1320, '#2D7D46'],   // 21:00-22:00 rest
+    [1320, 1440, '#2D7D46'],   // 22:00-24:00 rest (sleep)
+  ];
+
+  function getColor(minute) {
+    if (minute >= CURRENT_MINUTE) return '#1A1F2E';
+    for (const [s, e, c] of schedule) {
+      if (minute >= s && minute < e) return c;
+    }
+    return '#95A5A6';
+  }
+
+  const grid = document.getElementById('grainGrid');
+  const animateStart = CURRENT_MINUTE - 30;
+
+  for (let i = 0; i < TOTAL; i++) {
+    const g = document.createElement('div');
+    g.className = 'grain';
+    g.style.backgroundColor = getColor(i);
+    // Animate last ~30 grains before current time
+    if (i >= animateStart && i < CURRENT_MINUTE) {
+      g.classList.add('animate-in');
+      const delay = (i - animateStart) * 0.02;
+      g.style.animationDelay = delay + 's';
+    }
+    grid.appendChild(g);
+  }
+
+  /* ==============================
+     TIMESCORE COUNT-UP
+     ============================== */
+  function countUp(el, target, duration) {
+    const start = performance.now();
+    function tick(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      el.textContent = Math.round(ease * target);
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  countUp(document.getElementById('homeScore'), 73, 1200);
+
+  /* ==============================
+     WEEKLY CHART (SVG)
+     ============================== */
+  const chartData = [62, 45, 58, 71, 73, 68, 0];
+  const dayLabels = ['月','火','水','木','金','土','日'];
+  const svg = document.getElementById('weeklyChart');
+
+  const padL = 30, padR = 10, padT = 10, padB = 28;
+  const cW = 330 - padL - padR;
+  const cH = 160 - padT - padB;
+
+  // Gridlines
+  [20,40,60,80].forEach(v => {
+    const y = padT + cH - (v / 100) * cH;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', padL); line.setAttribute('x2', padL + cW);
+    line.setAttribute('y1', y); line.setAttribute('y2', y);
+    line.setAttribute('stroke', '#21262D'); line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+    const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x', padL - 6); txt.setAttribute('y', y + 4);
+    txt.setAttribute('fill', '#484F58'); txt.setAttribute('font-size', '10');
+    txt.setAttribute('text-anchor', 'end'); txt.setAttribute('font-family', 'Inter, sans-serif');
+    txt.textContent = v;
+    svg.appendChild(txt);
+  });
+
+  // Points
+  const pts = chartData.map((v, i) => {
+    const x = padL + (i / (chartData.length - 1)) * cW;
+    const y = padT + cH - (v / 100) * cH;
+    return { x, y, v };
+  });
+
+  // Line (skip last point if 0 = in-progress)
+  const validPts = pts.filter(p => p.v > 0);
+  if (validPts.length > 1) {
+    const path = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+    path.setAttribute('points', validPts.map(p => p.x + ',' + p.y).join(' '));
+    path.setAttribute('fill', 'none'); path.setAttribute('stroke', '#C9A96E');
+    path.setAttribute('stroke-width', '2'); path.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(path);
+  }
+
+  // Dots & labels
+  pts.forEach((p, i) => {
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y);
+    c.setAttribute('r', p.v > 0 ? '4' : '3');
+    c.setAttribute('fill', p.v > 0 ? '#C9A96E' : '#484F58');
+    svg.appendChild(c);
+
+    // X label
+    const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+    lbl.setAttribute('x', p.x); lbl.setAttribute('y', padT + cH + 18);
+    lbl.setAttribute('fill', '#8B949E'); lbl.setAttribute('font-size', '11');
+    lbl.setAttribute('text-anchor', 'middle'); lbl.setAttribute('font-family', 'Inter, sans-serif');
+    lbl.textContent = dayLabels[i];
+    svg.appendChild(lbl);
+  });
+
+  /* ==============================
+     DAILY DETAIL TIMELINE
+     ============================== */
+  const timelineData = [
+    { start: '00:00', end: '06:30', label: 'Sleep', color: '#2D7D46', textColor: '#4CAF6E', dur: '6h30m' },
+    { start: '06:30', end: '07:30', label: '通勤', color: '#E07B39', textColor: '#E07B39', dur: '1h' },
+    { start: '07:30', end: '10:30', label: 'コーディング', color: '#1E3A5F', textColor: '#4A8FD4', dur: '3h' },
+    { start: '10:30', end: '11:00', label: '未分類', color: '#95A5A6', textColor: '#95A5A6', dur: '30m', unclass: true },
+    { start: '11:00', end: '12:00', label: '会議', color: '#1E3A5F', textColor: '#4A8FD4', dur: '1h' },
+    { start: '12:00', end: '13:00', label: '昼休み', color: '#2D7D46', textColor: '#4CAF6E', dur: '1h' },
+    { start: '13:00', end: '15:00', label: 'コーディング', color: '#1E3A5F', textColor: '#4A8FD4', dur: '2h' },
+    { start: '15:00', end: '16:00', label: 'SNS', color: '#C0392B', textColor: '#E06050', dur: '1h', future: true },
+    { start: '16:00', end: '18:00', label: '仕事', color: '#1E3A5F', textColor: '#4A8FD4', dur: '2h', future: true },
+    { start: '18:00', end: '18:30', label: '通勤', color: '#E07B39', textColor: '#E07B39', dur: '30m', future: true },
+    { start: '18:30', end: '19:30', label: '休息', color: '#2D7D46', textColor: '#4CAF6E', dur: '1h', future: true },
+    { start: '19:30', end: '21:00', label: 'SNS', color: '#C0392B', textColor: '#E06050', dur: '1h30m', future: true },
+    { start: '21:00', end: '22:00', label: '休息', color: '#2D7D46', textColor: '#4CAF6E', dur: '1h', future: true },
+  ];
+
+  const tl = document.getElementById('timeline');
+  timelineData.forEach(b => {
+    const row = document.createElement('div');
+    row.className = 'tl-block';
+
+    const time = document.createElement('div');
+    time.className = 'tl-time';
+    time.textContent = b.start;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'tl-bar-wrap';
+
+    const bar = document.createElement('div');
+    bar.className = 'tl-bar' + (b.future ? ' future' : '') + (b.unclass ? ' unclass' : '');
+    bar.style.backgroundColor = b.future ? '#1A1F2E' : (b.unclass ? 'transparent' : b.color + '33');
+    bar.style.color = b.textColor;
+
+    // Calculate relative height based on duration
+    const [sh, sm] = b.start.split(':').map(Number);
+    const [eh, em] = b.end.split(':').map(Number);
+    const mins = (eh * 60 + em) - (sh * 60 + sm);
+    const h = Math.max(32, Math.min(120, mins * 0.55));
+    bar.style.minHeight = h + 'px';
+
+    const lbl = document.createElement('span');
+    lbl.className = 'tl-bar-label';
+    lbl.textContent = b.label;
+
+    const dur = document.createElement('span');
+    dur.className = 'tl-bar-dur';
+    dur.textContent = b.dur;
+
+    bar.appendChild(lbl);
+    bar.appendChild(dur);
+    wrap.appendChild(bar);
+    row.appendChild(time);
+    row.appendChild(wrap);
+    tl.appendChild(row);
+  });
+
+})();
+</script>
+
+</body>
+</html>
