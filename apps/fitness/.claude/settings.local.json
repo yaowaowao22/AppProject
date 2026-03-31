@@ -29,7 +29,12 @@
       "Bash(grep -r \"firebase\\\\|Firebase\" C:UsersytataAppProjectbaseProjectappsfitness --include=*.json --include=*.ts --include=*.tsx)",
       "Bash(npx eas:*)",
       "Bash(git -C \"C:/Users/ytata/AppProject/baseProject\" diff HEAD -- apps/fitness/app.json apps/fitness/eas.json)",
-      "Bash(git -C \"C:/Users/ytata/AppProject/baseProject\" status)"
+      "Bash(git -C \"C:/Users/ytata/AppProject/baseProject\" status)",
+      "Bash(git -C \"C:/Users/ytata/AppProject/baseProject\" log --oneline -3 -- apps/fitness/app.json)",
+      "Bash(git -C \"C:/Users/ytata/AppProject/baseProject\" add apps/fitness/create_screenshots.py apps/fitness/setup_asc.py server/fitness-api/)",
+      "Bash(git -C:*)",
+      "Bash(npx wrangler:*)",
+      "Bash(python \"C:/Users/ytata/AppProject/baseProject/apps/fitness/setup_asc.py\")"
     ]
   }
 }
