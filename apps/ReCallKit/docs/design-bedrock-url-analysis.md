@@ -1,7 +1,7 @@
 # 設計書：URL解析 × AWS Bedrock 連携
 
 作成日: 2026-03-31  
-更新日: 2026-03-31（アーキテクチャを Lambda 方式に確定・キー管理追加）
+更新日: 2026-03-31（認証方式を Cognito Identity Pool に刷新）
 
 ---
 
@@ -37,64 +37,88 @@ AddItemScreen
 
 ---
 
-## 3. アーキテクチャ：AWS Lambda（確定）
+## 3. なぜ API Key をアプリに入れてはいけないか
 
-### 選定理由
+```
+EXPO_PUBLIC_* 変数はビルド時にバンドルへ平文埋め込みされる
+  → アプリを逆コンパイルすれば誰でも取得可能
+  → EAS Secrets も「ビルド時にバンドルへ展開」なので同じ
+  → レート制限は被害を減らすだけで根本解決にならない
 
-| 観点 | Lambda | AImensetu 追記 | アプリ直接呼び出し |
-|------|--------|---------------|----------------|
-| コスト | 実質無料（月100回≒$0） | サーバー代は既払い | 実質無料 |
-| 独立性 | ◎ ReCallKit 専用 | △ 2アプリ結合 | ◎ |
-| 認証 | API Gateway API Key | Cognito が必要で複雑 | ✗ 危険 |
-| 資格情報漏洩リスク | ◎ IAM ロールのみ | ◎ IAM ロールのみ | ✗ アプリに埋め込み |
-| メンテ負荷 | サーバー管理ゼロ | EC2 管理継続 | ゼロ |
+モバイルアプリに静的な秘密情報を入れる方法は存在しない。
+```
 
-→ **Lambda + API Gateway** が最もクリーンかつセキュア。  
-AImensetu とは完全に独立し、ReCallKit だけで完結する。
+**AWS 公式推奨パターン：Cognito Identity Pool（一時認証情報）**  
+アプリに入れるのは「Identity Pool ID」のみ。これは**公開情報**（エンドポイント名）であり秘密ではない。
+
+---
+
+## 4. アーキテクチャ：Lambda + Cognito Identity Pool（確定）
 
 ### 全体構成図
 
 ```
-┌─────────────────────────────────┐
-│  ReCallKit (Expo / RN)          │
-│                                 │
-│  1. fetch(url) → HTML取得       │
-│  2. 本文テキスト抽出             │
-│  3. POST /analyze               │
-│     Header: x-api-key: ***      │
-└────────────┬────────────────────┘
-             │ HTTPS
+┌──────────────────────────────────────────┐
+│  ReCallKit (Expo / RN)                   │
+│                                          │
+│  1. fetch(url) → HTML取得                │
+│  2. 本文テキスト抽出                      │
+│  3. Cognito に一時認証情報をリクエスト    │
+│     IdentityPoolId（公開情報）            │
+└────────────┬─────────────────────────────┘
+             │
              ▼
-┌─────────────────────────────────┐
-│  API Gateway (HTTP API)         │
-│  ・API Key 認証                 │
-│  ・使用量プラン（レート制限）    │
-└────────────┬────────────────────┘
-             │ Lambda Proxy
+┌──────────────────────────────────────────┐
+│  Amazon Cognito Identity Pool            │
+│  （Unauthenticated Identities 有効）      │
+│                                          │
+│  ・デバイスごとに固有の Identity を発行  │
+│  ・AccessKeyId / SecretKey /             │
+│    SessionToken を返す（TTL: 15分）      │
+│  ・15分後に自動失効、自動更新            │
+└────────────┬─────────────────────────────┘
+             │ 一時認証情報（STS）
              ▼
-┌─────────────────────────────────┐
-│  AWS Lambda (Python)            │
-│  recall-kit-analyzer            │
-│                                 │
-│  ・HTML本文を受け取る            │
-│  ・boto3 で Bedrock を呼ぶ       │
-│  ・Q&A JSON を返す              │
-│                                 │
-│  IAM実行ロール:                  │
-│    bedrock:InvokeModel のみ      │
-└────────────┬────────────────────┘
-             │ AWS SDK (boto3)
+┌──────────────────────────────────────────┐
+│  ReCallKit (続き)                        │
+│                                          │
+│  4. Lambda Function URL へ POST          │
+│     SigV4 署名（一時認証情報で署名）      │
+│     ※ 静的なキーは一切含まない           │
+└────────────┬─────────────────────────────┘
+             │ HTTPS + SigV4署名
              ▼
-┌─────────────────────────────────┐
-│  AWS Bedrock                    │
-│  Claude 3.5 Haiku               │
-│  ap-northeast-1 (東京)          │
-└─────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│  Lambda Function URL                     │
+│  auth_type: AWS_IAM                      │
+│                                          │
+│  ・SigV4署名を検証（IAM認証）            │
+│  ・Cognito Identity ごとにレート制限     │
+│  ・HTML本文 → Bedrock へ送信             │
+│  ・Q&A JSON を返す                       │
+│                                          │
+│  IAM実行ロール:                           │
+│    bedrock:InvokeModel のみ              │
+└────────────┬─────────────────────────────┘
+             │ boto3
+             ▼
+┌──────────────────────────────────────────┐
+│  AWS Bedrock                             │
+│  Claude 3.5 Haiku                        │
+│  ap-northeast-1（東京）                  │
+└──────────────────────────────────────────┘
 ```
+
+### なぜ API Gateway を使わないか
+
+Lambda Function URL（2022年〜）を使うことで API Gateway 不要。
+- コスト削減（API Gateway は $1/100万req）
+- IAM 認証を Lambda Function URL 単体で実現できる
+- 設定がシンプル
 
 ---
 
-## 4. 使用モデル
+## 5. 使用モデル
 
 | | モデル ID | 備考 |
 |-|----------|------|
@@ -103,85 +127,138 @@ AImensetu とは完全に独立し、ReCallKit だけで完結する。
 
 ---
 
-## 5. コスト試算
+## 6. コスト試算
 
-**Bedrock Claude 3.5 Haiku 料金（2025年時点）**
+**Bedrock Claude 3.5 Haiku（2025年時点）**
 - Input: $0.00080 / 1K tok
 - Output: $0.00400 / 1K tok
 
-| シナリオ | Input | Output | 合計/ページ | 合計/月（100ページ） |
-|---------|-------|--------|-----------|-------------------|
-| 記事10,000字＋プロンプト | ~13,000 tok | ~800 tok | **≒$0.013（約2円）** | **≒$1.30（約200円）** |
+| シナリオ | 合計/ページ | 合計/月（100ページ） |
+|---------|-----------|-------------------|
+| 記事10,000字＋プロンプト（~13,800 tok in / ~800 tok out） | **≒$0.014（約2円）** | **≒$1.40（約210円）** |
 
-**Lambda + API Gateway 追加コスト**
-- Lambda: 月100回 → **$0**（無料枠 100万回/月）
-- API Gateway HTTP API: 月100回 → **$0**（最小料金 $1/100万回）
+**Lambda + Cognito 追加コスト**
+- Lambda 実行: 月100回 → $0（無料枠 100万回/月）
+- Lambda Function URL: 追加コストなし
+- Cognito Identity Pool: $0（月50,000 MAU まで無料）
 
 ---
 
-## 6. 認証・APIキー管理（重要）
+## 7. IAM・認証の設定詳細
 
-### 6-1. キーの種類と役割
+### 7-1. Cognito Identity Pool の Unauthenticated ロール
 
-| キー | 用途 | 保管場所 |
-|------|------|---------|
-| **AWS IAM 実行ロール** | Lambda → Bedrock 呼び出し権限 | Lambda に自動付与（コードに書かない） |
-| **API Gateway API Key** | モバイルアプリ → Lambda の認証 | 下記参照 |
+Cognito が発行する一時認証情報に付与する IAM ポリシー:
 
-### 6-2. API Gateway API Key の保管フロー
-
-```
-AWS Console / CLI で発行
-  └─ API Gateway 使用量プランに紐づけ（レート: 100req/day 等）
-       └─ モバイルアプリ側に配布 ↓
-
-【開発時】
-  .env.local（.gitignore 対象）
-    EXPO_PUBLIC_RECALL_API_URL=https://xxxx.execute-api.ap-northeast-1.amazonaws.com/prod
-    EXPO_PUBLIC_RECALL_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-【本番ビルド（EAS Build）】
-  EAS Secrets に登録（eas secret:create）
-    → EAS サーバー側でのみ保持、ソースコードに含まれない
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "lambda:InvokeFunctionUrl",
+      "Resource": "arn:aws:lambda:ap-northeast-1:{ACCOUNT_ID}:function:recall-kit-analyzer"
+    }
+  ]
+}
 ```
 
-### 6-3. .gitignore への追加（必須）
+**Lambda の呼び出し権限のみ**。Bedrock・S3・その他すべて拒否。
+
+### 7-2. Lambda 実行ロール（Lambda → Bedrock）
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "bedrock:InvokeModel",
+      "Resource": "arn:aws:bedrock:ap-northeast-1::foundation-model/anthropic.claude-3-5-haiku-20241022-v1:0"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+      "Resource": "arn:aws:logs:*:*:*"
+    }
+  ]
+}
+```
+
+### 7-3. Lambda Function URL の設定
 
 ```
-# 既存の .gitignore に追記
-.env
-.env.local
-.env.*.local
+AuthType: AWS_IAM
+CORS: オリジン = * （React Native は origin なし）
 ```
 
-### 6-4. アプリ側での利用方法
-
-```typescript
-// src/config/api.ts
-export const RECALL_API_URL = process.env.EXPO_PUBLIC_RECALL_API_URL ?? '';
-export const RECALL_API_KEY = process.env.EXPO_PUBLIC_RECALL_API_KEY ?? '';
-```
-
-```typescript
-// bedrockAnalysisService.ts 内のリクエスト
-fetch(RECALL_API_URL + '/analyze', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'x-api-key': RECALL_API_KEY,   // API Gateway が検証
+Resource-based policy（Cognito の Unauthenticated ロールのみ許可）:
+```json
+{
+  "Effect": "Allow",
+  "Principal": {
+    "AWS": "arn:aws:iam::{ACCOUNT_ID}:role/recall-kit-cognito-unauth-role"
   },
-  body: JSON.stringify({ url, text }),
-})
+  "Action": "lambda:InvokeFunctionUrl",
+  "Resource": "arn:aws:lambda:ap-northeast-1:{ACCOUNT_ID}:function:recall-kit-analyzer"
+}
 ```
 
 ---
 
-## 7. Lambda 関数の仕様
+## 8. アプリ側の認証フロー（コード概要）
+
+### インストールするパッケージ
+
+```bash
+# 一時認証情報の取得
+npm install @aws-sdk/client-cognito-identity \
+            @aws-sdk/credential-provider-cognito-identity
+
+# SigV4 署名済み fetch
+npm install aws4fetch
+# または @aws-sdk/signature-v4 + @aws-sdk/protocol-http
+```
+
+### アプリに含める情報（これだけ・秘密なし）
+
+```typescript
+// src/config/aws.ts
+// Identity Pool ID は公開情報（エンドポイント名）
+export const COGNITO_IDENTITY_POOL_ID =
+  'ap-northeast-1:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx';
+
+export const LAMBDA_FUNCTION_URL =
+  'https://xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.lambda-url.ap-northeast-1.on.aws/';
+
+export const AWS_REGION = 'ap-northeast-1';
+```
+
+### 認証情報の取得と Lambda 呼び出し
+
+```typescript
+// src/services/bedrockAnalysisService.ts（概要）
+import { fromCognitoIdentityPool } from '@aws-sdk/credential-provider-cognito-identity';
+import { CognitoIdentityClient } from '@aws-sdk/client-cognito-identity';
+
+// 一時認証情報プロバイダー（15分TTLで自動更新）
+const credentials = fromCognitoIdentityPool({
+  client: new CognitoIdentityClient({ region: AWS_REGION }),
+  identityPoolId: COGNITO_IDENTITY_POOL_ID,
+});
+
+// SigV4署名 → Lambda Function URL へ POST
+// aws4fetch ライブラリが署名を自動付与
+```
+
+---
+
+## 9. Lambda 関数の仕様
 
 ### エンドポイント
 
 ```
-POST https://{api-id}.execute-api.ap-northeast-1.amazonaws.com/prod/analyze
+POST https://{function-url}.lambda-url.ap-northeast-1.on.aws/
 
 Request:
 {
@@ -198,9 +275,6 @@ Response 200:
     ...
   ]
 }
-
-Response 4xx/5xx:
-{ "error": "エラーメッセージ" }
 ```
 
 ### プロンプト設計
@@ -220,61 +294,33 @@ URL: {url}
 {text}
 ```
 
-### Lambda 関数構成（Python）
+### Lambda 構成（Python）
 
 ```
 lambda/
   recall_analyzer/
-    handler.py        ← メイン（boto3 で Bedrock 呼び出し）
-    requirements.txt  ← boto3 のみ（Lambda にデフォルト入り）
-```
-
-`boto3` は Lambda ランタイムに標準で含まれるため、追加パッケージなし。
-
----
-
-## 8. IAM 設定（最小権限）
-
-Lambda 実行ロールに付与するポリシー:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "bedrock:InvokeModel",
-      "Resource": "arn:aws:bedrock:ap-northeast-1::foundation-model/anthropic.claude-3-5-haiku-20241022-v1:0"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents"
-      ],
-      "Resource": "arn:aws:logs:*:*:*"
-    }
-  ]
-}
+    handler.py        ← boto3 で Bedrock 呼び出し（~60行）
+    requirements.txt  ← 空（boto3 は Lambda ランタイム標準）
 ```
 
 ---
 
-## 9. ReCallKit 実装コンポーネント一覧
+## 10. ReCallKit 実装コンポーネント一覧
 
 ```
-src/config/api.ts                        ← 新規：API定数（URLとKeyをまとめる）
-src/services/bedrockAnalysisService.ts   ← 新規：Lambda API 呼び出し
+src/config/aws.ts                        ← 新規：公開設定値（PoolID・FunctionURL）
+src/services/bedrockAnalysisService.ts   ← 新規：Cognito認証 + Lambda呼び出し
 src/screens/add/URLPreviewScreen.tsx     ← 新規：Q&Aプレビュー＋保存画面
 src/navigation/types.ts                  ← 変更：URLPreviewScreen 型追加
 src/navigation/stacks/LibraryStack.tsx   ← 変更：画面スタック追加
 src/screens/add/AddItemScreen.tsx        ← 変更：[AI解析]ボタン追加
 ```
 
+**.gitignore への追加は不要**（秘密情報をアプリに含めないため）。
+
 ---
 
-## 10. HTMLテキスト抽出（クライアント側）
+## 11. HTMLテキスト抽出（クライアント側）
 
 現在の `urlMetadataService.ts` に本文抽出を追加:
 
@@ -292,16 +338,16 @@ src/screens/add/AddItemScreen.tsx        ← 変更：[AI解析]ボタン追加
 
 ---
 
-## 11. データモデル（追加変更なし）
+## 12. データモデル（追加変更なし）
 
-既存スキーマで対応可能（schema.ts v2 で excerpt 列・collections テーブルは既に定義済み）:
+既存スキーマ（v2）で対応可能:
 
 ```
 items テーブル:
-  type      = 'url'
-  title     = "Q: {question}"
-  content   = "Q: {question}\n\nA: {answer}"
-  excerpt   = answer の先頭100文字
+  type       = 'url'
+  title      = "Q: {question}"
+  content    = "Q: {question}\n\nA: {answer}"
+  excerpt    = answer の先頭100文字
   source_url = 元URL
 ```
 
@@ -309,28 +355,30 @@ items テーブル:
 
 ---
 
-## 12. 実装ステップ（優先順）
+## 13. 実装ステップ（優先順）
 
 | ステップ | 内容 | 場所 |
 |---------|------|------|
-| ① | IAM ロール作成（bedrock:InvokeModel のみ） | AWS Console |
-| ② | Lambda 関数 `recall-kit-analyzer` 作成・デプロイ | AWS Console / CLI |
-| ③ | API Gateway HTTP API 作成・API Key 設定 | AWS Console |
-| ④ | `.env.local` 作成・`.gitignore` 追記 | ReCallKit ルート |
-| ⑤ | `src/config/api.ts` 新規作成 | ReCallKit |
-| ⑥ | `bedrockAnalysisService.ts` 新規作成 | ReCallKit |
-| ⑦ | `URLPreviewScreen.tsx` 新規作成 | ReCallKit |
-| ⑧ | ナビゲーション・AddItemScreen 修正 | ReCallKit |
+| ① | Cognito Identity Pool 作成（Unauthenticated 有効） | AWS Console |
+| ② | Unauthenticated ロールに lambda:InvokeFunctionUrl のみ付与 | IAM |
+| ③ | Lambda 実行ロール作成（bedrock:InvokeModel のみ） | IAM |
+| ④ | Lambda 関数 `recall-kit-analyzer` 作成・Function URL 有効化（AWS_IAM） | AWS Console / CLI |
+| ⑤ | Lambda Function URL の Resource-based policy 設定 | AWS Console |
+| ⑥ | `src/config/aws.ts` 新規作成（PoolID と FunctionURL を記載） | ReCallKit |
+| ⑦ | SDK パッケージインストール（cognito-identity + aws4fetch） | ReCallKit |
+| ⑧ | `bedrockAnalysisService.ts` 新規作成 | ReCallKit |
+| ⑨ | `URLPreviewScreen.tsx` 新規作成 | ReCallKit |
+| ⑩ | ナビゲーション・AddItemScreen 修正 | ReCallKit |
 
 ---
 
-## 13. 懸念点・検討事項
+## 14. 懸念点・検討事項
 
 | 項目 | 内容 |
 |------|------|
+| Unauthenticated Identity の濫用 | Identity Pool ID が公開されていても、発行される一時認証情報は「この Lambda だけ呼べる」スコープ。Lambda 内でリクエストのレート制限を追加可能 |
 | CORS | React Native の fetch は CORS 制約なし → HTML 取得は問題なし |
 | SPA ページ | fetch では JS レンダリング後のコンテンツが取れないケースあり（許容） |
-| API Key の漏洩リスク | Expo アプリはバンドルを逆コンパイルされるとキーが見える。使用量プランでレート制限をかけること（100req/day 等）で被害を最小化 |
 | Lambda コールドスタート | Python + boto3 only で ~300ms。Bedrock 自体が 3〜8秒かかるため実質無視できる |
 | モデル利用可能リージョン | Bedrock 3.5 Haiku は `ap-northeast-1`（東京）で利用可能 |
-| EAS Build でのキー管理 | `eas secret:create --scope project --name EXPO_PUBLIC_RECALL_API_KEY` で登録 |
+| Cognito Identity の永続化 | SDK が自動でデバイスにキャッシュ。アンインストールで消える（問題なし） |
