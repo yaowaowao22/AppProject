@@ -5,6 +5,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { LibraryScreen } from '../../screens/library/LibraryScreen';
 import { ItemDetailScreen } from '../../screens/library/ItemDetailScreen';
 import { AddItemScreen } from '../../screens/add/AddItemScreen';
+import { QAPreviewScreen } from '../../screens/add/QAPreviewScreen';
 import { makeNavigatorOptions, makeLargeTitleOptions } from '../sharedScreenOptions';
 import type { LibraryStackParamList } from '../types';
 
@@ -50,6 +51,11 @@ export function LibraryStack() {
             </Pressable>
           ),
         })}
+      />
+      <Stack.Screen
+        name="QAPreview"
+        component={QAPreviewScreen}
+        options={{ title: 'Q&Aプレビュー', presentation: 'modal' }}
       />
     </Stack.Navigator>
   );
