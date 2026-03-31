@@ -35,9 +35,13 @@ if [ ! -f "${TRUST_POLICY_FILE}" ]; then
   exit 1
 fi
 
+# Windows の Git Bash では file:// パスが壊れるためファイル内容を変数に読み込む
+TRUST_POLICY_JSON=$(cat "${TRUST_POLICY_FILE}")
+INLINE_POLICY_JSON=$(cat "${INLINE_POLICY_FILE}")
+
 # --- ステップ2: ロールが存在するか確認 ---
 echo "[1/3] ロール存在確認..."
-if aws iam get-role --role-name "${ROLE_NAME}" --region "${REGION}" 2>/dev/null; then
+if aws iam get-role --role-name "${ROLE_NAME}" --region "${REGION}" > /dev/null 2>&1; then
   echo "      ⚠ ロール '${ROLE_NAME}' はすでに存在します"
   ROLE_ARN=$(aws iam get-role \
     --role-name "${ROLE_NAME}" \
@@ -48,7 +52,7 @@ else
   echo "[2/3] IAM ロールを作成中..."
   ROLE_ARN=$(aws iam create-role \
     --role-name "${ROLE_NAME}" \
-    --assume-role-policy-document "file://${TRUST_POLICY_FILE}" \
+    --assume-role-policy-document "${TRUST_POLICY_JSON}" \
     --description "Cognito unauthenticated role for Lambda FunctionUrl invoke" \
     --query "Role.Arn" \
     --output text)
@@ -60,7 +64,7 @@ echo "[3/3] インラインポリシーをアタッチ中..."
 aws iam put-role-policy \
   --role-name "${ROLE_NAME}" \
   --policy-name "${POLICY_NAME}" \
-  --policy-document "file://${INLINE_POLICY_FILE}"
+  --policy-document "${INLINE_POLICY_JSON}"
 echo "      → インラインポリシー '${POLICY_NAME}' をアタッチしました"
 
 # --- 結果表示 ---
