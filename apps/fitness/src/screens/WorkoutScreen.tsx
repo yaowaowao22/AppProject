@@ -275,7 +275,7 @@ function buildRows(
 
 export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   const { exerciseIds, existingWorkoutId, existingSession } = route.params;
-  const { workouts, startSession, addSet, completeSession, updateSession, workoutConfig } = useWorkout();
+  const { workouts, startSession, addSet, completeSession, updateSession, workoutConfig, personalRecords } = useWorkout();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -537,50 +537,22 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
     ]);
   }
 
-  // 過去セッション履歴
-  const sessionHistory = useMemo(() => {
-    return workouts
-      .flatMap(w => w.sessions.map(s => ({ ...s, date: w.date })))
-      .filter(s => s.exerciseId === exerciseId && !!s.completedAt)
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(-5)
-      .map(s => {
-        const d = new Date(s.date + 'T00:00:00');
-        const label = `${d.getMonth() + 1}/${d.getDate()}`;
-        const maxW = s.sets.reduce<number>((m, set) => Math.max(m, set.weight ?? 0), 0);
-        return { label, maxWeight: maxW };
-      });
-  }, [workouts, exerciseId]);
-
-  const histAllMax = useMemo(
-    () => Math.max(...sessionHistory.map(s => s.maxWeight), activeRow.weight ?? 0, 1),
-    [sessionHistory, activeRow.weight],
-  );
-
-  const prevBestWeight = sessionHistory.length > 0 ? sessionHistory[sessionHistory.length - 1].maxWeight : 0;
-  const allTimeBest    = sessionHistory.length > 0 ? Math.max(...sessionHistory.map(s => s.maxWeight)) : 0;
-
   const isLastExercise = currentIndex === exerciseIds.length - 1;
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader title="トレーニング" showHamburger />
-      <TouchableOpacity
-        style={styles.detailBackRow}
-        onPress={() => navigation.goBack()}
-        activeOpacity={0.7}
-        accessibilityRole="button"
-        accessibilityLabel="順序確認に戻る"
-      >
-        <Ionicons name="chevron-back" size={20} color={colors.accent} />
-        <Text style={styles.detailBackText}>順序確認</Text>
-        <View style={{ flex: 1 }} />
-      </TouchableOpacity>
-      {/* 種目情報行: 種目アイコン + 種目名 + セットバッジ */}
+      {/* 種目情報行: 戻るボタン + 種目名 + セットバッジ */}
       <View style={styles.exerciseInfoRow}>
-        <View style={styles.exInfoIcon}>
-          <Text style={styles.exInfoIconText}>{exercise?.name.charAt(0) ?? ''}</Text>
-        </View>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="順序確認に戻る"
+          style={{ marginRight: 4 }}
+        >
+          <Ionicons name="chevron-back" size={20} color={colors.accent} />
+        </TouchableOpacity>
         <Text style={styles.exInfoName}>{exercise?.name ?? 'ワークアウト'}</Text>
         <View style={{ flex: 1 }} />
         <View style={styles.setBadge}>
@@ -591,12 +563,6 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
             }
           </Text>
         </View>
-      </View>
-      {/* 筋肉情報行 */}
-      <View style={styles.muscleRow}>
-        <Text style={styles.actSub}>
-          {exercise?.muscleDetail ?? BODY_PART_MUSCLE[exercise?.bodyPart as BodyPart] ?? ''}
-        </Text>
       </View>
 
       {/* 数値コントロール（アクティブ行を反映・固定） */}
@@ -694,7 +660,21 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
       >
       {/* セット一覧（デフォルト5行 + 追加可） */}
       <View style={styles.slog}>
-        <Text style={styles.sectionLabel}>セット</Text>
+        {(() => {
+          const pr = personalRecords.find(r => r.exerciseId === exerciseId);
+          return (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={styles.sectionLabel}>セット</Text>
+              {pr && (
+                <View style={{ backgroundColor: colors.accentDim, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 }}>
+                  <Text style={{ color: colors.accent, fontWeight: TYPOGRAPHY.heavy as any, fontSize: 11 }}>
+                    PR {pr.maxWeight}kg
+                  </Text>
+                </View>
+              )}
+            </View>
+          );
+        })()}
         {rows.map((row, i) => {
           const isActive = i === activeIdx;
           // データがなく、完了でも現在アクティブでもない行のみ薄く表示
@@ -734,35 +714,6 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
       </View>
 
-      {/* 過去セッション比較バーグラフ */}
-      {sessionHistory.length > 0 && (
-        <View style={styles.histSection}>
-          <Text style={[styles.sectionLabel, styles.sectionLabelHist]}>過去との比較</Text>
-          <View style={styles.histBars}>
-            {[...sessionHistory, { label: '今日', maxWeight: activeRow.weight }].map((s, i) => {
-              const isToday = i === sessionHistory.length;
-              const h = Math.max(((s.maxWeight ?? 0) / histAllMax) * 72, (s.maxWeight ?? 0) > 0 ? 6 : 3);
-              return (
-                <View key={i} style={styles.histCol}>
-                  {(isToday || sessionHistory.length <= 4) && (s.maxWeight ?? 0) > 0 && (
-                    <Text style={[styles.histBarVal, isToday && styles.histBarValCurrent]}>
-                      {s.maxWeight}
-                    </Text>
-                  )}
-                  <View style={[styles.histBar, { height: h }, isToday && styles.histBarCurrent]} />
-                  <Text style={[styles.histLbl, isToday && styles.histLblCurrent]}>{s.label}</Text>
-                </View>
-              );
-            })}
-          </View>
-          <View style={styles.histNote}>
-            <View style={styles.histDot} />
-            <Text style={styles.histNoteText}>
-              {prevBestWeight > 0 ? `前回 ${prevBestWeight}kg（最高 ${allTimeBest}kg）` : '初回の記録'}
-            </Text>
-          </View>
-        </View>
-      )}
 
       <View style={{ height: 20 }} />
       </ScrollView>
