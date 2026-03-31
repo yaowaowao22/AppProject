@@ -43,17 +43,7 @@
       "policy": "appVersion"
     },
     "plugins": [
-      "expo-updates",
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "useFrameworks": "static"
-          }
-        }
-      ],
-      "@react-native-firebase/app",
-      "@react-native-firebase/crashlytics"
+      "expo-updates"
     ],
     "scheme": "fitness",
     "owner": "yaowao"
