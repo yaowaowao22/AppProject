@@ -476,7 +476,7 @@ function BodyPartDetailView({
         contentContainerStyle={{ paddingBottom: SPACING.xl }}
         ListHeaderComponent={
           <View style={{ marginBottom: SPACING.sm }}>
-            <View style={[S.chartWrap, { backgroundColor: colors.surface2 }]}>
+            <View style={[S.chartWrap, { backgroundColor: colors.cardBackground }]}>
               <LineChart
                 data={chartData}
                 height={CHART_H}
