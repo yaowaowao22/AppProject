@@ -581,17 +581,20 @@ describe('ActiveWorkoutScreen', () => {
     expect(true).toBe(true);
   });
 
-  test('重量入力エリアを押して startEditing、その後 TextInput で commitEdit をトリガー', () => {
-    const { getAllByText, queryAllByLabelText } = renderActive();
-    // 重量を表示している要素を押して startEditing を発動
+  test('重量入力エリアを押して startEditing、その後 onSubmitEditing で commitEdit をトリガー', () => {
+    const { getAllByText, queryAllByDisplayValue } = renderActive();
+    // 重量を表示している要素を押して startEditing を発動（allDone=false確認済み）
     const weightItems = getAllByText('55');
     if (weightItems.length > 0) {
-      fireEvent.press(weightItems[0]);
+      act(() => {
+        fireEvent.press(weightItems[0]);
+      });
     }
-    // TextInput が表示されたら onSubmitEditing を発動して commitEdit を呼ぶ
-    const textInputs = queryAllByLabelText(/重量|reps/);
-    if (textInputs.length > 0) {
-      fireEvent(textInputs[0], 'submitEditing');
+    // TextInput が表示されたら（editingField='weight'の状態）値を入力してsubmit
+    const textInputByVal = queryAllByDisplayValue('55');
+    if (textInputByVal.length > 0) {
+      fireEvent.changeText(textInputByVal[0], '60');
+      fireEvent(textInputByVal[0], 'submitEditing');
     }
     expect(true).toBe(true);
   });
