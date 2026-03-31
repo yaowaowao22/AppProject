@@ -781,12 +781,14 @@ function ExerciseDetailView({
       </View>
 
       {/* セット行 */}
-      {session.sets.map((set: WorkoutSet, idx: number) => {
+      {(() => {
+        const sessionMax = getMaxWeight(session);
+        return session.sets.map((set: WorkoutSet, idx: number) => {
         const isPR =
-          set.isPersonalRecord === true ||
-          (pr?.maxWeight != null &&
-            set.weight !== null &&
-            set.weight >= pr.maxWeight);
+          pr?.maxWeight != null &&
+          set.weight !== null &&
+          set.weight === sessionMax &&
+          set.weight === pr.maxWeight;
         return (
           <View
             key={set.id}
@@ -810,7 +812,8 @@ function ExerciseDetailView({
             </View>
           </View>
         );
-      })}
+      });
+      })()}
     </View>
   );
 
@@ -846,7 +849,7 @@ function ExerciseDetailView({
         contentContainerStyle={{ paddingBottom: SPACING.xl }}
         ListHeaderComponent={
           <View style={{ marginBottom: SPACING.sm }}>
-            <View style={[S.chartWrap, { backgroundColor: colors.surface2 }]}>
+            <View style={[S.chartWrap, { backgroundColor: colors.cardBackground }]}>
               <LineChart
                 data={chartData}
                 height={CHART_H}
