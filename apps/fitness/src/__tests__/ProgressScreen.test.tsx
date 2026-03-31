@@ -155,10 +155,33 @@ describe('PR 記録なし', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('PR カード', () => {
+  const mockPR2 = {
+    exerciseId: 'squat',
+    maxWeight: 150,
+    maxReps: 5,
+    maxVolume: 750,
+    achievedAt: '2026-03-28T10:00:00.000Z',
+  };
+
+  const workoutWithSessions = {
+    ...mockWorkoutForChart,
+    sessions: [
+      {
+        id: 's1',
+        exerciseId: 'bench-press',
+        sets: [
+          { id: 'set1', weight: 100, reps: 5, isPersonalRecord: true },
+          { id: 'set2', weight: 120, reps: 3, isPersonalRecord: false },
+        ],
+        completedAt: '2026-03-31T10:00:00.000Z',
+      },
+    ],
+  };
+
   beforeEach(() => {
     (useWorkout as jest.Mock).mockReturnValue({
-      workouts: [mockWorkoutForChart],
-      personalRecords: [mockPR],
+      workouts: [workoutWithSessions],
+      personalRecords: [mockPR, mockPR2],
       weeklyStats: mockWeeklyStats,
     });
   });
