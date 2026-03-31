@@ -55,7 +55,11 @@ export type ThemeId =
   | 'bokusui'     // 墨翠（ダークモノクロ＋グリーン）
   | 'hakuen'      // 白炎（ライトモノクロ＋レッド）
   | 'hakusei'     // 白青（ライトモノクロ＋ブルー）
-  | 'hakusui';    // 白翠（ライトモノクロ＋グリーン）
+  | 'hakusui'     // 白翠（ライトモノクロ＋グリーン）
+  // 渋彩テーマ（低彩度アクセント3種）
+  | 'kaihaku'     // 灰白（ライトモノクロ＋灰鼠）
+  | 'sabiiro'     // 錆色（ダークモノクロ＋鉄錆）
+  | 'kohai';      // 古灰（ダークモノクロ＋灰青）
 
 // ── テーマメタ情報型 ──────────────────────────────────────────────────────────
 export interface ThemeMeta {
@@ -566,6 +570,73 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       scrim:         'rgba(0,0,0,0.55)',
       tabBarBg:      '#F0F0F0',
       tabBarBorder:  'rgba(0,0,0,0.08)',
+    },
+  },
+
+  // ── 渋彩テーマ（低彩度アクセント3種）────────────────────────────────────────
+  // 墨彩系より彩度・明度を大きく抑えた極控えめアクセント
+
+  // ライト渋彩（1種）
+  kaihaku: {
+    meta: { id: 'kaihaku', name: '灰白', subtitle: '晴れた冬空の余白に、灰のひと刷毛が走る', accentLabel: '灰鼠', isLight: true },
+    colors: {
+      background:    '#F8F8F6',
+      surface1:      '#EEEEEC',
+      surface2:      '#E3E3E0',
+      textPrimary:   '#1C1C1A',
+      textSecondary: '#696966',
+      textTertiary:  '#979794',
+      accent:        '#6B6358',
+      accentDim:     'rgba(107,99,88,0.10)',
+      success:       '#5A6A58',
+      separator:     'rgba(0,0,0,0.08)',
+      error:         '#8A5050',
+      onAccent:      '#FFFFFF',
+      scrim:         'rgba(0,0,0,0.55)',
+      tabBarBg:      '#EEEEEC',
+      tabBarBorder:  'rgba(0,0,0,0.08)',
+    },
+  },
+
+  // ダーク渋彩（2種）
+  sabiiro: {
+    meta: { id: 'sabiiro', name: '錆色', subtitle: '時を経た鉄が纏う、静かな赤の記憶', accentLabel: '鉄錆' },
+    colors: {
+      background:    '#131110',
+      surface1:      '#1C1917',
+      surface2:      '#26221F',
+      textPrimary:   '#E6E0DC',
+      textSecondary: 'rgba(230,224,220,0.58)',
+      textTertiary:  'rgba(230,224,220,0.36)',
+      accent:        '#8A5A50',
+      accentDim:     'rgba(138,90,80,0.10)',
+      success:       '#7A8A78',
+      separator:     'rgba(255,255,255,0.07)',
+      error:         '#C07070',
+      onAccent:      '#FFFFFF',
+      scrim:         'rgba(0,0,0,0.60)',
+      tabBarBg:      '#1C1917',
+      tabBarBorder:  'rgba(255,255,255,0.07)',
+    },
+  },
+  kohai: {
+    meta: { id: 'kohai', name: '古灰', subtitle: '炉の果て、冷えた灰の底に残る蒼の滲み', accentLabel: '灰青' },
+    colors: {
+      background:    '#111315',
+      surface1:      '#191B1E',
+      surface2:      '#222527',
+      textPrimary:   '#E0E4E6',
+      textSecondary: 'rgba(224,228,230,0.58)',
+      textTertiary:  'rgba(224,228,230,0.36)',
+      accent:        '#566070',
+      accentDim:     'rgba(86,96,112,0.10)',
+      success:       '#6A7A7A',
+      separator:     'rgba(255,255,255,0.07)',
+      error:         '#C07070',
+      onAccent:      '#FFFFFF',
+      scrim:         'rgba(0,0,0,0.60)',
+      tabBarBg:      '#191B1E',
+      tabBarBorder:  'rgba(255,255,255,0.07)',
     },
   },
 };
