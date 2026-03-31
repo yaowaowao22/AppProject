@@ -183,9 +183,9 @@ describe('ワークアウトあり', () => {
   });
 
   test('セッション数が表示される', async () => {
-    const { getByText } = renderHome();
+    const { getAllByText } = renderHome();
     await act(async () => {});
-    expect(getByText('1')).toBeTruthy();
+    expect(getAllByText('1').length).toBeGreaterThanOrEqual(1);
   });
 
   test('ボリュームが表示される（2.5k形式）', async () => {

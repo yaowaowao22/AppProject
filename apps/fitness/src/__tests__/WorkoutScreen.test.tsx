@@ -21,7 +21,10 @@ import { BODY_PARTS } from '../exerciseDB';
 const mockNavigate = jest.fn();
 
 jest.mock('@react-navigation/native', () => ({
-  useFocusEffect: (cb: () => () => void) => { cb(); },
+  useFocusEffect: (cb: () => (() => void) | void) => {
+    const { useEffect } = require('react');
+    useEffect(() => { cb(); }, []);
+  },
 }));
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -144,19 +147,19 @@ describe('部位タブ切り替え', () => {
 // ── 3. 種目選択 ───────────────────────────────────────────────────────────────
 
 describe('種目選択', () => {
-  test('選択なし時に開始ボタンを押してもナビゲーションされない', () => {
-    const { getByText } = renderScreen();
-    const btn = getByText(/種目を選択/);
-    fireEvent.press(btn);
+  test('選択なし時に開始ボタンが表示されない', () => {
+    const { queryByLabelText } = renderScreen();
+    // 選択なし時はボタン自体が非表示
+    expect(queryByLabelText(/種目を開始/)).toBeNull();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   test('種目を選択して開始ボタンを押すと OrderConfirm に遷移する', () => {
-    const { getByLabelText, getByText } = renderScreen();
+    const { getByLabelText } = renderScreen();
     // 胸タブの最初の種目を選択
     const firstExerciseBtn = getByLabelText('ベンチプレス');
     fireEvent.press(firstExerciseBtn);
-    const btn = getByText(/種目を選択/);
+    const btn = getByLabelText('1種目を開始');
     fireEvent.press(btn);
     expect(mockNavigate).toHaveBeenCalledWith('OrderConfirm', expect.objectContaining({
       exerciseIds: expect.arrayContaining(['chest_001']),
@@ -164,12 +167,12 @@ describe('種目選択', () => {
   });
 
   test('種目を2回押すと選択解除される', () => {
-    const { getByLabelText, getByText } = renderScreen();
+    const { getByLabelText, queryByLabelText } = renderScreen();
     const btn = getByLabelText('ベンチプレス');
     fireEvent.press(btn); // 選択
     fireEvent.press(btn); // 解除
-    const startBtn = getByText(/種目を選択/);
-    fireEvent.press(startBtn);
+    // 選択解除後は開始ボタンが非表示
+    expect(queryByLabelText(/種目を開始/)).toBeNull();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 });
