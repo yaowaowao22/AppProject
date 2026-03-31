@@ -4,9 +4,6 @@
     "slug": "recallkit",
     "scheme": "recallkit",
     "version": "0.1.0",
-    "runtimeVersion": {
-      "policy": "sdkVersion"
-    },
     "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
