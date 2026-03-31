@@ -180,6 +180,41 @@ describe('PR カード', () => {
     const prBtn = getByRole('button', { name: 'ベンチプレス 自己ベスト 120kg' });
     expect(prBtn).toBeTruthy();
   });
+
+  it('PR カードをタップするとボトムシートが表示される', () => {
+    const { getByRole, getByText } = render(<ProgressScreen />);
+    const prBtn = getByRole('button', { name: 'ベンチプレス 自己ベスト 120kg' });
+    fireEvent.press(prBtn);
+    // BottomSheet にタイトルが表示される
+    expect(getByText('ベンチプレス')).toBeTruthy();
+  });
+});
+
+describe('部位別ベストカードのナビゲーション', () => {
+  beforeEach(() => {
+    (useWorkout as jest.Mock).mockReturnValue({
+      workouts: [
+        {
+          ...mockWorkoutForChart,
+          sessions: [
+            {
+              id: 's1',
+              exerciseId: 'bench-press',
+              sets: [{ id: 'set1', weight: 100, reps: 5, isPersonalRecord: false }],
+              completedAt: '2026-03-31T10:00:00.000Z',
+            },
+          ],
+        },
+      ],
+      personalRecords: [],
+      weeklyStats: mockWeeklyStats,
+    });
+  });
+
+  it('部位ベストカードがレンダリングされる', () => {
+    const { getByText } = render(<ProgressScreen />);
+    expect(getByText('胸')).toBeTruthy();
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════

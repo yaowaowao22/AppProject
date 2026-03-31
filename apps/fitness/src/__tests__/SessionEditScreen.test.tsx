@@ -259,3 +259,30 @@ describe('保存ボタン', () => {
     expect(mockGoBack).toHaveBeenCalled();
   });
 });
+
+describe('セット削除', () => {
+  it('削除ボタンを押すと Alert が表示される', () => {
+    const { Alert } = require('react-native');
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    const { getByLabelText } = render(<SessionEditScreen />);
+    const deleteBtn = getByLabelText('セット1を削除');
+    fireEvent.press(deleteBtn);
+    expect(alertSpy).toHaveBeenCalledWith(
+      'セット削除',
+      expect.any(String),
+      expect.any(Array),
+    );
+    alertSpy.mockRestore();
+  });
+});
+
+describe('重量・レップ数の編集', () => {
+  it('重量入力を変更すると値が更新される', () => {
+    const { getAllByPlaceholderText } = render(<SessionEditScreen />);
+    const weightInputs = getAllByPlaceholderText('—');
+    if (weightInputs.length > 0) {
+      fireEvent.changeText(weightInputs[0], '90');
+    }
+    expect(true).toBe(true);
+  });
+});

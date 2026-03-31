@@ -231,4 +231,80 @@ describe('部位別タブ', () => {
     fireEvent.press(getByRole('tab', { name: '部位別' }));
     expect(getByText('胸')).toBeTruthy();
   });
+
+  test('部位カードを押すと詳細ビューに遷移する', () => {
+    mockUseWorkout.mockReturnValue({
+      ...defaultWorkoutCtx,
+      workouts: [sampleWorkout],
+    });
+    const { getByRole, getByLabelText } = render(<HistoryScreen />);
+    fireEvent.press(getByRole('tab', { name: '部位別' }));
+    fireEvent.press(getByLabelText('胸の詳細を見る'));
+    expect(getByLabelText('部位一覧に戻る')).toBeTruthy();
+  });
+
+  test('部位詳細ビューで「部位一覧に戻る」ボタンを押すと一覧に戻る', () => {
+    mockUseWorkout.mockReturnValue({
+      ...defaultWorkoutCtx,
+      workouts: [sampleWorkout],
+    });
+    const { getByRole, getByLabelText, getByText } = render(<HistoryScreen />);
+    fireEvent.press(getByRole('tab', { name: '部位別' }));
+    fireEvent.press(getByLabelText('胸の詳細を見る'));
+    fireEvent.press(getByLabelText('部位一覧に戻る'));
+    expect(getByText('胸')).toBeTruthy();
+  });
+});
+
+// ── 6. 種目別タブ ─────────────────────────────────────────────────────────────
+
+describe('種目別タブ', () => {
+  test('ワークアウトなしのとき空状態メッセージが表示される', () => {
+    const { getByRole, getByText } = render(<HistoryScreen />);
+    fireEvent.press(getByRole('tab', { name: '種目別' }));
+    expect(getByText('まだトレーニング記録がありません')).toBeTruthy();
+  });
+
+  test('ワークアウトありのとき種目リストが表示される', () => {
+    mockUseWorkout.mockReturnValue({
+      ...defaultWorkoutCtx,
+      workouts: [sampleWorkout],
+    });
+    const { getByRole, getByText } = render(<HistoryScreen />);
+    fireEvent.press(getByRole('tab', { name: '種目別' }));
+    expect(getByText('ベンチプレス')).toBeTruthy();
+  });
+
+  test('種目別タブで全部位フィルタが表示される', () => {
+    mockUseWorkout.mockReturnValue({
+      ...defaultWorkoutCtx,
+      workouts: [sampleWorkout],
+    });
+    const { getByRole, getByText } = render(<HistoryScreen />);
+    fireEvent.press(getByRole('tab', { name: '種目別' }));
+    expect(getByText('全て')).toBeTruthy();
+  });
+
+  test('種目を押すと詳細ビューに遷移する', () => {
+    mockUseWorkout.mockReturnValue({
+      ...defaultWorkoutCtx,
+      workouts: [sampleWorkout],
+    });
+    const { getByRole, getByText, getByLabelText } = render(<HistoryScreen />);
+    fireEvent.press(getByRole('tab', { name: '種目別' }));
+    fireEvent.press(getByLabelText('ベンチプレスの詳細を見る'));
+    expect(getByLabelText('種目一覧に戻る')).toBeTruthy();
+  });
+
+  test('種目詳細ビューで「種目一覧に戻る」を押すと一覧に戻る', () => {
+    mockUseWorkout.mockReturnValue({
+      ...defaultWorkoutCtx,
+      workouts: [sampleWorkout],
+    });
+    const { getByRole, getByText, getByLabelText } = render(<HistoryScreen />);
+    fireEvent.press(getByRole('tab', { name: '種目別' }));
+    fireEvent.press(getByLabelText('ベンチプレスの詳細を見る'));
+    fireEvent.press(getByLabelText('種目一覧に戻る'));
+    expect(getByText('ベンチプレス')).toBeTruthy();
+  });
 });

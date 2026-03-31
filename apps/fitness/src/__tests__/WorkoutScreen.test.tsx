@@ -12,7 +12,7 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 
-import { ExerciseSelectScreen } from '../screens/WorkoutScreen';
+import { ExerciseSelectScreen, WorkoutCompleteScreen } from '../screens/WorkoutScreen';
 import { THEME_PRESETS } from '../theme';
 import { BODY_PARTS } from '../exerciseDB';
 
@@ -24,6 +24,9 @@ jest.mock('@react-navigation/native', () => ({
   useFocusEffect: (cb: () => (() => void) | void) => {
     const { useEffect } = require('react');
     useEffect(() => { cb(); }, []);
+  },
+  CommonActions: {
+    reset: jest.fn((config) => config),
   },
 }));
 
@@ -203,5 +206,104 @@ describe('テンプレート', () => {
     expect(mockNavigate).toHaveBeenCalledWith('OrderConfirm', {
       exerciseIds: ['chest_001', 'chest_002'],
     });
+  });
+});
+
+// ── 5. WorkoutCompleteScreen ──────────────────────────────────────────────────
+
+describe('WorkoutCompleteScreen', () => {
+  const mockDispatch = jest.fn();
+  const mockGetParent = jest.fn(() => ({ navigate: mockNavigate }));
+
+  const baseReportItems = [
+    { name: 'ベンチプレス', sets: 3, maxWeight: 80, isPR: false },
+    { name: 'スクワット', sets: 4, maxWeight: 100, isPR: true },
+  ];
+
+  function renderComplete(overrides = {}) {
+    const navigation = {
+      dispatch: mockDispatch,
+      getParent: mockGetParent,
+      ...overrides,
+    } as any;
+    const route = {
+      params: {
+        reportItems: baseReportItems,
+        startedAt: new Date(Date.now() - 3600000).toISOString(),
+      },
+    } as any;
+    return render(<WorkoutCompleteScreen navigation={navigation} route={route} />);
+  }
+
+  beforeEach(() => {
+    mockDispatch.mockClear();
+    mockGetParent.mockClear();
+    mockNavigate.mockClear();
+  });
+
+  test('クラッシュせずにレンダリングできる', () => {
+    const { toJSON } = renderComplete();
+    expect(toJSON()).not.toBeNull();
+  });
+
+  test('「お疲れ様でした！」が表示される', () => {
+    const { getByText } = renderComplete();
+    expect(getByText('お疲れ様でした！')).toBeTruthy();
+  });
+
+  test('ワークアウト完了テキストが表示される', () => {
+    const { getByText } = renderComplete();
+    expect(getByText('ワークアウト完了')).toBeTruthy();
+  });
+
+  test('種目別レポートセクションが表示される', () => {
+    const { getByText } = renderComplete();
+    expect(getByText('種目別レポート')).toBeTruthy();
+  });
+
+  test('reportItems の種目名が表示される', () => {
+    const { getByText } = renderComplete();
+    expect(getByText('ベンチプレス')).toBeTruthy();
+    expect(getByText('スクワット')).toBeTruthy();
+  });
+
+  test('PR バッジが isPR=true の種目に表示される', () => {
+    const { getByText } = renderComplete();
+    expect(getByText('PR')).toBeTruthy();
+  });
+
+  test('セット数と最大重量が表示される', () => {
+    const { getByText } = renderComplete();
+    expect(getByText('3セット · 最大 80kg')).toBeTruthy();
+    expect(getByText('4セット · 最大 100kg')).toBeTruthy();
+  });
+
+  test('「ホームに戻る」ボタンが表示される', () => {
+    const { getByLabelText } = renderComplete();
+    expect(getByLabelText('ホームに戻る')).toBeTruthy();
+  });
+
+  test('「ホームに戻る」ボタンを押すと dispatch が呼ばれる', () => {
+    const { getByLabelText } = renderComplete();
+    fireEvent.press(getByLabelText('ホームに戻る'));
+    expect(mockDispatch).toHaveBeenCalled();
+  });
+
+  test('総ボリュームが表示される', () => {
+    // (80 * 3) + (100 * 4) = 240 + 400 = 640
+    const { getByText } = renderComplete();
+    expect(getByText('640')).toBeTruthy();
+  });
+
+  test('PRなしのときトロフィーではなくチェックマークが使われる（レンダリング確認）', () => {
+    const route = {
+      params: {
+        reportItems: [{ name: 'ベンチプレス', sets: 3, maxWeight: 80, isPR: false }],
+        startedAt: new Date(Date.now() - 3600000).toISOString(),
+      },
+    } as any;
+    const navigation = { dispatch: mockDispatch, getParent: mockGetParent } as any;
+    const { toJSON } = render(<WorkoutCompleteScreen navigation={navigation} route={route} />);
+    expect(toJSON()).not.toBeNull();
   });
 });

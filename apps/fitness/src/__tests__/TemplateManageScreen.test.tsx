@@ -241,3 +241,71 @@ describe('部位タブフィルタ', () => {
     expect(exercises.length).toBeGreaterThan(0);
   });
 });
+
+describe('テンプレート編集ビュー', () => {
+  const templates = JSON.stringify([
+    { id: 't1', name: '胸の日', exerciseIds: ['chest_press'], createdAt: '2026-01-01T00:00:00.000Z' },
+  ]);
+
+  beforeEach(() => {
+    mockStorage.getItem.mockImplementation((key) => {
+      if (key === 'tanren_templates') return Promise.resolve(templates);
+      return Promise.resolve(null);
+    });
+  });
+
+  it('テンプレートを押すと編集ビューになる', async () => {
+    const { findByText, findByLabelText } = renderScreen();
+    await findByText('胸の日');
+    const templateBtn = await findByLabelText('テンプレート: 胸の日');
+    fireEvent.press(templateBtn);
+    // 編集ビューになる（保存ボタンが表示）
+    expect(await findByLabelText('保存')).toBeTruthy();
+  });
+
+  it('テンプレートを長押しすると Alert が表示される', async () => {
+    const { Alert } = require('react-native');
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    const { findByText, findByLabelText } = renderScreen();
+    await findByText('胸の日');
+    const templateBtn = await findByLabelText('テンプレート: 胸の日');
+    fireEvent(templateBtn, 'longPress');
+    expect(alertSpy).toHaveBeenCalledWith(
+      'テンプレートを削除',
+      expect.any(String),
+      expect.any(Array),
+    );
+    alertSpy.mockRestore();
+  });
+});
+
+describe('保存バリデーション', () => {
+  async function openCreateView() {
+    const screen = renderScreen();
+    const addBtn = await screen.findByLabelText('新規テンプレートを作成');
+    fireEvent.press(addBtn);
+    return screen;
+  }
+
+  it('テンプレート名が空のとき保存ボタンを押すと Alert が表示される', async () => {
+    const { Alert } = require('react-native');
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    const screen = await openCreateView();
+    const saveBtn = await screen.findByLabelText('保存');
+    fireEvent.press(saveBtn);
+    expect(alertSpy).toHaveBeenCalledWith('入力エラー', expect.any(String));
+    alertSpy.mockRestore();
+  });
+
+  it('種目が未選択のとき保存ボタンを押すと Alert が表示される', async () => {
+    const { Alert } = require('react-native');
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    const screen = await openCreateView();
+    const input = await screen.findByPlaceholderText('例: 胸・肩の日');
+    fireEvent.changeText(input, '新テンプレート');
+    const saveBtn = await screen.findByLabelText('保存');
+    fireEvent.press(saveBtn);
+    expect(alertSpy).toHaveBeenCalledWith('入力エラー', expect.any(String));
+    alertSpy.mockRestore();
+  });
+});
