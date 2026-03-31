@@ -20,13 +20,14 @@ export type RootStackParamList = {
 };
 
 // ---- Drawer (サイドバーが唯一のプライマリナビ) ----
+// | undefined を付与することで navigate('Review') の単引数形式を型エラーなく使用可能にする
 export type DrawerParamList = {
-  Home: NavigatorScreenParams<HomeStackParamList>;
-  Library: NavigatorScreenParams<LibraryStackParamList>;
-  Review: NavigatorScreenParams<ReviewStackParamList>;
-  Map: NavigatorScreenParams<MapStackParamList>;
-  Journal: NavigatorScreenParams<JournalStackParamList>;
-  Settings: NavigatorScreenParams<SettingsStackParamList>;
+  Home: NavigatorScreenParams<HomeStackParamList> | undefined;
+  Library: NavigatorScreenParams<LibraryStackParamList> | undefined;
+  Review: NavigatorScreenParams<ReviewStackParamList> | undefined;
+  Map: NavigatorScreenParams<MapStackParamList> | undefined;
+  Journal: NavigatorScreenParams<JournalStackParamList> | undefined;
+  Settings: NavigatorScreenParams<SettingsStackParamList> | undefined;
 };
 
 // ---- Home Stack ----
