@@ -2,11 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 
-export function SettingsScreen() {
+export function KnowledgeMapScreen() {
   const { colors } = useTheme();
   return (
-    <View style={[styles.container, { backgroundColor: colors.backgroundGrouped }]}>
-      <Text style={[styles.text, { color: colors.labelSecondary }]}>設定（実装予定）</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.text, { color: colors.labelSecondary }]}>知識マップ（実装予定）</Text>
     </View>
   );
 }

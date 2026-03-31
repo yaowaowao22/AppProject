@@ -2,11 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 
-export function SettingsScreen() {
+export function JournalScreen() {
   const { colors } = useTheme();
   return (
     <View style={[styles.container, { backgroundColor: colors.backgroundGrouped }]}>
-      <Text style={[styles.text, { color: colors.labelSecondary }]}>設定（実装予定）</Text>
+      <Text style={[styles.text, { color: colors.labelSecondary }]}>学びジャーナル（実装予定）</Text>
     </View>
   );
 }
