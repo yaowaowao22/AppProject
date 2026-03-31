@@ -561,38 +561,28 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="" showBack={false} />
-      {/* 種目名行: 戻るボタン + 種目アイコン + 種目名 */}
-      <TouchableOpacity
-        style={styles.detailBackRow}
-        onPress={() => navigation.goBack()}
-        activeOpacity={0.7}
-        accessibilityRole="button"
-        accessibilityLabel="戻る"
-      >
-        <Ionicons name="chevron-back" size={20} color={colors.accent} />
-        <Text style={styles.detailBackText}>戻る</Text>
-        <View style={{ flex: 1 }} />
-        <View style={styles.exIcon}>
-          <Text style={styles.exIconText}>{exercise?.name.charAt(0) ?? ''}</Text>
+      <ScreenHeader title="トレーニング" showBack />
+      {/* 種目情報行: 種目アイコン + 種目名 + セットバッジ */}
+      <View style={styles.exerciseInfoRow}>
+        <View style={styles.exInfoIcon}>
+          <Text style={styles.exInfoIconText}>{exercise?.name.charAt(0) ?? ''}</Text>
         </View>
-        <Text style={styles.detailExName}>{exercise?.name ?? 'ワークアウト'}</Text>
-      </TouchableOpacity>
-      {/* サブヘッダー: 筋肉情報 + バッジ */}
-      <View style={styles.actHeader}>
-        <Text style={[styles.actSub, { flex: 1 }]}>
+        <Text style={styles.exInfoName}>{exercise?.name ?? 'ワークアウト'}</Text>
+        <View style={{ flex: 1 }} />
+        <View style={styles.setBadge}>
+          <Text style={styles.setBadgeText}>
+            {exerciseIds.length > 1
+              ? <Text><Text style={styles.setBadgeNum}>{currentIndex + 1}</Text>{`/${exerciseIds.length}`}</Text>
+              : <Text>{'セット '}<Text style={styles.setBadgeNum}>{allDone ? rows.length : activeIdx + 1}</Text></Text>
+            }
+          </Text>
+        </View>
+      </View>
+      {/* 筋肉情報行 */}
+      <View style={styles.muscleRow}>
+        <Text style={styles.actSub}>
           {exercise?.muscleDetail ?? BODY_PART_MUSCLE[exercise?.bodyPart as BodyPart] ?? ''}
         </Text>
-        <View style={styles.actHeaderRight}>
-          <View style={styles.setBadge}>
-            <Text style={styles.setBadgeText}>
-              {exerciseIds.length > 1
-                ? <Text><Text style={styles.setBadgeNum}>{currentIndex + 1}</Text>{`/${exerciseIds.length}`}</Text>
-                : <Text>{'セット '}<Text style={styles.setBadgeNum}>{allDone ? rows.length : activeIdx + 1}</Text></Text>
-              }
-            </Text>
-          </View>
-        </View>
       </View>
 
       {/* 数値コントロール（アクティブ行を反映・固定） */}
@@ -969,43 +959,44 @@ function makeStyles(c: TanrenThemeColors) {
   },
 
   // ── アクティブワークアウト ────────────────────────────────────────────────────
-  detailBackRow: {
+  exerciseInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.contentMargin,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: c.surface1,
     gap: SPACING.xs,
   },
-  detailBackText: {
-    fontSize: TYPOGRAPHY.bodySmall,
-    fontWeight: TYPOGRAPHY.semiBold,
+  exInfoIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: c.accentDim,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  exInfoIconText: {
+    fontSize: TYPOGRAPHY.body,
+    fontWeight: TYPOGRAPHY.bold,
     color: c.accent,
   },
-  detailExName: {
-    fontSize: TYPOGRAPHY.bodySmall,
+  exInfoName: {
+    fontSize: 20,
     fontWeight: TYPOGRAPHY.bold,
     color: c.textPrimary,
-    marginLeft: 4,
+    letterSpacing: -0.4,
+  },
+  muscleRow: {
+    paddingHorizontal: SPACING.contentMargin,
+    paddingTop: SPACING.sm,
+    paddingBottom: 14,
   },
   scrollArea: {
     flex: 1,
   },
   activeContent: {
     paddingBottom: SPACING.md,
-  },
-  actHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.contentMargin,
-    paddingTop: SPACING.sm,
-    paddingBottom: 14,
-    gap: 10,
-  },
-  actHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexShrink: 0,
   },
   backBtn: {
     width: 44,
