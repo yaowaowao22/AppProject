@@ -405,11 +405,18 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View style={styles.menuList}>
-            {selectedMenu.map(({ exercise, pr, lastSets, lastMaxWeight }) => {
+            {selectedMenu.map(({ exercise, pr, lastSets, lastMaxWeight }, idx) => {
               const bodyPartLabel =
                 BODY_PARTS.find(b => b.id === exercise.bodyPart)?.label ?? '';
+              const metaParts: string[] = [];
+              if (bodyPartLabel) metaParts.push(bodyPartLabel);
+              if (lastMaxWeight !== null) metaParts.push(`前回 ${lastMaxWeight}kg`);
+              if (lastSets > 0) metaParts.push(`${lastSets}セット`);
+              if (pr?.maxWeight != null) metaParts.push(`PR ${pr.maxWeight}kg`);
+              const metaStr = metaParts.join(' · ');
               return (
-                <View key={exercise.id} style={styles.menuCardWrapper}>
+                <React.Fragment key={exercise.id}>
+                  {idx > 0 && <View style={styles.menuSeparator} />}
                   <SwipeableRow
                     onDelete={() =>
                       selectedWorkoutId &&
@@ -417,47 +424,29 @@ export default function HomeScreen() {
                     }
                   >
                     <TouchableOpacity
-                      style={styles.menuCard}
+                      style={styles.menuRow}
                       onPress={() => handleMenuItemPress(exercise.id)}
                       activeOpacity={0.72}
                       accessibilityRole="button"
                       accessibilityLabel={exercise.name}
                     >
-                      <View style={styles.menuCardInner}>
-                        {/* 1行目: 種目名 + シェブロン */}
-                        <View style={styles.menuCardRow1}>
-                          <Text style={styles.menuName} numberOfLines={1}>{exercise.name}</Text>
-                          <Text style={styles.chevron}>›</Text>
-                        </View>
-                        {/* 2行目: バッジ群 */}
-                        <View style={styles.menuCardRow2}>
-                          {bodyPartLabel !== '' && (
-                            <View style={styles.menuChip}>
-                              <Text style={styles.menuChipText}>{bodyPartLabel}</Text>
-                            </View>
-                          )}
-                          {lastMaxWeight !== null && (
-                            <View style={styles.menuChip}>
-                              <Text style={styles.menuChipText}>前回 {lastMaxWeight}kg</Text>
-                            </View>
-                          )}
-                          {lastSets > 0 && (
-                            <View style={styles.menuChip}>
-                              <Text style={styles.menuChipText}>{lastSets}セット</Text>
-                            </View>
-                          )}
-                          {pr?.maxWeight != null && (
-                            <View style={[styles.menuChip, styles.menuChipPR]}>
-                              <Text style={[styles.menuChipText, styles.menuChipTextPR]}>
-                                PR {pr.maxWeight}kg
-                              </Text>
-                            </View>
-                          )}
-                        </View>
+                      <View style={styles.menuIconBox}>
+                        <Ionicons
+                          name={exercise.icon as any}
+                          size={16}
+                          color={colors.accent}
+                        />
                       </View>
+                      <View style={styles.menuInfo}>
+                        <Text style={styles.menuName} numberOfLines={1}>{exercise.name}</Text>
+                        {metaStr !== '' && (
+                          <Text style={styles.menuMeta} numberOfLines={1}>{metaStr}</Text>
+                        )}
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
                     </TouchableOpacity>
                   </SwipeableRow>
-                </View>
+                </React.Fragment>
               );
             })}
           </View>
@@ -631,60 +620,42 @@ function makeStyles(c: TanrenThemeColors) {
 
     // ── 本日のメニュー ──────────────────────────────────────────────────────
     menuList: {
-      paddingHorizontal: SPACING.contentMargin,
+      paddingHorizontal: 0,
     },
-    menuCardWrapper: {
-      marginBottom: SPACING.cardGap,
-    },
-    menuCard: {
-      backgroundColor: c.surface1,
-      borderRadius: RADIUS.card,
-      padding: SPACING.cardPadding,
-      minHeight: 56,
-      justifyContent: 'center',
-    },
-    menuCardInner: {
-      gap: SPACING.sm,
-    },
-    menuCardRow1: {
+    menuRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
+      paddingHorizontal: SPACING.contentMargin,
+      paddingVertical: 11,
+      minHeight: 56,
+      gap: 12,
     },
-    menuCardRow2: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 6,
-      marginTop: SPACING.xs,
+    menuIconBox: {
+      width: 28,
+      height: 28,
+      borderRadius: 8,
+      backgroundColor: c.accentDim,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    menuInfo: {
+      flex: 1,
     },
     menuName: {
       fontSize: TYPOGRAPHY.body,
       fontWeight: TYPOGRAPHY.semiBold,
       color: c.textPrimary,
-      letterSpacing: -0.2,
-      flex: 1,
     },
-    menuChip: {
-      backgroundColor: c.surface2,
-      borderRadius: RADIUS.badge,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-    },
-    menuChipPR: {
-      backgroundColor: c.accentDim,
-    },
-    menuChipText: {
-      fontSize: TYPOGRAPHY.caption,
-      fontWeight: TYPOGRAPHY.regular,
-      color: c.textSecondary,
-    },
-    menuChipTextPR: {
-      color: c.accent,
-      fontWeight: TYPOGRAPHY.heavy,
-    },
-    chevron: {
-      fontSize: 20,
+    menuMeta: {
+      fontSize: TYPOGRAPHY.captionSmall,
       color: c.textTertiary,
+      marginTop: 2,
+    },
+    menuSeparator: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: c.separator,
+      marginLeft: SPACING.contentMargin + 28 + 12,
     },
     emptyContainer: {
       paddingHorizontal: SPACING.contentMargin,
