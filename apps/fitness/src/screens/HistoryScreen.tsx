@@ -333,7 +333,7 @@ function BodyPartListView({ onSelect }: { onSelect: (bp: BodyPart) => void }) {
       columnWrapperStyle={{ gap: SPACING.sm, marginBottom: SPACING.sm }}
       renderItem={({ item }) => (
         <TouchableOpacity
-          style={[S.bpCard, { backgroundColor: colors.surface2 }]}
+          style={[S.bpCard, { backgroundColor: colors.cardBackground }]}
           onPress={() => onSelect(item.id)}
           activeOpacity={0.7}
           accessibilityRole="button"
