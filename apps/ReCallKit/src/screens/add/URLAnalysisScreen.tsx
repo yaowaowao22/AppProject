@@ -22,6 +22,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { analyzeUrlPipeline } from '../../services/urlAnalysisPipeline';
+import { getRemainingCount, consumeOne } from '../../utils/analysisLimit';
 import type { LibraryStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'URLAnalysis'>;
@@ -58,7 +59,19 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
     }, STEP_SWITCH_MS);
 
     try {
+      // 解析回数制限チェック
+      const remaining = await getRemainingCount();
+      if (remaining <= 0) {
+        setError('本日の無料解析回数（3回）を使い切りました。明日またお試しください');
+        setLoading(false);
+        return;
+      }
+
       const result = await analyzeUrlPipeline(url.trim());
+
+      // 解析成功 → 1回消費
+      await consumeOne();
+
       navigation.navigate('QAPreview', {
         url: result.sourceUrl,
         title: result.title,

@@ -199,6 +199,22 @@ export function AddItemScreen({ navigation }: Props) {
             autoCapitalize="none"
             autoCorrect={false}
           />
+          {/* AI解析ボタン: URLAnalysisScreenへ遷移 */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.aiAnalyzeButton,
+              {
+                backgroundColor: pressed ? colors.accent + 'CC' : colors.accent,
+                opacity: URL_PATTERN.test(sourceUrl.trim()) ? 1 : 0.4,
+              },
+            ]}
+            onPress={() => navigation.navigate('URLAnalysis', { initialUrl: sourceUrl.trim() })}
+            disabled={!URL_PATTERN.test(sourceUrl.trim())}
+            accessibilityRole="button"
+            accessibilityLabel="AIで解析してQ&Aを生成"
+          >
+            <Text style={styles.aiAnalyzeButtonText}>AIで解析してQ&Aを生成</Text>
+          </Pressable>
         </>
       )}
 
