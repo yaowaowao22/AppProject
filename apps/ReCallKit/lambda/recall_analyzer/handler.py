@@ -39,7 +39,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 BEDROCK_REGION = "ap-northeast-1"
-MODEL_ID = "anthropic.claude-3-5-haiku-20241022-v1:0"
+MODEL_ID = "anthropic.claude-3-haiku-20240307-v1:0"
 
 # テキスト長制限
 MAX_TEXT_LENGTH = 4000
