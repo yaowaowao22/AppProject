@@ -3,6 +3,7 @@ import { useColorScheme } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { LightColors, DarkColors } from '../../theme/colors';
 import { HomeScreen } from '../../screens/home/HomeScreen';
+import { JournalScreen } from '../../screens/journal/JournalScreen';
 import type { HomeStackParamList } from '../types';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -27,6 +28,15 @@ export function HomeStack() {
         component={HomeScreen}
         options={{
           title: '今日',
+          headerLargeTitle: true,
+          headerLargeTitleStyle: { color: colors.label },
+        }}
+      />
+      <Stack.Screen
+        name="Journal"
+        component={JournalScreen}
+        options={{
+          title: '学びジャーナル',
           headerLargeTitle: true,
           headerLargeTitleStyle: { color: colors.label },
         }}

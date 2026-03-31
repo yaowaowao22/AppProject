@@ -324,6 +324,31 @@ export function HomeScreen({ navigation }: Props) {
           </Text>
         </View>
       </View>
+
+      {/* ――― ジャーナル導線 ――― */}
+      <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
+        ジャーナル
+      </Text>
+      <Pressable
+        style={({ pressed }) => [
+          styles.journalCard,
+          { backgroundColor: colors.card, opacity: pressed ? 0.7 : 1 },
+          cardShadow,
+        ]}
+        onPress={() => navigation.navigate('Journal')}
+        accessibilityRole="button"
+        accessibilityLabel="学びジャーナルを開く"
+      >
+        <View style={styles.journalCardContent}>
+          <Text style={[styles.journalCardTitle, { color: colors.label }]}>
+            学びジャーナル
+          </Text>
+          <Text style={[styles.journalCardSub, { color: colors.labelSecondary }]}>
+            日付別のメモ一覧
+          </Text>
+        </View>
+        <Text style={[styles.journalChevron, { color: colors.labelTertiary }]}>›</Text>
+      </Pressable>
     </ScrollView>
   );
 }

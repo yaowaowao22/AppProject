@@ -1,6 +1,7 @@
 // ============================================================
-// ReviewCard - フリップアニメーション付きレビューカード
+// ReviewCard - 3Dフリップアニメーション付きレビューカード
 // 表面: タイトル / 裏面: タイトル + 内容
+// フリップ: Y軸回転 + 浮き上がりスケール + 影深度変化
 // ============================================================
 
 import React from 'react';
@@ -9,9 +10,11 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withSequence,
   interpolate,
   Extrapolation,
   runOnJS,
+  Easing,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../theme/ThemeContext';
@@ -25,113 +28,149 @@ interface ReviewCardProps {
 }
 
 const CARD_HEIGHT = 320;
-// フリップ進行: 0=表, 1=裏
-// 0→0.5: 表面が 0→90° に回転しながら消える
-// 0.5→1: 裏面が -90→0° に回転しながら現れる
+const FLIP_DURATION = 320; // 表→裏 (ms)
+const EASING = Easing.out(Easing.cubic);
 
 export function ReviewCard({ title, content, onFlip }: ReviewCardProps) {
   const { colors, isDark } = useTheme();
-  const flipProgress = useSharedValue(0);
+  // 0 = 表, 1 = 裏
+  const flip = useSharedValue(0);
+  // フリップ中に少し浮き上がる (0 → 1 → 0)
+  const lift = useSharedValue(0);
 
-  // 表面: 0→90° に回転、opacity は 0.4→0.5 でフェードアウト
+  // ---- 表面 ----
+  // 0→0.5: 0→90deg、0.35→0.5でフェードアウト
   const frontStyle = useAnimatedStyle(() => ({
     transform: [
-      { perspective: 1500 },
+      { perspective: 1200 },
       {
         rotateY: `${interpolate(
-          flipProgress.value,
+          flip.value,
           [0, 0.5],
           [0, 90],
           Extrapolation.CLAMP
         )}deg`,
       },
+      {
+        scale: interpolate(lift.value, [0, 0.5, 1], [1, 1.03, 1]),
+      },
     ],
-    opacity: interpolate(flipProgress.value, [0.35, 0.5], [1, 0], Extrapolation.CLAMP),
+    opacity: interpolate(flip.value, [0.32, 0.5], [1, 0], Extrapolation.CLAMP),
   }));
 
-  // 裏面: -90→0° に回転、opacity は 0.5→0.65 でフェードイン
+  // ---- 裏面 ----
+  // 0.5→1: -90→0deg、0.5→0.65でフェードイン
   const backStyle = useAnimatedStyle(() => ({
     transform: [
-      { perspective: 1500 },
+      { perspective: 1200 },
       {
         rotateY: `${interpolate(
-          flipProgress.value,
+          flip.value,
           [0.5, 1],
           [-90, 0],
           Extrapolation.CLAMP
         )}deg`,
       },
+      {
+        scale: interpolate(lift.value, [0, 0.5, 1], [1, 1.03, 1]),
+      },
     ],
-    opacity: interpolate(flipProgress.value, [0.5, 0.65], [0, 1], Extrapolation.CLAMP),
+    opacity: interpolate(flip.value, [0.5, 0.68], [0, 1], Extrapolation.CLAMP),
   }));
 
+  // ---- 影 (フリップ中に深くなる) ----
+  const shadowStyle = useAnimatedStyle(() => {
+    const depth = interpolate(lift.value, [0, 0.5, 1], [0, 1, 0]);
+    return {
+      shadowOpacity: isDark
+        ? 0
+        : interpolate(depth, [0, 1], [0.1, 0.22]),
+      shadowRadius: interpolate(depth, [0, 1], [8, 18]),
+      elevation: interpolate(depth, [0, 1], [3, 8]),
+    };
+  });
+
   const handleFlip = async () => {
-    if (flipProgress.value > 0) return; // 既にフリップ済み
+    if (flip.value > 0) return;
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    flipProgress.value = withTiming(1, { duration: 480 }, (finished) => {
-      if (finished && onFlip) {
-        runOnJS(onFlip)();
-      }
+
+    // 浮き上がりを表→裏の途中でピーク
+    lift.value = withSequence(
+      withTiming(1, { duration: FLIP_DURATION, easing: EASING }),
+      withTiming(0, { duration: FLIP_DURATION * 0.5, easing: EASING })
+    );
+
+    flip.value = withTiming(1, { duration: FLIP_DURATION * 1.5, easing: EASING }, (done) => {
+      if (done && onFlip) runOnJS(onFlip)();
     });
   };
 
-  const cardBase = [
-    styles.card,
-    {
-      backgroundColor: colors.card,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0 : 0.1,
-      shadowRadius: 8,
-      elevation: isDark ? 0 : 3,
-    },
-  ] as const;
+  const cardBase = {
+    backgroundColor: colors.card,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+  };
 
   return (
-    <Pressable onPress={handleFlip} accessibilityRole="button" accessibilityLabel="カードをめくる">
-      <View style={styles.wrapper}>
+    <Pressable
+      onPress={handleFlip}
+      accessibilityRole="button"
+      accessibilityLabel="カードをめくる"
+      style={styles.pressable}
+    >
+      <Animated.View style={[styles.wrapper, shadowStyle]}>
         {/* 表面 */}
-        <Animated.View style={[...cardBase, frontStyle]}>
+        <Animated.View style={[styles.card, cardBase, frontStyle]}>
           <View style={styles.cardBody}>
             <Text style={[styles.sectionLabel, { color: colors.labelTertiary }]}>
-              タイトル
+              QUESTION
             </Text>
-            <Text style={[styles.titleText, { color: colors.label }]} numberOfLines={5}>
+            <Text style={[styles.titleText, { color: colors.label }]} numberOfLines={6}>
               {title}
             </Text>
           </View>
-          <Text style={[styles.flipHint, { color: colors.labelTertiary }]}>
-            タップしてめくる
-          </Text>
+          <View style={styles.flipHintRow}>
+            <View style={[styles.flipDot, { backgroundColor: colors.accent }]} />
+            <View style={[styles.flipDot, { backgroundColor: colors.accent, opacity: 0.4 }]} />
+            <View style={[styles.flipDot, { backgroundColor: colors.accent, opacity: 0.2 }]} />
+            <Text style={[styles.flipHint, { color: colors.labelTertiary }]}>
+              タップしてめくる
+            </Text>
+          </View>
         </Animated.View>
 
-        {/* 裏面 - 絶対位置 */}
-        <Animated.View style={[...cardBase, styles.absoluteFill, backStyle]}>
+        {/* 裏面 (絶対位置) */}
+        <Animated.View style={[styles.card, cardBase, styles.absoluteFill, backStyle]}>
           <View style={styles.cardBody}>
             <Text style={[styles.sectionLabel, { color: colors.labelTertiary }]}>
-              タイトル
+              QUESTION
             </Text>
-            <Text style={[styles.titleSmall, { color: colors.labelSecondary }]} numberOfLines={2}>
+            <Text
+              style={[styles.titleSmall, { color: colors.labelSecondary }]}
+              numberOfLines={2}
+            >
               {title}
             </Text>
             <View style={[styles.divider, { backgroundColor: colors.separator }]} />
             <Text style={[styles.sectionLabel, { color: colors.labelTertiary }]}>
-              内容
+              ANSWER
             </Text>
-            <Text style={[styles.contentText, { color: colors.label }]} numberOfLines={8}>
+            <Text style={[styles.contentText, { color: colors.label }]} numberOfLines={9}>
               {content}
             </Text>
           </View>
         </Animated.View>
-      </View>
+      </Animated.View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
+  pressable: {
+    marginHorizontal: Spacing.m,
+  },
   wrapper: {
     height: CARD_HEIGHT,
-    marginHorizontal: Spacing.m,
   },
   card: {
     height: CARD_HEIGHT,
@@ -151,8 +190,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     ...TypeScale.caption1,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
     marginBottom: Spacing.xs,
   },
   titleText: {
@@ -170,8 +208,19 @@ const styles = StyleSheet.create({
   contentText: {
     ...TypeScale.bodyJA,
   },
+  flipHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+  },
+  flipDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+  },
   flipHint: {
     ...TypeScale.footnote,
-    textAlign: 'center',
+    marginLeft: Spacing.xs,
   },
 });

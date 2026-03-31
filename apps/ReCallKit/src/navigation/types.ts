@@ -36,6 +36,7 @@ export type MainTabParamList = {
 // ---- Home Stack ----
 export type HomeStackParamList = {
   Home: undefined;
+  Journal: undefined;
 };
 
 // ---- Library Stack ----
