@@ -4,7 +4,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../ThemeContext';
 import HomeScreen from '../screens/HomeScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
-import ProgressScreen from '../screens/ProgressScreen';
 import {
   ExerciseSelectScreen,
   ActiveWorkoutScreen,
