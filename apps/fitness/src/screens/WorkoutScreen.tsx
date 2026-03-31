@@ -947,33 +947,6 @@ function makeStyles(c: TanrenThemeColors) {
   },
 
   // ── アクティブワークアウト ────────────────────────────────────────────────────
-  exerciseInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.contentMargin,
-    paddingVertical: SPACING.sm,
-    gap: SPACING.xs,
-  },
-  exInfoIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: c.accentDim,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  exInfoIconText: {
-    fontSize: TYPOGRAPHY.body,
-    fontWeight: TYPOGRAPHY.bold,
-    color: c.accent,
-  },
-  exInfoName: {
-    fontSize: 20,
-    fontWeight: TYPOGRAPHY.bold,
-    color: c.textPrimary,
-    letterSpacing: -0.4,
-  },
   muscleRow: {
     paddingHorizontal: SPACING.contentMargin,
     paddingTop: SPACING.sm,

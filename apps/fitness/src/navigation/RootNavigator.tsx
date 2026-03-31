@@ -59,6 +59,7 @@ function WorkoutStackNavigator() {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: colors.background },
+        animation: 'slide_from_right',
       }}
     >
       <WorkoutStack.Screen name="ExerciseSelect" component={ExerciseSelectScreen} />
@@ -116,7 +117,10 @@ export function RootNavigator() {
         options={{ title: 'トレーニング' }}
         listeners={({ navigation }) => ({
           // ドロワーで再選択されたとき WorkoutStack をリセット（完了画面の再表示を防止）
-          focus: () => {
+          // focus ではなく drawerItemPress を使うことで HomeScreen からの
+          // プログラム的 navigate と競合しない（二重遷移を防止）
+          drawerItemPress: (e) => {
+            e.preventDefault();
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (navigation as any).navigate('WorkoutStack', { screen: 'ExerciseSelect' });
           },
