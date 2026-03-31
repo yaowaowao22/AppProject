@@ -49,7 +49,7 @@ else
   ROLE_ARN=$(aws iam create-role \
     --role-name "${ROLE_NAME}" \
     --assume-role-policy-document "file://${TRUST_POLICY_FILE}" \
-    --description "Cognito 未認証ユーザー向けロール - Lambda FunctionUrl invoke 用" \
+    --description "Cognito unauthenticated role for Lambda FunctionUrl invoke" \
     --query "Role.Arn" \
     --output text)
   echo "      → ロール作成完了: ${ROLE_ARN}"
