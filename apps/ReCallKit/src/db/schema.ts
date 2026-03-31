@@ -6,9 +6,6 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 const SCHEMA_VERSION = 1;
 
 const CREATE_TABLES_SQL = `
-  PRAGMA journal_mode = WAL;
-  PRAGMA foreign_keys = ON;
-
   -- アイテム（URL・テキスト・メモ）
   CREATE TABLE IF NOT EXISTS items (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -92,6 +89,16 @@ async function setSchemaVersion(db: SQLiteDatabase, version: number): Promise<vo
 // マイグレーション本体
 // ============================================================
 export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
+  // PRAGMA foreign_keys は全プラットフォームで有効化
+  await db.execAsync('PRAGMA foreign_keys = ON;');
+
+  // WAL モードはネイティブのみ。Web の sql.js ではサポートされないため try-catch で囲む
+  try {
+    await db.execAsync('PRAGMA journal_mode = WAL;');
+  } catch {
+    // Web (sql.js) では WAL 非対応 — 無視して続行
+  }
+
   const currentVersion = await getSchemaVersion(db);
 
   if (currentVersion < 1) {
