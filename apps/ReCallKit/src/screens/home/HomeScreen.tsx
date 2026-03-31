@@ -501,6 +501,30 @@ const styles = StyleSheet.create({
     ...TypeScale.footnote,
   },
 
+  // ――― ジャーナル導線 ―――
+  journalCard: {
+    borderRadius: Radius.m,
+    padding: Spacing.m,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  journalCardContent: {
+    flex: 1,
+    gap: Spacing.xs,
+  },
+  journalCardTitle: {
+    ...TypeScale.body,
+    fontWeight: '500' as const,
+  },
+  journalCardSub: {
+    ...TypeScale.caption1,
+  },
+  journalChevron: {
+    fontSize: 22,
+    lineHeight: 24,
+    fontWeight: '300' as const,
+  },
+
   // ――― 統計 ―――
   sectionTitle: {
     ...TypeScale.footnote,
