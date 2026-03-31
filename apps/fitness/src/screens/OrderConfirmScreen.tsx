@@ -126,7 +126,19 @@ export default function OrderConfirmScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="順序確認" showBack />
+      <ScreenHeader title="トレーニング" showHamburger />
+      <TouchableOpacity
+        style={styles.detailBackRow}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="種目選択に戻る"
+      >
+        <Ionicons name="chevron-back" size={20} color={colors.accent} />
+        <Text style={styles.detailBackText}>種目選択</Text>
+        <View style={{ flex: 1 }} />
+        <Text style={styles.detailBackInfo}>{data.length}種目</Text>
+      </TouchableOpacity>
       <Text style={styles.description}>選択した種目をこの順番でトレーニングします</Text>
 
       <FlatList
@@ -307,6 +319,23 @@ function makeStyles(c: TanrenThemeColors) {
       color: c.textSecondary,
       paddingHorizontal: SPACING.contentMargin,
       paddingBottom: SPACING.sm,
+    },
+    detailBackRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.contentMargin,
+      paddingVertical: SPACING.sm,
+      gap: SPACING.xs,
+    },
+    detailBackText: {
+      fontSize: TYPOGRAPHY.bodySmall,
+      fontWeight: TYPOGRAPHY.semiBold,
+      color: c.accent,
+    },
+    detailBackInfo: {
+      fontSize: TYPOGRAPHY.caption,
+      fontWeight: TYPOGRAPHY.semiBold,
+      color: c.textTertiary,
     },
 
     // ── モーダル ───────────────────────────────────────────────────────────────
