@@ -159,3 +159,6 @@ export const DarkColors = {
 } as const;
 
 export type ColorScheme = typeof LightColors | typeof DarkColors;
+
+/** サイドバー（ドロワー）専用カラーセットの型エイリアス */
+export type SidebarColorSet = typeof SidebarColors.light;

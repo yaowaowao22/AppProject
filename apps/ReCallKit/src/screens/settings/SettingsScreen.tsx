@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
+import { type ThemePreference, THEMES, THEME_CATEGORIES } from '../../theme/themes';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
 import { getDatabase } from '../../db/connection';
@@ -20,14 +21,6 @@ import { getAllSettings, setSetting, type AppSettings } from '../../db/settingsR
 import { exportAllDataAsJSON } from '../../services/exportService';
 
 const APP_VERSION = '0.1.0';
-
-type ThemePref = 'system' | 'light' | 'dark';
-
-const THEME_OPTIONS: { value: ThemePref; label: string }[] = [
-  { value: 'system', label: 'システム設定に従う' },
-  { value: 'light', label: 'ライト' },
-  { value: 'dark', label: 'ダーク' },
-];
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
@@ -40,6 +33,7 @@ export function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showThemePicker, setShowThemePicker] = useState(false);
   const [tempHour, setTempHour] = useState(8);
   const [tempMinute, setTempMinute] = useState(0);
   const [exporting, setExporting] = useState(false);
@@ -88,8 +82,9 @@ export function SettingsScreen() {
   };
 
   // ── テーマ切替 ───────────────────────────────────────────
-  const handleTheme = async (pref: ThemePref) => {
+  const handleTheme = async (pref: ThemePreference) => {
     await setThemePreference(pref);
+    setShowThemePicker(false);
   };
 
   // ── エクスポート ─────────────────────────────────────────
@@ -105,6 +100,11 @@ export function SettingsScreen() {
     }
   };
 
+  // ── 現在のテーマ名を表示用に解決 ─────────────────────────
+  const currentThemeName = themePreference === 'system'
+    ? 'システム設定に従う'
+    : (THEMES[themePreference]?.name ?? themePreference);
+
   // ── ローディング ─────────────────────────────────────────
   if (!settings) {
     return (
@@ -118,132 +118,128 @@ export function SettingsScreen() {
   const safeMinuteIndex = minuteIndex >= 0 ? minuteIndex : 0;
 
   return (
-    <ScrollView
-      style={[styles.scroll, { backgroundColor: colors.backgroundGrouped }]}
-      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xxl }]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* ── 復習設定 ─────────────────────────────────────── */}
-      <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
-        復習設定
-      </Text>
-      <View style={[styles.section, { backgroundColor: colors.card }]}>
+    <>
+      <ScrollView
+        style={[styles.scroll, { backgroundColor: colors.backgroundGrouped }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xxl }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── 復習設定 ─────────────────────────────────────── */}
+        <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
+          復習設定
+        </Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
 
-        {/* 復習リマインド時刻 */}
-        <TouchableOpacity
-          style={styles.row}
-          onPress={openTimePicker}
-          activeOpacity={0.6}
-        >
-          <Text style={[styles.rowLabel, { color: colors.label }]}>
-            復習リマインド時刻
-          </Text>
-          <View style={styles.rowRight}>
-            <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
-              {settings.review_time}
+          {/* 復習リマインド時刻 */}
+          <TouchableOpacity
+            style={styles.row}
+            onPress={openTimePicker}
+            activeOpacity={0.6}
+          >
+            <Text style={[styles.rowLabel, { color: colors.label }]}>
+              復習リマインド時刻
             </Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.labelTertiary} />
-          </View>
-        </TouchableOpacity>
-
-        <View style={[styles.separator, { backgroundColor: colors.separator }]} />
-
-        {/* 1日の復習件数 */}
-        <View style={styles.row}>
-          <Text style={[styles.rowLabel, { color: colors.label }]}>
-            1日の復習件数
-          </Text>
-          <View style={styles.stepper}>
-            <TouchableOpacity
-              style={[styles.stepBtn, { borderColor: colors.separator }]}
-              onPress={() => adjustCount(-1)}
-              activeOpacity={0.6}
-            >
-              <Ionicons name="remove" size={18} color={colors.accent} />
-            </TouchableOpacity>
-            <Text style={[styles.stepValue, { color: colors.label }]}>
-              {settings.daily_review_count}
-            </Text>
-            <TouchableOpacity
-              style={[styles.stepBtn, { borderColor: colors.separator }]}
-              onPress={() => adjustCount(1)}
-              activeOpacity={0.6}
-            >
-              <Ionicons name="add" size={18} color={colors.accent} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-
-      {/* ── 外観 ─────────────────────────────────────────── */}
-      <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
-        外観
-      </Text>
-      <View style={[styles.section, { backgroundColor: colors.card }]}>
-        {THEME_OPTIONS.map((opt, i) => (
-          <React.Fragment key={opt.value}>
-            {i > 0 && (
-              <View style={[styles.separator, { backgroundColor: colors.separator }]} />
-            )}
-            <TouchableOpacity
-              style={styles.row}
-              onPress={() => handleTheme(opt.value)}
-              activeOpacity={0.6}
-            >
-              <Text style={[styles.rowLabel, { color: colors.label }]}>
-                {opt.label}
+            <View style={styles.rowRight}>
+              <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
+                {settings.review_time}
               </Text>
-              {themePreference === opt.value && (
-                <Ionicons name="checkmark" size={20} color={colors.accent} />
-              )}
-            </TouchableOpacity>
-          </React.Fragment>
-        ))}
-      </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.labelTertiary} />
+            </View>
+          </TouchableOpacity>
 
-      {/* ── データ ───────────────────────────────────────── */}
-      <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
-        データ
-      </Text>
-      <View style={[styles.section, { backgroundColor: colors.card }]}>
-        <TouchableOpacity
-          style={styles.row}
-          onPress={handleExport}
-          activeOpacity={0.6}
-          disabled={exporting}
-        >
-          {exporting ? (
-            <ActivityIndicator
-              size="small"
-              color={colors.accent}
-              style={{ marginRight: Spacing.s }}
-            />
-          ) : (
-            <Ionicons
-              name="share-outline"
-              size={20}
-              color={colors.accent}
-              style={{ marginRight: Spacing.s }}
-            />
-          )}
-          <Text style={[styles.rowLabel, { color: colors.accent }]}>
-            データをエクスポート
-          </Text>
-        </TouchableOpacity>
-      </View>
+          <View style={[styles.separator, { backgroundColor: colors.separator }]} />
 
-      {/* ── アプリ情報 ───────────────────────────────────── */}
-      <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
-        アプリ情報
-      </Text>
-      <View style={[styles.section, { backgroundColor: colors.card }]}>
-        <View style={styles.row}>
-          <Text style={[styles.rowLabel, { color: colors.label }]}>バージョン</Text>
-          <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
-            {APP_VERSION}
-          </Text>
+          {/* 1日の復習件数 */}
+          <View style={styles.row}>
+            <Text style={[styles.rowLabel, { color: colors.label }]}>
+              1日の復習件数
+            </Text>
+            <View style={styles.stepper}>
+              <TouchableOpacity
+                style={[styles.stepBtn, { borderColor: colors.separator }]}
+                onPress={() => adjustCount(-1)}
+                activeOpacity={0.6}
+              >
+                <Ionicons name="remove" size={18} color={colors.accent} />
+              </TouchableOpacity>
+              <Text style={[styles.stepValue, { color: colors.label }]}>
+                {settings.daily_review_count}
+              </Text>
+              <TouchableOpacity
+                style={[styles.stepBtn, { borderColor: colors.separator }]}
+                onPress={() => adjustCount(1)}
+                activeOpacity={0.6}
+              >
+                <Ionicons name="add" size={18} color={colors.accent} />
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      </View>
+
+        {/* ── 外観 ─────────────────────────────────────────── */}
+        <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
+          外観
+        </Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => setShowThemePicker(true)}
+            activeOpacity={0.6}
+          >
+            <Text style={[styles.rowLabel, { color: colors.label }]}>テーマ</Text>
+            <View style={styles.rowRight}>
+              <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
+                {currentThemeName}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.labelTertiary} />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── データ ───────────────────────────────────────── */}
+        <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
+          データ
+        </Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={handleExport}
+            activeOpacity={0.6}
+            disabled={exporting}
+          >
+            {exporting ? (
+              <ActivityIndicator
+                size="small"
+                color={colors.accent}
+                style={{ marginRight: Spacing.s }}
+              />
+            ) : (
+              <Ionicons
+                name="share-outline"
+                size={20}
+                color={colors.accent}
+                style={{ marginRight: Spacing.s }}
+              />
+            )}
+            <Text style={[styles.rowLabel, { color: colors.accent }]}>
+              データをエクスポート
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── アプリ情報 ───────────────────────────────────── */}
+        <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
+          アプリ情報
+        </Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <View style={styles.row}>
+            <Text style={[styles.rowLabel, { color: colors.label }]}>バージョン</Text>
+            <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
+              {APP_VERSION}
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
 
       {/* ── 時刻ピッカー Modal ───────────────────────────── */}
       <Modal visible={showTimePicker} transparent animationType="slide">
@@ -340,7 +336,105 @@ export function SettingsScreen() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+
+      {/* ── テーマピッカー Modal ─────────────────────────── */}
+      <Modal visible={showThemePicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.themeSheet, { backgroundColor: colors.backgroundGrouped }]}>
+
+            {/* ヘッダー */}
+            <View style={[styles.modalHeader, { borderBottomColor: colors.separator, backgroundColor: colors.card }]}>
+              <TouchableOpacity onPress={() => setShowThemePicker(false)}>
+                <Text style={[styles.modalCancel, { color: colors.labelSecondary }]}>
+                  閉じる
+                </Text>
+              </TouchableOpacity>
+              <Text style={[styles.modalTitle, { color: colors.label }]}>
+                テーマ
+              </Text>
+              <View style={{ minWidth: 64 }} />
+            </View>
+
+            <ScrollView
+              style={styles.themeScroll}
+              contentContainerStyle={styles.themeScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* システム設定に従う */}
+              <Text style={[styles.themeCategoryHeader, { color: colors.labelTertiary }]}>
+                自動
+              </Text>
+              <View style={[styles.section, { backgroundColor: colors.card }]}>
+                <TouchableOpacity
+                  style={styles.themeRow}
+                  onPress={() => handleTheme('system')}
+                  activeOpacity={0.6}
+                >
+                  <View style={[styles.themeSwatchSystem, { borderColor: colors.separator }]}>
+                    <View style={[styles.themeSwatchHalf, { backgroundColor: '#FFFFFF' }]} />
+                    <View style={[styles.themeSwatchHalf, { backgroundColor: '#000000' }]} />
+                  </View>
+                  <Text style={[styles.themeRowLabel, { color: colors.label }]}>
+                    システム設定に従う
+                  </Text>
+                  {themePreference === 'system' && (
+                    <Ionicons name="checkmark" size={20} color={colors.accent} />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {/* カテゴリ別テーマ一覧 */}
+              {THEME_CATEGORIES.map((cat) => (
+                <React.Fragment key={cat.id}>
+                  <Text style={[styles.themeCategoryHeader, { color: colors.labelTertiary }]}>
+                    {cat.label}
+                  </Text>
+                  <View style={[styles.section, { backgroundColor: colors.card }]}>
+                    {cat.ids.map((tid, i) => {
+                      const entry = THEMES[tid];
+                      const isSelected = themePreference === tid;
+                      return (
+                        <React.Fragment key={tid}>
+                          {i > 0 && (
+                            <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+                          )}
+                          <TouchableOpacity
+                            style={styles.themeRow}
+                            onPress={() => handleTheme(tid)}
+                            activeOpacity={0.6}
+                          >
+                            {/* カラースウォッチ */}
+                            <View
+                              style={[
+                                styles.themeSwatch,
+                                { backgroundColor: entry.swatchBg, borderColor: colors.separator },
+                              ]}
+                            >
+                              <View
+                                style={[
+                                  styles.themeSwatchDot,
+                                  { backgroundColor: entry.swatchColor },
+                                ]}
+                              />
+                            </View>
+                            <Text style={[styles.themeRowLabel, { color: colors.label }]}>
+                              {entry.name}
+                            </Text>
+                            {isSelected && (
+                              <Ionicons name="checkmark" size={20} color={colors.accent} />
+                            )}
+                          </TouchableOpacity>
+                        </React.Fragment>
+                      );
+                    })}
+                  </View>
+                </React.Fragment>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -430,7 +524,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // モーダル
+  // モーダル共通
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -448,6 +542,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.m,
     paddingVertical: Spacing.m,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    borderTopLeftRadius: Radius.l,
+    borderTopRightRadius: Radius.l,
   },
   modalTitle: {
     ...TypeScale.headline,
@@ -487,5 +583,66 @@ const styles = StyleSheet.create({
   },
   pickerItemText: {
     ...TypeScale.title3,
+  },
+
+  // テーマピッカー
+  themeSheet: {
+    borderTopLeftRadius: Radius.l,
+    borderTopRightRadius: Radius.l,
+    maxHeight: '85%',
+  },
+  themeScroll: {
+    flex: 1,
+  },
+  themeScrollContent: {
+    paddingHorizontal: Spacing.m,
+    paddingBottom: Spacing.xl,
+    gap: Spacing.xs,
+  },
+  themeCategoryHeader: {
+    ...TypeScale.subheadline,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: Spacing.s,
+    marginBottom: Spacing.xs,
+    paddingHorizontal: Spacing.xs,
+  },
+  themeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 44,
+    paddingHorizontal: Spacing.m,
+    paddingVertical: Spacing.s,
+    gap: Spacing.s,
+  },
+  themeRowLabel: {
+    ...TypeScale.body,
+    flex: 1,
+  },
+  // カラースウォッチ（丸アイコン + アクセントドット）
+  themeSwatch: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeSwatchDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
+  // システム設定スウォッチ（白黒 2 分割）
+  themeSwatchSystem: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+    flexDirection: 'row',
+  },
+  themeSwatchHalf: {
+    flex: 1,
   },
 });

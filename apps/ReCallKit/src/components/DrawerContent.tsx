@@ -11,9 +11,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { SidebarColors } from '../theme/colors';
 import { SidebarLayout, Spacing, Radius } from '../theme/spacing';
 import { useTheme } from '../theme/ThemeContext';
+import type { SidebarColorSet } from '../theme/themes';
 import { useDatabase } from '../hooks/useDatabase';
 import { useSidebarFilter } from '../hooks/useSidebarFilter';
 
