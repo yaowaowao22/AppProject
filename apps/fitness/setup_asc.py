@@ -71,7 +71,7 @@ def set_app_info_loc(ai_id):
     ja = next((l for l in locs if l["attributes"]["locale"] == "ja"), None)
     attrs = {
         "name": APP_NAME,
-        "subtitle": "Workout Tracker & Strength Log",
+        "subtitle": "筋トレ記録・重量管理アプリ",
         "privacyPolicyUrl": PRIVACY_URL,
     }
     if ja:
@@ -81,7 +81,7 @@ def set_app_info_loc(ai_id):
         r = requests.post(f"{BASE}/appInfoLocalizations", headers=h(), json={
             "data": {"type": "appInfoLocalizations", "attributes": {**attrs, "locale": "ja"},
                      "relationships": {"appInfo": {"data": {"type": "appInfos", "id": ai_id}}}}})
-    print(f"  [{'OK' if ok(r) else 'NG'}] ja: {APP_NAME} / Workout Tracker & Strength Log")
+    print(f"  [{'OK' if ok(r) else 'NG'}] ja: {APP_NAME} / 筋トレ記録・重量管理アプリ")
     if not ok(r): show_err(r)
 
 # ==================== Version Localization ====================
@@ -99,39 +99,39 @@ def set_version_loc(app_id):
     locs = r.json().get("data", [])
     ja = next((l for l in locs if l["attributes"]["locale"] == "ja"), None)
 
-    desc = """FORGE is a simple, powerful workout tracker built for lifters who want to focus on training — not tapping through menus.
+    desc = """FORGEは、メニュー操作より「トレーニング」に集中したいリフターのための、シンプルで本格的なワークアウト記録アプリです。
 
-■ Features
-· Body-part exercise selection (Chest, Back, Legs, Shoulders, Arms, Core)
-· 45 exercises built-in
-· Log sets with weight × reps
-· Automatic PR (personal record) tracking
-· Monthly reports & streak display
-· 1RM calculator
-· Quick-start templates
-· 25+ theme options
+■ 主な機能
+・部位別エクササイズ選択（胸・背中・脚・肩・腕・体幹）
+・45種類のエクササイズ内蔵
+・重量×回数でセットを記録
+・自動PR（自己記録）検知・通知
+・月別レポートと連続記録（ストリーク）表示
+・1RM計算機（Epley / Brzycki / Lander 対応）
+・クイックスタートテンプレート管理
+・25種類以上のカラーテーマ
 
-■ Why FORGE
-· Fully offline — all data stays on your device. No account needed.
-· Zero ads — pure focus on your training.
-· 3-step logging — muscle group → exercise → weight/reps. That's it.
-· Instant PR feedback — know when you've broken a record.
+■ FORGEが選ばれる理由
+・完全オフライン — データはすべてデバイス内に保存。アカウント登録不要。
+・広告ゼロ — 余計なものを一切排除。トレーニングだけに集中できます。
+・3タップで記録 — 部位 → 種目 → 重量・回数。シンプルな操作で素早く記録。
+・即時PRフィードバック — 自己記録を更新したその瞬間に通知。
 
-■ Exercises by muscle group
-Chest: Bench Press, Dumbbell Fly, and more
-Back: Deadlift, Lat Pulldown, and more
-Legs: Squat, Leg Press, and more
-Shoulders: Shoulder Press, Lateral Raise, and more
-Arms: Bicep Curl, Tricep Extension, and more
-Core: Plank, Ab Wheel, and more
+■ 部位別エクササイズ例
+胸：ベンチプレス、ダンベルフライ、ケーブルクロスオーバー など
+背中：デッドリフト、ラットプルダウン、ベントオーバーロウ など
+脚：スクワット、レッグプレス、レッグカール など
+肩：ショルダープレス、サイドレイズ、フロントレイズ など
+腕：バイセップカール、トライセップエクステンション など
+体幹：プランク、アブローラー、クランチ など
 
-Track every rep. Forge your best.
+記録が、力になる。
 """
 
     attrs = {
         "description": desc,
-        "keywords": "workout,gym,lifting,tracker,strength,fitness,log,PR,weight training,bodybuilding",
-        "promotionalText": "45 exercises. Offline. No ads. Track PRs, streaks & monthly volume. Forge your best.",
+        "keywords": "筋トレ,ワークアウト,トレーニング,記録,重量管理,フィットネス,ジム,PR,1RM,筋力",
+        "promotionalText": "45種目・完全オフライン・広告なし。PR・連続記録・月別ボリュームを管理。毎日の積み重ねを可視化。",
         "supportUrl": SUPPORT_URL,
     }
 
@@ -157,7 +157,7 @@ def set_review_info(vid):
         "contactPhone": "+81 80 1234 5678",
         "contactEmail": "y.tata02020202@icloud.com",
         "demoAccountRequired": False,
-        "notes": "No login required. This is a fully offline workout tracking app. All data is stored locally on the device. Launch the app and tap the orange button to start recording a workout. Select a body part, choose exercises, and log sets with weight and reps.",
+        "notes": "No login required. Fully offline workout tracking app. All data stored locally on device.\n\nHow to test:\n1. Launch the app\n2. Tap the black button at the bottom to start a workout\n3. Select a muscle group (e.g. Chest)\n4. Choose exercises and log sets with weight and reps\n5. Finish workout to see the summary screen\n\nRM Calculator: Open drawer menu (top-left) → RM計算機 → adjust weight and reps\nSettings/Themes: Open drawer menu → 設定",
     }
     rd = sj(r).get("data")
     if rd:

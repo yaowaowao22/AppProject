@@ -193,7 +193,7 @@ export function QAPreviewScreen({ route, navigation }: Props) {
       Alert.alert(
         '保存完了',
         `${targets.length}件のQ&Aをライブラリに追加しました`,
-        [{ text: 'OK', onPress: () => navigation.getParent()?.getParent()?.navigate('Home' as never) }],
+        [{ text: 'OK', onPress: () => navigation.popToTop() }],
       );
     } catch (err) {
       Alert.alert('エラー', '保存に失敗しました');
@@ -209,7 +209,7 @@ export function QAPreviewScreen({ route, navigation }: Props) {
       '取り込みを終了しますか？作成中のQ&Aは破棄されます。',
       [
         { text: 'キャンセル', style: 'cancel' },
-        { text: 'OK', onPress: () => navigation.getParent()?.getParent()?.navigate('Home' as never) },
+        { text: 'OK', onPress: () => navigation.popToTop() },
       ],
     );
   }, [navigation]);

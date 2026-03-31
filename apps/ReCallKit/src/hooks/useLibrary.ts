@@ -1,7 +1,7 @@
 // ============================================================
 // useLibrary — ライブラリ一覧・タグ取得フック
 // ============================================================
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { useDB } from './useDatabase';
 import type { ItemWithMeta, Tag, ItemType, Review } from '../types';
@@ -199,9 +199,9 @@ export function useItems(filter: LibraryFilter) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, filter.search, filter.type, tagIdsKey, filter.reviewStatus, filter.dateRange, filter.category]);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     fetchItems();
-  }, [fetchItems]);
+  }, [fetchItems]));
 
   return { items, isLoading, refresh: fetchItems };
 }
@@ -284,9 +284,9 @@ export function useCategories() {
     }
   }, [db]);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     fetchCategories();
-  }, [fetchCategories]);
+  }, [fetchCategories]));
 
   return { categories, refresh: fetchCategories };
 }

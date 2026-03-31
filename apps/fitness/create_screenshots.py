@@ -86,7 +86,7 @@ def upload_screenshots(set_id, image_paths):
                 "id": ss_id,
                 "attributes": {
                     "uploaded": True,
-                    "sourceFileChecksum": ss_data["attributes"].get("sourceFileChecksum", {}).get("value", "")
+                    "sourceFileChecksum": (ss_data["attributes"].get("sourceFileChecksum") or {}).get("value", "")
                 }
             }
         })
@@ -146,11 +146,12 @@ def main():
     # Get localization
     r = requests.get(f"{BASE}/appStoreVersions/{vid}/appStoreVersionLocalizations", headers=h())
     locs = r.json().get("data", [])
-    ja = next((l for l in locs if l["attributes"]["locale"] == "ja"), None)
-    if not ja:
-        print("[NG] No ja localization")
+    loc = next((l for l in locs if l["attributes"]["locale"] in ("en-US", "ja")), locs[0] if locs else None)
+    if not loc:
+        print("[NG] No localization found")
         sys.exit(1)
-    loc_id = ja["id"]
+    print(f"[OK] Locale: {loc['attributes']['locale']}")
+    loc_id = loc["id"]
 
     if mode == "local":
         # Upload from local screenshots/ directory

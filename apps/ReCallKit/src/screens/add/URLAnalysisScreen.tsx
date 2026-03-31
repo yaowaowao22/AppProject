@@ -53,7 +53,7 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
         '解析を中断しますか？',
         [
           { text: 'キャンセル', style: 'cancel' },
-          { text: 'OK', onPress: () => navigation.getParent()?.getParent()?.navigate('Home' as never) },
+          { text: 'OK', onPress: () => navigation.popToTop() },
         ],
       );
     } else {

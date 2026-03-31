@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "fitness-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "apps/fitness", "run", "web"],
+      "port": 8082
+    },
+    {
+      "name": "fitness-api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "server/fitness-api", "run", "dev"],
+      "port": 8787
+    },
+    {
+      "name": "push-api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "server/push-api", "run", "dev"],
+      "port": 8788
+    }
+  ]
+}
