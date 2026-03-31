@@ -16,9 +16,14 @@ export async function getDatabase(): Promise<SQLiteDatabase> {
   if (_opening) return _opening;
 
   _opening = (async () => {
-    _db = await openDatabaseAsync(DB_NAME);
-    await migrateDatabase(_db);
-    return _db;
+    try {
+      _db = await openDatabaseAsync(DB_NAME);
+      await migrateDatabase(_db);
+      return _db;
+    } catch (err) {
+      _opening = null; // 失敗時はリセットして次回呼び出しで再試行できるようにする
+      throw err;
+    }
   })();
 
   return _opening;

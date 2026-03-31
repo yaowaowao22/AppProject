@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Text, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useDatabase } from '../hooks/useDatabase';
@@ -37,6 +37,8 @@ export function RootNavigator() {
 
   // DBエラー（最優先チェック）
   if (error) {
+    const isOpfsError = Platform.OS === 'web' &&
+      (error.message.includes('14') || error.message.includes('createSyncAccessHandle'));
     return (
       <View style={[styles.loading, { backgroundColor: colors.background }]}>
         <Text style={{ color: colors.label, fontSize: 17, fontWeight: '600', marginBottom: 8 }}>
@@ -45,6 +47,12 @@ export function RootNavigator() {
         <Text style={{ color: colors.labelSecondary, fontSize: 13, textAlign: 'center', paddingHorizontal: 32 }}>
           {error.message}
         </Text>
+        {isOpfsError && (
+          <Text style={{ color: colors.labelSecondary, fontSize: 12, textAlign: 'center', paddingHorizontal: 32, marginTop: 16 }}>
+            ブラウザのサイトデータをクリアしてリロードしてください。{'\n'}
+            Chrome: DevTools → Application → Storage → Clear site data
+          </Text>
+        )}
       </View>
     );
   }
