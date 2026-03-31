@@ -43,10 +43,15 @@ COMMAND="${1:-update}"
 package() {
   echo "[1/3] ZIP パッケージングを開始..."
   rm -f "${ZIP_FILE}"
-  cd "${SRC_DIR}"
-  zip -r "${ZIP_FILE}" handler.py
-  echo "      → ${ZIP_FILE} を作成しました"
-  cd "${SCRIPT_DIR}"
+  # Windows の Git Bash では zip コマンドが存在しないため Python で代替
+  python - <<PYEOF
+import zipfile, os
+src = r"${SRC_DIR}/handler.py"
+dst = r"${ZIP_FILE}"
+with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as zf:
+    zf.write(src, "handler.py")
+print("      → ${ZIP_FILE} を作成しました")
+PYEOF
 }
 
 # =============================================================================
