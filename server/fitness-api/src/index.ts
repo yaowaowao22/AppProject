@@ -1,5 +1,5 @@
 /**
- * TANREN — Cloudflare Workers API
+ * FORGE — Cloudflare Workers API
  *
  * Endpoints:
  *   GET  /          — ヘルスチェック
@@ -37,7 +37,7 @@ function privacyPolicyHtml(): Response {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>プライバシーポリシー — TANREN</title>
+<title>プライバシーポリシー — FORGE</title>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 720px; margin: 0 auto; padding: 24px 16px; line-height: 1.8; color: #333; }
   h1 { font-size: 1.5rem; border-bottom: 2px solid #FF6200; padding-bottom: 8px; }
@@ -49,7 +49,7 @@ function privacyPolicyHtml(): Response {
 <body>
 <h1>プライバシーポリシー</h1>
 <p class="updated">最終更新日: 2026年4月1日</p>
-<p>「TANREN」（以下「本アプリ」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めます。本ポリシーは、本アプリが収集・使用する情報について説明します。</p>
+<p>「FORGE」（以下「本アプリ」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めます。本ポリシーは、本アプリが収集・使用する情報について説明します。</p>
 
 <h2>1. 収集する情報</h2>
 <p>本アプリは、<strong>個人情報を一切収集しません。</strong></p>
@@ -101,7 +101,7 @@ function supportPageHtml(): Response {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>サポート — TANREN</title>
+<title>サポート — FORGE</title>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 720px; margin: 0 auto; padding: 24px 16px; line-height: 1.8; color: #333; }
   h1 { font-size: 1.5rem; border-bottom: 2px solid #FF6200; padding-bottom: 8px; }
@@ -113,8 +113,8 @@ function supportPageHtml(): Response {
 </style>
 </head>
 <body>
-<h1>TANREN サポート</h1>
-<p>TANRENに関するお問い合わせやサポート情報をご案内します。</p>
+<h1>FORGE サポート</h1>
+<p>FORGEに関するお問い合わせやサポート情報をご案内します。</p>
 
 <h2>よくある質問</h2>
 
@@ -185,7 +185,7 @@ export default {
       // Health check
       if (path === '/' || path === '/health') {
         return json({
-          service: 'TANREN API',
+          service: 'FORGE API',
           version: '1.0.0',
           status: 'ok',
         });

@@ -1,5 +1,5 @@
 """
-App Store Connect - Full setup for TANREN (no submission)
+App Store Connect - Full setup for FORGE (no submission)
 - App info, categories, localization
 - Version description, keywords
 - Review info
@@ -11,7 +11,7 @@ KEY_ID = "WBL22JQ6B3"
 ISSUER_ID = "0bc13228-682d-418b-a53e-d74894424555"
 P8_PATH = "C:/Users/ytata/Downloads/AuthKey_WBL22JQ6B3.p8"
 BUNDLE_ID = "com.massapp.fitness"
-APP_NAME = "TANREN"
+APP_NAME = "FORGE"
 BASE = "https://api.appstoreconnect.apple.com/v1"
 PRIVACY_URL = "https://fitness-api.selectinfo-yaowao.workers.dev/privacy"
 SUPPORT_URL = "https://fitness-api.selectinfo-yaowao.workers.dev/support"
@@ -71,7 +71,7 @@ def set_app_info_loc(ai_id):
     ja = next((l for l in locs if l["attributes"]["locale"] == "ja"), None)
     attrs = {
         "name": APP_NAME,
-        "subtitle": "筋トレ記録を、シンプルに",
+        "subtitle": "Workout Tracker & Strength Log",
         "privacyPolicyUrl": PRIVACY_URL,
     }
     if ja:
@@ -81,7 +81,7 @@ def set_app_info_loc(ai_id):
         r = requests.post(f"{BASE}/appInfoLocalizations", headers=h(), json={
             "data": {"type": "appInfoLocalizations", "attributes": {**attrs, "locale": "ja"},
                      "relationships": {"appInfo": {"data": {"type": "appInfos", "id": ai_id}}}}})
-    print(f"  [{'OK' if ok(r) else 'NG'}] ja: {APP_NAME} / 筋トレ記録を、シンプルに")
+    print(f"  [{'OK' if ok(r) else 'NG'}] ja: {APP_NAME} / Workout Tracker & Strength Log")
     if not ok(r): show_err(r)
 
 # ==================== Version Localization ====================
@@ -99,38 +99,39 @@ def set_version_loc(app_id):
     locs = r.json().get("data", [])
     ja = next((l for l in locs if l["attributes"]["locale"] == "ja"), None)
 
-    desc = """TANRENは、日々の筋トレを記録するシンプルなワークアウトアプリです。
+    desc = """FORGE is a simple, powerful workout tracker built for lifters who want to focus on training — not tapping through menus.
 
-■ 主な機能
-・部位別のエクササイズ選択（胸・背中・脚・肩・腕・体幹）
-・45種目のエクササイズデータベース
-・重量×回数のセット記録
-・自己ベスト（PR）の自動追跡
-・月間レポート・ストリーク表示
-・RM計算機（1RM推定）
-・テンプレートでのクイックスタート
-・25種類以上のテーマカスタマイズ
+■ Features
+· Body-part exercise selection (Chest, Back, Legs, Shoulders, Arms, Core)
+· 45 exercises built-in
+· Log sets with weight × reps
+· Automatic PR (personal record) tracking
+· Monthly reports & streak display
+· 1RM calculator
+· Quick-start templates
+· 25+ theme options
 
-■ 特徴
-・完全オフライン — データはすべて端末内に保存。通信不要。
-・広告なし — 集中してトレーニングに向き合えます。
-・3ステップで記録 — 部位→種目→重量/回数。シンプルな操作性。
-・PRハイライト — 自己ベスト更新時に即座にフィードバック。
+■ Why FORGE
+· Fully offline — all data stays on your device. No account needed.
+· Zero ads — pure focus on your training.
+· 3-step logging — muscle group → exercise → weight/reps. That's it.
+· Instant PR feedback — know when you've broken a record.
 
-■ 対応部位
-胸（ベンチプレス、ダンベルフライ等）
-背中（デッドリフト、ラットプルダウン等）
-脚（スクワット、レッグプレス等）
-肩（ショルダープレス、サイドレイズ等）
-腕（アームカール、トライセップス等）
-体幹（プランク、アブローラー等）
+■ Exercises by muscle group
+Chest: Bench Press, Dumbbell Fly, and more
+Back: Deadlift, Lat Pulldown, and more
+Legs: Squat, Leg Press, and more
+Shoulders: Shoulder Press, Lateral Raise, and more
+Arms: Bicep Curl, Tricep Extension, and more
+Core: Plank, Ab Wheel, and more
 
-毎日の筋トレを、TANRENで記録しよう。"""
+Track every rep. Forge your best.
+"""
 
     attrs = {
         "description": desc,
-        "keywords": "筋トレ,ワークアウト,トレーニング記録,筋肉,ジム,フィットネス,PR,自重,ダンベル,ログ",
-        "promotionalText": "45種目対応の筋トレ記録アプリ。部位別PR追跡・月間レポート・25テーマ。完全オフラインで広告なし。",
+        "keywords": "workout,gym,lifting,tracker,strength,fitness,log,PR,weight training,bodybuilding",
+        "promotionalText": "45 exercises. Offline. No ads. Track PRs, streaks & monthly volume. Forge your best.",
         "supportUrl": SUPPORT_URL,
     }
 

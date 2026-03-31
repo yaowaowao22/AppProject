@@ -2,7 +2,7 @@
 
 > このスキルを読めば、massapp モノレポ内の **任意の Expo/EAS アプリ**を
 > ゼロから App Store 審査提出まで完結できる。
-> 実績: push-notify ✅通過済み / TANREN (fitness) 🔄進行中
+> 実績: push-notify ✅通過済み / FORGE (fitness) 🔄進行中
 
 ---
 
@@ -25,7 +25,7 @@ Cloudflare    : selectinfo-yaowao.workers.dev
 | 変数 | 説明 | 例 |
 |------|------|----|
 | `APP_SLUG` | Expo slug / monorepo ディレクトリ名 | `fitness` |
-| `APP_NAME` | App Store 表示名 | `TANREN` |
+| `APP_NAME` | App Store 表示名 | `FORGE` |
 | `BUNDLE_ID` | iOS Bundle Identifier | `com.massapp.fitness` |
 | `SUBTITLE` | 日本語サブタイトル (30文字以内) | `筋トレ記録を、シンプルに` |
 | `CATEGORY` | ASC Primary Category | `HEALTH_AND_FITNESS` |
@@ -396,7 +396,7 @@ EAS Submit 後、ASC で手動確認:
 | アプリ | Bundle ID | EAS Project ID | ASC App ID | 状態 |
 |--------|-----------|----------------|------------|------|
 | push-notify | `com.massapp.pushnotify` | `6bb9b696-...` | `6759830379` | ✅ 審査通過 |
-| TANREN (fitness) | `com.massapp.fitness` | `136412e9-...` | 未取得 | 🔄 進行中 |
+| FORGE (fitness) | `com.massapp.fitness` | `136412e9-...` | 未取得 | 🔄 進行中 |
 
 ---
 
