@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -9,15 +9,30 @@ import { TanrenThemeProvider, useTheme } from './src/ThemeContext';
 import { createThemeConfig } from './src/theme';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { WorkoutProvider } from './src/WorkoutContext';
+import { SubscriptionProvider } from './src/SubscriptionContext';
 import { useVersionCheck } from './src/hooks/useVersionCheck';
 import { ForceUpdateModal } from './src/components/ForceUpdateModal';
+import { initCrashlytics, recordError } from './src/utils/crashlytics';
+
+// ── Crashlytics 初期化（アプリ起動時に一度だけ実行） ─────────────────────────
+initCrashlytics();
+
+// ── ErrorBoundary ─────────────────────────────────────────────────────────────
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { error: Error | null }
 > {
   state = { error: null };
-  static getDerivedStateFromError(error: Error) { return { error }; }
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    recordError(error, `ErrorBoundary: ${info.componentStack ?? ''}`);
+  }
+
   render() {
     if (this.state.error) {
       return (
@@ -35,7 +50,9 @@ class ErrorBoundary extends React.Component<
   }
 }
 
+// ── AppContent ────────────────────────────────────────────────────────────────
 // ThemeContext から動的テーマを @massapp/ui ThemeProvider に橋渡しするコンポーネント
+
 function AppContent() {
   const { currentThemeId, colors } = useTheme();
   const dynamicTheme = useMemo(
@@ -46,16 +63,21 @@ function AppContent() {
 
   return (
     <ThemeProvider theme={dynamicTheme} initialMode="dark">
-      <WorkoutProvider>
-        <NavigationContainer>
-          <StatusBar style="light" backgroundColor={colors.background} />
-          <RootNavigator />
-        </NavigationContainer>
-      </WorkoutProvider>
+      <SubscriptionProvider>
+        <WorkoutProvider>
+          <NavigationContainer>
+            <StatusBar style="light" backgroundColor={colors.background} />
+            <RootNavigator />
+          </NavigationContainer>
+        </WorkoutProvider>
+      </SubscriptionProvider>
+      {/* NavigationContainer の外側に配置して全画面ブロック */}
       <ForceUpdateModal visible={needsUpdate} storeUrl={storeUrl} />
     </ThemeProvider>
   );
 }
+
+// ── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
   return (

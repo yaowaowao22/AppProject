@@ -11,6 +11,7 @@ export const STORAGE_KEYS = {
   APP_SETTINGS:    'tanren_app_settings',      // AppSettings
   LAUNCH_DATES:        'tanren_launch_dates',        // string[] (ISO date 'YYYY-MM-DD')
   SUBSCRIPTION_STATUS: 'tanren_subscription_status', // { isPremium: boolean; expiresAt: string | null }
+  REVIEW_REQUESTED:    'tanren_review_requested',    // 'true' | null
 } as const;
 
 // ── アニメーション ────────────────────────────────────────────────────────────
