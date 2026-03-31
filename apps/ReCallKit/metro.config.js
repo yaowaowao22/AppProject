@@ -17,4 +17,16 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, 'node_modules'),
 ];
 
+// Web向け: SharedArrayBuffer を使用する場合に必要な COOP/COEP ヘッダー
+config.server = {
+  ...config.server,
+  enhanceMiddleware: (middleware) => {
+    return (req, res, next) => {
+      res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+      res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+      return middleware(req, res, next);
+    };
+  },
+};
+
 module.exports = config;
