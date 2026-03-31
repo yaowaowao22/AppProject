@@ -148,7 +148,7 @@ FORGEは、日々の筋トレを記録するシンプルなワークアウトア
 | 8.1 | EAS Project ID | ✅ | `app.json` > `extra.eas.projectId: "136412e9-9744-499f-a942-41d0597e67ec"` |
 | 8.2 | EAS CLI バージョン | ✅ | `eas.json` > `cli.version: ">= 16.0.0"` |
 | 8.3 | eas.json production プロファイル | ✅ | `channel: "production"` / `autoIncrement: true` / `ios.image: "latest"` |
-| 8.4 | eas.json submit 設定 | ⚠️ | `ascAppId` が未設定 — ASCでアプリ作成後に `eas.json` > `submit.production.ios.ascAppId` を更新 |
+| 8.4 | eas.json submit 設定 | ✅ | `ascAppId: "6761428217"` 設定済み |
 | 8.5 | Apple Distribution 証明書 | ⚠️ | `eas build` 実行時に自動生成 or 手動で EAS に登録 |
 | 8.6 | Provisioning Profile | ⚠️ | `eas build` 実行時に自動生成 |
 | 8.7 | ASC API キー設定 | ⚠️ | Key ID: `WBL22JQ6B3` / Issuer ID: `0bc13228-682d-418b-a53e-d74894424555` / P8: `AuthKey_WBL22JQ6B3.p8` |
@@ -165,10 +165,8 @@ FORGEは、日々の筋トレを記録するシンプルなワークアウトア
 ```
 [x] 1. fitness-api デプロイ完了 → Privacy/Support URL 正常稼働確認済み (2026-04-01)
 [x] 2. Bundle ID 登録済み (com.massapp.fitness, id=2DB8ZVR4T6, Apple Dev Portal)
-[ ] 3. ASC でアプリ作成（手動）→ ascAppId 取得 → eas.json に設定
-      ※ ASC API は CREATE 未対応。https://appstoreconnect.apple.com で手動作成が必要
-      　 Bundle ID: com.massapp.fitness / Name: FORGE / Locale: 日本語 / SKU: tanren-fitness-2026
-[ ] 4. python setup_asc.py → メタデータ一括設定（カテゴリ・説明・キーワード・レビュー情報・年齢レーティング）
+[x] 3. ASC アプリ作成済み → ascAppId: 6761428217 → eas.json に設定済み
+[x] 4. python setup_asc.py 実行済み（カテゴリ・説明・キーワード・レビュー情報・年齢レーティング）
 [ ] 5. App Privacy Labels を「Data Not Collected」に設定（ASC UI）
 [ ] 6. スクリーンショット撮影（4画面）→ screenshots/ に配置 → python create_screenshots.py local
 [ ] 7. アイコン画像確認（1024×1024 / 透過なし / 角丸なし）
