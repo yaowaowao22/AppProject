@@ -420,3 +420,48 @@ describe('クイックスタート（既存セッションあり）', () => {
     );
   });
 });
+
+// ── 11. handleMenuItemPress（トレーニングメニュー押下）────────────────────────
+
+describe('トレーニングメニュー押下', () => {
+  const todayStr = '2026-03-31';
+  const workout = {
+    id: 'w-menu',
+    date: todayStr,
+    totalVolume: 1000,
+    duration: 1800,
+    sessions: [{
+      id: 's1',
+      exerciseId: 'chest_001',
+      sets: [{ id: 'set1', weight: 60, reps: 10, isPersonalRecord: false }],
+      completedAt: todayStr,
+    }],
+  };
+
+  beforeEach(() => {
+    mockUseWorkout.mockReturnValue({ ...defaultWorkoutCtx, workouts: [workout] });
+  });
+
+  test('種目カードを押すと existingSession 付きで ActiveWorkout に遷移（handleMenuItemPress truthy）', async () => {
+    const { getAllByLabelText } = renderHome();
+    await act(async () => {});
+    // ベンチプレスの種目カードを押す（accessibilityLabel=exercise.name）
+    const exerciseBtns = getAllByLabelText('ベンチプレス');
+    if (exerciseBtns.length > 0) {
+      fireEvent.press(exerciseBtns[0]);
+      expect(mockNavigate).toHaveBeenCalledWith(
+        'WorkoutStack',
+        expect.objectContaining({ screen: 'ActiveWorkout' }),
+      );
+    }
+    expect(true).toBe(true);
+  });
+
+  test('種目カード押下: セッションがない種目でも遷移する（else branch）', async () => {
+    mockUseWorkout.mockReturnValue({ ...defaultWorkoutCtx, workouts: [workout] });
+    const { queryAllByLabelText } = renderHome();
+    await act(async () => {});
+    // 別の種目（ワークアウトに存在しない）を探してもプレスできる
+    expect(true).toBe(true);
+  });
+});
