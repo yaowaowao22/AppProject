@@ -138,13 +138,13 @@ export default function HomeScreen() {
     return [...parts];
   }, [selectedDayWorkout]);
 
-  // 本日のメニュー（最新ワークアウトから）
-  const { latestWorkoutId, todayMenu } = useMemo(() => {
-    if (workouts.length === 0) return { latestWorkoutId: null, todayMenu: [] };
-    const latest = [...workouts].sort((a, b) => b.date.localeCompare(a.date))[0];
+  // 選択日のメニュー
+  const { selectedWorkoutId, selectedMenu } = useMemo(() => {
+    const selected = workoutByDate.get(selectedDate);
+    if (!selected) return { selectedWorkoutId: null, selectedMenu: [] };
     const seen = new Set<string>();
     const ids: string[] = [];
-    for (const session of latest.sessions) {
+    for (const session of selected.sessions) {
       if (!seen.has(session.exerciseId)) {
         seen.add(session.exerciseId);
         ids.push(session.exerciseId);
@@ -154,7 +154,7 @@ export default function HomeScreen() {
       .map(id => {
         const exercise = EXERCISES.find(e => e.id === id);
         const pr = personalRecords.find(r => r.exerciseId === id);
-        const session = latest.sessions.find(s => s.exerciseId === id);
+        const session = selected.sessions.find(s => s.exerciseId === id);
         const lastSets = session?.sets.length ?? 0;
         const lastMaxWeight =
           session?.sets.reduce<number | null>((max, s) => {
@@ -171,8 +171,8 @@ export default function HomeScreen() {
           lastMaxWeight: number | null;
         } => item.exercise != null,
       );
-    return { latestWorkoutId: latest.id, todayMenu: items };
-  }, [workouts, personalRecords]);
+    return { selectedWorkoutId: selected.id, selectedMenu: items };
+  }, [workoutByDate, selectedDate, personalRecords]);
 
   // ボタンコンテナの高さ（スクロール余白算出用）
   const btnContainerHeight = 50 + Math.max(insets.bottom, SPACING.md) + SPACING.md;
@@ -189,14 +189,14 @@ export default function HomeScreen() {
   }
 
   function handleMenuItemPress(exerciseId: string) {
-    const todayWorkout = workoutByDate.get(todayStr);
-    const existingSession = todayWorkout?.sessions.find(s => s.exerciseId === exerciseId);
-    if (existingSession && todayWorkout) {
+    const selectedWorkout = workoutByDate.get(selectedDate);
+    const existingSession = selectedWorkout?.sessions.find(s => s.exerciseId === exerciseId);
+    if (existingSession && selectedWorkout) {
       (navigation as any).navigate('WorkoutStack', {
         screen: 'ActiveWorkout',
         params: {
           exerciseIds: [exerciseId],
-          existingWorkoutId: todayWorkout.id,
+          existingWorkoutId: selectedWorkout.id,
           existingSession,
         },
       });
@@ -395,24 +395,24 @@ export default function HomeScreen() {
           </>
         )}
 
-        {/* ── 本日のメニュー ─────────────────────────────────────────────── */}
-        <SectionLabel style={{ marginTop: SPACING.sectionGap }}>本日のメニュー</SectionLabel>
-        {todayMenu.length === 0 ? (
+        {/* ── トレーニングメニュー ───────────────────────────────────────── */}
+        <SectionLabel style={{ marginTop: SPACING.sectionGap }}>トレーニングメニュー</SectionLabel>
+        {selectedMenu.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>本日のメニューが設定されていません</Text>
+            <Text style={styles.emptyText}>トレーニングメニューがありません</Text>
             <Text style={styles.emptySubText}>種目を選択してワークアウトを開始しましょう</Text>
           </View>
         ) : (
           <View style={styles.menuList}>
-            {todayMenu.map(({ exercise, pr, lastSets, lastMaxWeight }) => {
+            {selectedMenu.map(({ exercise, pr, lastSets, lastMaxWeight }) => {
               const bodyPartLabel =
                 BODY_PARTS.find(b => b.id === exercise.bodyPart)?.label ?? '';
               return (
                 <View key={exercise.id} style={styles.menuCardWrapper}>
                   <SwipeableRow
                     onDelete={() =>
-                      latestWorkoutId &&
-                      deleteSessionFromWorkout(latestWorkoutId, exercise.id)
+                      selectedWorkoutId &&
+                      deleteSessionFromWorkout(selectedWorkoutId, exercise.id)
                     }
                   >
                     <TouchableOpacity
