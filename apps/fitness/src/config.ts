@@ -9,7 +9,8 @@ export const STORAGE_KEYS = {
   TEMPLATES:       'tanren_templates',         // WorkoutTemplate[]
   WORKOUT_CONFIG:  'tanren_workout_config',    // WorkoutConfig（ユーザーカスタム設定）
   APP_SETTINGS:    'tanren_app_settings',      // AppSettings
-  LAUNCH_DATES:    'tanren_launch_dates',      // string[] (ISO date 'YYYY-MM-DD')
+  LAUNCH_DATES:        'tanren_launch_dates',        // string[] (ISO date 'YYYY-MM-DD')
+  SUBSCRIPTION_STATUS: 'tanren_subscription_status', // { isPremium: boolean; expiresAt: string | null }
 } as const;
 
 // ── アニメーション ────────────────────────────────────────────────────────────
@@ -56,6 +57,18 @@ export const APP = {
   // Progress 画面の棒グラフ表示日数
   VOLUME_CHART_DAYS: 7,
   DEFAULT_APP_SETTINGS: { showCalendar: true, showQuickStart: false },
+} as const;
+
+// ── バージョンチェック設定 ────────────────────────────────────────────────────
+export const VERSION_CHECK = {
+  /** 最小バージョンを取得するリモート設定 JSON の URL */
+  CONFIG_URL: 'https://raw.githubusercontent.com/massapp/tanren-config/main/version.json',
+  /** iOS App Store URL（リモート設定に含まれない場合のフォールバック） */
+  IOS_STORE_URL:     'https://apps.apple.com/jp/app/id000000000',
+  /** Google Play Store URL（リモート設定に含まれない場合のフォールバック） */
+  ANDROID_STORE_URL: 'https://play.google.com/store/apps/details?id=com.massapp.fitness',
+  /** fetch タイムアウト (ms) */
+  FETCH_TIMEOUT_MS: 5000,
 } as const;
 
 // ── カレンダー設定 ────────────────────────────────────────────────────────────

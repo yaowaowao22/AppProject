@@ -51,7 +51,9 @@
             "useFrameworks": "static"
           }
         }
-      ]
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/crashlytics"
     ],
     "scheme": "fitness",
     "owner": "yaowao"

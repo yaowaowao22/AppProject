@@ -9,6 +9,8 @@ import { TanrenThemeProvider, useTheme } from './src/ThemeContext';
 import { createThemeConfig } from './src/theme';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { WorkoutProvider } from './src/WorkoutContext';
+import { useVersionCheck } from './src/hooks/useVersionCheck';
+import { ForceUpdateModal } from './src/components/ForceUpdateModal';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -40,6 +42,7 @@ function AppContent() {
     () => createThemeConfig(currentThemeId, colors),
     [currentThemeId, colors],
   );
+  const { needsUpdate, storeUrl } = useVersionCheck();
 
   return (
     <ThemeProvider theme={dynamicTheme} initialMode="dark">
@@ -49,6 +52,7 @@ function AppContent() {
           <RootNavigator />
         </NavigationContainer>
       </WorkoutProvider>
+      <ForceUpdateModal visible={needsUpdate} storeUrl={storeUrl} />
     </ThemeProvider>
   );
 }
