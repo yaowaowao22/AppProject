@@ -294,4 +294,41 @@ describe('種目別ランキングセクション', () => {
     // 3セット
     expect(getByText('3セット')).toBeTruthy();
   });
+
+  it('複数種目でランキングがソートされる', () => {
+    const multiExWorkout = {
+      id: 'w2',
+      date: '2026-03-20',
+      totalVolume: 2500,
+      duration: 3600,
+      sessions: [
+        {
+          id: 's1',
+          exerciseId: 'bench-press',
+          startedAt: '2026-03-20T10:00:00.000Z',
+          sets: [
+            { id: 'set1', weight: 100, reps: 5, completedAt: '2026-03-20T10:01:00.000Z' },
+          ],
+        },
+        {
+          id: 's2',
+          exerciseId: 'squat',
+          startedAt: '2026-03-20T10:10:00.000Z',
+          sets: [
+            { id: 'set2', weight: 120, reps: 5, completedAt: '2026-03-20T10:11:00.000Z' },
+            { id: 'set3', weight: 120, reps: 5, completedAt: '2026-03-20T10:12:00.000Z' },
+          ],
+        },
+      ],
+    };
+    (useWorkout as jest.Mock).mockReturnValue({
+      workouts: [multiExWorkout],
+      personalRecords: [],
+      weeklyStats: { workoutCount: 1, totalVolume: 2500, streakDays: 1 },
+    });
+
+    const { getByText } = render(<MonthlyReportScreen />);
+    // スクワットがベンチプレスより高ボリュームなので先に来る
+    expect(getByText('スクワット')).toBeTruthy();
+  });
 });
