@@ -55,21 +55,39 @@ export const SidebarLayout = {
   bottomOffset: 83,
   // アイテム行の高さ
   itemHeight: 48,
-  // アイテム行の左右パディング
+  // アイテム行の右パディング
   itemPaddingH: 16,
-  // アイテム行のアイコンとラベルの間隔
-  itemIconGap: 14,
-  // アイコンサイズ
-  iconSize: 22,
+  // アイテム行の左パディング（非アクティブ時）
+  itemPaddingLeft: 24,
+  // アイコンとラベルの間隔
+  itemGap: 12,
+  // アイコンサイズ（sidebar.html: 20px）
+  iconSize: 20,
   // バッジの最小幅
   badgeMinWidth: 22,
+  // カウントの最小幅
+  countMinWidth: 16,
   // セクションヘッダー行の高さ
   sectionHeaderHeight: 32,
+  // セクションヘッダーの左右パディング
+  sectionHeaderPaddingH: 24,
   // フッターエリアの高さ（sidebar.html: 48px）
   footerHeight: 48,
-  // 開閉アニメーション時間 (ms)
-  animationDuration: 280,
-  // 閉じるアニメーション時間 (ms) — 非対称アニメーション用
+  // フッターの左右パディング
+  footerPaddingH: 24,
+  // ヘッダーの下パディング
+  headerPaddingBottom: 12,
+  // タグドットサイズ
+  tagDotSize: 6,
+  // タグドット枠線幅
+  tagDotBorderWidth: 1.5,
+  // 閉じるボタンのタッチ領域
+  closeBtnSize: 36,
+  // 閉じるボタンのアイコンサイズ
+  closeBtnIconSize: 22,
+  // 開くアニメーション時間 (ms)
+  animationOpen: 280,
+  // 閉じるアニメーション時間 (ms) — 非対称アニメーション
   animationClose: 240,
 } as const;
 
