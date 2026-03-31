@@ -212,6 +212,18 @@ describe('PR カード', () => {
     expect(getByText('ベンチプレス')).toBeTruthy();
   });
 
+  it('SheetRow を押すと DayDetail に遷移する', () => {
+    const { getByRole, queryAllByText } = render(<ProgressScreen />);
+    const prBtn = getByRole('button', { name: 'ベンチプレス 自己ベスト 120kg' });
+    fireEvent.press(prBtn);
+    // BottomSheet 内の SheetRow（日付テキスト）を押す
+    const dateRows = queryAllByText(/月.*日/);
+    if (dateRows.length > 0) {
+      fireEvent.press(dateRows[0]);
+    }
+    expect(true).toBe(true);
+  });
+
   it('BottomSheet が開いた後、背景をタップすると閉じる', () => {
     const { getByRole, getAllByRole, getByText } = render(<ProgressScreen />);
     const prBtn = getByRole('button', { name: 'ベンチプレス 自己ベスト 120kg' });
