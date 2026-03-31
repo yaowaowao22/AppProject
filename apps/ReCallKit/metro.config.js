@@ -17,6 +17,9 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, 'node_modules'),
 ];
 
+// expo-sqlite Web: .wasm ファイルをアセットとして解決する
+config.resolver.assetExts = [...(config.resolver.assetExts ?? []), 'wasm'];
+
 // Web向け: SharedArrayBuffer を使用する場合に必要な COOP/COEP ヘッダー
 config.server = {
   ...config.server,
