@@ -25,9 +25,9 @@ import {
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
-import type { HomeStackParamList } from '../../navigation/types';
+import type { JournalStackParamList } from '../../navigation/types';
 
-type Props = NativeStackScreenProps<HomeStackParamList, 'Journal'>;
+type Props = NativeStackScreenProps<JournalStackParamList, 'Journal'>;
 
 export function JournalScreen({ navigation: _navigation }: Props) {
   const { db, isReady } = useDatabase();
