@@ -393,10 +393,12 @@ EAS Submit 後、ASC で手動確認:
 
 ## 11. 各アプリの実績
 
-| アプリ | Bundle ID | EAS Project ID | ASC App ID | 状態 |
-|--------|-----------|----------------|------------|------|
-| push-notify | `com.massapp.pushnotify` | `6bb9b696-...` | `6759830379` | ✅ 審査通過 |
-| FORGE (fitness) | `com.massapp.fitness` | `136412e9-...` | `6761428217` | 🔄 SS待ち |
+> 具体的な ID・進捗は各アプリの `docs/ios-review-guide.md` を参照。
+
+| アプリ | Bundle ID | 状態 | 詳細 |
+|--------|-----------|------|------|
+| push-notify | `com.massapp.pushnotify` | ✅ 審査通過 | `apps/push-notify/docs/` |
+| FORGE (fitness) | `com.massapp.fitness` | 🔄 進行中 | `apps/fitness/docs/ios-review-guide.md` |
 
 ---
 
