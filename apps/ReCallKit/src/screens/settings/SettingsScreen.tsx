@@ -18,6 +18,7 @@ import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
 import { getDatabase } from '../../db/connection';
 import { getAllSettings, setSetting, type AppSettings } from '../../db/settingsRepository';
+import { deleteAllData } from '../../db/schema';
 import { exportAllDataAsJSON } from '../../services/exportService';
 
 const APP_VERSION = '0.1.0';
@@ -37,6 +38,7 @@ export function SettingsScreen() {
   const [tempHour, setTempHour] = useState(8);
   const [tempMinute, setTempMinute] = useState(0);
   const [exporting, setExporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // 初期ロード
   useEffect(() => {
