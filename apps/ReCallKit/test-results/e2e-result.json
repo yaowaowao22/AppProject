@@ -1,10 +1,36 @@
 {
-  "timestamp": "2026-03-31T22:20:25+09:00",
-  "overall": "FAIL",
-  "identity_id": "ap-northeast-1:57a3b451-0ae3-ccbb-f0e5-f970657edad5",
+  "timestamp": "2026-03-31T22:29:06+09:00",
+  "overall": "PASS",
+  "identity_id": "ap-northeast-1:57a3b451-0a79-c12d-5216-7f15d416be28",
   "access_key_prefix": "ASIAVPI5UK...",
-  "lambda_response": {},
-  "error": "一部ステップが失敗しました。詳細は steps を参照してください。",
+  "lambda_response": {
+    "title": "人工知能とマシンラーニング",
+    "summary": "人工知能がヘルスケア、金融、教育など多くの産業を変革している。ニューラルネットワークのようなディープラーニングモデルが大量のデータを処理し、自然言語処理が人間の言語を理解し、強化学習がトライアンドエラーで学習する。",
+    "qa_pairs": [
+      {
+        "question": "人工知能はどのような分野に影響を与えているか?",
+        "answer": "ヘルスケア、金融、教育など多くの産業を変革している。"
+      },
+      {
+        "question": "ディープラーニングとはどのようなものか?",
+        "answer": "ニューラルネットワークのようなモデルで大量のデータを処理する。"
+      },
+      {
+        "question": "自然言語処理とは何か?",
+        "answer": "人間の言語を理解することができる。"
+      },
+      {
+        "question": "強化学習とは何か?",
+        "answer": "トライアンドエラーを通して学習する。"
+      },
+      {
+        "question": "人工知能はどのように発展してきたか?",
+        "answer": "様々な技術の進化により、多くの産業で活用されるようになった。"
+      }
+    ],
+    "category": "技術"
+  },
+  "error": "",
   "steps": [
     {
       "step": "aws.ts 設定値チェック",
@@ -15,19 +41,37 @@
     {
       "step": "Cognito getCredentialsForIdentity",
       "status": "PASS",
-      "detail": "IdentityId: ap-northeast-1:57a3b451-0ae3-ccbb-f0e5-f970657edad5\nAccessKeyId: ASIAVPI5UK...\nExpiration: 2026-03-31 23:20:25+09:00",
-      "elapsed_ms": 360.4
+      "detail": "IdentityId: ap-northeast-1:57a3b451-0a79-c12d-5216-7f15d416be28\nAccessKeyId: ASIAVPI5UK...\nExpiration: 2026-03-31 23:29:01+09:00",
+      "elapsed_ms": 334.4
     },
     {
       "step": "Lambda Function URL (SigV4)",
-      "status": "FAIL",
-      "detail": "HTTP 500: Internal Server Error\n{\"error\": \"Bedrock エラー: ValidationException\"}",
+      "status": "PASS",
+      "detail": "statusCode=200\ntitle: 人工知能とマシンラーニング\ncategory: 技術\nsummary: 人工知能がヘルスケア、金融、教育など多くの産業を変革している。ニューラルネットワークのようなディープラーニングモデルが大量のデータを処理し、自然言語処理が人間の\nqa_pairs: 5件",
+      "elapsed_ms": 4606.6
+    },
+    {
+      "step": "必須フィールド存在チェック",
+      "status": "PASS",
+      "detail": "全フィールド確認: ['title', 'summary', 'qa_pairs', 'category']",
       "elapsed_ms": 0.0
     },
     {
-      "step": "レスポンス構造検証",
-      "status": "SKIP",
-      "detail": "Lambda呼び出し失敗のためスキップ",
+      "step": "qa_pairs 件数チェック（1件以上）",
+      "status": "PASS",
+      "detail": "件数: 5",
+      "elapsed_ms": 0.0
+    },
+    {
+      "step": "qa_pairs 各要素の question/answer フィールド",
+      "status": "PASS",
+      "detail": "",
+      "elapsed_ms": 0.0
+    },
+    {
+      "step": "category 値: '技術'",
+      "status": "PASS",
+      "detail": "有効値: {'ビジネス', '技術', 'その他', '語学', '一般教養', '科学'}",
       "elapsed_ms": 0.0
     }
   ]
