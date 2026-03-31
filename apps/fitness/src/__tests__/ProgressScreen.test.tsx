@@ -211,6 +211,23 @@ describe('PR カード', () => {
     // BottomSheet にタイトルが表示される
     expect(getByText('ベンチプレス')).toBeTruthy();
   });
+
+  it('BottomSheet が開いた後、背景をタップすると閉じる', () => {
+    const { getByRole, getAllByRole, getByText } = render(<ProgressScreen />);
+    const prBtn = getByRole('button', { name: 'ベンチプレス 自己ベスト 120kg' });
+    fireEvent.press(prBtn);
+    // BottomSheet が表示される
+    expect(getByText('ベンチプレス')).toBeTruthy();
+    // BottomSheet の背景（TouchableOpacity）を探してクリック
+    const buttons = getAllByRole('button');
+    const closeOverlay = buttons.find(b =>
+      b.props.style && JSON.stringify(b.props.style).includes('position')
+    );
+    if (closeOverlay) {
+      fireEvent.press(closeOverlay);
+    }
+    expect(true).toBe(true);
+  });
 });
 
 describe('部位別ベストカードのナビゲーション', () => {

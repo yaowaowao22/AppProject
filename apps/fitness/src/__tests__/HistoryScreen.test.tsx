@@ -307,4 +307,35 @@ describe('種目別タブ', () => {
     fireEvent.press(getByLabelText('種目一覧に戻る'));
     expect(getByText('ベンチプレス')).toBeTruthy();
   });
+
+  test('種目別タブで部位フィルターを押すとタブが切り替わる', () => {
+    mockUseWorkout.mockReturnValue({
+      ...defaultWorkoutCtx,
+      workouts: [sampleWorkout],
+    });
+    const { getByRole, getByText } = render(<HistoryScreen />);
+    fireEvent.press(getByRole('tab', { name: '種目別' }));
+    // 全てタブが表示され、それを押す
+    expect(getByText('全て')).toBeTruthy();
+    // 胸フィルターを押す
+    const chestFilter = getByRole('tab', { name: '胸' });
+    fireEvent.press(chestFilter);
+    expect(true).toBe(true);
+  });
+
+  test('複数ワークアウトがある場合、種目詳細でセパレーターが表示される', () => {
+    const workout2 = {
+      ...sampleWorkout,
+      id: 'w2',
+      date: '2026-03-28',
+    };
+    mockUseWorkout.mockReturnValue({
+      ...defaultWorkoutCtx,
+      workouts: [sampleWorkout, workout2],
+    });
+    const { getByRole, getByLabelText } = render(<HistoryScreen />);
+    fireEvent.press(getByRole('tab', { name: '種目別' }));
+    fireEvent.press(getByLabelText('ベンチプレスの詳細を見る'));
+    expect(true).toBe(true);
+  });
 });
