@@ -22,6 +22,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
+import { FilterChip } from '../../components/FilterChip';
 import {
   useItems,
   useTags,
@@ -105,46 +106,6 @@ function getReviewStatus(item: ItemWithMeta): { text: string; isOverdue: boolean
   if (diffDays <= 0) return { text: '復習待ち', isOverdue: true };
   if (diffDays === 1) return { text: '明日', isOverdue: false };
   return { text: `${diffDays}日後`, isOverdue: false };
-}
-
-// ---- フィルターチップ ----------------------------------------
-function FilterChip({
-  label,
-  active,
-  onPress,
-  activeColor,
-  bgColor,
-  textActiveColor,
-  textInactiveColor,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-  activeColor: string;
-  bgColor: string;
-  textActiveColor: string;
-  textInactiveColor: string;
-}) {
-  return (
-    <Pressable
-      style={[
-        styles.chip,
-        active ? { backgroundColor: activeColor } : { backgroundColor: bgColor },
-      ]}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-    >
-      <Text
-        style={[
-          styles.chipText,
-          { color: active ? textActiveColor : textInactiveColor },
-        ]}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
 }
 
 // ---- メインコンポーネント ------------------------------------
@@ -666,17 +627,6 @@ const styles = StyleSheet.create({
   },
   chipRowIcon: {
     marginRight: 2,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radius.full,
-    height: 30,
-    justifyContent: 'center',
-  },
-  chipText: {
-    ...TypeScale.caption1,
-    fontWeight: '500' as const,
   },
   chipDivider: {
     width: StyleSheet.hairlineWidth,
