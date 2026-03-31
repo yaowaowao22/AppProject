@@ -1,6 +1,7 @@
 // ============================================================
 // Bedrock URL解析サービス
-// Cognito未認証IDから一時認証情報を取得し、Lambda Function URLへSigV4署名付きリクエストを送信する
+// Cognito未認証IDから一時認証情報を取得し、Lambda SDK経由で呼び出す
+// aws4fetch は React Native の crypto.subtle 非対応のため使用しない
 // ============================================================
 
 import {
@@ -8,12 +9,12 @@ import {
   GetIdCommand,
   GetCredentialsForIdentityCommand,
 } from '@aws-sdk/client-cognito-identity';
-import { AwsClient } from 'aws4fetch';
+import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 
 import {
   AWS_REGION,
   COGNITO_IDENTITY_POOL_ID,
-  LAMBDA_FUNCTION_URL,
+  LAMBDA_FUNCTION_NAME,
 } from '../config/aws';
 import type { AnalysisResult } from '../types/analysis';
 
@@ -83,52 +84,58 @@ export async function getTemporaryCredentials(): Promise<CachedCredentials> {
 }
 
 // ============================================================
-// URL解析リクエスト
+// URL解析リクエスト（Lambda SDK 経由）
 // ============================================================
 
-export async function analyzeUrl(
-  url: string,
-): Promise<AnalysisResult> {
+export async function analyzeUrl(url: string): Promise<AnalysisResult> {
   const credentials = await getTemporaryCredentials();
 
-  const awsClient = new AwsClient({
-    accessKeyId: credentials.accessKeyId,
-    secretAccessKey: credentials.secretAccessKey,
-    sessionToken: credentials.sessionToken,
-    service: 'lambda',
+  const lambda = new LambdaClient({
     region: AWS_REGION,
+    credentials: {
+      accessKeyId: credentials.accessKeyId,
+      secretAccessKey: credentials.secretAccessKey,
+      sessionToken: credentials.sessionToken,
+    },
+    requestHandler: {
+      requestTimeout: 60_000,
+    },
   });
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 45_000);
+  const timeoutId = setTimeout(() => controller.abort(), 60_000);
 
   try {
-    const response = await awsClient.fetch(LAMBDA_FUNCTION_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url }),
-      signal: controller.signal,
+    const command = new InvokeCommand({
+      FunctionName: LAMBDA_FUNCTION_NAME,
+      Payload: JSON.stringify({ url }),
     });
 
-    if (!response.ok) {
-      // Lambdaが返したエラーメッセージをそのままユーザーに伝える
-      let message = `サーバーエラー (HTTP ${response.status})`;
-      try {
-        const body = await response.json() as { error?: string };
-        if (body.error) message = body.error;
-      } catch {
-        // JSONパース失敗時はデフォルトメッセージ
-      }
-      throw new Error(message);
+    const response = await lambda.send(command, {
+      abortSignal: controller.signal,
+    });
+
+    // Lambda 実行エラー（Unhandled Exception 等）
+    if (response.FunctionError) {
+      const raw = new TextDecoder().decode(response.Payload);
+      const body = JSON.parse(raw) as { errorMessage?: string };
+      throw new Error(body.errorMessage ?? 'Lambda実行エラー');
     }
 
-    const data = (await response.json()) as AnalysisResult;
-    return data;
+    // ハンドラーが返す { statusCode, body } をパース
+    const raw = new TextDecoder().decode(response.Payload);
+    const lambdaResp = JSON.parse(raw) as { statusCode: number; body: string };
+
+    if (lambdaResp.statusCode !== 200) {
+      const errBody = JSON.parse(lambdaResp.body) as { error?: string };
+      throw new Error(errBody.error ?? `サーバーエラー (HTTP ${lambdaResp.statusCode})`);
+    }
+
+    return JSON.parse(lambdaResp.body) as AnalysisResult;
   } catch (err) {
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('AI解析がタイムアウトしました（45秒）');
+      throw new Error('AI解析がタイムアウトしました（60秒）');
     }
-    // Lambdaエラーや既にラップされたエラーはそのまま再スロー
     if (err instanceof Error) throw err;
     throw new Error('AI解析に失敗しました');
   } finally {
