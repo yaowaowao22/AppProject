@@ -19,7 +19,7 @@ import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
 import type { BodyPart } from '../types';
 import { useWorkout } from '../WorkoutContext';
-import type { ProgressStackParamList } from '../navigation/RootNavigator';
+import type { HistoryStackParamList } from '../navigation/RootNavigator';
 
 // ── ヘルパー ──────────────────────────────────────────────────────────────────
 
@@ -63,7 +63,7 @@ export default function ProgressScreen() {
   const { workouts, personalRecords, weeklyStats } = useWorkout();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const navigation = useNavigation<NativeStackNavigationProp<ProgressStackParamList, 'ProgressHome'>>();
+  const navigation = useNavigation<NativeStackNavigationProp<HistoryStackParamList>>();
   const [sheet, setSheet] = useState<SheetState>(null);
 
   const [displayMonth, setDisplayMonth] = useState<Date>(() => {
