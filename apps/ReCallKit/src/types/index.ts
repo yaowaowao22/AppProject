@@ -70,5 +70,14 @@ export interface ReviewGroupItem {
   added_at: string;
 }
 
+export interface PointEvent {
+  id: number;
+  type: 'earn' | 'spend';
+  amount: number;
+  reason: string;
+  item_id: number | null;
+  created_at: string;
+}
+
 // Bedrock URL解析結果
 export type { QAPair, AnalysisResult } from './analysis';

@@ -3,7 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 // ============================================================
 // スキーマバージョン管理
 // ============================================================
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 const CREATE_TABLES_SQL = `
   -- アイテム（URL・テキスト・メモ）
@@ -149,6 +149,22 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
 
     await setSchemaVersion(db, 3);
   }
+
+  if (currentVersion < 4) {
+    // ポイントイベントテーブル
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS point_events (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        type       TEXT    NOT NULL,
+        amount     INTEGER NOT NULL,
+        reason     TEXT    NOT NULL,
+        item_id    INTEGER REFERENCES items(id) ON DELETE SET NULL,
+        created_at TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_point_events_created ON point_events(created_at);
+    `);
+    await setSchemaVersion(db, 4);
+  }
 }
 
 // ============================================================
@@ -161,6 +177,7 @@ export async function deleteAllData(db: SQLiteDatabase): Promise<void> {
     DELETE FROM tags;
     DELETE FROM collections;
     DELETE FROM review_groups;
+    DELETE FROM point_events;
   `);
 }
 
