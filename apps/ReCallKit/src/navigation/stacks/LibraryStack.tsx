@@ -35,7 +35,6 @@ export function LibraryStack() {
             color: colors.label,
             fontSize: 34,
             fontWeight: '700',
-            letterSpacing: -0.5,
           },
           headerLeft: () => <HeaderHamburger />,
         }}
