@@ -24,7 +24,7 @@ MEMORY_SIZE=256
 TIMEOUT=30
 
 # IAM ロール ARN（初回作成時に必要。実際の ARN に書き換えること）
-LAMBDA_ROLE_ARN="arn:aws:iam::YOUR_ACCOUNT_ID:role/recall-kit-lambda-role"
+LAMBDA_ROLE_ARN="arn:aws:iam::376408658186:role/recall-kit-lambda-role"
 
 # --- パス設定 ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
