@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DatabaseProvider } from './src/hooks/useDatabase';
+import { PointsProvider } from './src/context/PointsContext';
 import { ThemeProvider } from './src/theme/ThemeContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
