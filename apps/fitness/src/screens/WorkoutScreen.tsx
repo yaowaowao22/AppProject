@@ -217,8 +217,6 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
 
 type ActiveWorkoutProps = NativeStackScreenProps<WorkoutStackParamList, 'ActiveWorkout'>;
 
-const REST_DURATION = 60;
-
 type SetRow = { weight: number | null; reps: number | null; done: boolean };
 
 function newId(): string {
@@ -254,7 +252,6 @@ function buildRows(
   defaultWeight: number,
   defaultReps: number,
 ): SetRow[] {
-  // 最初の行のみ前回データ/デフォルト値を設定、それ以降は空（null）にする
   if (!prevSets || prevSets.length === 0) {
     return Array.from({ length: defaultSets }, (_, i) => ({
       weight: i === 0 && defaultWeight > 0 ? defaultWeight : null,
@@ -262,12 +259,15 @@ function buildRows(
       done:   false,
     }));
   }
-  const base = prevSets.slice(0, defaultSets);
-  return Array.from({ length: defaultSets }, (_, i) => ({
-    weight: i === 0 ? (base[0]?.weight ?? null) : null,
-    reps:   i === 0 ? (base[0]?.reps   ?? null) : null,
-    done:   false,
-  }));
+  const lastPrev = prevSets[prevSets.length - 1];
+  return Array.from({ length: defaultSets }, (_, i) => {
+    const prev = i < prevSets.length ? prevSets[i] : lastPrev;
+    return {
+      weight: prev?.weight ?? null,
+      reps:   prev?.reps   ?? null,
+      done:   false,
+    };
+  });
 }
 
 export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
@@ -282,7 +282,6 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
   const [rows, setRows] = useState<SetRow[]>(() => buildRows(null, workoutConfig.defaultSets, workoutConfig.defaultWeight, workoutConfig.defaultReps));
   const [setDone, setSetDone] = useState(false);
-  const [restSeconds, setRestSeconds] = useState<number | null>(null);
   const [editingField, setEditingField] = useState<'weight' | 'reps' | null>(null);
   const [editValue, setEditValue] = useState('');
   const [manualActiveIdx, setManualActiveIdx] = useState<number | null>(null);
@@ -292,7 +291,6 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   const repsScale   = useRef(new Animated.Value(1)).current;
   const weightInputRef = useRef<TextInput>(null);
   const repsInputRef   = useRef<TextInput>(null);
-  const timerRef    = useRef<ReturnType<typeof setInterval> | null>(null);
   const doneTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const editingRowRef = useRef<number>(-1);
   const activeIdxRef = useRef(0);
@@ -319,12 +317,9 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
     }
     setManualActiveIdx(null);
     setSetDone(false);
-    setRestSeconds(null);
-    if (timerRef.current) clearInterval(timerRef.current);
     if (doneTimeoutRef.current) clearTimeout(doneTimeoutRef.current);
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
       if (doneTimeoutRef.current) clearTimeout(doneTimeoutRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -423,21 +418,6 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
     setManualActiveIdx(i);
   }
 
-  function startRestTimer() {
-    if (timerRef.current) clearInterval(timerRef.current);
-    setRestSeconds(REST_DURATION);
-    timerRef.current = setInterval(() => {
-      setRestSeconds(prev => {
-        if (prev === null || prev <= 1) {
-          clearInterval(timerRef.current!);
-          timerRef.current = null;
-          return null;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }
-
   function handleSetComplete() {
     if (allDone) return;
     const idx = activeIdxRef.current;
@@ -448,12 +428,13 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
       const updated = prev.map((r, i) => i === idx ? { ...r, done: true } : r);
       const nextIdx = updated.findIndex(r => !r.done);
       if (nextIdx >= 0) {
-        // 次の未完了行は値をコピーしない（ユーザーが手動入力するまで null のまま）
-        newRows = updated;
-        return updated;
+        // 次の未完了行に完了した行の weight/reps をコピー
+        const withCopy = updated.map((r, i) => i === nextIdx ? { ...r, weight, reps } : r);
+        newRows = withCopy;
+        return withCopy;
       }
-      // 最後の行を完了 → 空の新規行を追加（値なし）
-      const result = [...updated, { weight: null, reps: null, done: false }];
+      // 最後の行を完了 → 新規行に最後の完了行の weight/reps をコピー
+      const result = [...updated, { weight, reps, done: false }];
       newRows = result;
       return result;
     });
@@ -468,7 +449,6 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
     setManualActiveIdx(null);
     setSetDone(true);
-    startRestTimer();
     if (doneTimeoutRef.current) clearTimeout(doneTimeoutRef.current);
     doneTimeoutRef.current = setTimeout(() => setSetDone(false), 1500);
   }
@@ -577,16 +557,28 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   const prevBestWeight = sessionHistory.length > 0 ? sessionHistory[sessionHistory.length - 1].maxWeight : 0;
   const allTimeBest    = sessionHistory.length > 0 ? Math.max(...sessionHistory.map(s => s.maxWeight)) : 0;
 
-  const timerText = restSeconds !== null
-    ? `${String(Math.floor(restSeconds / 60)).padStart(2, '0')}:${String(restSeconds % 60).padStart(2, '0')}`
-    : '';
-
   const isLastExercise = currentIndex === exerciseIds.length - 1;
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title={exercise?.name ?? 'ワークアウト'} showBack />
-      {/* サブヘッダー: 筋肉情報 + バッジ + タイマー */}
+      <ScreenHeader title="" showBack={false} />
+      {/* 種目名行: 戻るボタン + 種目アイコン + 種目名 */}
+      <TouchableOpacity
+        style={styles.detailBackRow}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="戻る"
+      >
+        <Ionicons name="chevron-back" size={20} color={colors.accent} />
+        <Text style={styles.detailBackText}>戻る</Text>
+        <View style={{ flex: 1 }} />
+        <View style={styles.exIcon}>
+          <Text style={styles.exIconText}>{exercise?.name.charAt(0) ?? ''}</Text>
+        </View>
+        <Text style={styles.detailExName}>{exercise?.name ?? 'ワークアウト'}</Text>
+      </TouchableOpacity>
+      {/* サブヘッダー: 筋肉情報 + バッジ */}
       <View style={styles.actHeader}>
         <Text style={[styles.actSub, { flex: 1 }]}>
           {exercise?.muscleDetail ?? BODY_PART_MUSCLE[exercise?.bodyPart as BodyPart] ?? ''}
@@ -600,7 +592,6 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
               }
             </Text>
           </View>
-          {!!timerText && <Text style={styles.timerPill}>{timerText}</Text>}
         </View>
       </View>
 
@@ -633,10 +624,10 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
           </TouchableOpacity>
           <Text style={styles.numUnit}>kg</Text>
           <View style={styles.stepRow}>
-            <TouchableOpacity style={styles.stepBtn} onPress={() => adjustWeight(-2.5)} accessibilityLabel="重量−2.5kg">
+            <TouchableOpacity style={styles.stepBtn} onPress={() => adjustWeight(-workoutConfig.weightStep)} accessibilityLabel={`重量−${workoutConfig.weightStep}kg`}>
               <Text style={styles.stepBtnText}>−</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.stepBtn} onPress={() => adjustWeight(2.5)} accessibilityLabel="重量＋2.5kg">
+            <TouchableOpacity style={styles.stepBtn} onPress={() => adjustWeight(workoutConfig.weightStep)} accessibilityLabel={`重量＋${workoutConfig.weightStep}kg`}>
               <Text style={styles.stepBtnText}>＋</Text>
             </TouchableOpacity>
           </View>
@@ -978,6 +969,24 @@ function makeStyles(c: TanrenThemeColors) {
   },
 
   // ── アクティブワークアウト ────────────────────────────────────────────────────
+  detailBackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.contentMargin,
+    paddingVertical: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  detailBackText: {
+    fontSize: TYPOGRAPHY.bodySmall,
+    fontWeight: TYPOGRAPHY.semiBold,
+    color: c.accent,
+  },
+  detailExName: {
+    fontSize: TYPOGRAPHY.bodySmall,
+    fontWeight: TYPOGRAPHY.bold,
+    color: c.textPrimary,
+    marginLeft: 4,
+  },
   scrollArea: {
     flex: 1,
   },
@@ -1006,11 +1015,6 @@ function makeStyles(c: TanrenThemeColors) {
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-  },
-  timerPill: {
-    fontSize: TYPOGRAPHY.caption,
-    fontWeight: TYPOGRAPHY.regular,
-    color: c.textTertiary,
   },
   actNameCol: {
     flex: 1,
