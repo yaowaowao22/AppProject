@@ -14,6 +14,7 @@ import { render, fireEvent, act } from '@testing-library/react-native';
 
 import HomeScreen from '../screens/HomeScreen';
 import { THEME_PRESETS } from '../theme';
+import type { DailyWorkout, PersonalRecord, WorkoutTemplate } from '../types';
 
 // ── モック ─────────────────────────────────────────────────────────────────────
 
@@ -75,11 +76,11 @@ const mockColors = THEME_PRESETS.hakukou.colors;
 
 // WorkoutContext デフォルト値（ワークアウトなし）
 const defaultWorkoutCtx = {
-  workouts: [],
-  personalRecords: [],
+  workouts: [] as DailyWorkout[],
+  personalRecords: [] as PersonalRecord[],
   currentSession: null,
   weeklyStats: { workoutCount: 0, totalVolume: 0, streakDays: 0 },
-  templates: [],
+  templates: [] as WorkoutTemplate[],
   workoutConfig: { restSeconds: 90, weightUnit: 'kg', theme: 'hakukou' },
   startSession: jest.fn(),
   addSet: jest.fn(),
@@ -177,9 +178,10 @@ describe('ワークアウトあり', () => {
         id: 's1',
         exerciseId: 'chest_001',
         sets: [
-          { id: 'set1', weight: 80, reps: 10, isPersonalRecord: false },
-          { id: 'set2', weight: 85, reps: 8, isPersonalRecord: false },
+          { id: 'set1', weight: 80, reps: 10, isPersonalRecord: false, completedAt: '2026-03-31T09:50:00.000Z' },
+          { id: 'set2', weight: 85, reps: 8, isPersonalRecord: false, completedAt: '2026-03-31T09:55:00.000Z' },
         ],
+        startedAt: '2026-03-31T09:30:00.000Z',
         completedAt: todayStr,
       },
     ],
@@ -288,7 +290,8 @@ describe('トレーニングメニューの削除', () => {
       {
         id: 's1',
         exerciseId: 'chest_001',
-        sets: [{ id: 'set1', weight: 50, reps: 10, isPersonalRecord: false }],
+        sets: [{ id: 'set1', weight: 50, reps: 10, isPersonalRecord: false, completedAt: '2026-03-31T09:50:00.000Z' }],
+        startedAt: '2026-03-31T09:30:00.000Z',
         completedAt: todayStr,
       },
     ],
@@ -339,7 +342,8 @@ describe('ボリューム小（1000未満）', () => {
       {
         id: 's1',
         exerciseId: 'chest_001',
-        sets: [{ id: 'set1', weight: 50, reps: 10, isPersonalRecord: false }],
+        sets: [{ id: 'set1', weight: 50, reps: 10, isPersonalRecord: false, completedAt: '2026-03-31T09:50:00.000Z' }],
+        startedAt: '2026-03-31T09:30:00.000Z',
         completedAt: '2026-03-31',
       },
     ],
@@ -369,7 +373,8 @@ describe('過去日付のワークアウト', () => {
       {
         id: 's1',
         exerciseId: 'chest_001',
-        sets: [{ id: 'set1', weight: 60, reps: 10, isPersonalRecord: false }],
+        sets: [{ id: 'set1', weight: 60, reps: 10, isPersonalRecord: false, completedAt: '2026-03-28T09:50:00.000Z' }],
+        startedAt: '2026-03-28T09:30:00.000Z',
         completedAt: '2026-03-28',
       },
     ],
@@ -399,7 +404,8 @@ describe('クイックスタート（既存セッションあり）', () => {
       {
         id: 's1',
         exerciseId: 'chest_001',
-        sets: [{ id: 'set1', weight: 60, reps: 10, isPersonalRecord: false }],
+        sets: [{ id: 'set1', weight: 60, reps: 10, isPersonalRecord: false, completedAt: '2026-03-31T09:50:00.000Z' }],
+        startedAt: '2026-03-31T09:30:00.000Z',
         completedAt: todayStr,
       },
     ],
@@ -433,7 +439,8 @@ describe('トレーニングメニュー押下', () => {
     sessions: [{
       id: 's1',
       exerciseId: 'chest_001',
-      sets: [{ id: 'set1', weight: 60, reps: 10, isPersonalRecord: false }],
+      sets: [{ id: 'set1', weight: 60, reps: 10, isPersonalRecord: false, completedAt: '2026-03-31T09:50:00.000Z' }],
+      startedAt: '2026-03-31T09:30:00.000Z',
       completedAt: todayStr,
     }],
   };

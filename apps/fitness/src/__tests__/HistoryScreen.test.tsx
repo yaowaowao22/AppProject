@@ -14,6 +14,7 @@ import { render, fireEvent } from '@testing-library/react-native';
 
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { THEME_PRESETS } from '../theme';
+import type { DailyWorkout, PersonalRecord, WorkoutTemplate } from '../types';
 
 // ── モック ─────────────────────────────────────────────────────────────────────
 
@@ -60,11 +61,11 @@ jest.mock('../components/LineChart', () => ({
 const mockColors = THEME_PRESETS.hakukou.colors;
 
 const defaultWorkoutCtx = {
-  workouts: [],
-  personalRecords: [],
+  workouts: [] as DailyWorkout[],
+  personalRecords: [] as PersonalRecord[],
   currentSession: null,
   weeklyStats: { workoutCount: 0, totalVolume: 0, streakDays: 0 },
-  templates: [],
+  templates: [] as WorkoutTemplate[],
   workoutConfig: { restSeconds: 90, weightUnit: 'kg', theme: 'hakukou' },
   startSession: jest.fn(),
   addSet: jest.fn(),
@@ -101,9 +102,10 @@ const sampleWorkout = {
       id: 's1',
       exerciseId: 'chest_001',
       sets: [
-        { id: 'set1', weight: 80, reps: 10, isPersonalRecord: false },
-        { id: 'set2', weight: 85, reps: 8, isPersonalRecord: false },
+        { id: 'set1', weight: 80, reps: 10, isPersonalRecord: false, completedAt: '2026-03-31T09:50:00.000Z' },
+        { id: 'set2', weight: 85, reps: 8, isPersonalRecord: false, completedAt: '2026-03-31T09:55:00.000Z' },
       ],
+      startedAt: '2026-03-31T09:30:00.000Z',
       completedAt: '2026-03-31T10:00:00.000Z',
     },
   ],
@@ -225,8 +227,8 @@ describe('日別タブ（ワークアウトあり）', () => {
       totalVolume: 3000,
       duration: 3600,
       sessions: [
-        { id: 's1', exerciseId: 'chest_001', sets: [{ id: 'set1', weight: 80, reps: 10, isPersonalRecord: false }], completedAt: '2026-03-31T10:00:00.000Z' },
-        { id: 's2', exerciseId: 'back_001', sets: [{ id: 'set2', weight: 70, reps: 10, isPersonalRecord: false }], completedAt: '2026-03-31T11:00:00.000Z' },
+        { id: 's1', exerciseId: 'chest_001', sets: [{ id: 'set1', weight: 80, reps: 10, isPersonalRecord: false, completedAt: '2026-03-31T09:50:00.000Z' }], startedAt: '2026-03-31T09:30:00.000Z', completedAt: '2026-03-31T10:00:00.000Z' },
+        { id: 's2', exerciseId: 'back_001', sets: [{ id: 'set2', weight: 70, reps: 10, isPersonalRecord: false, completedAt: '2026-03-31T10:50:00.000Z' }], startedAt: '2026-03-31T10:30:00.000Z', completedAt: '2026-03-31T11:00:00.000Z' },
       ],
     };
     mockUseWorkout.mockReturnValue({ ...defaultWorkoutCtx, workouts: [workoutSameDay] });

@@ -15,6 +15,7 @@ import { render, fireEvent, act, waitFor } from '@testing-library/react-native';
 import { ExerciseSelectScreen, WorkoutCompleteScreen, ActiveWorkoutScreen } from '../screens/WorkoutScreen';
 import { THEME_PRESETS } from '../theme';
 import { BODY_PARTS } from '../exerciseDB';
+import type { DailyWorkout, PersonalRecord, WorkoutSession, WorkoutTemplate } from '../types';
 
 // ── モック ─────────────────────────────────────────────────────────────────────
 
@@ -49,11 +50,11 @@ jest.mock('../components/ScreenHeader', () => ({
 const mockColors = THEME_PRESETS.hakukou.colors;
 
 const defaultWorkoutCtx = {
-  workouts: [],
-  personalRecords: [],
-  currentSession: null,
+  workouts: [] as DailyWorkout[],
+  personalRecords: [] as PersonalRecord[],
+  currentSession: null as WorkoutSession | null,
   weeklyStats: { workoutCount: 0, totalVolume: 0, streakDays: 0 },
-  templates: [],
+  templates: [] as WorkoutTemplate[],
   workoutConfig: { restSeconds: 90, weightUnit: 'kg', theme: 'hakukou' },
   startSession: jest.fn(),
   addSet: jest.fn(),
@@ -366,9 +367,10 @@ describe('ActiveWorkoutScreen', () => {
             id: 's-prev',
             exerciseId: 'chest_001',
             sets: [
-              { id: 'sp1', weight: 55, reps: 10, isPersonalRecord: false },
-              { id: 'sp2', weight: 55, reps: 10, isPersonalRecord: false },
+              { id: 'sp1', weight: 55, reps: 10, isPersonalRecord: false, completedAt: '2026-03-30T09:50:00.000Z' },
+              { id: 'sp2', weight: 55, reps: 10, isPersonalRecord: false, completedAt: '2026-03-30T09:55:00.000Z' },
             ],
+            startedAt: '2026-03-30T09:30:00.000Z',
             completedAt: '2026-03-30T10:00:00.000Z',
           },
         ],
@@ -377,7 +379,8 @@ describe('ActiveWorkoutScreen', () => {
     currentSession: {
       id: 'session-1',
       exerciseId: 'chest_001',
-      sets: [{ id: 'set1', weight: 60, reps: 10, isPersonalRecord: false }],
+      sets: [{ id: 'set1', weight: 60, reps: 10, isPersonalRecord: false, completedAt: '2026-03-31T09:50:00.000Z' }],
+      startedAt: '2026-03-31T09:30:00.000Z',
       completedAt: '',
     },
     workoutConfig: {
@@ -593,7 +596,8 @@ describe('ActiveWorkoutScreen', () => {
     } as any;
     const existingSession = {
       id: 'existing-session', exerciseId: 'chest_001',
-      sets: [{ id: 's1', weight: 50, reps: 8, isPersonalRecord: false }],
+      sets: [{ id: 's1', weight: 50, reps: 8, isPersonalRecord: false, completedAt: '2026-03-31T09:50:00.000Z' }],
+      startedAt: '2026-03-31T09:30:00.000Z',
       completedAt: '',
     };
     const route = {
@@ -614,7 +618,8 @@ describe('ActiveWorkoutScreen', () => {
     // existingSetCount = 1 だが 3セット完了させることで i >= existingSetCount の else branch を踏む
     const existingSession = {
       id: 'existing-session', exerciseId: 'chest_001',
-      sets: [{ id: 's1', weight: 50, reps: 8, isPersonalRecord: false }],
+      sets: [{ id: 's1', weight: 50, reps: 8, isPersonalRecord: false, completedAt: '2026-03-31T09:50:00.000Z' }],
+      startedAt: '2026-03-31T09:30:00.000Z',
       completedAt: '',
     };
     const route = {
@@ -746,7 +751,8 @@ describe('ActiveWorkoutScreen', () => {
           duration: 1800,
           sessions: [{
             id: 's-back', exerciseId: 'back_001',
-            sets: [{ id: 'sb1', weight: 70, reps: 8, isPersonalRecord: false }, { id: 'sb2', weight: 75, reps: 6, isPersonalRecord: false }],
+            sets: [{ id: 'sb1', weight: 70, reps: 8, isPersonalRecord: false, completedAt: '2026-03-29T09:50:00.000Z' }, { id: 'sb2', weight: 75, reps: 6, isPersonalRecord: false, completedAt: '2026-03-29T09:55:00.000Z' }],
+            startedAt: '2026-03-29T09:30:00.000Z',
             completedAt: '2026-03-29T10:00:00.000Z',
           }],
         },

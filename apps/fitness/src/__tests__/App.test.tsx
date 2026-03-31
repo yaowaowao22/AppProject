@@ -54,7 +54,7 @@ jest.mock('../ThemeContext', () => ({
 }));
 
 const mockThemeProvider = jest.fn(
-  ({ children }: { children: React.ReactNode }) => {
+  ({ children }: { children: React.ReactNode; theme?: object; initialMode?: string }) => {
     renderLog.push('ThemeProvider');
     return <>{children}</>;
   },
@@ -88,7 +88,7 @@ jest.mock('../navigation/RootNavigator', () => ({
   },
 }));
 
-const mockStatusBar = jest.fn(() => null);
+const mockStatusBar = jest.fn((_props: object) => null);
 jest.mock('expo-status-bar', () => ({
   StatusBar: (props: object) => {
     mockStatusBar(props);
