@@ -113,7 +113,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         <View style={styles.separator} />
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => navigation.navigate('Settings')}
+          onPress={() => navigation.navigate('SettingsStack')}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="設定"

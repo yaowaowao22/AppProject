@@ -15,6 +15,10 @@ import { useTheme } from '../ThemeContext';
 import { useWorkout } from '../WorkoutContext';
 import type { WorkoutConfig } from '../WorkoutContext';
 import { ScreenHeader } from '../components/ScreenHeader';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { SettingsStackParamList } from '../navigation/RootNavigator';
+import { Ionicons } from '@expo/vector-icons';
 import { APP } from '../config';
 import type { AppSettings } from '../types';
 import { loadAppSettings, saveAppSettings } from '../utils/storage';
@@ -125,6 +129,7 @@ const stepperStyles = StyleSheet.create({
 export default function SettingsScreen() {
   const { colors, setTheme, themeList, currentThemeId } = useTheme();
   const { workoutConfig, updateWorkoutConfig, resetAll } = useWorkout();
+  const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [appSettings, setAppSettings] = useState<AppSettings>({ showCalendar: true, showQuickStart: true });
@@ -304,6 +309,30 @@ export default function SettingsScreen() {
             <Text style={[styles.rowLabel, styles.destructiveText]}>
               全データを削除
             </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── 法的情報 ── */}
+        <SectionHeader title="法的情報" style={styles.sectionHeader} />
+        <View style={styles.sectionCard}>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => navigation.navigate('PrivacyPolicy')}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+          >
+            <Text style={styles.rowLabel}>プライバシーポリシー</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+          </TouchableOpacity>
+          <View style={styles.rowSeparator} />
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => navigation.navigate('TermsOfService')}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+          >
+            <Text style={styles.rowLabel}>利用規約</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
           </TouchableOpacity>
         </View>
 

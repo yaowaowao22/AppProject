@@ -15,6 +15,8 @@ import MonthlyReportScreen from '../screens/MonthlyReportScreen';
 import RMCalculatorScreen from '../screens/RMCalculatorScreen';
 import TemplateManageScreen from '../screens/TemplateManageScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen';
+import TermsOfServiceScreen from '../screens/TermsOfServiceScreen';
 import DayDetailScreen from '../screens/DayDetailScreen';
 import SessionEditScreen from '../screens/SessionEditScreen';
 import { CustomDrawerContent } from '../components/CustomDrawerContent';
@@ -34,6 +36,12 @@ export type HistoryStackParamList = {
   SessionEdit: { workoutId: string; exerciseId: string };
 };
 
+export type SettingsStackParamList = {
+  SettingsMain:   undefined;
+  PrivacyPolicy:  undefined;
+  TermsOfService: undefined;
+};
+
 export type RootDrawerParamList = {
   Home:          undefined;
   WorkoutStack:  undefined;
@@ -41,14 +49,15 @@ export type RootDrawerParamList = {
   MonthlyReport: undefined;
   RMCalculator:    undefined;
   TemplateManage:  undefined;
-  Settings:        undefined;
+  SettingsStack:   undefined;
 };
 
 // ── Navigators ───────────────────────────────────────────────────────────────
 
-const Drawer        = createDrawerNavigator<RootDrawerParamList>();
-const WorkoutStack  = createNativeStackNavigator<WorkoutStackParamList>();
-const HistoryStack  = createNativeStackNavigator<HistoryStackParamList>();
+const Drawer         = createDrawerNavigator<RootDrawerParamList>();
+const WorkoutStack   = createNativeStackNavigator<WorkoutStackParamList>();
+const HistoryStack   = createNativeStackNavigator<HistoryStackParamList>();
+const SettingsStack  = createNativeStackNavigator<SettingsStackParamList>();
 
 // ── WorkoutStack ──────────────────────────────────────────────────────────────
 
@@ -97,6 +106,24 @@ function HistoryStackNavigator() {
   );
 }
 
+// ── SettingsStack ────────────────────────────────────────────────────────────
+
+function SettingsStackNavigator() {
+  const { colors } = useTheme();
+  return (
+    <SettingsStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    >
+      <SettingsStack.Screen name="SettingsMain"   component={SettingsScreen} />
+      <SettingsStack.Screen name="PrivacyPolicy"  component={PrivacyPolicyScreen} />
+      <SettingsStack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
+    </SettingsStack.Navigator>
+  );
+}
+
 // ── RootNavigator ─────────────────────────────────────────────────────────────
 
 export function RootNavigator() {
@@ -130,7 +157,7 @@ export function RootNavigator() {
       <Drawer.Screen name="MonthlyReport" component={MonthlyReportScreen}     options={{ title: '月別レポート' }} />
       <Drawer.Screen name="RMCalculator"    component={RMCalculatorScreen}      options={{ title: 'RM計算機' }} />
       <Drawer.Screen name="TemplateManage" component={TemplateManageScreen}    options={{ title: 'テンプレート管理', headerShown: false }} />
-      <Drawer.Screen name="Settings"       component={SettingsScreen}          options={{ title: '設定' }} />
+      <Drawer.Screen name="SettingsStack"   component={SettingsStackNavigator}  options={{ title: '設定' }} />
     </Drawer.Navigator>
   );
 }
