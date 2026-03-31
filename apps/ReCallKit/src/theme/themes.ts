@@ -108,8 +108,8 @@ export interface ThemeEntry {
 
 function ls(accent: string, r: number, g: number, b: number): SidebarColorSet {
   return {
-    background: 'rgba(234,234,239,0.92)',
-    backgroundSolid: '#EAEAEF',
+    background: 'rgba(242,242,247,0.95)',
+    backgroundSolid: '#F2F2F7',
     overlay: 'rgba(0,0,0,0.30)',
     activeBackground: `rgba(${r},${g},${b},0.12)`,
     activeTint: accent,
@@ -160,14 +160,14 @@ function lightBase(accent: string, r: number, g: number, b: number): ColorScheme
   return {
     accent,
     background: '#FFFFFF',
-    backgroundSecondary: '#F2F2F7',
+    backgroundSecondary: '#F5F5F7',
     backgroundGrouped: '#F2F2F7',
     label: '#000000',
     labelSecondary: 'rgba(60,60,67,0.60)',
     labelTertiary: 'rgba(60,60,67,0.30)',
     card: '#FFFFFF',
     cardShadowColor: '#000000',
-    separator: 'rgba(60,60,67,0.29)',
+    separator: 'rgba(60,60,67,0.12)',
     navBarBackground: 'rgba(249,249,249,0.94)',
     navBarBorder: 'rgba(60,60,67,0.12)',
     filterBadgeBg: `rgba(${r},${g},${b},0.12)`,

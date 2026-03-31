@@ -33,7 +33,7 @@ export const MinTapTarget = 44;
 export const CardShadow = {
   shadowColor: '#000000',
   shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.08,
+  shadowOpacity: 0.06,
   shadowRadius: 3,
   elevation: 2, // Android
 } as const;
@@ -42,7 +42,7 @@ export const CardShadow = {
 export const CardShadowStrong = {
   shadowColor: '#000000',
   shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.14,
+  shadowOpacity: 0.10,
   shadowRadius: 10,
   elevation: 5,
 } as const;

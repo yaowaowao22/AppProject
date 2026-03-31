@@ -22,9 +22,9 @@ export const SystemColors = {
 // サイドバー専用カラートークン
 export const SidebarColors = {
   light: {
-    // 背景（和紙の透過感: #EAEAEF ベース）
-    background: 'rgba(234,234,239,0.92)',
-    backgroundSolid: '#EAEAEF',
+    // 背景（#F2F2F7 ベース）
+    background: 'rgba(242,242,247,0.95)',
+    backgroundSolid: '#F2F2F7',
     // オーバーレイ（ドロワー背後の暗幕）
     overlay: 'rgba(0,0,0,0.30)',
     // アクティブアイテム
@@ -83,7 +83,7 @@ export const LightColors = {
 
   // 背景
   background: '#FFFFFF',
-  backgroundSecondary: '#F2F2F7',
+  backgroundSecondary: '#F5F5F7',
   backgroundGrouped: '#F2F2F7',
 
   // テキスト
@@ -96,7 +96,7 @@ export const LightColors = {
   cardShadowColor: '#000000',
 
   // 区切り線
-  separator: 'rgba(60,60,67,0.29)',
+  separator: 'rgba(60,60,67,0.12)',
 
   // ナビゲーションバー（--nav-bg / --tab-border）
   navBarBackground: 'rgba(249,249,249,0.94)',
