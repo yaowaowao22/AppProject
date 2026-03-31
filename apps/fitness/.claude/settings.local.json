@@ -34,7 +34,11 @@
       "Bash(git -C \"C:/Users/ytata/AppProject/baseProject\" add apps/fitness/create_screenshots.py apps/fitness/setup_asc.py server/fitness-api/)",
       "Bash(git -C:*)",
       "Bash(npx wrangler:*)",
-      "Bash(python \"C:/Users/ytata/AppProject/baseProject/apps/fitness/setup_asc.py\")"
+      "Bash(python \"C:/Users/ytata/AppProject/baseProject/apps/fitness/setup_asc.py\")",
+      "Bash(python -:*)",
+      "Bash(python setup_asc.py)",
+      "WebFetch(domain:previewed.app)",
+      "WebSearch"
     ]
   }
 }
