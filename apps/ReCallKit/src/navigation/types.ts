@@ -48,6 +48,7 @@ export type LibraryStackParamList = {
     qa_pairs: { question: string; answer: string }[];
     category: string;
   };
+  ReviewGroupCreate: undefined;
 };
 
 // ---- Review Stack ----

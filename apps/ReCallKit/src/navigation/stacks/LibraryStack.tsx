@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
 import { LibraryScreen } from '../../screens/library/LibraryScreen';
 import { ItemDetailScreen } from '../../screens/library/ItemDetailScreen';
+import { ReviewGroupCreateScreen } from '../../screens/library/ReviewGroupCreateScreen';
 import { AddItemScreen } from '../../screens/add/AddItemScreen';
 import { QAPreviewScreen } from '../../screens/add/QAPreviewScreen';
 import { URLAnalysisScreen } from '../../screens/add/URLAnalysisScreen';
@@ -34,6 +35,24 @@ export function LibraryStack() {
         name="ItemDetail"
         component={ItemDetailScreen}
         options={{ title: '' }}
+      />
+      <Stack.Screen
+        name="ReviewGroupCreate"
+        component={ReviewGroupCreateScreen}
+        options={({ navigation: nav }) => ({
+          title: 'グループ作成',
+          presentation: 'modal',
+          headerLeft: () => (
+            <Pressable
+              onPress={() => nav.goBack()}
+              accessibilityLabel="キャンセル"
+              accessibilityRole="button"
+              hitSlop={8}
+            >
+              <Text style={{ color: colors.accent, fontSize: 17 }}>キャンセル</Text>
+            </Pressable>
+          ),
+        })}
       />
       <Stack.Screen
         name="AddItem"

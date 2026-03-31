@@ -524,21 +524,38 @@ export function LibraryScreen({ navigation }: Props) {
         />
       )}
 
-      {/* FAB: アイテム追加（選択モード中は非表示） */}
+      {/* FAB群（選択モード中は非表示） */}
       {!selectionMode && (
-        <Pressable
-          style={[styles.fab, { backgroundColor: colors.accent, bottom: insets.bottom + Spacing.l }]}
-          onPress={() => {
-            if (Platform.OS !== 'web') {
-              try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
-            }
-            navigation.navigate('AddItem', {});
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="アイテムを追加"
-        >
-          <Ionicons name="add" size={28} color="#FFFFFF" />
-        </Pressable>
+        <>
+          {/* グループ作成ボタン */}
+          <Pressable
+            style={[
+              styles.fab,
+              styles.fabSecondary,
+              { backgroundColor: colors.backgroundSecondary, bottom: insets.bottom + Spacing.l + 64, borderColor: colors.separator },
+            ]}
+            onPress={() => navigation.navigate('ReviewGroupCreate')}
+            accessibilityRole="button"
+            accessibilityLabel="グループを作成"
+          >
+            <Ionicons name="layers-outline" size={22} color={colors.accent} />
+          </Pressable>
+
+          {/* アイテム追加 FAB */}
+          <Pressable
+            style={[styles.fab, { backgroundColor: colors.accent, bottom: insets.bottom + Spacing.l }]}
+            onPress={() => {
+              if (Platform.OS !== 'web') {
+                try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
+              }
+              navigation.navigate('AddItem', {});
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="アイテムを追加"
+          >
+            <Ionicons name="add" size={28} color="#FFFFFF" />
+          </Pressable>
+        </>
       )}
 
       {/* 選択モード時のボトムバー */}
@@ -769,6 +786,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 4,
+  },
+  fabSecondary: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    right: Spacing.m + 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    shadowOpacity: 0.12,
+    elevation: 2,
   },
 
   // ---- 選択モードボトムバー ----
