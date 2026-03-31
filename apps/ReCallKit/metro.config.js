@@ -20,6 +20,9 @@ config.resolver.nodeModulesPaths = [
 // expo-sqlite Web: .wasm ファイルをアセットとして解決する
 config.resolver.assetExts = [...(config.resolver.assetExts ?? []), 'wasm'];
 
+// @babel/runtime 7.29+ の exports フィールドが Metro と非互換のため無効化
+config.resolver.unstable_enablePackageExports = false;
+
 // Web向け: SharedArrayBuffer を使用する場合に必要な COOP/COEP ヘッダー
 config.server = {
   ...config.server,
