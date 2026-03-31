@@ -178,7 +178,8 @@ export default function HomeScreen() {
   const btnContainerHeight = 50 + Math.max(insets.bottom, SPACING.md) + SPACING.md;
 
   function handleStartWorkout() {
-    navigation.navigate('WorkoutStack');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (navigation as any).navigate('WorkoutStack', { screen: 'ExerciseSelect' });
   }
 
   function handleChipPress(exerciseId: string) {
