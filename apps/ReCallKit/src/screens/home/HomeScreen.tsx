@@ -165,28 +165,6 @@ export function HomeScreen({ navigation }: Props) {
 
   const cardShadow = isDark ? {} : CardShadow;
 
-  // ---- 空状態（アイテムが0件） ----
-  if (totalItems === 0) {
-    return (
-      <View style={[styles.center, { backgroundColor: colors.backgroundGrouped }]}>
-        <Ionicons name="archive-outline" size={48} color={colors.labelTertiary} />
-        <Text style={[styles.emptyTitle, { color: colors.label }]}>
-          まだアイテムがありません
-        </Text>
-        <Text style={[styles.emptySubtitle, { color: colors.labelSecondary }]}>
-          まずライブラリにアイテムを追加しましょう
-        </Text>
-        <Pressable
-          style={[styles.emptyButton, { backgroundColor: colors.accent }]}
-          onPress={() => navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate('Library')}
-          accessibilityRole="button"
-        >
-          <Text style={styles.emptyButtonText}>ライブラリへ</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
   return (
     <ScrollView
       style={{ backgroundColor: colors.backgroundGrouped }}
@@ -212,6 +190,16 @@ export function HomeScreen({ navigation }: Props) {
         </View>
       )}
 
+      {/* ――― 空状態ウェルカムメッセージ ――― */}
+      {totalItems === 0 && (
+        <View style={[styles.welcomeCard, { backgroundColor: colors.accent + '1A' }]}>
+          <Ionicons name="sparkles-outline" size={20} color={colors.accent} />
+          <Text style={[styles.welcomeText, { color: colors.accent }]}>
+            ようこそ！URLを追加して学習を始めましょう
+          </Text>
+        </View>
+      )}
+
       {/* ――― ヒーローセクション: ストリークリング + 今日の復習 ――― */}
       <View style={[styles.heroCard, { backgroundColor: colors.card }, cardShadow]}>
         {/* 上段: ストリークリング + ヘッダー */}
@@ -232,7 +220,7 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         </View>
 
-        {/* スタートボタン or 完了メッセージ */}
+        {/* スタートボタン or 完了/空状態メッセージ */}
         {sidebarFilteredItems.length > 0 ? (
           <Pressable
             style={({ pressed }) => [
@@ -245,6 +233,12 @@ export function HomeScreen({ navigation }: Props) {
           >
             <Text style={styles.startButtonText}>復習を始める</Text>
           </Pressable>
+        ) : totalItems === 0 ? (
+          <View style={styles.allDoneRow}>
+            <Text style={[styles.allDoneText, { color: colors.labelSecondary }]}>
+              アイテムを追加して復習を始めましょう
+            </Text>
+          </View>
         ) : (
           <View style={styles.allDoneRow}>
             <Text style={[styles.allDoneIcon, { color: colors.success }]}>✓</Text>
@@ -373,23 +367,17 @@ const styles = StyleSheet.create({
     gap: Spacing.m,
     paddingHorizontal: Spacing.xl,
   },
-  emptyTitle: {
-    ...TypeScale.headline,
-    textAlign: 'center',
+  welcomeCard: {
+    borderRadius: Radius.l,
+    padding: Spacing.m,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.s,
   },
-  emptySubtitle: {
+  welcomeText: {
     ...TypeScale.subheadline,
-    textAlign: 'center',
-  },
-  emptyButton: {
-    borderRadius: Radius.m,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.m,
-    marginTop: Spacing.s,
-  },
-  emptyButtonText: {
-    ...TypeScale.headline,
-    color: '#FFFFFF',
+    flex: 1,
+    fontWeight: '500' as const,
   },
   container: {
     padding: Spacing.m,
