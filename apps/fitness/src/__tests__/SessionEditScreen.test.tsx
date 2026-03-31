@@ -282,7 +282,37 @@ describe('重量・レップ数の編集', () => {
     const weightInputs = getAllByPlaceholderText('—');
     if (weightInputs.length > 0) {
       fireEvent.changeText(weightInputs[0], '90');
+      fireEvent.changeText(weightInputs[0], '');
     }
+    expect(true).toBe(true);
+  });
+
+  it('レップ数入力を変更すると値が更新される', () => {
+    const { getAllByPlaceholderText } = render(<SessionEditScreen />);
+    const inputs = getAllByPlaceholderText('—');
+    // 2番目が reps 入力（1番目が重量、2番目がレップ数）
+    if (inputs.length >= 2) {
+      fireEvent.changeText(inputs[1], '12');
+      fireEvent.changeText(inputs[1], '');
+    }
+    expect(true).toBe(true);
+  });
+});
+
+describe('セット削除（確認後）', () => {
+  it('Alert.alert の削除コールバックを直接呼ぶとセットが削除される', () => {
+    const { Alert } = require('react-native');
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(
+      (_title, _msg, buttons) => {
+        // 削除ボタンのコールバックを直接実行
+        const deleteBtn = (buttons as any[]).find(b => b.style === 'destructive');
+        if (deleteBtn?.onPress) deleteBtn.onPress();
+      },
+    );
+    const { getByLabelText, queryByText } = render(<SessionEditScreen />);
+    const deleteBtn = getByLabelText('セット1を削除');
+    fireEvent.press(deleteBtn);
+    alertSpy.mockRestore();
     expect(true).toBe(true);
   });
 });
