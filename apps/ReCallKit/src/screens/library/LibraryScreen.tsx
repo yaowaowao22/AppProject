@@ -512,8 +512,13 @@ const styles = StyleSheet.create({
   },
 
   // ---- 空状態 ----
-  emptyText: {
+  emptyTitle: {
     ...TypeScale.body,
+    fontWeight: '600',
+  },
+  emptySubtitle: {
+    ...TypeScale.caption1,
+    textAlign: 'center',
   },
 
   // ---- FAB ----
