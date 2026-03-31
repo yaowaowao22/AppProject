@@ -51,8 +51,8 @@ export const CardShadowStrong = {
 export const SidebarLayout = {
   // ドロワー幅
   width: 280,
-  // ドロワー下端のオフセット（タブバー高さ分）
-  bottomOffset: 83,
+  // ドロワー下端のオフセット（タブバー廃止のため 0）
+  bottomOffset: 0,
   // アイテム行の高さ
   itemHeight: 48,
   // アイテム行の右パディング

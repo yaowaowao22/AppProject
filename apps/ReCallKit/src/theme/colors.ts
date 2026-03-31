@@ -98,10 +98,6 @@ export const LightColors = {
   // 区切り線
   separator: 'rgba(60,60,67,0.29)',
 
-  // タブバー
-  tabBarActive: RecallAmber.light,
-  tabBarInactive: 'rgba(60,60,67,0.60)',
-
   // ナビゲーションバー（--nav-bg / --tab-border）
   navBarBackground: 'rgba(249,249,249,0.94)',
   navBarBorder: 'rgba(60,60,67,0.12)',
@@ -109,6 +105,10 @@ export const LightColors = {
   // フィルターバッジ（--accent-light / --accent）
   filterBadgeBg: 'rgba(196,127,23,0.12)',
   filterBadgeText: RecallAmber.light,
+
+  // ハンバーガーボタン（サイドバー開閉トリガー）
+  hamburgerTint: '#000000',
+  hamburgerPressedBg: 'rgba(142,142,147,0.12)',
 
   // 状態色
   success: SystemColors.green,
@@ -139,10 +139,6 @@ export const DarkColors = {
   // 区切り線
   separator: 'rgba(84,84,88,0.65)',
 
-  // タブバー
-  tabBarActive: RecallAmber.dark,
-  tabBarInactive: 'rgba(235,235,245,0.60)',
-
   // ナビゲーションバー（--nav-bg / --tab-border dark）
   navBarBackground: 'rgba(30,30,30,0.94)',
   navBarBorder: 'rgba(84,84,88,0.65)',
@@ -150,6 +146,10 @@ export const DarkColors = {
   // フィルターバッジ（--accent-light / --accent dark）
   filterBadgeBg: 'rgba(245,166,35,0.15)',
   filterBadgeText: RecallAmber.dark,
+
+  // ハンバーガーボタン（サイドバー開閉トリガー）
+  hamburgerTint: '#FFFFFF',
+  hamburgerPressedBg: 'rgba(142,142,147,0.24)',
 
   // 状態色
   success: SystemColors.green,

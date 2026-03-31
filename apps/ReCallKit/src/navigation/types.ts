@@ -2,13 +2,13 @@
 // ReCallKit ナビゲーション型定義
 // 構造:
 //   Root (NativeStack)
-//   └── DrawerNavigator (サイドバーラッパー)
-//       └── MainTabs (BottomTabs)
-//           ├── HomeTab     → HomeStack
-//           ├── LibraryTab  → LibraryStack
-//           ├── ReviewTab   → ReviewStack
-//           ├── MapTab      → MapStack
-//           └── SettingsTab → SettingsScreen
+//   └── DrawerNavigator (サイドバー = プライマリナビ)
+//       ├── HomeScreen     → HomeStack
+//       ├── LibraryScreen  → LibraryStack
+//       ├── ReviewScreen   → ReviewStack
+//       ├── MapScreen      → MapStack
+//       ├── JournalScreen  → JournalStack
+//       └── SettingsScreen
 // ============================================================
 
 import type { NavigatorScreenParams } from '@react-navigation/native';
@@ -19,18 +19,14 @@ export type RootStackParamList = {
   Main: undefined;
 };
 
-// ---- Drawer ----
+// ---- Drawer (サイドバーが唯一のプライマリナビ) ----
 export type DrawerParamList = {
-  MainTabs: NavigatorScreenParams<MainTabParamList>;
-};
-
-// ---- Bottom Tabs ----
-export type MainTabParamList = {
-  HomeTab: NavigatorScreenParams<HomeStackParamList>;
-  LibraryTab: NavigatorScreenParams<LibraryStackParamList>;
-  ReviewTab: NavigatorScreenParams<ReviewStackParamList>;
-  MapTab: NavigatorScreenParams<MapStackParamList>;
-  SettingsTab: undefined;
+  Home: NavigatorScreenParams<HomeStackParamList>;
+  Library: NavigatorScreenParams<LibraryStackParamList>;
+  Review: NavigatorScreenParams<ReviewStackParamList>;
+  Map: NavigatorScreenParams<MapStackParamList>;
+  Journal: NavigatorScreenParams<JournalStackParamList>;
+  Settings: undefined;
 };
 
 // ---- Home Stack ----
