@@ -272,6 +272,25 @@ describe('データ管理', () => {
     );
     alertSpy.mockRestore();
   });
+
+  test('削除確認コールバックを呼ぶと resetAll が実行される', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(
+      async (_title, _msg, buttons) => {
+        if (!buttons) return;
+        const deleteBtn = (buttons as any[]).find(b => b.style === 'destructive');
+        if (deleteBtn?.onPress) await deleteBtn.onPress();
+      },
+    );
+
+    const { getByLabelText } = renderScreen();
+    await act(async () => {});
+
+    fireEvent.press(getByLabelText('すべてのデータを削除（元に戻せません）'));
+    await act(async () => {});
+
+    expect(mockResetAll).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
 });
 
 describe('アプリ情報', () => {
