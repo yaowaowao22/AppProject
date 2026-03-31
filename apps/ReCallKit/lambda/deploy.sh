@@ -21,7 +21,7 @@ REGION="ap-northeast-1"
 RUNTIME="python3.12"
 HANDLER="handler.lambda_handler"
 MEMORY_SIZE=256
-TIMEOUT=30
+TIMEOUT=60
 
 # IAM ロール ARN（初回作成時に必要。実際の ARN に書き換えること）
 LAMBDA_ROLE_ARN="arn:aws:iam::376408658186:role/recall-kit-lambda-role"

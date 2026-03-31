@@ -111,15 +111,25 @@ export async function analyzeUrl(
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      // Lambdaが返したエラーメッセージをそのままユーザーに伝える
+      let message = `サーバーエラー (HTTP ${response.status})`;
+      try {
+        const body = await response.json() as { error?: string };
+        if (body.error) message = body.error;
+      } catch {
+        // JSONパース失敗時はデフォルトメッセージ
+      }
+      throw new Error(message);
     }
 
     const data = (await response.json()) as AnalysisResult;
     return data;
   } catch (err) {
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('AI解析がタイムアウトしました（30秒）');
+      throw new Error('AI解析がタイムアウトしました（45秒）');
     }
+    // Lambdaエラーや既にラップされたエラーはそのまま再スロー
+    if (err instanceof Error) throw err;
     throw new Error('AI解析に失敗しました');
   } finally {
     clearTimeout(timeoutId);
