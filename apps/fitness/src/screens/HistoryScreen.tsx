@@ -142,12 +142,6 @@ const S = StyleSheet.create({
     paddingVertical: 4,
     alignItems: 'center',
   },
-  prBadge: {
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: RADIUS.badge,
-    marginLeft: 5,
-  },
   setColNo:    { width: 28 },
   setColWt:    { flex: 1 },
   setColReps:  { flex: 1 },
@@ -840,10 +834,7 @@ function ExerciseDetailView({
         return (
           <View
             key={set.id}
-            style={[
-              S.setTableRow,
-              isPR && { backgroundColor: colors.accentDim },
-            ]}
+            style={S.setTableRow}
           >
             <Text style={[S.setColNo, { fontSize: TYPOGRAPHY.caption, color: colors.textTertiary, fontVariant: ['tabular-nums'] }]}>
               {idx + 1}
@@ -856,11 +847,9 @@ function ExerciseDetailView({
             </Text>
             <View style={[S.setColBadge, { justifyContent: 'center', alignItems: 'flex-end' }]}>
               {isPR && (
-                <View style={[S.prBadge, { backgroundColor: colors.accent }]}>
-                  <Text style={{ fontSize: 9, fontWeight: TYPOGRAPHY.bold, color: colors.onAccent }}>
-                    PR
-                  </Text>
-                </View>
+                <Text style={{ fontSize: TYPOGRAPHY.captionSmall, fontWeight: '600', color: colors.accent }}>
+                  PR
+                </Text>
               )}
             </View>
           </View>
