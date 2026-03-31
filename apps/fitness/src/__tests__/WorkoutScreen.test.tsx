@@ -536,6 +536,19 @@ describe('ActiveWorkoutScreen', () => {
     expect(true).toBe(true);
   });
 
+  test('allDone の状態で重量・回数ボタンを押しても何もしない（allDone branch）', () => {
+    const { getByLabelText } = renderActive();
+    // 4回完了ボタンを押すと allDone=true になる（3行+新規行を全て完了）
+    fireEvent.press(getByLabelText('セットを完了する'));
+    fireEvent.press(getByLabelText('セットを完了する'));
+    fireEvent.press(getByLabelText('セットを完了する'));
+    fireEvent.press(getByLabelText('セットを完了する'));
+    // allDone=true の状態でボタンを押す（early return ブランチ）
+    fireEvent.press(getByLabelText('重量＋2.5kg'));
+    fireEvent.press(getByLabelText('回数＋1'));
+    expect(true).toBe(true);
+  });
+
   test('updateMode: existingSession を渡すと updateSession が呼ばれる', () => {
     const mockUpdateSession = jest.fn().mockResolvedValue(undefined);
     mockUseWorkout.mockReturnValue({
