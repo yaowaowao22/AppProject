@@ -144,7 +144,7 @@ export function JournalScreen({ navigation: _navigation }: Props) {
                 >
                   <Ionicons
                     name="trash-outline"
-                    size={16}
+                    size={20}
                     color={colors.labelTertiary}
                   />
                 </Pressable>

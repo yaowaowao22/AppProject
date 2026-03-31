@@ -297,7 +297,7 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
           >
             <View style={styles.iconSlot}>
               <Ionicons
-                name="calendar-outline"
+                name="checkmark-circle-outline"
                 size={SidebarLayout.iconSize}
                 color={activeFilterId === 'today' ? sc.activeTint : sc.inactiveTint}
               />
@@ -333,7 +333,7 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
           >
             <View style={styles.iconSlot}>
               <Ionicons
-                name="add-circle-outline"
+                name="sparkles-outline"
                 size={SidebarLayout.iconSize}
                 color={activeFilterId === 'recent' ? sc.activeTint : sc.inactiveTint}
               />
