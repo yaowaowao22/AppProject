@@ -32,16 +32,18 @@ const CATEGORY_CONFIG: Record<
   string,
   { icon: string; color: string; label: string }
 > = {
+  // Lambda が返す日本語カテゴリ
+  '技術':     { icon: '💻', color: SystemColors.blue,   label: '技術' },
+  'ビジネス': { icon: '📈', color: SystemColors.green,  label: 'ビジネス' },
+  '科学':     { icon: '🔬', color: SystemColors.teal,   label: '科学' },
+  '語学':     { icon: '🗣', color: SystemColors.indigo, label: '語学' },
+  '一般教養': { icon: '📜', color: SystemColors.orange, label: '一般教養' },
+  'その他':   { icon: '📚', color: SystemColors.blue,   label: 'その他' },
+  // 英語キー（後方互換）
   technology:   { icon: '💻', color: SystemColors.blue,   label: 'テクノロジー' },
   science:      { icon: '🔬', color: SystemColors.teal,   label: 'サイエンス' },
   business:     { icon: '📈', color: SystemColors.green,  label: 'ビジネス' },
-  health:       { icon: '🏃', color: SystemColors.green,  label: 'ヘルス' },
-  history:      { icon: '📜', color: SystemColors.orange, label: '歴史' },
-  culture:      { icon: '🎨', color: SystemColors.purple, label: 'カルチャー' },
   language:     { icon: '🗣', color: SystemColors.indigo, label: '語学' },
-  mathematics:  { icon: '📐', color: SystemColors.indigo, label: '数学' },
-  philosophy:   { icon: '🤔', color: SystemColors.purple, label: '哲学' },
-  news:         { icon: '📰', color: SystemColors.orange, label: 'ニュース' },
 };
 
 const DEFAULT_CATEGORY = { icon: '📚', color: SystemColors.blue, label: 'その他' };

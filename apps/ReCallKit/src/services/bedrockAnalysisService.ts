@@ -97,9 +97,6 @@ export async function analyzeUrl(url: string): Promise<AnalysisResult> {
       secretAccessKey: credentials.secretAccessKey,
       sessionToken: credentials.sessionToken,
     },
-    requestHandler: {
-      requestTimeout: 60_000,
-    },
   });
 
   const controller = new AbortController();
