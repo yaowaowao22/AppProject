@@ -312,6 +312,20 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* ── サポート ── */}
+        <SectionHeader title="サポート" style={styles.sectionHeader} />
+        <View style={styles.sectionCard}>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => navigation.navigate('Contact')}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+          >
+            <Text style={styles.rowLabel}>お問い合わせ</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+          </TouchableOpacity>
+        </View>
+
         {/* ── 法的情報 ── */}
         <SectionHeader title="法的情報" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>

@@ -17,6 +17,7 @@ import TemplateManageScreen from '../screens/TemplateManageScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen';
 import TermsOfServiceScreen from '../screens/TermsOfServiceScreen';
+import ContactScreen from '../screens/ContactScreen';
 import DayDetailScreen from '../screens/DayDetailScreen';
 import SessionEditScreen from '../screens/SessionEditScreen';
 import { CustomDrawerContent } from '../components/CustomDrawerContent';
@@ -40,6 +41,7 @@ export type SettingsStackParamList = {
   SettingsMain:   undefined;
   PrivacyPolicy:  undefined;
   TermsOfService: undefined;
+  Contact:        undefined;
 };
 
 export type RootDrawerParamList = {
@@ -120,6 +122,7 @@ function SettingsStackNavigator() {
       <SettingsStack.Screen name="SettingsMain"   component={SettingsScreen} />
       <SettingsStack.Screen name="PrivacyPolicy"  component={PrivacyPolicyScreen} />
       <SettingsStack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
+      <SettingsStack.Screen name="Contact"        component={ContactScreen} />
     </SettingsStack.Navigator>
   );
 }
