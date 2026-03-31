@@ -40,6 +40,7 @@ export type LibraryStackParamList = {
   Library: { filterTag?: string };
   ItemDetail: { itemId: number };
   AddItem: { clipboardText?: string };
+  URLAnalysis: { initialUrl?: string };
   QAPreview: {
     url: string;
     title: string;
