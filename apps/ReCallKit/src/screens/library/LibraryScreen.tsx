@@ -26,6 +26,7 @@ import {
   type ReviewStatusFilter,
   type DateRangeFilter,
 } from '../../hooks/useLibrary';
+import { useSidebarFilter } from '../../hooks/useSidebarFilter';
 import type { LibraryStackParamList } from '../../navigation/types';
 import type { ItemWithMeta } from '../../types';
 

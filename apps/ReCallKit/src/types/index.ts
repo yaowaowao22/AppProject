@@ -49,3 +49,9 @@ export interface ItemWithMeta extends Item {
   tags: Tag[];
   review: Review | null;
 }
+
+// サイドバーフィルター型
+export type SidebarFilter =
+  | { kind: 'smart'; id: 'today' | 'overdue' | 'recent' }
+  | { kind: 'tag'; tagId: number; tagName: string }
+  | { kind: 'collection'; collectionId: string; collectionName: string };

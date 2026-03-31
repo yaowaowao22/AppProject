@@ -6,6 +6,7 @@ import { useDatabase } from '../hooks/useDatabase';
 import { useTheme } from '../theme/ThemeContext';
 import { DrawerNavigator } from './DrawerNavigator';
 import { OnboardingScreen } from '../screens/onboarding/OnboardingScreen';
+import { SidebarFilterProvider } from '../hooks/useSidebarFilter';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -51,14 +52,16 @@ export function RootNavigator() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!onboardingCompleted && (
-          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-        )}
-        <Stack.Screen name="Main" component={DrawerNavigator} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <SidebarFilterProvider>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {!onboardingCompleted && (
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          )}
+          <Stack.Screen name="Main" component={DrawerNavigator} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SidebarFilterProvider>
   );
 }
 

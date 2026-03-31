@@ -3,7 +3,7 @@
 // ストリークリング・フィルターバッジ・復習カードリスト
 // ============================================================
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   ScrollView,
   View,
@@ -11,7 +11,6 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
-  FlatList,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -28,6 +27,7 @@ import { StreakRing } from '../../components/StreakRing';
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
+import { useSidebarFilter } from '../../hooks/useSidebarFilter';
 import type { HomeStackParamList, MainTabParamList } from '../../navigation/types';
 import type { ItemType } from '../../types';
 
@@ -57,9 +57,22 @@ const TYPE_META: Record<ItemType, { label: string; color: string; bg: string }> 
   screenshot: { label: '画像', color: '#BF5AF2', bg: 'rgba(191,90,242,0.12)' },
 };
 
+// サイドバーフィルターのラベル文字列を生成
+function getSidebarFilterLabel(filter: NonNullable<ReturnType<typeof useSidebarFilter>['sidebarFilter']>): string {
+  if (filter.kind === 'smart') {
+    if (filter.id === 'today')   return '今日の復習';
+    if (filter.id === 'overdue') return '期限切れ';
+    if (filter.id === 'recent')  return '最近追加';
+  }
+  if (filter.kind === 'tag') return filter.tagName;
+  if (filter.kind === 'collection') return filter.collectionName;
+  return '';
+}
+
 export function HomeScreen({ navigation }: Props) {
   const { db, isReady } = useDatabase();
   const { colors, isDark } = useTheme();
+  const { sidebarFilter, clearFilter } = useSidebarFilter();
 
   const [dueItems, setDueItems] = useState<ReviewableItem[]>([]);
   const [streakDays, setStreakDays] = useState(0);
@@ -67,6 +80,9 @@ export function HomeScreen({ navigation }: Props) {
   const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
+
+  // タグフィルター用: タグが付いているアイテムIDのセット（非同期取得）
+  const [taggedItemIds, setTaggedItemIds] = useState<Set<number>>(new Set());
 
   const loadData = useCallback(async () => {
     if (!db || !isReady) return;
@@ -93,10 +109,40 @@ export function HomeScreen({ navigation }: Props) {
     }, [loadData])
   );
 
+  // サイドバーのタグフィルターが変わったら対象アイテムIDを取得
+  useEffect(() => {
+    if (!sidebarFilter || sidebarFilter.kind !== 'tag' || !db) {
+      setTaggedItemIds(new Set());
+      return;
+    }
+    db.getAllAsync<{ item_id: number }>(
+      'SELECT item_id FROM item_tags WHERE tag_id = ?',
+      [sidebarFilter.tagId]
+    ).then((rows) => setTaggedItemIds(new Set(rows.map((r) => r.item_id))));
+  }, [sidebarFilter, db]);
+
   const handleStartReview = () => {
     const tabNav = navigation.getParent<BottomTabNavigationProp<MainTabParamList>>();
     tabNav?.navigate('ReviewTab' as never);
   };
+
+  // サイドバーフィルターを dueItems に適用
+  const sidebarFilteredItems = useMemo<ReviewableItem[]>(() => {
+    if (!sidebarFilter) return dueItems;
+    if (sidebarFilter.kind === 'smart') {
+      if (sidebarFilter.id === 'today')   return dueItems; // getDueItems が today 対象を返す
+      if (sidebarFilter.id === 'overdue') return dueItems.filter((ri) =>
+        getOverdueDays(ri.item.review!.next_review_at) > 0
+      );
+      // 'recent' は LibraryScreen に委ねるため HomeScreen では全件表示
+      return dueItems;
+    }
+    if (sidebarFilter.kind === 'tag') {
+      return dueItems.filter((ri) => taggedItemIds.has(ri.item.id));
+    }
+    // collection は noop
+    return dueItems;
+  }, [sidebarFilter, dueItems, taggedItemIds]);
 
   if (!isReady || loading) {
     return (
@@ -107,19 +153,20 @@ export function HomeScreen({ navigation }: Props) {
   }
 
   const cardShadow = isDark ? {} : CardShadow;
-  const dueCount = dueItems.length;
 
-  // フィルター後のリスト
+  // タイプフィルター後のリスト（サイドバーフィルター済みリストに対して適用）
   const filteredItems =
     activeFilter === 'all'
-      ? dueItems
-      : dueItems.filter((ri) => ri.item.type === activeFilter);
+      ? sidebarFilteredItems
+      : sidebarFilteredItems.filter((ri) => ri.item.type === activeFilter);
 
-  // フィルターごとの件数
+  const dueCount = filteredItems.length;
+
+  // フィルターごとの件数（サイドバーフィルター済みリストを基準に）
   const countByFilter = (key: FilterKey): number =>
     key === 'all'
-      ? dueItems.length
-      : dueItems.filter((ri) => ri.item.type === key).length;
+      ? sidebarFilteredItems.length
+      : sidebarFilteredItems.filter((ri) => ri.item.type === key).length;
 
   return (
     <ScrollView
@@ -127,6 +174,25 @@ export function HomeScreen({ navigation }: Props) {
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
+      {/* ――― サイドバーフィルターバッジ ――― */}
+      {sidebarFilter && (
+        <View style={styles.sidebarBadgeRow}>
+          <View style={[styles.sidebarBadge, { backgroundColor: colors.accent + '22' }]}>
+            <Text style={[styles.sidebarBadgeText, { color: colors.accent }]}>
+              {getSidebarFilterLabel(sidebarFilter)}
+            </Text>
+            <Pressable
+              onPress={clearFilter}
+              style={styles.sidebarBadgeClear}
+              accessibilityLabel="フィルターを解除"
+              accessibilityRole="button"
+            >
+              <Text style={[styles.sidebarBadgeClearText, { color: colors.accent }]}>×</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
       {/* ――― ヒーローセクション: ストリークリング + 今日の復習 ――― */}
       <View
         style={[styles.heroCard, { backgroundColor: colors.card }, cardShadow]}
@@ -140,7 +206,7 @@ export function HomeScreen({ navigation }: Props) {
             </Text>
             <View style={styles.countRow}>
               <Text style={[styles.countNumber, { color: colors.accent }]}>
-                {dueCount}
+                {sidebarFilteredItems.length}
               </Text>
               <Text style={[styles.countUnit, { color: colors.labelSecondary }]}>
                 件
@@ -150,7 +216,7 @@ export function HomeScreen({ navigation }: Props) {
         </View>
 
         {/* スタートボタン or 完了メッセージ */}
-        {dueCount > 0 ? (
+        {sidebarFilteredItems.length > 0 ? (
           <Pressable
             style={({ pressed }) => [
               styles.startButton,
@@ -173,7 +239,7 @@ export function HomeScreen({ navigation }: Props) {
       </View>
 
       {/* ――― 復習カードリスト ――― */}
-      {dueCount > 0 && (
+      {sidebarFilteredItems.length > 0 && (
         <>
           {/* フィルターバッジ横スクロール */}
           <ScrollView
@@ -237,7 +303,7 @@ export function HomeScreen({ navigation }: Props) {
           </ScrollView>
 
           {/* カードリスト */}
-          {filteredItems.length > 0 ? (
+          {dueCount > 0 ? (
             filteredItems.map((ri) => {
               const meta = TYPE_META[ri.item.type];
               const overdue = getOverdueDays(ri.item.review!.next_review_at);
@@ -363,6 +429,32 @@ const styles = StyleSheet.create({
     padding: Spacing.m,
     paddingBottom: Spacing.xxl,
     gap: Spacing.m,
+  },
+
+  // ――― サイドバーフィルターバッジ ―――
+  sidebarBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sidebarBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    gap: 4,
+  },
+  sidebarBadgeText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  sidebarBadgeClear: {
+    paddingLeft: 2,
+  },
+  sidebarBadgeClearText: {
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 16,
   },
 
   // ――― ヒーローカード ―――

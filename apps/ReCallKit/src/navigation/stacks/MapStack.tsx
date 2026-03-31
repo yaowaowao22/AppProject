@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { LightColors, DarkColors } from '../../theme/colors';
 import { KnowledgeMapScreen } from '../../screens/map/KnowledgeMapScreen';
 import { ItemDetailScreen } from '../../screens/library/ItemDetailScreen';
+import { HeaderHamburger } from '../../components/HeaderHamburger';
 import type { MapStackParamList } from '../types';
 
 const Stack = createNativeStackNavigator<MapStackParamList>();
@@ -29,7 +30,13 @@ export function MapStack() {
         options={{
           title: 'マップ',
           headerLargeTitle: true,
-          headerLargeTitleStyle: { color: colors.label },
+          headerLargeTitleStyle: {
+            color: colors.label,
+            fontSize: 34,
+            fontWeight: '700',
+            letterSpacing: -0.5,
+          },
+          headerLeft: () => <HeaderHamburger />,
         }}
       />
       <Stack.Screen

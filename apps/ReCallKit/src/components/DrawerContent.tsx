@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,31 +13,7 @@ import { SidebarColors } from '../theme/colors';
 import { SidebarLayout, Spacing, Radius } from '../theme/spacing';
 import { useTheme } from '../theme/ThemeContext';
 import { useDatabase } from '../hooks/useDatabase';
-
-// ============================================================
-// SidebarFilterContext
-// TODO: DrawerNavigator.tsx の DrawerNavigator を
-//       <SidebarFilterProvider> で囲むと画面側からも参照可能
-// ============================================================
-
-export type SidebarFilter =
-  | { kind: 'smart'; id: 'today' | 'overdue' | 'recent' }
-  | { kind: 'tag'; tagId: number; tagName: string }
-  | { kind: 'collection'; collectionId: string; collectionName: string };
-
-interface SidebarFilterContextValue {
-  activeFilter: SidebarFilter;
-  setActiveFilter: (f: SidebarFilter) => void;
-}
-
-export const SidebarFilterContext = createContext<SidebarFilterContextValue>({
-  activeFilter: { kind: 'smart', id: 'today' },
-  setActiveFilter: () => {},
-});
-
-export function useSidebarFilter() {
-  return useContext(SidebarFilterContext);
-}
+import { useSidebarFilter } from '../hooks/useSidebarFilter';
 
 // ============================================================
 // データ型
@@ -68,7 +44,9 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
   const insets = useSafeAreaInsets();
   const { db, isReady } = useDatabase();
 
-  const [activeFilter, setActiveFilter] = useState<SidebarFilter>({ kind: 'smart', id: 'today' });
+  // グローバルフィルター Context を使用
+  const { sidebarFilter, setSidebarFilter, clearFilter } = useSidebarFilter();
+
   const [todayCount,   setTodayCount]   = useState(0);
   const [overdueCount, setOverdueCount] = useState(0);
   const [tags,         setTags]         = useState<TagWithCount[]>([]);
@@ -133,28 +111,52 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
     fetchData();
   }, [fetchData]);
 
-  // ドロワーが開くたびに再取得（useFocusEffect 相当）
+  // ドロワーが開くたびに再取得
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const unsubscribe = (navigation as any).addListener('drawerOpen', fetchData);
     return unsubscribe;
   }, [navigation, fetchData]);
 
+  // アクティブな項目 ID を sidebarFilter から導出
   const activeId = (() => {
-    if (activeFilter.kind === 'smart') return activeFilter.id;
-    if (activeFilter.kind === 'tag')   return `tag-${activeFilter.tagId}`;
-    return activeFilter.collectionId;
+    if (!sidebarFilter) return null;
+    if (sidebarFilter.kind === 'smart') return sidebarFilter.id;
+    if (sidebarFilter.kind === 'tag')   return `tag-${sidebarFilter.tagId}`;
+    return sidebarFilter.collectionId;
   })();
 
   function handleSmartFilter(id: 'today' | 'overdue' | 'recent') {
-    setActiveFilter({ kind: 'smart', id });
-    if (id === 'today' || id === 'overdue') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (navigation as any).navigate('MainTabs', {
-        screen: 'ReviewTab',
-        params: { screen: 'Review', params: {} },
-      });
+    if (activeId === id) {
+      // 同じアイテムを再タップ → フィルター解除（トグル）
+      clearFilter();
     } else {
+      setSidebarFilter({ kind: 'smart', id });
+      if (id === 'recent') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (navigation as any).navigate('MainTabs', {
+          screen: 'LibraryTab',
+          params: { screen: 'Library', params: {} },
+        });
+      } else {
+        // 'today' / 'overdue' は HomeScreen で表示
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (navigation as any).navigate('MainTabs', {
+          screen: 'HomeTab',
+          params: { screen: 'Home', params: {} },
+        });
+      }
+    }
+    navigation.closeDrawer();
+  }
+
+  function handleTag(tag: TagWithCount) {
+    const tagItemId = `tag-${tag.id}`;
+    if (activeId === tagItemId) {
+      // トグル解除
+      clearFilter();
+    } else {
+      setSidebarFilter({ kind: 'tag', tagId: tag.id, tagName: tag.name });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (navigation as any).navigate('MainTabs', {
         screen: 'LibraryTab',
@@ -164,187 +166,180 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
     navigation.closeDrawer();
   }
 
-  function handleTag(tag: TagWithCount) {
-    setActiveFilter({ kind: 'tag', tagId: tag.id, tagName: tag.name });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (navigation as any).navigate('MainTabs', {
-      screen: 'LibraryTab',
-      params: { screen: 'Library', params: { filterTag: tag.name } },
-    });
-    navigation.closeDrawer();
-  }
-
   function handleCollection(col: typeof MOCK_COLLECTIONS[number]) {
-    setActiveFilter({ kind: 'collection', collectionId: col.id, collectionName: col.label });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (navigation as any).navigate('MainTabs', {
-      screen: 'LibraryTab',
-      params: { screen: 'Library', params: {} },
-    });
+    if (activeId === col.id) {
+      // トグル解除
+      clearFilter();
+    } else {
+      setSidebarFilter({ kind: 'collection', collectionId: col.id, collectionName: col.label });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (navigation as any).navigate('MainTabs', {
+        screen: 'LibraryTab',
+        params: { screen: 'Library', params: {} },
+      });
+    }
     navigation.closeDrawer();
   }
 
   const headerContentHeight = 64;
 
   return (
-    <SidebarFilterContext.Provider value={{ activeFilter, setActiveFilter }}>
-      <View style={[styles.container, { backgroundColor: sc.backgroundSolid }]}>
+    <View style={[styles.container, { backgroundColor: sc.backgroundSolid }]}>
 
-        {/* ---- Header ---- */}
-        <View style={[
-          styles.header,
-          {
-            paddingTop: insets.top + 12, // safeArea + 上余白
-            paddingBottom: SidebarLayout.headerPaddingBottom,
-            height: insets.top + headerContentHeight,
-          },
-        ]}>
-          <Text
-            style={[styles.title, { color: sc.textPrimary }]}
-            accessibilityRole="header"
+      {/* ---- Header ---- */}
+      <View style={[
+        styles.header,
+        {
+          paddingTop: insets.top + 12, // safeArea + 上余白
+          paddingBottom: SidebarLayout.headerPaddingBottom,
+          height: insets.top + headerContentHeight,
+        },
+      ]}>
+        <Text
+          style={[styles.title, { color: sc.textPrimary }]}
+          accessibilityRole="header"
+        >
+          ReCallKit
+        </Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.closeBtn,
+            pressed && { backgroundColor: sc.pressedBackground },
+          ]}
+          onPress={() => navigation.closeDrawer()}
+          accessibilityLabel="サイドバーを閉じる"
+        >
+          <Ionicons
+            name="close"
+            size={SidebarLayout.closeBtnIconSize}
+            color={sc.inactiveTint}
+          />
+        </Pressable>
+      </View>
+
+      {/* ---- Scrollable content ---- */}
+      <ScrollView
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        overScrollMode="never"
+        bounces
+      >
+
+        {/* Smart Filters セクション（最初: paddingTop 0） */}
+        <View style={styles.section}>
+          <SectionHeading label="Smart Filters" color={sc.sectionHeader} />
+
+          <NavItem
+            isActive={activeId === 'today'}
+            onPress={() => handleSmartFilter('today')}
+            sc={sc}
           >
-            ReCallKit
-          </Text>
-          <Pressable
-            style={({ pressed }) => [
-              styles.closeBtn,
-              pressed && { backgroundColor: sc.pressedBackground },
-            ]}
-            onPress={() => navigation.closeDrawer()}
-            accessibilityLabel="サイドバーを閉じる"
+            <View style={styles.iconSlot}>
+              <Ionicons
+                name="calendar-outline"
+                size={SidebarLayout.iconSize}
+                color={activeId === 'today' ? sc.activeTint : sc.inactiveTint}
+              />
+            </View>
+            <ItemLabel label="今日の復習" isActive={activeId === 'today'} sc={sc} />
+            {todayCount > 0 && (
+              <CountBadge count={todayCount} isActive={activeId === 'today'} sc={sc} />
+            )}
+          </NavItem>
+
+          <NavItem
+            isActive={activeId === 'overdue'}
+            onPress={() => handleSmartFilter('overdue')}
+            sc={sc}
           >
-            <Ionicons
-              name="close"
-              size={SidebarLayout.closeBtnIconSize}
-              color={sc.inactiveTint}
-            />
-          </Pressable>
+            <View style={styles.iconSlot}>
+              <Ionicons
+                name="time-outline"
+                size={SidebarLayout.iconSize}
+                color={activeId === 'overdue' ? sc.activeTint : sc.inactiveTint}
+              />
+            </View>
+            <ItemLabel label="期限切れ" isActive={activeId === 'overdue'} sc={sc} />
+            {overdueCount > 0 && (
+              <CountBadge count={overdueCount} isActive={activeId === 'overdue'} sc={sc} />
+            )}
+          </NavItem>
+
+          <NavItem
+            isActive={activeId === 'recent'}
+            onPress={() => handleSmartFilter('recent')}
+            sc={sc}
+          >
+            <View style={styles.iconSlot}>
+              <Ionicons
+                name="add-circle-outline"
+                size={SidebarLayout.iconSize}
+                color={activeId === 'recent' ? sc.activeTint : sc.inactiveTint}
+              />
+            </View>
+            <ItemLabel label="最近追加" isActive={activeId === 'recent'} sc={sc} />
+            {/* 最近追加: 件数表示なし */}
+          </NavItem>
         </View>
 
-        {/* ---- Scrollable content ---- */}
-        <ScrollView
-          style={styles.scroll}
-          showsVerticalScrollIndicator={false}
-          overScrollMode="never"
-          bounces
-        >
-
-          {/* Smart Filters セクション（最初: paddingTop 0） */}
-          <View style={styles.section}>
-            <SectionHeading label="Smart Filters" color={sc.sectionHeader} />
-
-            <NavItem
-              isActive={activeId === 'today'}
-              onPress={() => handleSmartFilter('today')}
-              sc={sc}
-            >
-              <View style={styles.iconSlot}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={SidebarLayout.iconSize}
-                  color={activeId === 'today' ? sc.activeTint : sc.inactiveTint}
-                />
-              </View>
-              <ItemLabel label="今日の復習" isActive={activeId === 'today'} sc={sc} />
-              {todayCount > 0 && (
-                <CountBadge count={todayCount} isActive={activeId === 'today'} sc={sc} />
-              )}
-            </NavItem>
-
-            <NavItem
-              isActive={activeId === 'overdue'}
-              onPress={() => handleSmartFilter('overdue')}
-              sc={sc}
-            >
-              <View style={styles.iconSlot}>
-                <Ionicons
-                  name="time-outline"
-                  size={SidebarLayout.iconSize}
-                  color={activeId === 'overdue' ? sc.activeTint : sc.inactiveTint}
-                />
-              </View>
-              <ItemLabel label="期限切れ" isActive={activeId === 'overdue'} sc={sc} />
-              {overdueCount > 0 && (
-                <CountBadge count={overdueCount} isActive={activeId === 'overdue'} sc={sc} />
-              )}
-            </NavItem>
-
-            <NavItem
-              isActive={activeId === 'recent'}
-              onPress={() => handleSmartFilter('recent')}
-              sc={sc}
-            >
-              <View style={styles.iconSlot}>
-                <Ionicons
-                  name="add-circle-outline"
-                  size={SidebarLayout.iconSize}
-                  color={activeId === 'recent' ? sc.activeTint : sc.inactiveTint}
-                />
-              </View>
-              <ItemLabel label="最近追加" isActive={activeId === 'recent'} sc={sc} />
-              {/* 最近追加: 件数表示なし */}
-            </NavItem>
-          </View>
-
-          {/* Tags セクション（paddingTop: 24px） */}
-          <View style={[styles.section, styles.sectionGap]}>
-            <SectionHeading label="Tags" color={sc.sectionHeader} />
-            {tags.map((tag) => {
-              const tagId = `tag-${tag.id}`;
-              return (
-                <NavItem
-                  key={tagId}
-                  isActive={activeId === tagId}
-                  onPress={() => handleTag(tag)}
-                  sc={sc}
-                >
-                  <View style={styles.iconSlot}>
-                    <TagDot isActive={activeId === tagId} sc={sc} />
-                  </View>
-                  <ItemLabel label={tag.name} isActive={activeId === tagId} sc={sc} />
-                  <CountBadge count={tag.count} isActive={activeId === tagId} sc={sc} />
-                </NavItem>
-              );
-            })}
-          </View>
-
-          {/* Collections セクション（paddingTop: 24px） */}
-          {/* TODO: collectionsテーブル追加後に実データへ切り替え */}
-          <View style={[styles.section, styles.sectionGap]}>
-            <SectionHeading label="Collections" color={sc.sectionHeader} />
-            {MOCK_COLLECTIONS.map((col) => (
+        {/* Tags セクション（paddingTop: 24px） */}
+        <View style={[styles.section, styles.sectionGap]}>
+          <SectionHeading label="Tags" color={sc.sectionHeader} />
+          {tags.map((tag) => {
+            const tagId = `tag-${tag.id}`;
+            return (
               <NavItem
-                key={col.id}
-                isActive={activeId === col.id}
-                onPress={() => handleCollection(col)}
+                key={tagId}
+                isActive={activeId === tagId}
+                onPress={() => handleTag(tag)}
                 sc={sc}
               >
                 <View style={styles.iconSlot}>
-                  <Ionicons
-                    name="folder-outline"
-                    size={SidebarLayout.iconSize}
-                    color={activeId === col.id ? sc.activeTint : sc.inactiveTint}
-                  />
+                  <TagDot isActive={activeId === tagId} sc={sc} />
                 </View>
-                <ItemLabel label={col.label} isActive={activeId === col.id} sc={sc} />
-                <CountBadge count={col.count} isActive={activeId === col.id} sc={sc} />
+                <ItemLabel label={tag.name} isActive={activeId === tagId} sc={sc} />
+                <CountBadge count={tag.count} isActive={activeId === tagId} sc={sc} />
               </NavItem>
-            ))}
-          </View>
-
-          {/* スクロール下部の余白 */}
-          <View style={styles.scrollBottom} />
-        </ScrollView>
-
-        {/* ---- Footer: 知識の蓄積の控えめな可視化 ---- */}
-        <View style={[styles.footer, { borderTopColor: sc.separator }]}>
-          <Text style={[styles.footerText, { color: sc.textTertiary }]}>
-            {totalCards} cards · {masterRate}% mastered
-          </Text>
+            );
+          })}
         </View>
 
+        {/* Collections セクション（paddingTop: 24px） */}
+        {/* TODO: collectionsテーブル追加後に実データへ切り替え */}
+        <View style={[styles.section, styles.sectionGap]}>
+          <SectionHeading label="Collections" color={sc.sectionHeader} />
+          {MOCK_COLLECTIONS.map((col) => (
+            <NavItem
+              key={col.id}
+              isActive={activeId === col.id}
+              onPress={() => handleCollection(col)}
+              sc={sc}
+            >
+              <View style={styles.iconSlot}>
+                <Ionicons
+                  name="folder-outline"
+                  size={SidebarLayout.iconSize}
+                  color={activeId === col.id ? sc.activeTint : sc.inactiveTint}
+                />
+              </View>
+              <ItemLabel label={col.label} isActive={activeId === col.id} sc={sc} />
+              <CountBadge count={col.count} isActive={activeId === col.id} sc={sc} />
+            </NavItem>
+          ))}
+        </View>
+
+        {/* スクロール下部の余白 */}
+        <View style={styles.scrollBottom} />
+      </ScrollView>
+
+      {/* ---- Footer: 知識の蓄積の控えめな可視化 ---- */}
+      <View style={[styles.footer, { borderTopColor: sc.separator }]}>
+        <Text style={[styles.footerText, { color: sc.textTertiary }]}>
+          {totalCards} cards · {masterRate}% mastered
+        </Text>
       </View>
-    </SidebarFilterContext.Provider>
+
+    </View>
   );
 }
 

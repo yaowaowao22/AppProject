@@ -7,7 +7,7 @@ import { HomeStack } from './stacks/HomeStack';
 import { LibraryStack } from './stacks/LibraryStack';
 import { ReviewStack } from './stacks/ReviewStack';
 import { MapStack } from './stacks/MapStack';
-import { SettingsScreen } from '../screens/settings/SettingsScreen';
+import { SettingsStack } from './stacks/SettingsStack';
 import type { MainTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -76,7 +76,7 @@ export function MainTabs() {
       />
       <Tab.Screen
         name="SettingsTab"
-        component={SettingsScreen}
+        component={SettingsStack}
         options={{
           tabBarLabel: '設定',
           tabBarIcon: ({ color, size }) => (

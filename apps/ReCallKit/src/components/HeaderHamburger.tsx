@@ -1,0 +1,33 @@
+import React from 'react';
+import { Pressable, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { DrawerActions } from '@react-navigation/native';
+import { useTheme } from '../theme/ThemeContext';
+
+export function HeaderHamburger() {
+  const navigation = useNavigation();
+  const { colors, isDark } = useTheme();
+  const pressedBg = isDark ? 'rgba(142,142,147,0.24)' : 'rgba(142,142,147,0.12)';
+
+  return (
+    <Pressable
+      onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+      style={({ pressed }) => [styles.button, pressed && { backgroundColor: pressedBg }]}
+      accessibilityLabel="メニューを開く"
+      accessibilityRole="button"
+    >
+      <Ionicons name="menu" size={22} color={colors.labelSecondary} />
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  button: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});

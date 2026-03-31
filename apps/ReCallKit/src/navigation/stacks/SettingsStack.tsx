@@ -2,15 +2,12 @@ import React from 'react';
 import { useColorScheme } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { LightColors, DarkColors } from '../../theme/colors';
-import { LibraryScreen } from '../../screens/library/LibraryScreen';
-import { ItemDetailScreen } from '../../screens/library/ItemDetailScreen';
-import { AddItemScreen } from '../../screens/add/AddItemScreen';
+import { SettingsScreen } from '../../screens/settings/SettingsScreen';
 import { HeaderHamburger } from '../../components/HeaderHamburger';
-import type { LibraryStackParamList } from '../types';
 
-const Stack = createNativeStackNavigator<LibraryStackParamList>();
+const Stack = createNativeStackNavigator();
 
-export function LibraryStack() {
+export function SettingsStack() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const colors = isDark ? DarkColors : LightColors;
@@ -26,10 +23,10 @@ export function LibraryStack() {
       }}
     >
       <Stack.Screen
-        name="Library"
-        component={LibraryScreen}
+        name="Settings"
+        component={SettingsScreen}
         options={{
-          title: 'ライブラリ',
+          title: '設定',
           headerLargeTitle: true,
           headerLargeTitleStyle: {
             color: colors.label,
@@ -38,19 +35,6 @@ export function LibraryStack() {
             letterSpacing: -0.5,
           },
           headerLeft: () => <HeaderHamburger />,
-        }}
-      />
-      <Stack.Screen
-        name="ItemDetail"
-        component={ItemDetailScreen}
-        options={{ title: '' }}
-      />
-      <Stack.Screen
-        name="AddItem"
-        component={AddItemScreen}
-        options={{
-          title: '追加',
-          presentation: 'modal',
         }}
       />
     </Stack.Navigator>
