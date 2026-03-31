@@ -65,8 +65,36 @@ export const SidebarLayout = {
   badgeMinWidth: 22,
   // セクションヘッダー行の高さ
   sectionHeaderHeight: 32,
-  // フッターエリアの高さ
-  footerHeight: 56,
+  // フッターエリアの高さ（sidebar.html: 48px）
+  footerHeight: 48,
   // 開閉アニメーション時間 (ms)
   animationDuration: 280,
+  // 閉じるアニメーション時間 (ms) — 非対称アニメーション用
+  animationClose: 240,
+} as const;
+
+// ナビゲーションバーレイアウト定数（iOS HIG: Large Title Nav Bar）
+export const NavBarLayout = {
+  // コンパクト状態の高さ
+  height: 44,
+  // Large Title フォントサイズ
+  largeTitleFontSize: 34,
+  // ハンバーガーボタンのタップ領域サイズ
+  hamburgerSize: 36,
+  // ステータスバー高さ（Dynamic Island 考慮）
+  statusBarHeight: 54,
+  // Large Title 展開時の合計高さ (statusBarHeight + height + largeTitleRow)
+  totalHeight: 146,
+} as const;
+
+// フィルターバッジレイアウト定数
+export const FilterBadgeLayout = {
+  // バッジの高さ
+  height: 28,
+  // バッジの角丸
+  borderRadius: 6,
+  // 水平パディング
+  paddingH: 8,
+  // フォントサイズ
+  fontSize: 12,
 } as const;
