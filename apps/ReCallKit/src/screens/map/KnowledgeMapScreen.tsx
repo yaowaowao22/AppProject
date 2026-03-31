@@ -505,6 +505,7 @@ export function KnowledgeMapScreen({ navigation }: Props) {
             backgroundColor: colors.card,
             borderTopColor: colors.separator,
             paddingBottom: insets.bottom + Spacing.s,
+            shadowColor: colors.cardShadowColor,
           },
           {
             transform: [{ translateY: cardTranslateY }],
@@ -606,7 +607,6 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingTop: Spacing.m,
     paddingHorizontal: Spacing.m,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.10,
     shadowRadius: 10,

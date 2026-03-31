@@ -559,7 +559,7 @@ export function LibraryScreen({ navigation }: Props) {
             style={[
               styles.fab,
               styles.fabSecondary,
-              { backgroundColor: colors.backgroundSecondary, bottom: insets.bottom + Spacing.l + 64, borderColor: colors.separator },
+              { backgroundColor: colors.backgroundSecondary, bottom: insets.bottom + Spacing.l + 64, borderColor: colors.separator, shadowColor: colors.cardShadowColor },
             ]}
             onPress={() => navigation.navigate('ReviewGroupCreate')}
             accessibilityRole="button"
@@ -570,7 +570,7 @@ export function LibraryScreen({ navigation }: Props) {
 
           {/* アイテム追加 FAB */}
           <Pressable
-            style={[styles.fab, { backgroundColor: colors.accent, bottom: insets.bottom + Spacing.l }]}
+            style={[styles.fab, { backgroundColor: colors.accent, bottom: insets.bottom + Spacing.l, shadowColor: colors.cardShadowColor }]}
             onPress={() => {
               if (Platform.OS !== 'web') {
                 try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
@@ -811,7 +811,6 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,

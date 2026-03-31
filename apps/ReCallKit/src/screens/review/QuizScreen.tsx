@@ -252,7 +252,7 @@ export function QuizScreen({ navigation, route }: Props) {
   }
 
   const cardShadowBase = {
-    shadowColor: '#000',
+    shadowColor: colors.cardShadowColor,
     shadowOffset: { width: 0, height: 4 },
     backgroundColor: colors.card,
   };

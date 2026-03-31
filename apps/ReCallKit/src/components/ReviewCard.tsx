@@ -107,7 +107,7 @@ export function ReviewCard({ title, content, onFlip }: ReviewCardProps) {
 
   const cardBase = {
     backgroundColor: colors.card,
-    shadowColor: '#000',
+    shadowColor: colors.cardShadowColor,
     shadowOffset: { width: 0, height: 4 },
   };
 

@@ -29,6 +29,7 @@ import { StreakRing } from '../../components/StreakRing';
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
+import { SystemColors } from '../../theme/colors';
 import { useSidebarFilter } from '../../hooks/useSidebarFilter';
 import type { HomeStackParamList, DrawerParamList } from '../../navigation/types';
 
@@ -36,9 +37,9 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
 // アイテムタイプのラベルと色
 const TYPE_META: Record<string, { label: string; color: string; bg: string }> = {
-  url: { label: 'URL', color: '#0A84FF', bg: 'rgba(10,132,255,0.12)' },
-  text: { label: 'テキスト', color: '#30D158', bg: 'rgba(48,209,88,0.12)' },
-  screenshot: { label: '画像', color: '#BF5AF2', bg: 'rgba(191,90,242,0.12)' },
+  url:        { label: 'URL',      color: SystemColors.blue,   bg: SystemColors.blue   + '1F' },
+  text:       { label: 'テキスト', color: SystemColors.green,  bg: SystemColors.green  + '1F' },
+  screenshot: { label: '画像',     color: SystemColors.purple, bg: SystemColors.purple + '1F' },
 };
 
 // next_review_at から「何日遅れか」を返す
@@ -394,9 +395,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    gap: 4,
+    paddingHorizontal: Spacing.s,
+    paddingVertical: Spacing.xs,
+    gap: Spacing.xs,
   },
   sidebarBadgeText: {
     fontSize: 12,
@@ -507,8 +508,8 @@ const styles = StyleSheet.create({
     gap: Spacing.m,
   },
   typeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: Spacing.s,
+    paddingVertical: Spacing.xs,
     borderRadius: Radius.xs,
     minWidth: 44,
     alignItems: 'center',
