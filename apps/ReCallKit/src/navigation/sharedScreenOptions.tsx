@@ -1,4 +1,5 @@
 import React from 'react';
+import { Pressable, Text } from 'react-native';
 import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
 import type { ColorScheme } from '../theme/themes';
 import { HeaderHamburger } from '../components/HeaderHamburger';
@@ -13,6 +14,31 @@ export function makeNavigatorOptions(colors: ColorScheme): NativeStackNavigation
     headerTintColor: colors.accent,
     headerTitleStyle: { color: colors.label },
     headerShadowVisible: false,
+  };
+}
+
+/**
+ * モーダル画面（presentation: 'modal'）の title + キャンセルボタン共通 options。
+ * LibraryStack など複数箇所のモーダル画面で共通利用する。
+ */
+export function makeModalCancelOptions(
+  title: string,
+  colors: ColorScheme,
+  nav: { goBack: () => void },
+): NativeStackNavigationOptions {
+  return {
+    title,
+    presentation: 'modal',
+    headerLeft: () => (
+      <Pressable
+        onPress={() => nav.goBack()}
+        accessibilityLabel="キャンセル"
+        accessibilityRole="button"
+        hitSlop={8}
+      >
+        <Text style={{ color: colors.accent, fontSize: 17 }}>キャンセル</Text>
+      </Pressable>
+    ),
   };
 }
 
