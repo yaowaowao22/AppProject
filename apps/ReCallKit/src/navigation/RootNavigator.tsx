@@ -7,6 +7,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { DrawerNavigator } from './DrawerNavigator';
 import { OnboardingScreen } from '../screens/onboarding/OnboardingScreen';
 import { SidebarFilterProvider } from '../hooks/useSidebarFilter';
+import { initShareReceiver } from '../services/shareReceiver';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -26,6 +27,12 @@ export function RootNavigator() {
       );
       setOnboardingCompleted(row?.value === 'true');
     })();
+  }, [isReady, db]);
+
+  // DB初期化完了後に共有受信リスナーを登録
+  useEffect(() => {
+    if (!isReady || !db) return;
+    return initShareReceiver(db);
   }, [isReady, db]);
 
   // DBエラー（最優先チェック）
