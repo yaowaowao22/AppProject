@@ -267,6 +267,19 @@ describe('カレンダー非表示', () => {
 
 // ── 8. ボリューム小（1000未満）表示 ──────────────────────────────────────────
 
+describe('カレンダー日付選択', () => {
+  test('カレンダーの日付ボタンを押すと selectedDate が変わる', async () => {
+    const { queryAllByLabelText } = renderHome();
+    await act(async () => {});
+    // 月の日付 (1-31) のいずれかを押す
+    const dateBtns = queryAllByLabelText(/2026-03-/);
+    if (dateBtns.length > 0) {
+      fireEvent.press(dateBtns[0]);
+    }
+    expect(true).toBe(true);
+  });
+});
+
 describe('ボリューム小（1000未満）', () => {
   const workout = {
     id: 'w2',

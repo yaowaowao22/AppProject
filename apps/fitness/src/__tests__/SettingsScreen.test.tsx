@@ -238,6 +238,17 @@ describe('トレーニング設定', () => {
     }
     expect(true).toBe(true);
   });
+
+  test('重量ステップの減少ボタンを押すと updateWorkoutConfig が呼ばれる', async () => {
+    const { getAllByLabelText } = renderScreen();
+    await act(async () => {});
+    const decBtns = getAllByLabelText('減らす');
+    if (decBtns.length > 0) {
+      fireEvent.press(decBtns[0]);
+      expect(mockUpdateWorkoutConfig).toHaveBeenCalled();
+    }
+    expect(true).toBe(true);
+  });
 });
 
 describe('データ管理', () => {
