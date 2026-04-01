@@ -23,6 +23,8 @@ import { SIMPLE_RATINGS } from '../../sm2/algorithm';
 import type { SimpleRating } from '../../sm2/algorithm';
 import { ReviewCard } from '../../components/ReviewCard';
 import { RatingButtons } from '../../components/RatingButtons';
+import { ReviewProgressBar } from '../../components/ReviewProgressBar';
+import { useCloseHeader } from '../../hooks/useCloseHeader';
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
@@ -59,22 +61,7 @@ export function ReviewScreen({ navigation, route }: Props) {
     })();
   }, [db, isReady]);
 
-  // ヘッダー: タイトル固定 + 閉じるボタン
-  useEffect(() => {
-    navigation.setOptions({
-      headerTitle: '復習',
-      headerRight: () => (
-        <Pressable
-          onPress={() => navigation.goBack()}
-          accessibilityRole="button"
-          accessibilityLabel="閉じる"
-          hitSlop={{ top: 4, right: 4, bottom: 4, left: 4 }}
-        >
-          <Text style={[TypeScale.body, { color: colors.accent }]}>閉じる</Text>
-        </Pressable>
-      ),
-    });
-  }, [navigation, colors]);
+  useCloseHeader(navigation, '復習');
 
   const currentItem = items[currentIndex];
 
@@ -144,27 +131,10 @@ export function ReviewScreen({ navigation, route }: Props) {
     );
   }
 
-  const progressRatio = currentIndex / items.length;
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* プログレスセクション（バー + カウンター） */}
-      <View style={styles.progressSection}>
-        <View style={[styles.progressTrack, { backgroundColor: colors.backgroundSecondary }]}>
-          <View
-            style={[
-              styles.progressFill,
-              {
-                backgroundColor: colors.accent,
-                width: `${progressRatio * 100}%`,
-              },
-            ]}
-          />
-        </View>
-        <Text style={[styles.progressCount, { color: colors.labelSecondary }]}>
-          {currentIndex + 1} / {items.length}
-        </Text>
-      </View>
+      <ReviewProgressBar currentIndex={currentIndex} total={items.length} />
 
       {/* カードエリア */}
       <View style={styles.cardArea}>
@@ -198,26 +168,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  // プログレスセクション
-  progressSection: {
-    marginHorizontal: Spacing.m,
-    marginTop: Spacing.s,
-    gap: Spacing.xs,
-  },
-  progressTrack: {
-    height: 6,
-    borderRadius: Radius.full,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: Radius.full,
-  },
-  progressCount: {
-    ...TypeScale.caption1,
-    textAlign: 'right',
   },
 
   // カードエリア

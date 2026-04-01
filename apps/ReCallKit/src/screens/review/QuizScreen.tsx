@@ -30,6 +30,8 @@ import { getItemById, submitReviewRating } from '../../db/reviewRepository';
 import { SIMPLE_RATINGS } from '../../sm2/algorithm';
 import type { SimpleRating } from '../../sm2/algorithm';
 import { RatingButtons } from '../../components/RatingButtons';
+import { ReviewProgressBar } from '../../components/ReviewProgressBar';
+import { useCloseHeader } from '../../hooks/useCloseHeader';
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
@@ -135,22 +137,7 @@ export function QuizScreen({ navigation, route }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, isReady, currentIndex, itemIds]);
 
-  // ヘッダー設定
-  useEffect(() => {
-    navigation.setOptions({
-      headerTitle: 'クイズ',
-      headerRight: () => (
-        <Pressable
-          onPress={() => navigation.goBack()}
-          accessibilityRole="button"
-          accessibilityLabel="閉じる"
-          hitSlop={{ top: 4, right: 4, bottom: 4, left: 4 }}
-        >
-          <Text style={[TypeScale.body, { color: colors.accent }]}>閉じる</Text>
-        </Pressable>
-      ),
-    });
-  }, [navigation, colors]);
+  useCloseHeader(navigation, 'クイズ');
 
   const chunks = reviewable ? parseCloze(reviewable.item.content) : [];
 
@@ -277,26 +264,13 @@ export function QuizScreen({ navigation, route }: Props) {
     backgroundColor: colors.card,
   };
 
-  const progressRatio = currentIndex / itemIds.length;
   const sourceUrl = reviewable.item.source_url;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
 
       {/* ── 共通ヘッダー: プログレスセクション ── */}
-      <View style={styles.progressSection}>
-        <View style={[styles.progressTrack, { backgroundColor: colors.backgroundSecondary }]}>
-          <View
-            style={[
-              styles.progressFill,
-              { backgroundColor: colors.accent, width: `${progressRatio * 100}%` },
-            ]}
-          />
-        </View>
-        <Text style={[styles.progressCount, { color: colors.labelSecondary }]}>
-          {currentIndex + 1} / {itemIds.length}
-        </Text>
-      </View>
+      <ReviewProgressBar currentIndex={currentIndex} total={itemIds.length} />
 
       {/* タイトル */}
       <Text
@@ -490,26 +464,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.m,
     paddingHorizontal: Spacing.xl,
-  },
-
-  // ── 共通ヘッダー: プログレス ──
-  progressSection: {
-    marginHorizontal: Spacing.m,
-    marginTop: Spacing.s,
-    gap: Spacing.xs,
-  },
-  progressTrack: {
-    height: 6,
-    borderRadius: Radius.full,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: Radius.full,
-  },
-  progressCount: {
-    ...TypeScale.caption1,
-    textAlign: 'right',
   },
 
   // タイトル
