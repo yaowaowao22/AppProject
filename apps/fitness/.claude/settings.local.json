@@ -83,7 +83,9 @@
       "Bash(powershell -Command \"\\(Get-Content HistoryScreen.tsx\\) -replace ''TYPOGRAPHY\\\\.'', ''typography.'' | Set-Content HistoryScreen.tsx\")",
       "Bash(powershell -Command \"\\(Get-Content ProgressScreen.tsx\\) -replace ''TYPOGRAPHY\\\\.'', ''typography.'' | Set-Content ProgressScreen.tsx\")",
       "Bash(powershell -Command \"\\(Get-Content CustomDrawerContent.tsx\\) -replace ''TYPOGRAPHY\\\\.'', ''typography.'' | Set-Content CustomDrawerContent.tsx\")",
-      "Bash(powershell -Command \"\\(Get-Content SettingsScreen.tsx\\) -replace ''TYPOGRAPHY\\\\.'', ''typography.'' | Set-Content SettingsScreen.tsx\")"
+      "Bash(powershell -Command \"\\(Get-Content SettingsScreen.tsx\\) -replace ''TYPOGRAPHY\\\\.'', ''typography.'' | Set-Content SettingsScreen.tsx\")",
+      "Bash(python3 -c \":*)",
+      "Bash(eas update:*)"
     ]
   }
 }
