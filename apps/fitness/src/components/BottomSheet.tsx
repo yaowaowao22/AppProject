@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -72,33 +74,39 @@ export function BottomSheet({ visible, onClose, title, subtitle, maxHeight, chil
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      {/* overlay */}
-      <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
-        <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} activeOpacity={1} />
-      </Animated.View>
-
-      {/* sheet */}
-      <Animated.View
-        style={[
-          styles.sheet,
-          { paddingBottom: insets.bottom + 8, transform: [{ translateY }] },
-          maxHeight !== undefined && { maxHeight },
-        ]}
+      <KeyboardAvoidingView
+        style={StyleSheet.absoluteFill}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.grip} />
-        <View style={styles.header}>
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
-          {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-        </View>
-        <ScrollView
-          style={styles.body}
-          contentContainerStyle={styles.bodyContent}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
+        {/* overlay */}
+        <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} activeOpacity={1} />
+        </Animated.View>
+
+        {/* sheet */}
+        <Animated.View
+          style={[
+            styles.sheet,
+            { paddingBottom: insets.bottom + 8, transform: [{ translateY }] },
+            maxHeight !== undefined && { maxHeight },
+          ]}
         >
-          {children}
-        </ScrollView>
-      </Animated.View>
+          <View style={styles.grip} />
+          <View style={styles.header}>
+            <Text style={styles.title} numberOfLines={1}>{title}</Text>
+            {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+          </View>
+          <ScrollView
+            style={styles.body}
+            contentContainerStyle={styles.bodyContent}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </ScrollView>
+        </Animated.View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
