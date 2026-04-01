@@ -15,6 +15,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../../hooks/useDatabase';
 import {
   getDueItems,
+  getAllReviewableItems,
   submitReviewRating,
   type ReviewableItem,
 } from '../../db/reviewRepository';
@@ -33,6 +34,7 @@ export function ReviewScreen({ navigation, route }: Props) {
   const { db, isReady } = useDatabase();
   const { colors } = useTheme();
   const reviewIds = route.params?.reviewIds;
+  const forceAll = route.params?.forceAll;
 
   const [items, setItems] = useState<ReviewableItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);

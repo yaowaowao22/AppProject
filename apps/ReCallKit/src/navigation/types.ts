@@ -54,7 +54,7 @@ export type LibraryStackParamList = {
 // ---- Review Stack ----
 export type ReviewStackParamList = {
   ReviewSelect: undefined;
-  Review: { reviewIds?: number[] };
+  Review: { reviewIds?: number[]; forceAll?: boolean };
   Quiz: { itemId: number };
 };
 
