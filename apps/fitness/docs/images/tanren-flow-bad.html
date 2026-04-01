@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:         #ffffff;
+    --text:       #0a0a10;
+    --text-dim:   rgba(10,10,16,0.82);
+    --text-faint: rgba(10,10,16,0.55);
+    --slit:       #bb3344;   /* 赤 — 問題・課題系 */
+    --u: 8px;
+  }
+  body {
+    background: var(--bg);
+    font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    padding: 40px;
+    width: 800px;
+  }
+
+  .section {
+    position: relative;
+    padding: 28px 28px 28px 40px;
+    background: var(--bg);
+  }
+  .section::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--slit);
+  }
+
+  .section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+  }
+  .section-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: #bb3344;
+    background: rgba(187,51,68,0.07);
+    border: 1px solid rgba(187,51,68,0.22);
+    border-radius: 4px;
+    padding: 4px 10px;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+
+  /* フローレーン */
+  .flow-track {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-top: 4px;
+  }
+
+  .flow-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+  }
+
+  .flow-box {
+    background: #fafafa;
+    border: 1.5px solid rgba(0,0,0,0.10);
+    border-radius: 8px;
+    padding: 12px 10px;
+    text-align: center;
+    width: 100%;
+    min-height: 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .flow-box.pain {
+    border-color: rgba(187,51,68,0.35);
+    background: rgba(187,51,68,0.04);
+  }
+
+  .flow-step-num {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-faint);
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .flow-step-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+  .flow-step-sub {
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-top: 2px;
+    line-height: 1.3;
+  }
+  .pain-icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  /* 矢印 */
+  .flow-arrow-wrap {
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    padding-bottom: 16px; /* step-numの高さ分オフセット */
+  }
+  .flow-arrow-svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  /* ボトム注釈 */
+  .pain-bar {
+    margin-top: 16px;
+    background: rgba(187,51,68,0.06);
+    border: 1px solid rgba(187,51,68,0.18);
+    border-radius: 6px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .pain-bar-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #bb3344;
+    flex-shrink: 0;
+  }
+  .pain-bar-text {
+    font-size: 12px;
+    color: rgba(10,10,16,0.72);
+    line-height: 1.5;
+  }
+  .pain-bar-text strong {
+    color: #bb3344;
+    font-weight: 700;
+  }
+
+  /* ループ矢印エリア */
+  .loop-row {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .loop-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-faint);
+    letter-spacing: 0.06em;
+  }
+  .loop-arrow {
+    font-size: 13px;
+    color: #bb3344;
+    font-weight: 700;
+  }
+  .loop-desc {
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+</style>
+</head>
+<body>
+
+<div class="section">
+  <div class="section-head">
+    <div>
+      <div class="section-label">第1章 — 問題1：入力の摩擦</div>
+      <div class="section-title">既存アプリの記録フロー — 1セットごとに繰り返す</div>
+    </div>
+    <div class="badge">課題</div>
+  </div>
+
+  <div class="flow-track">
+
+    <div class="flow-step">
+      <div class="flow-step-num">Step 1</div>
+      <div class="flow-box">
+        <div class="flow-step-text">種目を選ぶ</div>
+      </div>
+    </div>
+
+    <div class="flow-arrow-wrap">
+      <svg class="flow-arrow-svg" viewBox="0 0 18 18" fill="none">
+        <path d="M4 9h10M10 5l4 4-4 4" stroke="rgba(154,112,32,0.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-step-num">Step 2</div>
+      <div class="flow-box pain">
+        <div class="pain-icon">⌨️</div>
+        <div class="flow-step-text">重量を<br>打ち込む</div>
+        <div class="flow-step-sub">キーボード起動</div>
+      </div>
+    </div>
+
+    <div class="flow-arrow-wrap">
+      <svg class="flow-arrow-svg" viewBox="0 0 18 18" fill="none">
+        <path d="M4 9h10M10 5l4 4-4 4" stroke="rgba(154,112,32,0.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-step-num">Step 3</div>
+      <div class="flow-box pain">
+        <div class="pain-icon">⌨️</div>
+        <div class="flow-step-text">回数を<br>打ち込む</div>
+        <div class="flow-step-sub">別の入力欄</div>
+      </div>
+    </div>
+
+    <div class="flow-arrow-wrap">
+      <svg class="flow-arrow-svg" viewBox="0 0 18 18" fill="none">
+        <path d="M4 9h10M10 5l4 4-4 4" stroke="rgba(154,112,32,0.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-step-num">Step 4</div>
+      <div class="flow-box">
+        <div class="flow-step-text">「追加」<br>ボタンを押す</div>
+      </div>
+    </div>
+
+    <div class="flow-arrow-wrap">
+      <svg class="flow-arrow-svg" viewBox="0 0 18 18" fill="none">
+        <path d="M4 9h10M10 5l4 4-4 4" stroke="rgba(154,112,32,0.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-step-num">Step 5</div>
+      <div class="flow-box pain">
+        <div class="flow-step-text">次のセットへ</div>
+        <div class="flow-step-sub">入力値リセット<br>Step 2へ戻る</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="loop-row">
+    <div class="loop-label">繰り返し</div>
+    <div class="loop-arrow">↺</div>
+    <div class="loop-desc">前セットと同じ重量でも、毎回ゼロから打ち直す</div>
+  </div>
+
+  <div class="pain-bar">
+    <div class="pain-bar-dot"></div>
+    <div class="pain-bar-text">
+      <strong>認知コスト：</strong>視線がセットのたびに画面下へ飛ぶ。「今何kgで何回やるか」という最重要情報が入力欄に埋もれている。
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
