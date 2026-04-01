@@ -14,15 +14,12 @@ import * as Haptics from 'expo-haptics';
 import { SidebarLayout, Spacing, Radius } from '../theme/spacing';
 import { useTheme } from '../theme/ThemeContext';
 import type { SidebarColorSet } from '../theme/themes';
-import { SidebarColors } from '../theme/colors';
 import { useDatabase } from '../hooks/useDatabase';
 import { useSidebarFilter } from '../hooks/useSidebarFilter';
 
 // ============================================================
 // 型定義
 // ============================================================
-
-type SC = typeof SidebarColors.light | typeof SidebarColors.dark;
 
 interface TagWithCount {
   id: number;
@@ -86,8 +83,7 @@ const SCREEN_ITEMS = [
 // ============================================================
 
 export function DrawerContent({ navigation }: DrawerContentComponentProps) {
-  const { isDark } = useTheme();
-  const sc = isDark ? SidebarColors.dark : SidebarColors.light;
+  const { sidebarColors: sc } = useTheme();
   const insets = useSafeAreaInsets();
   const { db, isReady } = useDatabase();
 
@@ -478,7 +474,7 @@ function NavItem({
 }: {
   isActive: boolean;
   onPress: () => void;
-  sc: SC;
+  sc: SidebarColorSet;
   children: React.ReactNode;
 }) {
   return (

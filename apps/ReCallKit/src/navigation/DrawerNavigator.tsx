@@ -1,7 +1,6 @@
 import React from 'react';
 import { Platform } from 'react-native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { SidebarColors } from '../theme/colors';
 import { SidebarLayout } from '../theme/spacing';
 import { HomeStack } from './stacks/HomeStack';
 import { LibraryStack } from './stacks/LibraryStack';
@@ -16,8 +15,7 @@ import type { DrawerParamList } from './types';
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
 export function DrawerNavigator() {
-  const { isDark } = useTheme();
-  const sc = isDark ? SidebarColors.dark : SidebarColors.light;
+  const { sidebarColors: sc } = useTheme();
 
   return (
     <Drawer.Navigator
