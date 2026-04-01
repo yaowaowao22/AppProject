@@ -457,7 +457,7 @@ function BodyPartDetailView({
         onPress={onBack}
         activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel="部位一覧に戻めE
+        accessibilityLabel="部位一覧に戻る"
       >
         <Ionicons name="chevron-back" size={20} color={colors.accent} />
         <Text style={{ fontSize: typography.bodySmall, fontWeight: typography.semiBold, color: colors.accent }}>
@@ -826,7 +826,7 @@ function ExerciseDetailView({
         onPress={onBack}
         activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel="種目一覧に戻めE
+        accessibilityLabel="種目一覧に戻る"
       >
         <Ionicons name="chevron-back" size={20} color={colors.accent} />
         <Text style={{ fontSize: typography.bodySmall, fontWeight: typography.semiBold, color: colors.accent }}>
