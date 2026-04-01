@@ -63,7 +63,12 @@
       "Bash(grep -r \"google-mobile-ads\\\\|admob\\\\|@massapp/ads\" C:/Users/ytata/AppProject/baseProject/apps/fitness/package.json C:/Users/ytata/AppProject/baseProject/apps/fitness/src/ --include=*.ts --include=*.tsx -l)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(eas build:*)"
+      "Bash(eas build:*)",
+      "Bash(for pkg:*)",
+      "Bash(do echo:*)",
+      "Bash(do)",
+      "Bash(echo \"=== $pkg ===\")",
+      "Bash(done)"
     ]
   }
 }
