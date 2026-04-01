@@ -496,7 +496,7 @@ function NavItem({
   );
 }
 
-function ItemLabel({ label, isActive, sc }: { label: string; isActive: boolean; sc: SC }) {
+function ItemLabel({ label, isActive, sc }: { label: string; isActive: boolean; sc: SidebarColorSet }) {
   return (
     <Text
       style={[
@@ -511,7 +511,7 @@ function ItemLabel({ label, isActive, sc }: { label: string; isActive: boolean; 
   );
 }
 
-function CountBadge({ count, isActive, sc }: { count: number; isActive: boolean; sc: SC }) {
+function CountBadge({ count, isActive, sc }: { count: number; isActive: boolean; sc: SidebarColorSet }) {
   return (
     <Text
       style={[
@@ -525,7 +525,7 @@ function CountBadge({ count, isActive, sc }: { count: number; isActive: boolean;
   );
 }
 
-function TagDot({ isActive, sc }: { isActive: boolean; sc: SC }) {
+function TagDot({ isActive, sc }: { isActive: boolean; sc: SidebarColorSet }) {
   return (
     <View
       style={[
