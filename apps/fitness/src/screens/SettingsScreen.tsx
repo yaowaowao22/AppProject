@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  LayoutChangeEvent,
+  PanResponder,
   ScrollView,
   StyleSheet,
   Switch,
@@ -12,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RADIUS, SPACING, TYPOGRAPHY } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
+import type { ContrastSettings } from '../ThemeContext';
 import { useWorkout } from '../WorkoutContext';
 import type { WorkoutConfig } from '../WorkoutContext';
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -96,6 +99,127 @@ function Stepper({ value, min, max, step, unit, decimals = 0, onChangeValue, col
   );
 }
 
+const THUMB_SIZE = 22;
+
+interface ContrastSliderProps {
+  label: string;
+  value: number;
+  onValueChange: (v: number) => void;
+  colors: TanrenThemeColors;
+}
+
+function ContrastSlider({ label, value, onValueChange, colors }: ContrastSliderProps) {
+  const [trackWidth, setTrackWidth] = useState(0);
+  const trackWidthRef = useRef(0);
+  const onChangeRef = useRef(onValueChange);
+  onChangeRef.current = onValueChange;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt) => {
+        const w = trackWidthRef.current;
+        if (w > 0) {
+          onChangeRef.current(Math.min(100, Math.max(0, Math.round((evt.nativeEvent.locationX / w) * 100))));
+        }
+      },
+      onPanResponderMove: (evt) => {
+        const w = trackWidthRef.current;
+        if (w > 0) {
+          onChangeRef.current(Math.min(100, Math.max(0, Math.round((evt.nativeEvent.locationX / w) * 100))));
+        }
+      },
+    }),
+  ).current;
+
+  const handleLayout = (e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    trackWidthRef.current = w;
+    setTrackWidth(w);
+  };
+
+  const thumbLeft = trackWidth > 0
+    ? Math.min(trackWidth - THUMB_SIZE, Math.max(0, (value / 100) * trackWidth - THUMB_SIZE / 2))
+    : 0;
+
+  return (
+    <View>
+      <View style={contrastSliderStyles.labelRow}>
+        <Text style={[contrastSliderStyles.label, { color: colors.textSecondary }]}>{label}</Text>
+        <Text style={[contrastSliderStyles.valueText, { color: colors.textTertiary }]}>{value}</Text>
+      </View>
+      <View
+        style={contrastSliderStyles.touchArea}
+        onLayout={handleLayout}
+        {...panResponder.panHandlers}
+      >
+        <View style={[contrastSliderStyles.trackBar, { backgroundColor: colors.surface2 }]}>
+          <View
+            style={[
+              contrastSliderStyles.trackFill,
+              { width: `${value}%`, backgroundColor: colors.accent },
+            ]}
+          />
+        </View>
+        <View
+          style={[
+            contrastSliderStyles.thumb,
+            {
+              left: thumbLeft,
+              backgroundColor: colors.accent,
+              borderColor: colors.background,
+            },
+          ]}
+        />
+      </View>
+    </View>
+  );
+}
+
+const contrastSliderStyles = StyleSheet.create({
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.sm,
+    paddingBottom: 2,
+  },
+  label: {
+    fontSize: TYPOGRAPHY.bodySmall,
+    fontWeight: TYPOGRAPHY.regular,
+  },
+  valueText: {
+    fontSize: TYPOGRAPHY.caption,
+    fontWeight: TYPOGRAPHY.regular,
+    minWidth: 28,
+    textAlign: 'right',
+  },
+  touchArea: {
+    height: 44,
+    paddingHorizontal: SPACING.md,
+    justifyContent: 'center',
+  },
+  trackBar: {
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  trackFill: {
+    height: 4,
+    borderRadius: 2,
+  },
+  thumb: {
+    position: 'absolute',
+    top: (44 - THUMB_SIZE) / 2,
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    borderRadius: THUMB_SIZE / 2,
+    borderWidth: 2,
+    elevation: 2,
+  },
+});
+
 const stepperStyles = StyleSheet.create({
   row: {
     flexDirection: 'row',
@@ -127,7 +251,7 @@ const stepperStyles = StyleSheet.create({
 // ── メイン画面 ────────────────────────────────────────────────────────────────
 
 export default function SettingsScreen() {
-  const { colors, setTheme, themeList, currentThemeId } = useTheme();
+  const { colors, setTheme, themeList, currentThemeId, contrastSettings, setContrast } = useTheme();
   const { workoutConfig, updateWorkoutConfig, resetAll } = useWorkout();
   const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -249,6 +373,35 @@ export default function SettingsScreen() {
                 </View>
               );
             })}
+          </View>
+        </View>
+
+        {/* ── コントラスト調整 ── */}
+        <SectionHeader title="コントラスト調整" style={styles.sectionHeader} />
+        <View style={styles.sectionCard}>
+          <ContrastSlider
+            label="ベース明度"
+            value={contrastSettings.baseLightness}
+            onValueChange={v => setContrast({ ...contrastSettings, baseLightness: v })}
+            colors={colors}
+          />
+          <View style={styles.rowSeparator} />
+          <ContrastSlider
+            label="アクセント彩度"
+            value={contrastSettings.accentSaturation}
+            onValueChange={v => setContrast({ ...contrastSettings, accentSaturation: v })}
+            colors={colors}
+          />
+          <View style={styles.rowSeparator} />
+          <View style={[styles.row, { justifyContent: 'flex-end' }]}>
+            <TouchableOpacity
+              onPress={() => setContrast({ baseLightness: 50, accentSaturation: 50 })}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="コントラスト設定をリセット"
+            >
+              <Text style={[styles.rowValue, { color: colors.textTertiary }]}>リセット</Text>
+            </TouchableOpacity>
           </View>
         </View>
 

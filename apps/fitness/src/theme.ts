@@ -59,7 +59,11 @@ export type ThemeId =
   // 渋彩テーマ（低彩度アクセント3種）
   | 'kaihaku'     // 灰白（ライトモノクロ＋灰鼠）
   | 'sabiiro'     // 錆色（ダークモノクロ＋鉄錆）
-  | 'kohai';      // 古灰（ダークモノクロ＋灰青）
+  | 'kohai'       // 古灰（ダークモノクロ＋灰青）
+  // 高コントラストライトテーマ（3種）
+  | 'seppaku'      // 雪白（純白・最高コントラスト）
+  | 'geppaku_light' // 月白（クール系高コントラスト）
+  | 'shirayuki';   // 白雪（ウォーム系高コントラスト）
 
 // ── テーマメタ情報型 ──────────────────────────────────────────────────────────
 export interface ThemeMeta {
@@ -637,6 +641,70 @@ export const THEME_PRESETS: Record<ThemeId, TanrenThemeDefinition> = {
       scrim:         'rgba(0,0,0,0.60)',
       tabBarBg:      '#151719',
       tabBarBorder:  'rgba(255,255,255,0.07)',
+    },
+  },
+
+  // ── 高コントラストライトテーマ（3種） ─────────────────────────────────────────
+  seppaku: {
+    meta: { id: 'seppaku', name: '雪白', subtitle: '積もりたての雪のように、一切の影を消す', accentLabel: '漆黒', isLight: true },
+    colors: {
+      background:    '#FFFFFF',
+      surface1:      '#F8F8F8',
+      surface2:      '#EFEFEF',
+      textPrimary:   '#111111',
+      textSecondary: '#444444',
+      textTertiary:  '#777777',
+      accent:        '#111111',
+      accentDim:     'rgba(17,17,17,0.10)',
+      success:       '#1A6B35',
+      separator:     'rgba(0,0,0,0.12)',
+      error:         '#B5272B',
+      onAccent:      '#FFFFFF',
+      scrim:         'rgba(0,0,0,0.55)',
+      tabBarBg:      '#F8F8F8',
+      tabBarBorder:  'rgba(0,0,0,0.12)',
+    },
+  },
+
+  geppaku_light: {
+    meta: { id: 'geppaku_light', name: '月白', subtitle: '夜明け前の空に宿る、澄んだ蒼の残影', accentLabel: '深藍', isLight: true },
+    colors: {
+      background:    '#FAFCFF',
+      surface1:      '#F1F5FB',
+      surface2:      '#E6EDF7',
+      textPrimary:   '#0C1423',
+      textSecondary: '#364258',
+      textTertiary:  '#6E7E96',
+      accent:        '#1A2E52',
+      accentDim:     'rgba(26,46,82,0.10)',
+      success:       '#1A6B35',
+      separator:     'rgba(0,0,0,0.10)',
+      error:         '#B5272B',
+      onAccent:      '#FFFFFF',
+      scrim:         'rgba(0,0,0,0.55)',
+      tabBarBg:      '#F1F5FB',
+      tabBarBorder:  'rgba(0,0,0,0.10)',
+    },
+  },
+
+  shirayuki: {
+    meta: { id: 'shirayuki', name: '白雪', subtitle: '陽に透ける雪、温もりをはらんだ静白', accentLabel: '焦茶', isLight: true },
+    colors: {
+      background:    '#FFFEF9',
+      surface1:      '#F8F4EC',
+      surface2:      '#EEE9DF',
+      textPrimary:   '#1A1510',
+      textSecondary: '#524740',
+      textTertiary:  '#8C7E72',
+      accent:        '#3A2010',
+      accentDim:     'rgba(58,32,16,0.10)',
+      success:       '#2A6E3A',
+      separator:     'rgba(0,0,0,0.10)',
+      error:         '#B5272B',
+      onAccent:      '#FFFFFF',
+      scrim:         'rgba(0,0,0,0.55)',
+      tabBarBg:      '#F8F4EC',
+      tabBarBorder:  'rgba(0,0,0,0.10)',
     },
   },
 };
