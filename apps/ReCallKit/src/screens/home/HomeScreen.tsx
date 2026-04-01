@@ -31,6 +31,7 @@ import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { SystemColors } from '../../theme/colors';
 import { useSidebarFilter } from '../../hooks/useSidebarFilter';
+import { useWidgetData } from '../../hooks/useWidgetData';
 import type { HomeStackParamList, DrawerParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
@@ -115,6 +116,9 @@ export function HomeScreen({ navigation }: Props) {
       loadData();
     }, [loadData])
   );
+
+  // iOS ウィジェットへデータを同期
+  useWidgetData(dueItems.length, streakDays, totalItems);
 
   // サイドバーのタグフィルターが変わったら対象アイテムIDを取得
   useEffect(() => {

@@ -15,3 +15,5 @@ dist/
 web-build/
 android/
 ios/
+# ローカル Expo モジュールの ios ソースは追跡対象
+!apps/*/modules/**/ios/

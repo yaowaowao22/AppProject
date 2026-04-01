@@ -20,6 +20,9 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.massapp.recallkit",
       "googleServicesFile": "./GoogleService-Info.plist",
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.com.massapp.recallkit"]
+      },
       "infoPlist": {
         "NSUserNotificationsUsageDescription": "復習リマインダーを毎朝お届けするために通知を使用します",
         "ITSAppUsesNonExemptEncryption": false
@@ -55,6 +58,7 @@
     "plugins": [
       "expo-sqlite",
       "expo-updates",
+      "@bacons/apple-targets",
       [
         "expo-notifications",
         {

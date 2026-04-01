@@ -1,0 +1,7 @@
+{
+  "name": "recall-widget-bridge",
+  "version": "1.0.0",
+  "description": "iOS widget data bridge for ReCallKit",
+  "main": "src/index.ts",
+  "license": "MIT"
+}
