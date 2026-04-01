@@ -16,6 +16,7 @@ import { useTheme } from '../theme/ThemeContext';
 import type { SidebarColorSet } from '../theme/themes';
 import { useDatabase } from '../hooks/useDatabase';
 import { useSidebarFilter } from '../hooks/useSidebarFilter';
+import { useTask } from '../context/TaskContext';
 
 // ============================================================
 // 型定義
@@ -76,6 +77,13 @@ const SCREEN_ITEMS = [
     iconFilled:  'book'                as const,
     showBadge: false,
   },
+  {
+    name: 'Tasks'   as const,
+    label: 'タスク',
+    iconOutline: 'clipboard-outline'   as const,
+    iconFilled:  'clipboard'           as const,
+    showBadge: true,  // runningCount を表示
+  },
 ] as const;
 
 // ============================================================
@@ -89,6 +97,9 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
 
   // グローバルフィルター Context
   const { sidebarFilter, setSidebarFilter, clearFilter } = useSidebarFilter();
+
+  // タスクの実行中件数（バッジ表示用）
+  const { runningCount } = useTask();
 
   const [todayCount,   setTodayCount]   = useState(0);
   const [tags,         setTags]         = useState<TagWithCount[]>([]);
@@ -255,7 +266,11 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
         <View style={styles.section}>
           {SCREEN_ITEMS.map((item) => {
             const isActive = activeScreenName === item.name;
-            const badgeCount = item.showBadge ? todayCount : 0;
+            const badgeCount = item.showBadge
+              ? item.name === 'Tasks'
+                ? runningCount
+                : todayCount
+              : 0;
             return (
               <NavItem
                 key={item.name}

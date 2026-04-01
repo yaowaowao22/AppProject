@@ -85,7 +85,9 @@
       "Bash(powershell -Command \"\\(Get-Content CustomDrawerContent.tsx\\) -replace ''TYPOGRAPHY\\\\.'', ''typography.'' | Set-Content CustomDrawerContent.tsx\")",
       "Bash(powershell -Command \"\\(Get-Content SettingsScreen.tsx\\) -replace ''TYPOGRAPHY\\\\.'', ''typography.'' | Set-Content SettingsScreen.tsx\")",
       "Bash(python3 -c \":*)",
-      "Bash(eas update:*)"
+      "Bash(eas update:*)",
+      "Bash(npx eas-cli:*)",
+      "Bash(find /c/Users/ytata/.claude -name *.md -path */skills/*)"
     ]
   }
 }

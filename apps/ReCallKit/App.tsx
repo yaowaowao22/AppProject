@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DatabaseProvider } from './src/hooks/useDatabase';
 import { PointsProvider } from './src/context/PointsContext';
 import { ThemeProvider } from './src/theme/ThemeContext';
+import { TaskProvider } from './src/context/TaskContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 class ErrorBoundary extends React.Component<

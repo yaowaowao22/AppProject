@@ -28,6 +28,7 @@ export type DrawerParamList = {
   Map: NavigatorScreenParams<MapStackParamList> | undefined;
   Journal: NavigatorScreenParams<JournalStackParamList> | undefined;
   Settings: NavigatorScreenParams<SettingsStackParamList> | undefined;
+  Tasks: NavigatorScreenParams<TaskStackParamList> | undefined;
 };
 
 // ---- Home Stack ----
@@ -73,4 +74,16 @@ export type JournalStackParamList = {
 // ---- Settings Stack ----
 export type SettingsStackParamList = {
   Settings: undefined;
+};
+
+// ---- Task Stack ----
+export type TaskStackParamList = {
+  TaskList: undefined;
+  QAPreview: {
+    url: string;
+    title: string;
+    summary: string;
+    qa_pairs: { question: string; answer: string }[];
+    category: string;
+  };
 };

@@ -8,6 +8,7 @@ import { ReviewStack } from './stacks/ReviewStack';
 import { MapStack } from './stacks/MapStack';
 import { JournalStack } from './stacks/JournalStack';
 import { SettingsStack } from './stacks/SettingsStack';
+import { TaskStack } from './stacks/TaskStack';
 import { DrawerContent } from '../components/DrawerContent';
 import { useTheme } from '../theme/ThemeContext';
 import type { DrawerParamList } from './types';
@@ -43,6 +44,7 @@ export function DrawerNavigator() {
       <Drawer.Screen name="Map"      component={MapStack}     options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="Journal"  component={JournalStack} options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="Settings" component={SettingsStack} options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="Tasks"    component={TaskStack}    options={{ drawerItemStyle: { display: 'none' } }} />
     </Drawer.Navigator>
   );
 }
