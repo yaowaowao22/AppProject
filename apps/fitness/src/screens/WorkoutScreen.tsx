@@ -19,9 +19,10 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BODY_PARTS, EXERCISES_BY_PART, EXERCISES } from '../exerciseDB';
 import type { BodyPart, ReportItem, WorkoutSession, WorkoutSet } from '../types';
-import { SPACING, TYPOGRAPHY, RADIUS, BUTTON_HEIGHT } from '../theme';
+import { SPACING, RADIUS, BUTTON_HEIGHT } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
+import type { DynamicTypography } from '../ThemeContext';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { useWorkout } from '../WorkoutContext';
 import type { WorkoutStackParamList } from '../navigation/RootNavigator';
@@ -46,8 +47,8 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const insets = useSafeAreaInsets();
   const { templates, deleteTemplate } = useWorkout();
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { colors, typography } = useTheme();
+  const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
   const exercises = EXERCISES_BY_PART[selectedPart] ?? [];
 
   // タブ切替時に選択状態をリセット
