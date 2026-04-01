@@ -124,14 +124,18 @@ export function ReviewSelectScreen({ navigation }: Props) {
                 { backgroundColor: colors.card },
                 cardShadow,
                 pressed && { opacity: 0.85 },
+                group.item_count === 0 && { opacity: 0.5 },
               ]}
               onPress={() => handleStartGroup(group.id)}
               disabled={group.item_count === 0}
               accessibilityRole="button"
               accessibilityLabel={`${group.name}を復習`}
             >
-              <View style={[styles.groupIcon, { backgroundColor: colors.backgroundSecondary }]}>
-                <Ionicons name="layers-outline" size={20} color={colors.accent} />
+              {/* 左アクセントバー */}
+              <View style={[styles.groupAccent, { backgroundColor: colors.accent }]} />
+
+              <View style={[styles.groupIcon, { backgroundColor: colors.accent + '18' }]}>
+                <Ionicons name="layers" size={20} color={colors.accent} />
               </View>
               <View style={styles.groupInfo}>
                 <Text style={[styles.groupName, { color: colors.label }]} numberOfLines={1}>
@@ -147,9 +151,12 @@ export function ReviewSelectScreen({ navigation }: Props) {
                 ) : null}
               </View>
               <View style={styles.groupRight}>
-                <Text style={[styles.groupCount, { color: colors.labelTertiary }]}>
-                  {group.item_count}件
-                </Text>
+                {/* カウントピルバッジ */}
+                <View style={[styles.groupCountBadge, { backgroundColor: colors.accent + '18' }]}>
+                  <Text style={[styles.groupCountText, { color: colors.accent }]}>
+                    {group.item_count}
+                  </Text>
+                </View>
                 <Ionicons name="chevron-forward" size={16} color={colors.labelTertiary} />
               </View>
             </Pressable>
@@ -239,6 +246,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.m,
+    overflow: 'hidden',
+  },
+  groupAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderTopLeftRadius: Radius.m,
+    borderBottomLeftRadius: Radius.m,
   },
   groupIcon: {
     width: 40,
@@ -263,8 +280,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.xs,
   },
-  groupCount: {
+  groupCountBadge: {
+    paddingHorizontal: Spacing.s,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    minWidth: 28,
+    alignItems: 'center',
+  },
+  groupCountText: {
     ...TypeScale.caption1,
+    fontWeight: '600' as const,
   },
 
   // ---- グループなし状態 ----

@@ -310,49 +310,74 @@ export function ReviewGroupCreateScreen({ navigation }: Props) {
         )}
       </View>
 
-      {/* カテゴリチップ行 */}
-      {categories.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.chipScroll}
-          contentContainerStyle={styles.chipContent}
-        >
-          <Ionicons name="folder-outline" size={13} color={colors.labelTertiary} style={styles.chipRowIcon} />
-          <Chip label="全て" active={selectedCategory === null} onPress={() => setSelectedCategory(null)} activeColor={chipActive} bgColor={chipBg} />
-          {categories.map((cat) => (
-            <Chip
-              key={cat}
-              label={cat}
-              active={selectedCategory === cat}
-              onPress={() => toggleCategory(cat)}
-              activeColor={chipActive}
-              bgColor={chipBg}
-            />
-          ))}
-        </ScrollView>
-      )}
+      {/* フィルターエリア（タグ or カテゴリが存在する場合のみ） */}
+      {(categories.length > 0 || tags.length > 0) && (
+        <View style={styles.filterArea}>
+          {/* フィルターヘッダー */}
+          <View style={styles.filterHeader}>
+            <Text style={[styles.filterHeaderLabel, { color: colors.labelTertiary }]}>
+              フィルター
+              {(selectedTagIds.length > 0 || selectedCategory) && (
+                <Text style={{ color: colors.accent }}>
+                  {' '}({selectedTagIds.length + (selectedCategory ? 1 : 0)})
+                </Text>
+              )}
+            </Text>
+            {(selectedTagIds.length > 0 || selectedCategory) && (
+              <Pressable
+                onPress={() => { setSelectedTagIds([]); setSelectedCategory(null); }}
+                hitSlop={8}
+                style={styles.clearBtn}
+              >
+                <Ionicons name="close-circle" size={13} color={colors.accent} />
+                <Text style={[styles.clearBtnText, { color: colors.accent }]}>クリア</Text>
+              </Pressable>
+            )}
+          </View>
 
-      {/* タグチップ行 */}
-      {tags.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.chipScroll}
-          contentContainerStyle={styles.chipContent}
-        >
-          <Ionicons name="pricetag-outline" size={13} color={colors.labelTertiary} style={styles.chipRowIcon} />
-          {tags.map((tag) => (
-            <Chip
-              key={tag.id}
-              label={`${tag.name} ${tag.count}`}
-              active={selectedTagIds.includes(tag.id)}
-              onPress={() => toggleTag(tag.id)}
-              activeColor={chipActive}
-              bgColor={chipBg}
-            />
-          ))}
-        </ScrollView>
+          {/* カテゴリチップ行 */}
+          {categories.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.chipScroll}
+              contentContainerStyle={styles.chipContent}
+            >
+              <Chip label="全て" active={selectedCategory === null} onPress={() => setSelectedCategory(null)} activeColor={chipActive} bgColor={chipBg} />
+              {categories.map((cat) => (
+                <Chip
+                  key={cat}
+                  label={cat}
+                  active={selectedCategory === cat}
+                  onPress={() => toggleCategory(cat)}
+                  activeColor={chipActive}
+                  bgColor={chipBg}
+                />
+              ))}
+            </ScrollView>
+          )}
+
+          {/* タグチップ行 */}
+          {tags.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.chipScroll}
+              contentContainerStyle={styles.chipContent}
+            >
+              {tags.map((tag) => (
+                <Chip
+                  key={tag.id}
+                  label={`#${tag.name}  ${tag.count}`}
+                  active={selectedTagIds.includes(tag.id)}
+                  onPress={() => toggleTag(tag.id)}
+                  activeColor={chipActive}
+                  bgColor={chipBg}
+                />
+              ))}
+            </ScrollView>
+          )}
+        </View>
       )}
 
       {/* 全選択バー */}
@@ -504,10 +529,38 @@ const styles = StyleSheet.create({
     padding: 0,
   },
 
+  // ---- フィルターエリア ----
+  filterArea: {
+    marginBottom: Spacing.xs,
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.m,
+    paddingTop: Spacing.xs,
+    paddingBottom: 2,
+  },
+  filterHeaderLabel: {
+    ...TypeScale.caption1,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  clearBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  clearBtnText: {
+    ...TypeScale.caption1,
+    fontWeight: '600' as const,
+  },
+
   // ---- フィルターチップ ----
   chipScroll: {
     flexGrow: 0,
-    marginBottom: Spacing.xs,
+    marginBottom: 2,
   },
   chipContent: {
     paddingHorizontal: Spacing.m,

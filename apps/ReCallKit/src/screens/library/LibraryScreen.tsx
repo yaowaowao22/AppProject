@@ -339,10 +339,10 @@ export function LibraryScreen({ navigation }: Props) {
             {item.tags.slice(0, 3).map((tag) => (
               <View
                 key={tag.id}
-                style={[styles.tag, { backgroundColor: colors.backgroundSecondary }]}
+                style={[styles.tag, { backgroundColor: colors.backgroundSecondary, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.separator }]}
               >
                 <Text style={[styles.tagText, { color: colors.labelSecondary }]}>
-                  {tag.name}
+                  #{tag.name}
                 </Text>
               </View>
             ))}
@@ -390,52 +390,79 @@ export function LibraryScreen({ navigation }: Props) {
         )}
       </View>
 
-      {/* タグチップ行（タグが存在する場合のみ表示） */}
-      {tags.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.chipScroll}
-          contentContainerStyle={styles.chipScrollContent}
-        >
-          <Ionicons name="pricetag-outline" size={14} color={colors.labelTertiary} style={styles.chipRowIcon} />
-          {tags.map((tag) => (
-            <FilterChip
-              key={tag.id}
-              label={`${tag.name} ${tag.count}`}
-              active={selectedTagIds.includes(tag.id)}
-              onPress={() => toggleTag(tag.id)}
-              activeColor={chipActiveColor}
-              bgColor={chipBgColor}
-              textActiveColor={chipTextActive}
-              textInactiveColor={chipTextInactive}
-            />
-          ))}
-        </ScrollView>
-      )}
+      {/* フィルターエリア（タグ or カテゴリが存在する場合のみ） */}
+      {(tags.length > 0 || categories.length > 0) && (
+        <View style={styles.filterArea}>
+          {/* フィルターヘッダー：ラベル + クリアボタン */}
+          <View style={styles.filterHeader}>
+            <Text style={[styles.filterHeaderLabel, { color: colors.labelTertiary }]}>
+              フィルター
+              {(selectedTagIds.length > 0 || selectedCategory) && (
+                <Text style={{ color: colors.accent }}>
+                  {' '}({selectedTagIds.length + (selectedCategory ? 1 : 0)})
+                </Text>
+              )}
+            </Text>
+            {(selectedTagIds.length > 0 || selectedCategory) && (
+              <Pressable
+                onPress={() => { setSelectedTagIds([]); setSelectedCategory(null); }}
+                hitSlop={8}
+                style={styles.clearBtn}
+              >
+                <Ionicons name="close-circle" size={13} color={colors.accent} />
+                <Text style={[styles.clearBtnText, { color: colors.accent }]}>クリア</Text>
+              </Pressable>
+            )}
+          </View>
 
-      {/* カテゴリチップ行（カテゴリが存在する場合のみ表示） */}
-      {categories.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.chipScroll}
-          contentContainerStyle={styles.chipScrollContent}
-        >
-          <Ionicons name="folder-outline" size={14} color={colors.labelTertiary} style={styles.chipRowIcon} />
-          {categories.map((cat) => (
-            <FilterChip
-              key={cat}
-              label={cat}
-              active={selectedCategory === cat}
-              onPress={() => toggleCategory(cat)}
-              activeColor={chipActiveColor}
-              bgColor={chipBgColor}
-              textActiveColor={chipTextActive}
-              textInactiveColor={chipTextInactive}
-            />
-          ))}
-        </ScrollView>
+          {/* タグチップ行 */}
+          {tags.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.chipScroll}
+              contentContainerStyle={styles.chipScrollContent}
+            >
+              {tags.map((tag) => (
+                <FilterChip
+                  key={tag.id}
+                  label={`#${tag.name}  ${tag.count}`}
+                  active={selectedTagIds.includes(tag.id)}
+                  onPress={() => toggleTag(tag.id)}
+                  icon="pricetag-outline"
+                  activeColor={chipActiveColor}
+                  bgColor={chipBgColor}
+                  textActiveColor={chipTextActive}
+                  textInactiveColor={chipTextInactive}
+                />
+              ))}
+            </ScrollView>
+          )}
+
+          {/* カテゴリチップ行 */}
+          {categories.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.chipScroll}
+              contentContainerStyle={styles.chipScrollContent}
+            >
+              {categories.map((cat) => (
+                <FilterChip
+                  key={cat}
+                  label={cat}
+                  active={selectedCategory === cat}
+                  onPress={() => toggleCategory(cat)}
+                  icon="folder-outline"
+                  activeColor={chipActiveColor}
+                  bgColor={chipBgColor}
+                  textActiveColor={chipTextActive}
+                  textInactiveColor={chipTextInactive}
+                />
+              ))}
+            </ScrollView>
+          )}
+        </View>
       )}
 
       {isLoading ? (
@@ -570,11 +597,39 @@ const styles = StyleSheet.create({
     padding: 0,
   },
 
+  // ---- フィルターエリア ----
+  filterArea: {
+    marginBottom: Spacing.xs,
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.m,
+    paddingTop: Spacing.xs,
+    paddingBottom: 2,
+  },
+  filterHeaderLabel: {
+    ...TypeScale.caption1,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  clearBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  clearBtnText: {
+    ...TypeScale.caption1,
+    fontWeight: '600' as const,
+  },
+
   // ---- フィルターチップ ----
   chipScroll: {
     flexGrow: 0,
     flexShrink: 0,
-    marginBottom: Spacing.xs,
+    marginBottom: 2,
   },
   chipScrollContent: {
     paddingHorizontal: Spacing.m,

@@ -3,7 +3,8 @@
 // ============================================================
 
 import React from 'react';
-import { Pressable, Text, StyleSheet } from 'react-native';
+import { Pressable, Text, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { TypeScale } from '../theme/typography';
 import { Spacing, Radius } from '../theme/spacing';
@@ -12,6 +13,8 @@ interface FilterChipProps {
   label: string;
   active: boolean;
   onPress: () => void;
+  /** チップ左端に表示するアイコン（非アクティブ時のみ） */
+  icon?: React.ComponentProps<typeof Ionicons>['name'];
   activeColor?: string;
   bgColor?: string;
   textActiveColor?: string;
@@ -22,6 +25,7 @@ export function FilterChip({
   label,
   active,
   onPress,
+  icon,
   activeColor,
   bgColor,
   textActiveColor = '#FFFFFF',
@@ -35,14 +39,29 @@ export function FilterChip({
 
   return (
     <Pressable
-      style={[
+      style={({ pressed }) => [
         styles.chip,
-        { backgroundColor: active ? resolvedActiveColor : resolvedBgColor },
+        {
+          backgroundColor: active ? resolvedActiveColor : resolvedBgColor,
+          borderWidth: active ? 0 : StyleSheet.hairlineWidth,
+          borderColor: resolvedTextInactiveColor + '50',
+          opacity: pressed ? 0.8 : 1,
+        },
       ]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
     >
+      {/* 非アクティブ時のプレフィックスアイコン */}
+      {!active && icon && (
+        <Ionicons
+          name={icon}
+          size={11}
+          color={resolvedTextInactiveColor}
+          style={styles.prefixIcon}
+        />
+      )}
+
       <Text
         style={[
           styles.chipText,
@@ -52,6 +71,16 @@ export function FilterChip({
       >
         {label}
       </Text>
+
+      {/* アクティブ時の × アイコン */}
+      {active && (
+        <Ionicons
+          name="close-circle"
+          size={13}
+          color={textActiveColor}
+          style={styles.closeIcon}
+        />
+      )}
     </Pressable>
   );
 }
@@ -61,12 +90,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: Spacing.xs,
     borderRadius: Radius.full,
-    flexShrink: 0,         // 横方向の潰れ防止
+    flexShrink: 0,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 4,
+  },
+  prefixIcon: {
+    marginRight: -1,
   },
   chipText: {
     ...TypeScale.caption1,
     fontWeight: '500' as const,
+  },
+  closeIcon: {
+    marginLeft: -1,
   },
 });
