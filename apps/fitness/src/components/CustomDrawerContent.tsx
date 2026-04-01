@@ -75,7 +75,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
             </View>
             <View style={[styles.dashItem, styles.dashBorder]}>
               <Text style={styles.dashNum}>{weeklyStats.streakDays}</Text>
-              <Text style={styles.dashKey}>日連綁E/Text>
+              <Text style={styles.dashKey}>日連続</Text>
             </View>
           </View>
         </View>
@@ -125,7 +125,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
             color={colors.textSecondary}
             style={styles.navIcon}
           />
-          <Text style={styles.navLabel}>設宁E/Text>
+          <Text style={styles.navLabel}>設定</Text>
         </TouchableOpacity>
       </View>
     </View>
