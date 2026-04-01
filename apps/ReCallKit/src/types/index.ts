@@ -53,7 +53,6 @@ export interface ItemWithMeta extends Item {
 
 // サイドバーフィルター型
 export type SidebarFilter =
-  | { kind: 'smart'; id: 'today' | 'overdue' | 'recent' }
   | { kind: 'tag'; tagId: number; tagName: string }
   | { kind: 'collection'; collectionId: string; collectionName: string };
 

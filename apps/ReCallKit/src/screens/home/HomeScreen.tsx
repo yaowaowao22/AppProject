@@ -43,13 +43,6 @@ const TYPE_META: Record<string, { label: string; color: string; bg: string }> = 
   screenshot: { label: '画像',     color: SystemColors.purple, bg: SystemColors.purple + '1F' },
 };
 
-// next_review_at から「何日遅れか」を返す
-function getOverdueDays(nextReviewAt: string): number {
-  const due = new Date(nextReviewAt.replace(' ', 'T'));
-  const diff = Date.now() - due.getTime();
-  return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
-}
-
 // 相対時刻を日本語で返す
 function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr.replace(' ', 'T'));
@@ -65,11 +58,6 @@ function formatRelativeTime(dateStr: string): string {
 
 // サイドバーフィルターのラベル文字列を生成
 function getSidebarFilterLabel(filter: NonNullable<ReturnType<typeof useSidebarFilter>['sidebarFilter']>): string {
-  if (filter.kind === 'smart') {
-    if (filter.id === 'today')   return '今日の復習';
-    if (filter.id === 'overdue') return '期限切れ';
-    if (filter.id === 'recent')  return '最近追加';
-  }
   if (filter.kind === 'tag') return filter.tagName;
   if (filter.kind === 'collection') return filter.collectionName;
   return '';
@@ -147,13 +135,6 @@ export function HomeScreen({ navigation }: Props) {
   // サイドバーフィルターを dueItems に適用
   const sidebarFilteredItems = useMemo<ReviewableItem[]>(() => {
     if (!sidebarFilter) return dueItems;
-    if (sidebarFilter.kind === 'smart') {
-      if (sidebarFilter.id === 'today')   return dueItems;
-      if (sidebarFilter.id === 'overdue') return dueItems.filter((ri) =>
-        getOverdueDays(ri.item.review!.next_review_at) > 0
-      );
-      return dueItems;
-    }
     if (sidebarFilter.kind === 'tag') {
       return dueItems.filter((ri) => taggedItemIds.has(ri.item.id));
     }
