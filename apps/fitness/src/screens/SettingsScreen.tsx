@@ -85,7 +85,7 @@ function Stepper({ value, min, max, step, unit, decimals = 0, onChangeValue, col
         disabled={!canDec}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 4 }}
         accessibilityRole="button"
-        accessibilityLabel="減らぁE
+        accessibilityLabel="減らす"
       >
         <Text style={[stepperStyles.btnText, { color: canDec ? colors.background : colors.textTertiary }]}>
           ∁E        </Text>
@@ -104,7 +104,7 @@ function Stepper({ value, min, max, step, unit, decimals = 0, onChangeValue, col
         disabled={!canInc}
         hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
         accessibilityRole="button"
-        accessibilityLabel="増やぁE
+        accessibilityLabel="増やす"
       >
         <Text style={[stepperStyles.btnText, { color: canInc ? colors.background : colors.textTertiary }]}>
           +
@@ -348,7 +348,7 @@ export default function SettingsScreen() {
   const handleDeleteAll = () => {
     Alert.alert(
       '全チE�Eタを削除',
-      'すべてのトレーニングチE�Eタが削除されます。テーマ設定も初期化されます。この操作�E允E��戻せません、E,
+      'すべてのトレーニングチE�Eタが削除されます。テーマ設定も初期化されます。この操作�E允E��戻せません。',
       [
         { text: 'キャンセル', style: 'cancel' },
         {
@@ -357,8 +357,8 @@ export default function SettingsScreen() {
           onPress: async () => {
             await resetAll();
             Alert.alert(
-              '削除完亁E,
-              'チE�Eタをすべて削除しました、E,
+              '削除完了',
+              'チE�Eタをすべて削除しました。',
             );
           },
         },
@@ -372,14 +372,14 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
-      <ScreenHeader title="設宁E showHamburger />
+      <ScreenHeader title="設定" showHamburger />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         {/* ── 表示設宁E── */}
-        <SectionHeader title="表示設宁E style={styles.sectionHeader} />
+        <SectionHeader title="表示設定" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           <View style={styles.row}>
             <View style={styles.rowLabelGroup}>
@@ -397,7 +397,7 @@ export default function SettingsScreen() {
           <View style={styles.rowSeparator} />
           <View style={styles.row}>
             <View style={styles.rowLabelGroup}>
-              <Text style={styles.rowLabel}>クイチE��スターチE/Text>
+              <Text style={styles.rowLabel}>クイチE��スタート</Text>
               <Text style={styles.rowDescription}>ホ�Eム画面にクイチE��スタートを表示</Text>
             </View>
             <Switch
@@ -412,7 +412,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* ── チE�EチE── */}
-        <SectionHeader title="チE�EチE style={styles.sectionHeader} />
+        <SectionHeader title="テーマ" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           <View style={styles.themeGrid}>
             {themeList.map(theme => {
@@ -477,7 +477,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* ── フォント設宁E── */}
-        <SectionHeader title="フォント設宁E style={styles.sectionHeader} />
+        <SectionHeader title="フォント設定" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           {/* フォントサイズ */}
           <ContrastSlider
@@ -489,13 +489,13 @@ export default function SettingsScreen() {
           <View style={styles.rowSeparator} />
           {/* フォントウェイチE*/}
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>太ぁE/Text>
+            <Text style={styles.rowLabel}>太さ</Text>
           </View>
           <SegmentedControl<FontSettings['fontWeightLevel']>
             options={[
-              { value: -1, label: '細めE },
-              { value:  0, label: '標溁E },
-              { value:  1, label: '太めE },
+              { value: -1, label: '細め' },
+              { value:  0, label: '標準' },
+              { value:  1, label: '太め' },
             ]}
             selected={fontSettings.fontWeightLevel}
             onSelect={v => setFontSettings({ ...fontSettings, fontWeightLevel: v })}
@@ -504,13 +504,13 @@ export default function SettingsScreen() {
           <View style={styles.rowSeparator} />
           {/* フォント種顁E*/}
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>フォント種顁E/Text>
+            <Text style={styles.rowLabel}>フォント種類</Text>
           </View>
           <SegmentedControl<FontSettings['fontFamily']>
             options={[
-              { value: 'system', label: '標溁E },
-              { value: 'serif',  label: '明朝佁E },
-              { value: 'mono',   label: '等幁E },
+              { value: 'system', label: '標準' },
+              { value: 'serif',  label: '明朝体' },
+              { value: 'mono',   label: '等幅' },
             ]}
             selected={fontSettings.fontFamily}
             onSelect={v => setFontSettings({ ...fontSettings, fontFamily: v })}
@@ -530,10 +530,10 @@ export default function SettingsScreen() {
         </View>
 
         {/* ── トレーニング設宁E── */}
-        <SectionHeader title="トレーニング設宁E style={styles.sectionHeader} />
+        <SectionHeader title="トレーニング設定" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>重量スチE��チE/Text>
+            <Text style={styles.rowLabel}>重量スチE��プ</Text>
             <Stepper
               value={workoutConfig.weightStep}
               min={0.5} max={10} step={0.5} unit=" kg" decimals={1}
@@ -553,7 +553,7 @@ export default function SettingsScreen() {
           </View>
           <View style={styles.rowSeparator} />
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>チE��ォルト重釁E/Text>
+            <Text style={styles.rowLabel}>チE��ォルト重量</Text>
             <Stepper
               value={workoutConfig.defaultWeight}
               min={0} max={300} step={5} unit=" kg"
@@ -566,7 +566,7 @@ export default function SettingsScreen() {
             <Text style={styles.rowLabel}>チE��ォルトレチE�E数</Text>
             <Stepper
               value={workoutConfig.defaultReps}
-              min={1} max={100} step={1} unit=" 囁E
+              min={1} max={100} step={1} unit=" 回"
               onChangeValue={v => handleConfigChange({ defaultReps: v })}
               colors={colors}
             />
@@ -574,14 +574,14 @@ export default function SettingsScreen() {
         </View>
 
         {/* ── チE�Eタ管琁E── */}
-        <SectionHeader title="チE�Eタ管琁E style={styles.sectionHeader} />
+        <SectionHeader title="データ管理" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           <TouchableOpacity
             style={styles.row}
             onPress={handleDeleteAll}
             activeOpacity={0.88}
             accessibilityRole="button"
-            accessibilityLabel="すべてのチE�Eタを削除�E��Eに戻せません�E�E
+            accessibilityLabel="すべてのチE�Eタを削除�E��Eに戻せません�E�"
           >
             <Text style={[styles.rowLabel, styles.destructiveText]}>
               全チE�Eタを削除
@@ -590,7 +590,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* ── サポ�EチE── */}
-        <SectionHeader title="サポ�EチE style={styles.sectionHeader} />
+        <SectionHeader title="サポート" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           <TouchableOpacity
             style={styles.row}
@@ -622,7 +622,7 @@ export default function SettingsScreen() {
             activeOpacity={0.7}
             accessibilityRole="button"
           >
-            <Text style={styles.rowLabel}>利用規紁E/Text>
+            <Text style={styles.rowLabel}>利用規約</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
           </TouchableOpacity>
         </View>
@@ -631,7 +631,7 @@ export default function SettingsScreen() {
         <SectionHeader title="アプリ惁E��" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>アプリ吁E/Text>
+            <Text style={styles.rowLabel}>アプリ名</Text>
             <Text style={styles.rowValue}>{APP.NAME}</Text>
           </View>
           <View style={styles.rowSeparator} />
@@ -641,7 +641,7 @@ export default function SettingsScreen() {
           </View>
           <View style={styles.rowSeparator} />
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>ビルチE/Text>
+            <Text style={styles.rowLabel}>ビルド</Text>
             <Text style={styles.rowValue}>{buildVersion}</Text>
           </View>
           <View style={styles.rowSeparator} />
