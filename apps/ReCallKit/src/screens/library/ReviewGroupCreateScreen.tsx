@@ -99,8 +99,6 @@ function Chip({
   );
 }
 
-// ---- 定数 ----
-const MAX_GROUP_ITEMS = 25;
 
 // ---- メインコンポーネント ------------------------------------
 export function ReviewGroupCreateScreen({ navigation }: Props) {
@@ -159,10 +157,6 @@ export function ReviewGroupCreateScreen({ navigation }: Props) {
       if (next.has(itemId)) {
         next.delete(itemId);
       } else {
-        if (next.size >= MAX_GROUP_ITEMS) {
-          Alert.alert('上限に達しました', `グループに追加できるのは最大${MAX_GROUP_ITEMS}件です`);
-          return prev;
-        }
         next.add(itemId);
       }
       return next;
@@ -174,10 +168,10 @@ export function ReviewGroupCreateScreen({ navigation }: Props) {
     if (Platform.OS !== 'web') {
       try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
     }
-    if (selectedIds.size === Math.min(items.length, MAX_GROUP_ITEMS)) {
+    if (selectedIds.size === items.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(items.slice(0, MAX_GROUP_ITEMS).map((i) => i.id)));
+      setSelectedIds(new Set(items.map((i) => i.id)));
     }
   }, [items, selectedIds.size]);
 
@@ -276,8 +270,7 @@ export function ReviewGroupCreateScreen({ navigation }: Props) {
     </View>
   );
 
-  const selectableCount = Math.min(items.length, MAX_GROUP_ITEMS);
-  const allSelected = items.length > 0 && selectedIds.size === selectableCount;
+  const allSelected = items.length > 0 && selectedIds.size === items.length;
 
   return (
     <KeyboardAvoidingView
@@ -366,11 +359,11 @@ export function ReviewGroupCreateScreen({ navigation }: Props) {
       {items.length > 0 && (
         <View style={[styles.selectAllBar, { borderBottomColor: colors.separator }]}>
           <Text style={[styles.selectAllCount, { color: colors.labelSecondary }]}>
-            {selectedIds.size}/{MAX_GROUP_ITEMS}件選択
+            {selectedIds.size}件選択
           </Text>
           <Pressable onPress={toggleAll} hitSlop={8}>
             <Text style={[styles.selectAllBtn, { color: colors.accent }]}>
-              {allSelected ? '全解除' : `全選択（上限${MAX_GROUP_ITEMS}件）`}
+              {allSelected ? '全解除' : '全選択'}
             </Text>
           </Pressable>
         </View>
