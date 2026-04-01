@@ -11,9 +11,9 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@bacons/apple-targets": "^3.0.4",
     "@aws-sdk/client-cognito-identity": "^3.1020.0",
     "@aws-sdk/client-lambda": "^3.1020.0",
+    "@bacons/apple-targets": "^3.0.4",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^7.12.0",
@@ -23,6 +23,7 @@
     "aws4fetch": "^1.0.20",
     "expo": "~54.0.33",
     "expo-build-properties": "~1.0.10",
+    "expo-clipboard": "~8.0.8",
     "expo-file-system": "~19.0.21",
     "expo-haptics": "~15.0.8",
     "expo-notifications": "~0.32.16",

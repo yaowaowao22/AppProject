@@ -91,7 +91,6 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
   const { sidebarFilter, setSidebarFilter, clearFilter } = useSidebarFilter();
 
   const [todayCount,   setTodayCount]   = useState(0);
-  const [overdueCount, setOverdueCount] = useState(0);
   const [tags,         setTags]         = useState<TagWithCount[]>([]);
   const [collections,  setCollections]  = useState<CollectionWithCount[]>([]);
   const [totalCards,   setTotalCards]   = useState(0);
@@ -107,14 +106,6 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
            AND date(r.next_review_at, 'localtime') = date('now', 'localtime')`
       );
       setTodayCount(todayRes?.count ?? 0);
-
-      const overdueRes = await db.getFirstAsync<{ count: number }>(
-        `SELECT COUNT(*) as count
-         FROM reviews r JOIN items i ON i.id = r.item_id
-         WHERE i.archived = 0
-           AND date(r.next_review_at, 'localtime') < date('now', 'localtime')`
-      );
-      setOverdueCount(overdueRes?.count ?? 0);
 
       const tagRows = await db.getAllAsync<TagWithCount>(
         `SELECT t.id, t.name, COUNT(it.item_id) as count
@@ -173,7 +164,6 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
   // ---- フィルターアクティブ ID ----
   const activeFilterId = (() => {
     if (!sidebarFilter) return null;
-    if (sidebarFilter.kind === 'smart')      return sidebarFilter.id;
     if (sidebarFilter.kind === 'tag')        return `tag-${sidebarFilter.tagId}`;
     return sidebarFilter.collectionId;
   })();
@@ -182,22 +172,6 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
   function handleScreenNav(screenName: typeof SCREEN_ITEMS[number]['name']) {
     triggerSelectionHaptic();
     navigation.navigate(screenName as never);
-    navigation.closeDrawer();
-  }
-
-  // ---- Smart Filter ハンドラ ----
-  function handleSmartFilter(id: 'today' | 'overdue' | 'recent') {
-    triggerSelectionHaptic();
-    if (activeFilterId === id) {
-      clearFilter();
-    } else {
-      setSidebarFilter({ kind: 'smart', id });
-      if (id === 'recent') {
-        navigation.navigate('Library' as never);
-      } else {
-        navigation.navigate('Home' as never);
-      }
-    }
     navigation.closeDrawer();
   }
 
@@ -303,62 +277,6 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
               </NavItem>
             );
           })}
-        </View>
-
-        {/* ---- Smart Filters（24pt gap） ---- */}
-        <View style={[styles.section, styles.sectionGap]}>
-          <SectionHeading label="Smart Filters" color={sc.sectionHeader} />
-
-          <NavItem
-            isActive={activeFilterId === 'today'}
-            onPress={() => handleSmartFilter('today')}
-            sc={sc}
-          >
-            <View style={styles.iconSlot}>
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={SidebarLayout.iconSize}
-                color={activeFilterId === 'today' ? sc.activeTint : sc.inactiveTint}
-              />
-            </View>
-            <ItemLabel label="今日の復習" isActive={activeFilterId === 'today'} sc={sc} />
-            {todayCount > 0 && (
-              <CountBadge count={todayCount} isActive={activeFilterId === 'today'} sc={sc} />
-            )}
-          </NavItem>
-
-          <NavItem
-            isActive={activeFilterId === 'overdue'}
-            onPress={() => handleSmartFilter('overdue')}
-            sc={sc}
-          >
-            <View style={styles.iconSlot}>
-              <Ionicons
-                name="time-outline"
-                size={SidebarLayout.iconSize}
-                color={activeFilterId === 'overdue' ? sc.activeTint : sc.inactiveTint}
-              />
-            </View>
-            <ItemLabel label="期限切れ" isActive={activeFilterId === 'overdue'} sc={sc} />
-            {overdueCount > 0 && (
-              <CountBadge count={overdueCount} isActive={activeFilterId === 'overdue'} sc={sc} />
-            )}
-          </NavItem>
-
-          <NavItem
-            isActive={activeFilterId === 'recent'}
-            onPress={() => handleSmartFilter('recent')}
-            sc={sc}
-          >
-            <View style={styles.iconSlot}>
-              <Ionicons
-                name="sparkles-outline"
-                size={SidebarLayout.iconSize}
-                color={activeFilterId === 'recent' ? sc.activeTint : sc.inactiveTint}
-              />
-            </View>
-            <ItemLabel label="最近追加" isActive={activeFilterId === 'recent'} sc={sc} />
-          </NavItem>
         </View>
 
         {/* ---- Tags（24pt gap） ---- */}
