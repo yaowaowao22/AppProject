@@ -23,6 +23,7 @@ import { SIMPLE_RATINGS } from '../../sm2/algorithm';
 import type { SimpleRating } from '../../sm2/algorithm';
 import { ReviewCard } from '../../components/ReviewCard';
 import { RatingButtons } from '../../components/RatingButtons';
+import { AIDeepDiveButtons } from '../../components/AIDeepDiveButtons';
 import { ReviewProgressBar } from '../../components/ReviewProgressBar';
 import { useCloseHeader } from '../../hooks/useCloseHeader';
 import { useTheme } from '../../theme/ThemeContext';
@@ -149,7 +150,13 @@ export function ReviewScreen({ navigation, route }: Props) {
       {/* 評価エリア（カードをめくった後に表示） */}
       <View style={styles.ratingArea}>
         {isCardFlipped ? (
-          <RatingButtons onRate={handleRate} />
+          <>
+            <RatingButtons onRate={handleRate} />
+            <AIDeepDiveButtons
+              question={currentItem.item.title}
+              answer={currentItem.item.content}
+            />
+          </>
         ) : (
           <Text style={[styles.ratingHint, { color: colors.labelTertiary }]}>
             カードをめくって自己評価してください
@@ -181,6 +188,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xl,
     minHeight: 120,
     justifyContent: 'center',
+    gap: Spacing.s,
   },
   ratingHint: {
     ...TypeScale.footnote,

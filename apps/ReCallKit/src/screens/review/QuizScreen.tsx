@@ -11,8 +11,6 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Modal,
-  Linking,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -30,6 +28,7 @@ import { getItemById, submitReviewRating } from '../../db/reviewRepository';
 import { SIMPLE_RATINGS } from '../../sm2/algorithm';
 import type { SimpleRating } from '../../sm2/algorithm';
 import { RatingButtons } from '../../components/RatingButtons';
+import { AIDeepDiveButtons } from '../../components/AIDeepDiveButtons';
 import { ReviewProgressBar } from '../../components/ReviewProgressBar';
 import { useCloseHeader } from '../../hooks/useCloseHeader';
 import { useTheme } from '../../theme/ThemeContext';
@@ -106,7 +105,6 @@ export function QuizScreen({ navigation, route }: Props) {
   const [loading, setLoading] = useState(true);
   const [revealed, setRevealed] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
-  const [aiModalVisible, setAIModalVisible] = useState(false);
 
   const flip = useSharedValue(0);
   const lift = useSharedValue(0);
@@ -359,17 +357,10 @@ export function QuizScreen({ navigation, route }: Props) {
               どのくらい思い出せましたか？
             </Text>
             <RatingButtons onRate={handleRate} />
-
-            {/* ── AI深堀りボタン ── */}
-            <Pressable
-              style={[styles.aiButton, { borderColor: colors.accent + '40' }]}
-              onPress={() => setAIModalVisible(true)}
-              accessibilityRole="button"
-              accessibilityLabel="AI深掘り"
-            >
-              <Ionicons name="sparkles-outline" size={15} color={colors.accent} />
-              <Text style={[styles.aiButtonText, { color: colors.accent }]}>AI深掘り</Text>
-            </Pressable>
+            <AIDeepDiveButtons
+              question={reviewable.item.title}
+              answer={reviewable.item.content}
+            />
           </>
         ) : (
           <Text style={[styles.rateHint, { color: colors.labelTertiary }]}>
@@ -377,79 +368,6 @@ export function QuizScreen({ navigation, route }: Props) {
           </Text>
         )}
       </View>
-
-      {/* ── AI深堀りモーダル ── */}
-      <Modal
-        visible={aiModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setAIModalVisible(false)}
-      >
-        <View style={[styles.aiModal, { backgroundColor: colors.background }]}>
-          {/* モーダルヘッダー */}
-          <View style={[styles.aiModalHeader, { borderBottomColor: colors.separator }]}>
-            <View style={styles.aiModalTitleRow}>
-              <Ionicons name="sparkles" size={18} color={colors.accent} />
-              <Text style={[styles.aiModalTitle, { color: colors.label }]}>AI深掘り</Text>
-            </View>
-            <Pressable
-              onPress={() => setAIModalVisible(false)}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="閉じる"
-            >
-              <Ionicons name="close-circle" size={26} color={colors.labelTertiary} />
-            </Pressable>
-          </View>
-
-          <ScrollView
-            style={styles.aiModalScroll}
-            contentContainerStyle={styles.aiModalContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* フルコンテンツ */}
-            <Text style={[styles.aiSectionLabel, { color: colors.labelTertiary }]}>
-              フルコンテンツ
-            </Text>
-            <View style={[styles.aiContentBox, { backgroundColor: colors.backgroundSecondary }]}>
-              <Text style={[styles.aiContentText, { color: colors.label }]}>
-                {reviewable.item.content}
-              </Text>
-            </View>
-
-            {/* ソースURL */}
-            {sourceUrl ? (
-              <>
-                <Text style={[styles.aiSectionLabel, { color: colors.labelTertiary }]}>
-                  ソースURL
-                </Text>
-                <Pressable
-                  style={[styles.aiLinkBox, { backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => Linking.openURL(sourceUrl)}
-                  accessibilityRole="link"
-                >
-                  <Ionicons name="link-outline" size={15} color={colors.accent} />
-                  <Text
-                    style={[styles.aiLinkText, { color: colors.accent }]}
-                    numberOfLines={2}
-                  >
-                    {sourceUrl}
-                  </Text>
-                  <Ionicons name="open-outline" size={15} color={colors.labelTertiary} />
-                </Pressable>
-              </>
-            ) : null}
-
-            {/* 近日公開バナー */}
-            <View style={[styles.aiCtaBanner, { backgroundColor: colors.accent + '12' }]}>
-              <Ionicons name="construct-outline" size={18} color={colors.accent} />
-              <Text style={[styles.aiCtaText, { color: colors.labelSecondary }]}>
-                AIによる詳細解析・追加Q&A生成機能は近日公開予定です
-              </Text>
-            </View>
-          </ScrollView>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -539,23 +457,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.l,
   },
 
-  // AI深堀りボタン
-  aiButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.xs,
-    alignSelf: 'center',
-    paddingHorizontal: Spacing.l,
-    paddingVertical: Spacing.xs + 2,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-  },
-  aiButtonText: {
-    ...TypeScale.footnote,
-    fontWeight: '600',
-  },
-
   // 完了
   doneEmoji: { fontSize: 56 },
   doneTitle: { ...TypeScale.title2, textAlign: 'center' },
@@ -569,69 +470,4 @@ const styles = StyleSheet.create({
   closeButtonText: { ...TypeScale.headline, color: '#FFFFFF' },
   emptyText: { ...TypeScale.body, textAlign: 'center' },
 
-  // ── AI深堀りモーダル ──
-  aiModal: {
-    flex: 1,
-  },
-  aiModalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.l,
-    paddingVertical: Spacing.m,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  aiModalTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  aiModalTitle: {
-    ...TypeScale.headline,
-  },
-  aiModalScroll: { flex: 1 },
-  aiModalContent: {
-    padding: Spacing.l,
-    gap: Spacing.m,
-    paddingBottom: Spacing.xxl,
-  },
-  aiSectionLabel: {
-    ...TypeScale.caption1,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: -Spacing.xs,
-  },
-  aiContentBox: {
-    borderRadius: Radius.m,
-    padding: Spacing.m,
-  },
-  aiContentText: {
-    ...TypeScale.bodyJA,
-    lineHeight: 26,
-  },
-  aiLinkBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    borderRadius: Radius.m,
-    padding: Spacing.m,
-  },
-  aiLinkText: {
-    ...TypeScale.footnote,
-    flex: 1,
-    textDecorationLine: 'underline',
-  },
-  aiCtaBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.s,
-    borderRadius: Radius.m,
-    padding: Spacing.m,
-    marginTop: Spacing.s,
-  },
-  aiCtaText: {
-    ...TypeScale.footnote,
-    flex: 1,
-    lineHeight: 18,
-  },
 });
