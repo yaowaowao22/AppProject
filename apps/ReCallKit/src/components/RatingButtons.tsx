@@ -95,10 +95,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: MinTapTarget * 1.4,
+    minHeight: MinTapTarget,
     borderRadius: Radius.m,
     borderWidth: 1.5,
-    paddingVertical: Spacing.s,
+    paddingVertical: Spacing.xs,
     gap: 2,
   },
   indicator: {
