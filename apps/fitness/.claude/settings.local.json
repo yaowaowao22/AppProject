@@ -68,7 +68,16 @@
       "Bash(do echo:*)",
       "Bash(do)",
       "Bash(echo \"=== $pkg ===\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(pnpm install:*)",
+      "Bash(eas channel:list)",
+      "Bash(eas build:list --platform ios --limit 5)",
+      "Bash(eas build:list --platform ios --limit 3)",
+      "Bash(eas update:list --branch production --limit 3)",
+      "Bash(eas update:view a0526323-8366-4a32-9c18-3f8712bb2cd1)",
+      "Bash(npx expo-updates:*)",
+      "Bash(eas credentials:*)",
+      "Bash(eas build:list --platform ios --limit 1 --json)"
     ]
   }
 }
