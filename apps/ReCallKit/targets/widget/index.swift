@@ -4,6 +4,13 @@ import SwiftUI
 private let appGroupId = "group.com.massapp.recallkit"
 private let deepLinkReview = "recallkit://review"
 
+// MARK: - Data Models
+
+struct QuizItem {
+    let question: String
+    let answer: String
+}
+
 // MARK: - Timeline Entry
 
 struct ReviewEntry: TimelineEntry {
@@ -11,13 +18,14 @@ struct ReviewEntry: TimelineEntry {
     let reviewCount: Int
     let streak: Int
     let totalItems: Int
+    let quizItem: QuizItem?
 }
 
 // MARK: - Timeline Provider
 
 struct ReviewProvider: TimelineProvider {
     func placeholder(in context: Context) -> ReviewEntry {
-        ReviewEntry(date: Date(), reviewCount: 5, streak: 7, totalItems: 42)
+        ReviewEntry(date: Date(), reviewCount: 5, streak: 7, totalItems: 42, quizItem: nil)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (ReviewEntry) -> Void) {
@@ -26,20 +34,39 @@ struct ReviewProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<ReviewEntry>) -> Void) {
         let entry = loadEntry()
-        // 1時間後に再取得
-        let nextUpdate = Calendar.current.date(byAdding: .hour, value: 1, to: Date()) ?? Date()
+        // 30分後に再取得（Q&A更新頻度向上）
+        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date()
         let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         completion(timeline)
     }
 
     private func loadEntry() -> ReviewEntry {
         let defaults = UserDefaults(suiteName: appGroupId)
+        let quizItem = loadRandomQuizItem(from: defaults)
         return ReviewEntry(
             date: Date(),
             reviewCount: defaults?.integer(forKey: "todayReviewCount") ?? 0,
             streak: defaults?.integer(forKey: "currentStreak") ?? 0,
-            totalItems: defaults?.integer(forKey: "totalItems") ?? 0
+            totalItems: defaults?.integer(forKey: "totalItems") ?? 0,
+            quizItem: quizItem
         )
+    }
+
+    private func loadRandomQuizItem(from defaults: UserDefaults?) -> QuizItem? {
+        guard
+            let jsonString = defaults?.string(forKey: "quizItems"),
+            let data = jsonString.data(using: .utf8),
+            let array = try? JSONSerialization.jsonObject(with: data) as? [[String: String]],
+            !array.isEmpty
+        else { return nil }
+
+        let item = array.randomElement()
+        guard
+            let question = item?["question"], !question.isEmpty,
+            let answer = item?["answer"]
+        else { return nil }
+
+        return QuizItem(question: question, answer: answer)
     }
 }
 
@@ -63,8 +90,30 @@ struct SmallWidgetView: View {
 
             Spacer()
 
-            // メイン数値 or 完了状態
-            if entry.reviewCount > 0 {
+            if let quiz = entry.quizItem {
+                // Q&Aモード
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .top, spacing: 4) {
+                        Text("Q")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(accent)
+                        Text(quiz.question)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.primary)
+                            .lineLimit(2)
+                    }
+                    HStack(alignment: .top, spacing: 4) {
+                        Text("A")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(accent)
+                        Text(quiz.answer)
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                    }
+                }
+            } else if entry.reviewCount > 0 {
+                // 復習カウントモード
                 Text("\(entry.reviewCount)")
                     .font(.system(size: 42, weight: .bold, design: .rounded))
                     .foregroundColor(accent)
@@ -73,6 +122,7 @@ struct SmallWidgetView: View {
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
             } else {
+                // 完了モード
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 34))
                     .foregroundColor(.green)
@@ -108,7 +158,7 @@ struct MediumWidgetView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            // 左カラム: 復習カウント
+            // 左カラム: Q&A または復習カウント
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 4) {
                     Image(systemName: "brain.head.profile")
@@ -121,7 +171,29 @@ struct MediumWidgetView: View {
 
                 Spacer()
 
-                if entry.reviewCount > 0 {
+                if let quiz = entry.quizItem {
+                    // Q&Aモード
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(alignment: .top, spacing: 5) {
+                            Text("Q")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(accent)
+                            Text(quiz.question)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.primary)
+                                .lineLimit(3)
+                        }
+                        HStack(alignment: .top, spacing: 5) {
+                            Text("A")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(accent)
+                            Text(quiz.answer)
+                                .font(.system(size: 12, weight: .regular))
+                                .foregroundColor(.secondary)
+                                .lineLimit(3)
+                        }
+                    }
+                } else if entry.reviewCount > 0 {
                     Text("\(entry.reviewCount)")
                         .font(.system(size: 46, weight: .bold, design: .rounded))
                         .foregroundColor(accent)
@@ -234,16 +306,46 @@ struct ReCallWidget_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             ReCallWidgetEntryView(
-                entry: ReviewEntry(date: .now, reviewCount: 8, streak: 14, totalItems: 56)
+                entry: ReviewEntry(
+                    date: .now,
+                    reviewCount: 8,
+                    streak: 14,
+                    totalItems: 56,
+                    quizItem: QuizItem(
+                        question: "SFAとCRMの違いは何ですか？",
+                        answer: "SFAは営業活動の自動化、CRMは顧客関係全般の管理に特化"
+                    )
+                )
+            )
+            .previewContext(WidgetPreviewContext(family: .systemSmall))
+            .previewDisplayName("Small – Q&Aあり")
+
+            ReCallWidgetEntryView(
+                entry: ReviewEntry(date: .now, reviewCount: 8, streak: 14, totalItems: 56, quizItem: nil)
             )
             .previewContext(WidgetPreviewContext(family: .systemSmall))
             .previewDisplayName("Small – 復習あり")
 
             ReCallWidgetEntryView(
-                entry: ReviewEntry(date: .now, reviewCount: 0, streak: 14, totalItems: 56)
+                entry: ReviewEntry(date: .now, reviewCount: 0, streak: 14, totalItems: 56, quizItem: nil)
             )
             .previewContext(WidgetPreviewContext(family: .systemSmall))
             .previewDisplayName("Small – 完了")
+
+            ReCallWidgetEntryView(
+                entry: ReviewEntry(
+                    date: .now,
+                    reviewCount: 3,
+                    streak: 14,
+                    totalItems: 56,
+                    quizItem: QuizItem(
+                        question: "スペースドリピティションとは？",
+                        answer: "忘却曲線に基づき最適なタイミングで復習を行う学習法"
+                    )
+                )
+            )
+            .previewContext(WidgetPreviewContext(family: .systemMedium))
+            .previewDisplayName("Medium – Q&Aあり")
         }
     }
 }

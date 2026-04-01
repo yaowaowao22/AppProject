@@ -105,8 +105,17 @@ export function HomeScreen({ navigation }: Props) {
     }, [loadData])
   );
 
+  // ウィジェット用Q&Aデータ（最近復習した内容から最大20件）
+  const quizItems = useMemo(() =>
+    recentlyReviewed.map((ri) => ({
+      question: ri.item.title,
+      answer: ri.item.content ?? '',
+    })).slice(0, 20),
+    [recentlyReviewed]
+  );
+
   // iOS ウィジェットへデータを同期
-  useWidgetData(dueItems.length, streakDays, totalItems);
+  useWidgetData(dueItems.length, streakDays, totalItems, quizItems);
 
   // サイドバーのタグフィルターが変わったら対象アイテムIDを取得
   useEffect(() => {

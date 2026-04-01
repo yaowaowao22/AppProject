@@ -3,12 +3,14 @@ import { Platform } from 'react-native';
 
 // Expo Go / web ではネイティブモジュールが存在しないのでフォールバック
 let updateWidgetData: (reviewCount: number, streak: number, totalItems: number) => void = () => {};
+let updateWidgetQuizData: (items: { question: string; answer: string }[]) => void = () => {};
 
 if (Platform.OS === 'ios') {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const bridge = require('recall-widget-bridge');
     updateWidgetData = bridge.updateWidgetData;
+    updateWidgetQuizData = bridge.updateWidgetQuizData;
   } catch {
     // Expo Go など、ネイティブモジュール未ビルド環境では無視
   }
@@ -16,15 +18,22 @@ if (Platform.OS === 'ios') {
 
 /**
  * ホーム画面のデータが揃ったタイミングで iOS ウィジェットへ同期する。
- * reviewCount / streak / totalItems が変わるたびに再送信。
+ * reviewCount / streak / totalItems / quizItems が変わるたびに再送信。
  */
 export function useWidgetData(
   reviewCount: number,
   streak: number,
-  totalItems: number
+  totalItems: number,
+  quizItems?: { question: string; answer: string }[]
 ): void {
   useEffect(() => {
     if (Platform.OS !== 'ios') return;
     updateWidgetData(reviewCount, streak, totalItems);
   }, [reviewCount, streak, totalItems]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    if (!quizItems) return;
+    updateWidgetQuizData(quizItems);
+  }, [quizItems]);
 }

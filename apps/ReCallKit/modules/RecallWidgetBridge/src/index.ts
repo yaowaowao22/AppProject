@@ -18,3 +18,14 @@ export function updateWidgetData(
 ): void {
   NativeModule?.updateWidgetData(reviewCount, streak, totalItems);
 }
+
+/**
+ * ウィジェットに表示するQ&Aデータを App Group UserDefaults へ書き込む。
+ * WidgetCenter のタイムラインリロードも行う。
+ * iOS 以外・Expo Go では何もしない。
+ */
+export function updateWidgetQuizData(
+  items: { question: string; answer: string }[]
+): void {
+  NativeModule?.updateWidgetQuizData(items);
+}
