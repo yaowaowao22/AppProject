@@ -22,6 +22,9 @@ recall-kit-analyzer Lambda ハンドラー
 
 コスト記録:
     s3://aimensetu-storage-376408658186/recall-kit-costs/YYYY/MM/DD/*.json
+
+リクエスト/レスポンスログ:
+    s3://aimensetu-storage-376408658186/recall-kit-logs/YYYY/MM/DD/*.json
 """
 
 import json
@@ -46,9 +49,10 @@ MODEL_ID = "anthropic.claude-3-haiku-20240307-v1:0"
 PRICE_INPUT_PER_TOKEN  = 0.00025 / 1000   # $0.00025 / 1K tokens
 PRICE_OUTPUT_PER_TOKEN = 0.00125 / 1000   # $0.00125 / 1K tokens
 
-# コストログ保存先
+# S3保存先
 COST_LOG_BUCKET = "aimensetu-storage-376408658186"
 COST_LOG_PREFIX = "recall-kit-costs"
+REQUEST_LOG_PREFIX = "recall-kit-logs"
 
 # テキスト長制限
 MAX_TEXT_LENGTH = 4000
