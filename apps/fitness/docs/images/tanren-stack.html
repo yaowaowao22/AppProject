@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:         #ffffff;
+    --text:       #0a0a10;
+    --text-dim:   rgba(10,10,16,0.82);
+    --text-faint: rgba(10,10,16,0.55);
+    --slit-0:     #4450bb;  /* 藍 — 技術・実装 */
+    --slit-1:     #1677bb;  /* 青 */
+    --slit-2:     #178858;  /* 緑 — AI・完成 */
+  }
+  body {
+    background: var(--bg);
+    font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    padding: 40px;
+    width: 800px;
+  }
+
+  .section {
+    position: relative;
+    padding: 28px 28px 28px 40px;
+    background: var(--bg);
+  }
+  .section::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--slit-0);
+  }
+
+  .section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 22px;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+  }
+  .section-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: #4450bb;
+    background: rgba(68,80,187,0.07);
+    border: 1px solid rgba(68,80,187,0.22);
+    border-radius: 4px;
+    padding: 4px 10px;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+
+  /* stack grid */
+  .stack-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .stack-row {
+    display: flex;
+    align-items: stretch;
+    background: #ffffff;
+    gap: 1px;
+  }
+
+  .stack-tech {
+    width: 220px;
+    flex-shrink: 0;
+    padding: 14px 16px;
+    background: #fafafa;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-right: 1px solid rgba(0,0,0,0.07);
+  }
+  .stack-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .tech-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .stack-desc {
+    flex: 1;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+  }
+  .desc-text {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .desc-sub {
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 2px;
+  }
+
+  /* 仕切り線 */
+  .divider-row {
+    height: 1px;
+    background: rgba(0,0,0,0.06);
+  }
+</style>
+</head>
+<body>
+
+<div class="section">
+  <div class="section-head">
+    <div>
+      <div class="section-label">補足 — 使用技術スタック</div>
+      <div class="section-title">TANREN の技術構成</div>
+    </div>
+    <div class="badge">Tech Stack</div>
+  </div>
+
+  <div class="stack-grid">
+
+    <div class="stack-row">
+      <div class="stack-tech">
+        <div class="stack-dot" style="background:#4450bb;"></div>
+        <div class="tech-name">Expo SDK</div>
+      </div>
+      <div class="stack-desc">
+        <div>
+          <div class="desc-text">React Native ビルド基盤・EAS Build</div>
+          <div class="desc-sub">iOS/Android 両対応・OTAアップデート対応</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stack-row">
+      <div class="stack-tech">
+        <div class="stack-dot" style="background:#4450bb;"></div>
+        <div class="tech-name">React Native<br>+ TypeScript</div>
+      </div>
+      <div class="stack-desc">
+        <div>
+          <div class="desc-text">UI フレームワーク</div>
+          <div class="desc-sub">15画面・20,434行すべてTypeScriptで記述</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stack-row">
+      <div class="stack-tech">
+        <div class="stack-dot" style="background:#1677bb;"></div>
+        <div class="tech-name">AsyncStorage</div>
+      </div>
+      <div class="stack-desc">
+        <div>
+          <div class="desc-text">ローカルデータ保存（サーバー不要）</div>
+          <div class="desc-sub">ワークアウト記録・テーマ設定・フォント設定をデバイスに保存</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stack-row">
+      <div class="stack-tech">
+        <div class="stack-dot" style="background:#1677bb;"></div>
+        <div class="tech-name">React Navigation</div>
+      </div>
+      <div class="stack-desc">
+        <div>
+          <div class="desc-text">画面遷移</div>
+          <div class="desc-sub">Stack + Drawer + Bottom Tabs の複合構成</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stack-row">
+      <div class="stack-tech">
+        <div class="stack-dot" style="background:#178858;"></div>
+        <div class="tech-name">Jest + RTL</div>
+      </div>
+      <div class="stack-desc">
+        <div>
+          <div class="desc-text">テスト</div>
+          <div class="desc-sub">Jest + React Native Testing Library で全15画面をカバー</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stack-row">
+      <div class="stack-tech">
+        <div class="stack-dot" style="background:#b04a00;"></div>
+        <div class="tech-name">Claude Code</div>
+      </div>
+      <div class="stack-desc">
+        <div>
+          <div class="desc-text">AI支援開発</div>
+          <div class="desc-sub">設計書読み込み → コード生成 → バグ修正を4日間フル稼働</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
