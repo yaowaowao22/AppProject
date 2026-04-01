@@ -74,15 +74,17 @@ export function BottomSheet({ visible, onClose, title, subtitle, maxHeight, chil
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <KeyboardAvoidingView
-        style={StyleSheet.absoluteFill}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        {/* overlay */}
-        <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} activeOpacity={1} />
-        </Animated.View>
+      {/* overlay — absolute fill, behind sheet */}
+      <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} activeOpacity={1} />
+      </Animated.View>
 
+      {/* KeyboardAvoidingView だけシートを包む (flex layout でキーボード回避) */}
+      <KeyboardAvoidingView
+        style={styles.kavContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        pointerEvents="box-none"
+      >
         {/* sheet */}
         <Animated.View
           style={[
@@ -200,11 +202,12 @@ function makeStyles(colors: TanrenThemeColors) {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: 'rgba(0,0,0,0.65)',
     },
+    // KeyboardAvoidingView のコンテナ: flex で下揃え → sheet が絶対配置でなくても底に貼り付く
+    kavContainer: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
     sheet: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
       backgroundColor: colors.surface1,
       borderTopLeftRadius: RADIUS.sheet,
       borderTopRightRadius: RADIUS.sheet,

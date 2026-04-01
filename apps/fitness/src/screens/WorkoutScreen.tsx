@@ -19,7 +19,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BODY_PARTS, EXERCISES_BY_PART, EXERCISES, getExerciseById } from '../exerciseDB';
 import type { BodyPart, Exercise, EquipmentType, ReportItem, WorkoutSession, WorkoutSet } from '../types';
-import { loadCustomExercises, saveCustomExercises } from '../utils/storage';
+
 import { SPACING, RADIUS, BUTTON_HEIGHT } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
@@ -65,10 +65,9 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
   const [selectedPart, setSelectedPart] = useState<BodyPart>(BODY_PARTS[0].id as BodyPart);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const insets = useSafeAreaInsets();
-  const { templates, deleteTemplate, workoutTargetDate } = useWorkout();
+  const { templates, deleteTemplate, workoutTargetDate, customExercises, addCustomExercise, deleteCustomExercise } = useWorkout();
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
-  const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [newName, setNewName] = useState('');
   const [newPart, setNewPart] = useState<BodyPart>(BODY_PARTS[0].id as BodyPart);
@@ -76,11 +75,6 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
   const presetExercises = EXERCISES_BY_PART[selectedPart] ?? [];
   const customForPart = customExercises.filter(e => e.bodyPart === selectedPart);
   const exercises = [...presetExercises, ...customForPart];
-
-  // カスタム種目を読み込む
-  useEffect(() => {
-    loadCustomExercises().then(setCustomExercises);
-  }, []);
 
   // タブ切替時に選択状態をリセット
   useFocusEffect(
@@ -117,18 +111,7 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
 
   async function handleAddExercise() {
     if (!newName.trim()) return;
-    const newEx: Exercise = {
-      id: `custom_${Date.now()}`,
-      name: newName.trim(),
-      nameEn: '',
-      bodyPart: newPart,
-      icon: 'barbell-outline',
-      equipment: newEquipment,
-      isCustom: true,
-    };
-    const updated = [...customExercises, newEx];
-    setCustomExercises(updated);
-    await saveCustomExercises(updated);
+    await addCustomExercise(newName.trim(), newPart, newEquipment);
     setAddModalVisible(false);
     setNewName('');
     setNewEquipment('バーベル');
@@ -144,10 +127,8 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
           text: '削除',
           style: 'destructive',
           onPress: async () => {
-            const updated = customExercises.filter(e => e.id !== id);
-            setCustomExercises(updated);
             setSelectedIds(prev => prev.filter(x => x !== id));
-            await saveCustomExercises(updated);
+            await deleteCustomExercise(id);
           },
         },
       ],
