@@ -347,8 +347,8 @@ export default function SettingsScreen() {
 
   const handleDeleteAll = () => {
     Alert.alert(
-      '全チE�Eタを削除',
-      'すべてのトレーニングチE�Eタが削除されます。テーマ設定も初期化されます。この操作�E允E��戻せません。',
+      '全データを削除',
+      'すべてのトレーニングデータが削除されます。テーマ設定も初期化されます。この操作�E允E��戻せません。',
       [
         { text: 'キャンセル', style: 'cancel' },
         {
@@ -358,7 +358,7 @@ export default function SettingsScreen() {
             await resetAll();
             Alert.alert(
               '削除完了',
-              'チE�Eタをすべて削除しました。',
+              'データをすべて削除しました。',
             );
           },
         },
@@ -383,7 +383,7 @@ export default function SettingsScreen() {
         <View style={styles.sectionCard}>
           <View style={styles.row}>
             <View style={styles.rowLabelGroup}>
-              <Text style={styles.rowLabel}>ホ�Eムカレンダー</Text>
+              <Text style={styles.rowLabel}>ホームカレンダー</Text>
             </View>
             <Switch
               value={appSettings.showCalendar}
@@ -391,14 +391,14 @@ export default function SettingsScreen() {
               trackColor={{ false: colors.surface2, true: colors.accentDim }}
               thumbColor={appSettings.showCalendar ? colors.accent : colors.textTertiary}
               accessibilityRole="switch"
-              accessibilityLabel="ホ�Eムカレンダーの表示刁E��"
+              accessibilityLabel="ホームカレンダーの表示切替"
             />
           </View>
           <View style={styles.rowSeparator} />
           <View style={styles.row}>
             <View style={styles.rowLabelGroup}>
-              <Text style={styles.rowLabel}>クイチE��スタート</Text>
-              <Text style={styles.rowDescription}>ホ�Eム画面にクイチE��スタートを表示</Text>
+              <Text style={styles.rowLabel}>クイックスタート</Text>
+              <Text style={styles.rowDescription}>ホーム画面にクイックスタートを表示</Text>
             </View>
             <Switch
               value={appSettings.showQuickStart}
@@ -406,12 +406,12 @@ export default function SettingsScreen() {
               trackColor={{ false: colors.surface2, true: colors.accentDim }}
               thumbColor={appSettings.showQuickStart ? colors.accent : colors.textTertiary}
               accessibilityRole="switch"
-              accessibilityLabel="クイチE��スタート�E表示刁E��"
+              accessibilityLabel="クイックスタートの表示切替"
             />
           </View>
         </View>
 
-        {/* ── チE�EチE── */}
+        {/* ── テーマ── */}
         <SectionHeader title="テーマ" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           <View style={styles.themeGrid}>
@@ -431,7 +431,7 @@ export default function SettingsScreen() {
                     activeOpacity={0.75}
                     accessibilityRole="radio"
                     accessibilityState={{ checked: isSelected }}
-                    accessibilityLabel={`チE�EチE ${theme.name}`}
+                    accessibilityLabel={`テーマ ${theme.name}`}
                   >
                     <View
                       style={[
@@ -451,7 +451,7 @@ export default function SettingsScreen() {
         <SectionHeader title="コントラスト調整" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           <ContrastSlider
-            label="ベ�Eス明度"
+            label="ベース明度"
             value={contrastSettings.baseLightness}
             onValueChange={v => setContrast({ ...contrastSettings, baseLightness: v })}
             colors={colors}
@@ -469,9 +469,9 @@ export default function SettingsScreen() {
               onPress={() => setContrast({ baseLightness: 50, accentSaturation: 50 })}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="コントラスト設定をリセチE��"
+              accessibilityLabel="コントラスト設定をリセット"
             >
-              <Text style={[styles.rowValue, { color: colors.textTertiary }]}>リセチE��</Text>
+              <Text style={[styles.rowValue, { color: colors.textTertiary }]}>リセット</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -481,7 +481,7 @@ export default function SettingsScreen() {
         <View style={styles.sectionCard}>
           {/* フォントサイズ */}
           <ContrastSlider
-            label={`斁E��サイズ　${Math.round((0.80 + fontSettings.fontSizeScale * 0.005) * 100)}%`}
+            label={`フォントサイズ　${Math.round((0.80 + fontSettings.fontSizeScale * 0.005) * 100)}%`}
             value={fontSettings.fontSizeScale}
             onValueChange={v => setFontSettings({ ...fontSettings, fontSizeScale: v })}
             colors={colors}
@@ -522,9 +522,9 @@ export default function SettingsScreen() {
               onPress={() => setFontSettings({ fontSizeScale: 40, fontWeightLevel: 0, fontFamily: 'system' })}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="フォント設定をリセチE��"
+              accessibilityLabel="フォント設定をリセット"
             >
-              <Text style={[styles.rowValue, { color: colors.textTertiary }]}>リセチE��</Text>
+              <Text style={[styles.rowValue, { color: colors.textTertiary }]}>リセット</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -533,7 +533,7 @@ export default function SettingsScreen() {
         <SectionHeader title="トレーニング設定" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>重量スチE��プ</Text>
+            <Text style={styles.rowLabel}>重量ステップ</Text>
             <Stepper
               value={workoutConfig.weightStep}
               min={0.5} max={10} step={0.5} unit=" kg" decimals={1}
@@ -543,17 +543,17 @@ export default function SettingsScreen() {
           </View>
           <View style={styles.rowSeparator} />
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>チE��ォルトセチE��数</Text>
+            <Text style={styles.rowLabel}>デフォルトセット数</Text>
             <Stepper
               value={workoutConfig.defaultSets}
-              min={1} max={10} step={1} unit=" セチE��"
+              min={1} max={10} step={1} unit=" セット"
               onChangeValue={v => handleConfigChange({ defaultSets: v })}
               colors={colors}
             />
           </View>
           <View style={styles.rowSeparator} />
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>チE��ォルト重量</Text>
+            <Text style={styles.rowLabel}>デフォルト重量</Text>
             <Stepper
               value={workoutConfig.defaultWeight}
               min={0} max={300} step={5} unit=" kg"
@@ -563,7 +563,7 @@ export default function SettingsScreen() {
           </View>
           <View style={styles.rowSeparator} />
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>チE��ォルトレチE�E数</Text>
+            <Text style={styles.rowLabel}>デフォルトレップ数</Text>
             <Stepper
               value={workoutConfig.defaultReps}
               min={1} max={100} step={1} unit=" 回"
@@ -573,7 +573,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* ── チE�Eタ管琁E── */}
+        {/* ── データ管理── */}
         <SectionHeader title="データ管理" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           <TouchableOpacity
@@ -581,15 +581,15 @@ export default function SettingsScreen() {
             onPress={handleDeleteAll}
             activeOpacity={0.88}
             accessibilityRole="button"
-            accessibilityLabel="すべてのチE�Eタを削除�E��Eに戻せません�E�"
+            accessibilityLabel="すべてのデータを削除�E��Eに戻せません�E�"
           >
             <Text style={[styles.rowLabel, styles.destructiveText]}>
-              全チE�Eタを削除
+              全データを削除
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* ── サポ�EチE── */}
+        {/* ── サポート── */}
         <SectionHeader title="サポート" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           <TouchableOpacity
@@ -598,13 +598,13 @@ export default function SettingsScreen() {
             activeOpacity={0.7}
             accessibilityRole="button"
           >
-            <Text style={styles.rowLabel}>お問ぁE��わせ</Text>
+            <Text style={styles.rowLabel}>お問い合わせ</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
           </TouchableOpacity>
         </View>
 
-        {/* ── 法的惁E�� ── */}
-        <SectionHeader title="法的惁E��" style={styles.sectionHeader} />
+        {/* ── 法的情報 ── */}
+        <SectionHeader title="法的情報" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           <TouchableOpacity
             style={styles.row}
@@ -628,7 +628,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* ── アプリ惁E�� ── */}
-        <SectionHeader title="アプリ惁E��" style={styles.sectionHeader} />
+        <SectionHeader title="アプリ情報" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           <View style={styles.row}>
             <Text style={styles.rowLabel}>アプリ名</Text>
@@ -636,7 +636,7 @@ export default function SettingsScreen() {
           </View>
           <View style={styles.rowSeparator} />
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>バ�Eジョン</Text>
+            <Text style={styles.rowLabel}>バージョン</Text>
             <Text style={styles.rowValue}>{APP.VERSION}</Text>
           </View>
           <View style={styles.rowSeparator} />
