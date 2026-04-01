@@ -95,7 +95,6 @@ export function StreakRing({
 
       {/* 中央テキスト */}
       <View style={[styles.center, { width: size, height: size }]}>
-        <Text style={[styles.flame]}>🔥</Text>
         <Text style={[styles.days, { color: days > 0 ? ringColor : colors.labelTertiary }]}>
           {days}
         </Text>
@@ -120,10 +119,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     top: 0,
     left: 0,
-  },
-  flame: {
-    fontSize: 14,
-    lineHeight: 18,
   },
   days: {
     fontSize: 20,
