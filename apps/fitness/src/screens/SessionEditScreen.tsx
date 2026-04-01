@@ -15,7 +15,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { useWorkout } from '../WorkoutContext';
-import { EXERCISES } from '../exerciseDB';
+import { getExerciseById } from '../exerciseDB';
 import { BUTTON_HEIGHT, RADIUS, SPACING, TYPOGRAPHY } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
@@ -37,13 +37,13 @@ export default function SessionEditScreen() {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
   const { workoutId, exerciseId } = route.params;
-  const { workouts, updateSession } = useWorkout();
+  const { workouts, updateSession, customExercises } = useWorkout();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const workout = workouts.find(w => w.id === workoutId);
   const session = workout?.sessions.find(s => s.exerciseId === exerciseId);
-  const exercise = EXERCISES.find(e => e.id === exerciseId);
+  const exercise = getExerciseById(exerciseId, customExercises);
 
   const [sets, setSets] = useState<WorkoutSet[]>(() => session?.sets ?? []);
 

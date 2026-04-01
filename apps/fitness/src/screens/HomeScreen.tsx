@@ -18,7 +18,7 @@ import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
 import type { DynamicTypography } from '../ThemeContext';
 import { useWorkout } from '../WorkoutContext';
-import { EXERCISES, BODY_PARTS } from '../exerciseDB';
+import { EXERCISES, BODY_PARTS, getExerciseById } from '../exerciseDB';
 import type { RootDrawerParamList } from '../navigation/RootNavigator';
 import { CALENDAR } from '../config';
 import type { BodyPart } from '../types';
@@ -87,7 +87,7 @@ function formatSectionDate(dateStr: string, todayStr: string): string {
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeNavProp>();
-  const { workouts, personalRecords, deleteSessionFromWorkout, setWorkoutTargetDate } = useWorkout();
+  const { workouts, personalRecords, deleteSessionFromWorkout, setWorkoutTargetDate, customExercises } = useWorkout();
   const { colors, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
@@ -133,11 +133,11 @@ export default function HomeScreen() {
     if (!selectedDayWorkout) return [];
     const parts = new Set<BodyPart>();
     for (const s of selectedDayWorkout.sessions) {
-      const ex = EXERCISES.find(e => e.id === s.exerciseId);
+      const ex = getExerciseById(s.exerciseId, customExercises);
       if (ex) parts.add(ex.bodyPart);
     }
     return [...parts];
-  }, [selectedDayWorkout]);
+  }, [selectedDayWorkout, customExercises]);
 
   // 選択日のメニュー
   const { selectedWorkoutId, selectedMenu } = useMemo(() => {
@@ -153,7 +153,7 @@ export default function HomeScreen() {
     }
     const items = ids
       .map(id => {
-        const exercise = EXERCISES.find(e => e.id === id);
+        const exercise = getExerciseById(id, customExercises);
         const pr = personalRecords.find(r => r.exerciseId === id);
         const session = selected.sessions.find(s => s.exerciseId === id);
         const lastSets = session?.sets.length ?? 0;
@@ -173,7 +173,7 @@ export default function HomeScreen() {
         } => item.exercise != null,
       );
     return { selectedWorkoutId: selected.id, selectedMenu: items };
-  }, [workoutByDate, selectedDate, personalRecords]);
+  }, [workoutByDate, selectedDate, personalRecords, customExercises]);
 
   // ボタンコンテナの高さ（スクロール余白算出用）
   const btnContainerHeight = 50 + Math.max(insets.bottom, SPACING.md) + SPACING.md;

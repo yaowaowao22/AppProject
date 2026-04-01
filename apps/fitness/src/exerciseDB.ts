@@ -440,6 +440,11 @@ export const EXERCISES_BY_PART: Record<BodyPart, Exercise[]> = {
   core:      EXERCISES.filter(e => e.bodyPart === 'core'),
 };
 
+// ── 統一ルックアップ（ビルトイン + カスタム）──────────────────────────────────
+export function getExerciseById(id: string, customExercises: Exercise[]): Exercise | undefined {
+  return EXERCISES.find(e => e.id === id) ?? customExercises.find(e => e.id === id);
+}
+
 // ── 日本語部位名 → BodyPart マッピング ──────────────────────────────────────
 export const JP_TO_BODY_PART: Record<string, BodyPart> = {
   '胸':   'chest',

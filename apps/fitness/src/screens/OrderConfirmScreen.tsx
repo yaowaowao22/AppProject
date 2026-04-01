@@ -8,7 +8,7 @@ import { ScreenHeader } from '../components/ScreenHeader';
 import { SPACING, TYPOGRAPHY, RADIUS, BUTTON_HEIGHT } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
-import { EXERCISES } from '../exerciseDB';
+import { getExerciseById } from '../exerciseDB';
 import { useWorkout } from '../WorkoutContext';
 import type { WorkoutStackParamList } from '../navigation/RootNavigator';
 import type { EquipmentType } from '../types';
@@ -29,12 +29,12 @@ export default function OrderConfirmScreen({ navigation, route }: Props) {
   const { exerciseIds } = route.params;
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { saveTemplate } = useWorkout();
+  const { saveTemplate, customExercises } = useWorkout();
 
   const [data, setData] = useState<ExerciseItem[]>(() =>
     exerciseIds
       .map(id => {
-        const ex = EXERCISES.find(e => e.id === id);
+        const ex = getExerciseById(id, customExercises);
         if (!ex) return null;
         return { id, name: ex.name, equipment: ex.equipment };
       })

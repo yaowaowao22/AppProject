@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SwipeableRow } from '../components/SwipeableRow';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { useWorkout } from '../WorkoutContext';
-import { BODY_PARTS, EXERCISES } from '../exerciseDB';
+import { BODY_PARTS, EXERCISES, getExerciseById } from '../exerciseDB';
 import { SPACING, RADIUS, BUTTON_HEIGHT } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
@@ -183,7 +183,7 @@ type NavProp = NativeStackNavigationProp<HistoryStackParamList, 'HistoryList'>;
 // ── 日別タチE──────────────────────────────────────────────────────────────────
 
 function DailyTab({ styles, colors }: { styles: ReturnType<typeof makeStyles>; colors: TanrenThemeColors }) {
-  const { workouts, deleteWorkout } = useWorkout();
+  const { workouts, deleteWorkout, customExercises } = useWorkout();
   const navigation = useNavigation<NavProp>();
 
   const sorted = useMemo(
@@ -195,7 +195,7 @@ function DailyTab({ styles, colors }: { styles: ReturnType<typeof makeStyles>; c
     const bodyParts = [
       ...new Set(
         item.sessions
-          .map(s => EXERCISES.find(e => e.id === s.exerciseId)?.bodyPart)
+          .map(s => getExerciseById(s.exerciseId, customExercises)?.bodyPart)
           .filter((bp): bp is BodyPart => bp !== undefined),
       ),
     ];
@@ -232,7 +232,7 @@ function DailyTab({ styles, colors }: { styles: ReturnType<typeof makeStyles>; c
           )}
 
           {item.sessions.map(session => {
-            const ex = EXERCISES.find(e => e.id === session.exerciseId);
+            const ex = getExerciseById(session.exerciseId, customExercises);
             const vol = Math.round(getVolume(session));
             return (
               <View key={session.id} style={styles.exerciseRow}>
@@ -254,7 +254,7 @@ function DailyTab({ styles, colors }: { styles: ReturnType<typeof makeStyles>; c
         </TouchableOpacity>
       </SwipeableRow>
     );
-  }, [navigation, deleteWorkout, styles, colors]);
+  }, [navigation, deleteWorkout, styles, colors, customExercises]);
 
   if (sorted.length === 0) {
     return (
@@ -291,7 +291,7 @@ function DailyTab({ styles, colors }: { styles: ReturnType<typeof makeStyles>; c
 // ── 部位別タチE────────────────────────────────────────────────────────────────
 
 function BodyPartListView({ onSelect }: { onSelect: (bp: BodyPart) => void }) {
-  const { workouts } = useWorkout();
+  const { workouts, customExercises } = useWorkout();
   const { colors, typography } = useTheme();
 
   const cards = useMemo(() => {
@@ -300,7 +300,7 @@ function BodyPartListView({ onSelect }: { onSelect: (bp: BodyPart) => void }) {
       let totalVolume = 0;
       for (const w of workouts) {
         for (const s of w.sessions) {
-          const ex = EXERCISES.find(e => e.id === s.exerciseId);
+          const ex = getExerciseById(s.exerciseId, customExercises);
           if (ex?.bodyPart === bp.id) {
             sessionCount++;
             totalVolume += getVolume(s);
@@ -309,7 +309,7 @@ function BodyPartListView({ onSelect }: { onSelect: (bp: BodyPart) => void }) {
       }
       return { ...bp, sessionCount, totalVolume: Math.round(totalVolume) };
     });
-  }, [workouts]);
+  }, [workouts, customExercises]);
 
   if (workouts.length === 0) {
     return (
@@ -381,7 +381,7 @@ function BodyPartDetailView({
   bodyPart: BodyPart;
   onBack: () => void;
 }) {
-  const { workouts } = useWorkout();
+  const { workouts, customExercises } = useWorkout();
   const { colors, typography } = useTheme();
   const navigation = useNavigation<NavProp>();
 
@@ -401,7 +401,7 @@ function BodyPartDetailView({
       const wk = getWeekMonday(w.date);
       if (!weekKeys.includes(wk)) continue;
       for (const s of w.sessions) {
-        const ex = EXERCISES.find(e => e.id === s.exerciseId);
+        const ex = getExerciseById(s.exerciseId, customExercises);
         if (ex?.bodyPart !== bodyPart) continue;
         volByWeek[wk] = (volByWeek[wk] ?? 0) + getVolume(s);
       }
@@ -410,7 +410,7 @@ function BodyPartDetailView({
       label: formatDateShort(k),
       value: Math.round(volByWeek[k] ?? 0),
     }));
-  }, [workouts, bodyPart]);
+  }, [workouts, bodyPart, customExercises]);
 
   // セッション一覧�E�日付降頁E��E
   const sessions = useMemo<BPDetailSession[]>(() => {
@@ -418,7 +418,7 @@ function BodyPartDetailView({
     const result: BPDetailSession[] = [];
     for (const w of sorted) {
       for (const s of w.sessions) {
-        const ex = EXERCISES.find(e => e.id === s.exerciseId);
+        const ex = getExerciseById(s.exerciseId, customExercises);
         if (ex?.bodyPart !== bodyPart) continue;
         result.push({
           key:          `${w.id}-${s.id}`,
@@ -432,7 +432,7 @@ function BodyPartDetailView({
       }
     }
     return result;
-  }, [workouts, bodyPart]);
+  }, [workouts, bodyPart, customExercises]);
 
   // 日付でグループ化
   const dayGroups = useMemo<DayGroup[]>(() => {
@@ -583,7 +583,7 @@ function BodyPartTab() {
 // ── 種目別タチE────────────────────────────────────────────────────────────────
 
 function ExerciseListView({ onSelect }: { onSelect: (exerciseId: string) => void }) {
-  const { workouts } = useWorkout();
+  const { workouts, customExercises } = useWorkout();
   const { colors, typography } = useTheme();
   const [filter, setFilter] = useState<BodyPart | 'all'>('all');
 
@@ -602,7 +602,7 @@ function ExerciseListView({ onSelect }: { onSelect: (exerciseId: string) => void
     }
     const result: ExRow[] = [];
     for (const exId of exIdSet) {
-      const ex = EXERCISES.find(e => e.id === exId);
+      const ex = getExerciseById(exId, customExercises);
       if (!ex) continue;
       if (filter !== 'all' && ex.bodyPart !== filter) continue;
       let recordCount = 0;
@@ -618,7 +618,7 @@ function ExerciseListView({ onSelect }: { onSelect: (exerciseId: string) => void
       });
     }
     return result.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
-  }, [workouts, filter]);
+  }, [workouts, filter, customExercises]);
 
   if (workouts.length === 0) {
     return (
@@ -727,10 +727,10 @@ function ExerciseDetailView({
   exerciseId: string;
   onBack: () => void;
 }) {
-  const { workouts, personalRecords } = useWorkout();
+  const { workouts, personalRecords, customExercises } = useWorkout();
   const { colors, typography } = useTheme();
 
-  const ex  = EXERCISES.find(e => e.id === exerciseId);
+  const ex  = getExerciseById(exerciseId, customExercises);
   const pr  = personalRecords.find(p => p.exerciseId === exerciseId);
 
   // 最大重量推移チャート（直迁E2回！E

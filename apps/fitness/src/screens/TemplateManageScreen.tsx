@@ -16,14 +16,14 @@ import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
 import { useWorkout } from '../WorkoutContext';
 import { ScreenHeader } from '../components/ScreenHeader';
-import { BODY_PARTS, EXERCISES } from '../exerciseDB';
+import { BODY_PARTS, EXERCISES, getExerciseById } from '../exerciseDB';
 import type { BodyPart } from '../types';
 
 // ── テンプレート管理画面 ──────────────────────────────────────────────────────
 
 export default function TemplateManageScreen() {
   const { colors } = useTheme();
-  const { templates, saveTemplate, deleteTemplate, updateTemplate } = useWorkout();
+  const { templates, saveTemplate, deleteTemplate, updateTemplate, customExercises } = useWorkout();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   // ── 表示モード管理 ──
@@ -109,9 +109,10 @@ export default function TemplateManageScreen() {
   };
 
   // ── タブフィルタ適用済み種目 ──
+  const allExercises = useMemo(() => [...EXERCISES, ...customExercises], [customExercises]);
   const filteredExercises = useMemo(
-    () => (activeTab ? EXERCISES.filter(e => e.bodyPart === activeTab) : EXERCISES),
-    [activeTab],
+    () => (activeTab ? allExercises.filter(e => e.bodyPart === activeTab) : allExercises),
+    [activeTab, allExercises],
   );
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -154,7 +155,7 @@ export default function TemplateManageScreen() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           renderItem={({ item }) => {
             const names = item.exerciseIds
-              .map(id => EXERCISES.find(e => e.id === id)?.name ?? id)
+              .map(id => getExerciseById(id, customExercises)?.name ?? id)
               .slice(0, 3);
             const overflow = item.exerciseIds.length - names.length;
             const metaStr =

@@ -13,7 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomSheet, SheetRow, SparkBars } from '../components/BottomSheet';
 import { ScreenHeader } from '../components/ScreenHeader';
-import { BODY_PARTS, EXERCISES } from '../exerciseDB';
+import { BODY_PARTS, EXERCISES, getExerciseById } from '../exerciseDB';
 import { RADIUS, SPACING } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
@@ -61,7 +61,7 @@ type PRSheet = {
 type SheetState = PRSheet | null;
 
 export default function ProgressScreen() {
-  const { workouts, personalRecords, weeklyStats } = useWorkout();
+  const { workouts, personalRecords, weeklyStats, customExercises } = useWorkout();
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
   const navigation = useNavigation<NativeStackNavigationProp<HistoryStackParamList>>();
@@ -80,12 +80,12 @@ export default function ProgressScreen() {
       .filter(pr => pr.maxWeight !== null)
       .map(pr => ({
         exerciseId: pr.exerciseId,
-        name: EXERCISES.find(e => e.id === pr.exerciseId)?.name ?? pr.exerciseId,
+        name: getExerciseById(pr.exerciseId, customExercises)?.name ?? pr.exerciseId,
         maxWeight: pr.maxWeight as number,
         achievedAt: pr.achievedAt,
       }))
       .sort((a, b) => b.maxWeight - a.maxWeight);
-  }, [personalRecords]);
+  }, [personalRecords, customExercises]);
 
   // ── Section 2: 部位別ベストボリューム ────────────────────────────────────
   const partVolumes = useMemo(() => {
@@ -98,7 +98,7 @@ export default function ProgressScreen() {
 
     for (const daily of workouts) {
       for (const session of daily.sessions) {
-        const exercise = EXERCISES.find(e => e.id === session.exerciseId);
+        const exercise = getExerciseById(session.exerciseId, customExercises);
         if (!exercise) continue;
         const vol = session.sets.reduce((sum, s) => {
           return sum + (s.weight !== null && s.reps !== null ? s.weight * s.reps : 0);
@@ -117,7 +117,7 @@ export default function ProgressScreen() {
       volume: volMap[bp.id as BodyPart],
       achievedAt: dateMap[bp.id as BodyPart],
     }));
-  }, [workouts]);
+  }, [workouts, customExercises]);
 
   // ── Section 3: 直迁E日ボリュームチャート（日別・タチE�EでDayDetail�E�────────
   const dailyChartData = useMemo(() => {
@@ -188,7 +188,7 @@ export default function ProgressScreen() {
   };
 
   const onPRCardPress = (exerciseId: string) => {
-    const ex = EXERCISES.find(e => e.id === exerciseId);
+    const ex = getExerciseById(exerciseId, customExercises);
     const pr = personalRecords.find(r => r.exerciseId === exerciseId);
     if (!ex || !pr) return;
 

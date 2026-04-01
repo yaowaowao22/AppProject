@@ -17,7 +17,7 @@ import { useFocusEffect, CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BODY_PARTS, EXERCISES_BY_PART, EXERCISES } from '../exerciseDB';
+import { BODY_PARTS, EXERCISES_BY_PART, EXERCISES, getExerciseById } from '../exerciseDB';
 import type { BodyPart, Exercise, EquipmentType, ReportItem, WorkoutSession, WorkoutSet } from '../types';
 import { loadCustomExercises, saveCustomExercises } from '../utils/storage';
 import { SPACING, RADIUS, BUTTON_HEIGHT } from '../theme';
@@ -430,13 +430,13 @@ function buildRows(
 
 export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   const { exerciseIds, existingWorkoutId, existingSession } = route.params;
-  const { workouts, startSession, addSet, completeSession, updateSession, workoutConfig, personalRecords } = useWorkout();
+  const { workouts, startSession, addSet, completeSession, updateSession, workoutConfig, personalRecords, customExercises } = useWorkout();
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const exerciseId = exerciseIds[currentIndex];
-  const exercise = EXERCISES.find(e => e.id === exerciseId);
+  const exercise = getExerciseById(exerciseId, customExercises);
 
   const [rows, setRows] = useState<SetRow[]>(() => buildRows(null, workoutConfig.defaultSets, workoutConfig.defaultWeight, workoutConfig.defaultReps));
   const [setDone, setSetDone] = useState(false);
@@ -618,7 +618,7 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
         s.weight !== null ? (m === null ? s.weight : Math.max(m, s.weight)) : m, null);
 
     return exerciseIds.map((eid, idx) => {
-      const ex = EXERCISES.find(e => e.id === eid);
+      const ex = getExerciseById(eid, customExercises);
       const sorted = workouts
         .flatMap(w => w.sessions.map(s => ({ ...s })))
         .filter(s => s.exerciseId === eid && !!s.completedAt)

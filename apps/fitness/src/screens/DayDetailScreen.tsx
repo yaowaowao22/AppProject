@@ -13,7 +13,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { SwipeableRow } from '../components/SwipeableRow';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { useWorkout } from '../WorkoutContext';
-import { EXERCISES } from '../exerciseDB';
+import { getExerciseById } from '../exerciseDB';
 import { SPACING, TYPOGRAPHY } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
@@ -43,7 +43,7 @@ export default function DayDetailScreen() {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
   const { workoutId } = route.params;
-  const { workouts, deleteSessionFromWorkout } = useWorkout();
+  const { workouts, deleteSessionFromWorkout, customExercises } = useWorkout();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -73,7 +73,7 @@ export default function DayDetailScreen() {
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }: { item: WorkoutSession }) => {
-          const ex = EXERCISES.find(e => e.id === item.exerciseId);
+          const ex = getExerciseById(item.exerciseId, customExercises);
           const maxW = item.sets.reduce<number | null>((m, set) =>
             set.weight !== null ? (m === null ? set.weight : Math.max(m, set.weight)) : m, null);
           const hasPR = item.sets.some(s => s.isPersonalRecord);

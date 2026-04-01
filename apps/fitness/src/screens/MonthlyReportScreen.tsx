@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BODY_PARTS, EXERCISES } from '../exerciseDB';
+import { BODY_PARTS, EXERCISES, getExerciseById } from '../exerciseDB';
 import { RADIUS, SPACING, TYPOGRAPHY } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import type { BodyPart } from '../types';
@@ -30,7 +30,7 @@ function fmtVol(vol: number): string {
 export default function MonthlyReportScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { workouts } = useWorkout();
+  const { workouts, customExercises } = useWorkout();
 
   const [displayMonth, setDisplayMonth] = useState<Date>(() => {
     const d = new Date();
@@ -72,7 +72,7 @@ export default function MonthlyReportScreen() {
     };
     for (const daily of monthWorkouts) {
       for (const session of daily.sessions) {
-        const ex = EXERCISES.find(e => e.id === session.exerciseId);
+        const ex = getExerciseById(session.exerciseId, customExercises);
         if (!ex) continue;
         const vol = session.sets.reduce(
           (s, set) =>
@@ -90,7 +90,7 @@ export default function MonthlyReportScreen() {
       ratio: maxVol > 0 ? volMap[bp.id as BodyPart] / maxVol : 0,
       isMax: maxVol > 0 && volMap[bp.id as BodyPart] === maxVol,
     }));
-  }, [monthWorkouts]);
+  }, [monthWorkouts, customExercises]);
 
   // ── 日別ボリューム（選択月の各日）────────────────────────────────────────
   const dailyData = useMemo(() => {
@@ -119,7 +119,7 @@ export default function MonthlyReportScreen() {
     const map: Record<string, { name: string; volume: number; sets: number }> = {};
     for (const daily of monthWorkouts) {
       for (const session of daily.sessions) {
-        const ex = EXERCISES.find(e => e.id === session.exerciseId);
+        const ex = getExerciseById(session.exerciseId, customExercises);
         const name = ex?.name ?? session.exerciseId;
         const vol = session.sets.reduce(
           (s, set) =>
@@ -137,7 +137,7 @@ export default function MonthlyReportScreen() {
       .sort((a, b) => b[1].volume - a[1].volume)
       .slice(0, 5)
       .map(([id, d], i) => ({ id, rank: i + 1, ...d }));
-  }, [monthWorkouts]);
+  }, [monthWorkouts, customExercises]);
 
   const monthLabel = `${year}年${month + 1}月`;
   const isEmpty = monthWorkouts.length === 0;
