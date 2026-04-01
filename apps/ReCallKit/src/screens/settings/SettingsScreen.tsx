@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Updates from 'expo-updates';
 import { useTheme } from '../../theme/ThemeContext';
 import { type ThemePreference, THEMES, THEME_CATEGORIES } from '../../theme/themes';
 import { TypeScale } from '../../theme/typography';
@@ -277,6 +278,38 @@ export function SettingsScreen() {
             <Text style={[styles.rowLabel, { color: colors.label }]}>バージョン</Text>
             <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
               {APP_VERSION}
+            </Text>
+          </View>
+          <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+          <View style={styles.row}>
+            <Text style={[styles.rowLabel, { color: colors.label }]}>OTA Update</Text>
+            <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
+              {Updates.isEmbeddedLaunch ? 'embedded' : Updates.updateId?.slice(0, 8) ?? '-'}
+            </Text>
+          </View>
+          {!Updates.isEmbeddedLaunch && Updates.createdAt && (
+            <>
+              <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+              <View style={styles.row}>
+                <Text style={[styles.rowLabel, { color: colors.label }]}>更新日時</Text>
+                <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
+                  {Updates.createdAt.toLocaleString('ja-JP')}
+                </Text>
+              </View>
+            </>
+          )}
+          <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+          <View style={styles.row}>
+            <Text style={[styles.rowLabel, { color: colors.label }]}>チャンネル</Text>
+            <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
+              {Updates.channel ?? '-'}
+            </Text>
+          </View>
+          <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+          <View style={styles.row}>
+            <Text style={[styles.rowLabel, { color: colors.label }]}>Runtime</Text>
+            <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
+              {Updates.runtimeVersion ?? '-'}
             </Text>
           </View>
         </View>
