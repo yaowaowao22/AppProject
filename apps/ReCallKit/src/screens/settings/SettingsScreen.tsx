@@ -4,6 +4,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   Modal,
   FlatList,
@@ -267,6 +268,31 @@ export function SettingsScreen() {
               データをエクスポート
             </Text>
           </TouchableOpacity>
+          <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+          <TouchableOpacity
+            style={styles.row}
+            onPress={handleDeleteAllData}
+            activeOpacity={0.6}
+            disabled={deleting}
+          >
+            {deleting ? (
+              <ActivityIndicator
+                size="small"
+                color={colors.error}
+                style={{ marginRight: Spacing.s }}
+              />
+            ) : (
+              <Ionicons
+                name="trash-outline"
+                size={20}
+                color={colors.error}
+                style={{ marginRight: Spacing.s }}
+              />
+            )}
+            <Text style={[styles.rowLabel, { color: colors.error }]}>
+              全データを削除
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* ── アプリ情報 ───────────────────────────────────── */}
@@ -413,8 +439,8 @@ export function SettingsScreen() {
 
       {/* ── テーマピッカー Modal ─────────────────────────── */}
       <Modal visible={showThemePicker} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.themeSheet, { backgroundColor: colors.backgroundGrouped }]}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowThemePicker(false)}>
+          <Pressable style={[styles.themeSheet, { backgroundColor: colors.backgroundGrouped }]}>
 
             {/* ヘッダー */}
             <View style={[styles.modalHeader, { borderBottomColor: colors.separator, backgroundColor: colors.card }]}>
@@ -433,16 +459,16 @@ export function SettingsScreen() {
               style={styles.themeScroll}
               contentContainerStyle={styles.themeScrollContent}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
             >
               {/* システム設定に従う */}
               <Text style={[styles.themeCategoryHeader, { color: colors.labelTertiary }]}>
                 自動
               </Text>
               <View style={[styles.section, { backgroundColor: colors.card }]}>
-                <TouchableOpacity
+                <Pressable
                   style={styles.themeRow}
                   onPress={() => handleTheme('system')}
-                  activeOpacity={0.6}
                 >
                   <View style={[styles.themeSwatchSystem, { borderColor: colors.separator }]}>
                     <View style={[styles.themeSwatchHalf, { backgroundColor: '#FFFFFF' }]} />
@@ -454,7 +480,7 @@ export function SettingsScreen() {
                   {themePreference === 'system' && (
                     <Ionicons name="checkmark" size={20} color={colors.accent} />
                   )}
-                </TouchableOpacity>
+                </Pressable>
               </View>
 
               {/* カテゴリ別テーマ一覧 */}
@@ -472,10 +498,9 @@ export function SettingsScreen() {
                           {i > 0 && (
                             <View style={[styles.separator, { backgroundColor: colors.separator }]} />
                           )}
-                          <TouchableOpacity
+                          <Pressable
                             style={styles.themeRow}
                             onPress={() => handleTheme(tid)}
-                            activeOpacity={0.6}
                           >
                             {/* カラースウォッチ */}
                             <View
@@ -497,7 +522,7 @@ export function SettingsScreen() {
                             {isSelected && (
                               <Ionicons name="checkmark" size={20} color={colors.accent} />
                             )}
-                          </TouchableOpacity>
+                          </Pressable>
                         </React.Fragment>
                       );
                     })}
@@ -505,8 +530,8 @@ export function SettingsScreen() {
                 </React.Fragment>
               ))}
             </ScrollView>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </>
   );
@@ -663,6 +688,7 @@ const styles = StyleSheet.create({
   themeSheet: {
     borderTopLeftRadius: Radius.l,
     borderTopRightRadius: Radius.l,
+    minHeight: '40%',
     maxHeight: '85%',
   },
   themeScroll: {
