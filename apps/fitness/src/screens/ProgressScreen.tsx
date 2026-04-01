@@ -293,12 +293,12 @@ export default function ProgressScreen() {
             <Text style={styles.pvPart}>{item.label}</Text>
             <View style={styles.pvNumRow}>
               <Text style={styles.pvVol}>
-                {item.volume > 0 ? item.volume.toLocaleString() : ' E}
+                {item.volume > 0 ? item.volume.toLocaleString() : '-'}
               </Text>
               {item.volume > 0 && <Text style={styles.pvUnit}>kg</Text>}
             </View>
             <Text style={styles.pvDate}>
-              {item.achievedAt ? formatDate(item.achievedAt) : ' E}
+              {item.achievedAt ? formatDate(item.achievedAt) : '-'}
             </Text>
           </View>
         )}

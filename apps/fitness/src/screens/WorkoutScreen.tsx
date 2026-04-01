@@ -18,12 +18,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BODY_PARTS, EXERCISES_BY_PART, EXERCISES } from '../exerciseDB';
-import type { BodyPart, ReportItem, WorkoutSession, WorkoutSet } from '../types';
+import type { BodyPart, Exercise, EquipmentType, ReportItem, WorkoutSession, WorkoutSet } from '../types';
+import { loadCustomExercises, saveCustomExercises } from '../utils/storage';
 import { SPACING, RADIUS, BUTTON_HEIGHT } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
 import type { DynamicTypography } from '../ThemeContext';
 import { ScreenHeader } from '../components/ScreenHeader';
+import { BottomSheet } from '../components/BottomSheet';
+import { SwipeableRow } from '../components/SwipeableRow';
 import { useWorkout } from '../WorkoutContext';
 import type { WorkoutStackParamList } from '../navigation/RootNavigator';
 
@@ -65,7 +68,19 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
   const { templates, deleteTemplate, workoutTargetDate } = useWorkout();
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
-  const exercises = EXERCISES_BY_PART[selectedPart] ?? [];
+  const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newPart, setNewPart] = useState<BodyPart>(BODY_PARTS[0].id as BodyPart);
+  const [newEquipment, setNewEquipment] = useState<EquipmentType>('バーベル');
+  const presetExercises = EXERCISES_BY_PART[selectedPart] ?? [];
+  const customForPart = customExercises.filter(e => e.bodyPart === selectedPart);
+  const exercises = [...presetExercises, ...customForPart];
+
+  // カスタム種目を読み込む
+  useEffect(() => {
+    loadCustomExercises().then(setCustomExercises);
+  }, []);
 
   // タブ切替時に選択状態をリセット
   useFocusEffect(
@@ -100,6 +115,45 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
     );
   }
 
+  async function handleAddExercise() {
+    if (!newName.trim()) return;
+    const newEx: Exercise = {
+      id: `custom_${Date.now()}`,
+      name: newName.trim(),
+      nameEn: '',
+      bodyPart: newPart,
+      icon: 'barbell-outline',
+      equipment: newEquipment,
+      isCustom: true,
+    };
+    const updated = [...customExercises, newEx];
+    setCustomExercises(updated);
+    await saveCustomExercises(updated);
+    setAddModalVisible(false);
+    setNewName('');
+    setNewEquipment('バーベル');
+  }
+
+  function handleDeleteCustomExercise(id: string) {
+    Alert.alert(
+      '種目を削除',
+      'この種目を削除しますか？',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '削除',
+          style: 'destructive',
+          onPress: async () => {
+            const updated = customExercises.filter(e => e.id !== id);
+            setCustomExercises(updated);
+            setSelectedIds(prev => prev.filter(x => x !== id));
+            await saveCustomExercises(updated);
+          },
+        },
+      ],
+    );
+  }
+
   function formatDate(iso: string) {
     const d = new Date(iso);
     return `${d.getMonth() + 1}/${d.getDate()}`;
@@ -107,7 +161,25 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="トレーニング" subtitle={formatWorkoutDateLabel(workoutTargetDate)} showHamburger />
+      <ScreenHeader
+        title="トレーニング"
+        subtitle={formatWorkoutDateLabel(workoutTargetDate)}
+        showHamburger
+        rightAction={
+          <TouchableOpacity
+            onPress={() => {
+              setNewPart(selectedPart);
+              setNewName('');
+              setNewEquipment('バーベル');
+              setAddModalVisible(true);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="種目を追加"
+          >
+            <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
+          </TouchableOpacity>
+        }
+      />
       <View style={styles.subHeaderRow}>
         <Text style={styles.subHeaderTitle}>種目選択</Text>
       </View>
@@ -181,7 +253,7 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
         showsVerticalScrollIndicator={false}
         renderItem={({ item, index }) => {
           const selected = selectedIds.includes(item.id);
-          return (
+          const row = (
             <TouchableOpacity
               style={[
                 styles.exRow,
@@ -210,6 +282,14 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
               </View>
             </TouchableOpacity>
           );
+          if (item.isCustom) {
+            return (
+              <SwipeableRow onDelete={() => handleDeleteCustomExercise(item.id)}>
+                {row}
+              </SwipeableRow>
+            );
+          }
+          return row;
         }}
       />
 
@@ -229,6 +309,64 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* 種目追加モーダル */}
+      <BottomSheet
+        visible={addModalVisible}
+        onClose={() => setAddModalVisible(false)}
+        title="種目を追加"
+      >
+        <Text style={styles.addFormLabel}>種目名</Text>
+        <TextInput
+          style={styles.addFormInput}
+          value={newName}
+          onChangeText={setNewName}
+          placeholder="例: インクラインダンベルロウ"
+          placeholderTextColor={colors.textTertiary}
+          autoFocus
+          returnKeyType="done"
+        />
+        <Text style={styles.addFormLabel}>部位</Text>
+        <View style={styles.addChipRow}>
+          {BODY_PARTS.map(bp => (
+            <TouchableOpacity
+              key={bp.id}
+              style={[styles.addChip, newPart === bp.id && styles.addChipActive]}
+              onPress={() => setNewPart(bp.id as BodyPart)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.addChipText, newPart === bp.id && styles.addChipTextActive]}>
+                {bp.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <Text style={styles.addFormLabel}>器具</Text>
+        <View style={styles.addChipRow}>
+          {(['バーベル', 'ダンベル', 'マシン', 'ケーブル', '自重', 'ローラー', 'ツール'] as EquipmentType[]).map(eq => (
+            <TouchableOpacity
+              key={eq}
+              style={[styles.addChip, newEquipment === eq && styles.addChipActive]}
+              onPress={() => setNewEquipment(eq)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.addChipText, newEquipment === eq && styles.addChipTextActive]}>
+                {eq}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <TouchableOpacity
+          style={[styles.addSubmitBtn, !newName.trim() && styles.addSubmitBtnDisabled]}
+          onPress={handleAddExercise}
+          disabled={!newName.trim()}
+          activeOpacity={0.88}
+          accessibilityRole="button"
+          accessibilityLabel="追加"
+        >
+          <Text style={styles.addSubmitBtnText}>追加</Text>
+        </TouchableOpacity>
+      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -954,6 +1092,72 @@ function makeStyles(c: TanrenThemeColors, t: DynamicTypography) {
     color: c.textPrimary,
     letterSpacing: -0.4,
   },
+
+  // 種目追加フォーム
+  addFormLabel: {
+    fontSize: t.captionSmall,
+    fontWeight: t.semiBold,
+    fontFamily: t.fontFamily,
+    color: c.textTertiary,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  addFormInput: {
+    height: 44,
+    backgroundColor: c.surface2,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    fontSize: t.body,
+    fontFamily: t.fontFamily,
+    color: c.textPrimary,
+  },
+  addChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  addChip: {
+    height: 34,
+    paddingHorizontal: 14,
+    borderRadius: 17,
+    backgroundColor: c.surface2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addChipActive: {
+    backgroundColor: c.accent,
+  },
+  addChipText: {
+    fontSize: t.caption,
+    fontWeight: t.semiBold,
+    fontFamily: t.fontFamily,
+    color: c.textSecondary,
+  },
+  addChipTextActive: {
+    color: c.onAccent,
+  },
+  addSubmitBtn: {
+    height: BUTTON_HEIGHT.secondary,
+    backgroundColor: c.accent,
+    borderRadius: RADIUS.btnCTA,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  addSubmitBtnDisabled: {
+    opacity: 0.4,
+  },
+  addSubmitBtnText: {
+    fontSize: t.body,
+    fontWeight: t.bold,
+    fontFamily: t.fontFamily,
+    color: c.onAccent,
+    letterSpacing: -0.2,
+  },
+
   detailBackRow: {
     flexDirection: 'row',
     alignItems: 'center',
