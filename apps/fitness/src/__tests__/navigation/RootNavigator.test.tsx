@@ -31,6 +31,9 @@ jest.mock('../../screens/MonthlyReportScreen',  () => () => { const { Text } = r
 jest.mock('../../screens/RMCalculatorScreen',   () => () => { const { Text } = require('react-native'); return <Text>RMCalculator</Text>; });
 jest.mock('../../screens/TemplateManageScreen', () => () => { const { Text } = require('react-native'); return <Text>TemplateManage</Text>; });
 jest.mock('../../screens/SettingsScreen',       () => () => { const { Text } = require('react-native'); return <Text>Settings</Text>; });
+jest.mock('../../screens/PrivacyPolicyScreen',  () => () => { const { Text } = require('react-native'); return <Text>PrivacyPolicy</Text>; });
+jest.mock('../../screens/TermsOfServiceScreen', () => () => { const { Text } = require('react-native'); return <Text>TermsOfService</Text>; });
+jest.mock('../../screens/ContactScreen',        () => () => { const { Text } = require('react-native'); return <Text>Contact</Text>; });
 jest.mock('../../screens/HistoryScreen',        () => ({ HistoryScreen: () => { const { Text } = require('react-native'); return <Text>HistoryList</Text>; } }));
 jest.mock('../../screens/DayDetailScreen',      () => () => { const { Text } = require('react-native'); return <Text>DayDetail</Text>; });
 jest.mock('../../screens/SessionEditScreen',    () => () => { const { Text } = require('react-native'); return <Text>SessionEdit</Text>; });
@@ -81,18 +84,19 @@ jest.mock('@react-navigation/drawer', () => ({
 // @react-navigation/native-stack のモック
 const mockWorkoutStackScreens: { name: string; options?: object }[] = [];
 const mockHistoryStackScreens: { name: string; options?: object }[] = [];
+const mockSettingsStackScreens: { name: string; options?: object }[] = [];
 
-// createNativeStackNavigator が 2 回呼ばれる（Workout / History）ので呼び出し順で区別
+// createNativeStackNavigator が 3 回呼ばれる（Workout / History / Settings）ので呼び出し順で区別
 let mockNativeStackCallCount = 0;
 
 jest.mock('@react-navigation/native-stack', () => ({
   createNativeStackNavigator: () => {
     mockNativeStackCallCount += 1;
-    const isWorkout = mockNativeStackCallCount % 2 === 1;
-    const screens = isWorkout ? mockWorkoutStackScreens : mockHistoryStackScreens;
+    const idx = mockNativeStackCallCount % 3;
+    const screens = idx === 1 ? mockWorkoutStackScreens : idx === 2 ? mockHistoryStackScreens : mockSettingsStackScreens;
     return {
       Navigator: ({ children, screenOptions }: { children: React.ReactNode; screenOptions?: object }) => {
-        if (isWorkout) mockWorkoutStackNavigatorOptions = screenOptions ?? null;
+        if (idx === 1) mockWorkoutStackNavigatorOptions = screenOptions ?? null;
         return <>{children}</>;
       },
       Screen: ({ name, options }: { name: string; options?: object }) => {
@@ -111,6 +115,7 @@ beforeEach(() => {
   mockDrawerScreens.length = 0;
   mockWorkoutStackScreens.length = 0;
   mockHistoryStackScreens.length = 0;
+  mockSettingsStackScreens.length = 0;
   mockDrawerNavigatorOptions = null;
   mockWorkoutStackNavigatorOptions = null;
   mockNativeStackCallCount = 0;
@@ -141,7 +146,7 @@ describe('Drawer Navigator — 7 画面登録', () => {
     'MonthlyReport',
     'RMCalculator',
     'TemplateManage',
-    'Settings',
+    'SettingsStack',
   ] as const;
 
   beforeEach(() => {

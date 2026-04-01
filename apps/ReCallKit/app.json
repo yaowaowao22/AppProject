@@ -13,12 +13,16 @@
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.recallkit.app",
+      "bundleIdentifier": "com.massapp.recallkit",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
-        "NSUserNotificationsUsageDescription": "復習リマインダーを毎朝お届けするために通知を使用します"
+        "NSUserNotificationsUsageDescription": "復習リマインダーを毎朝お届けするために通知を使用します",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -26,23 +30,51 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
-      "package": "com.recallkit.app",
+      "package": "com.massapp.recallkit",
       "intentFilters": [
         {
           "action": "VIEW",
-          "data": [{ "scheme": "recallkit" }],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "data": [
+            {
+              "scheme": "recallkit"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
+    "updates": {
+      "url": "https://u.expo.dev/693aa27a-ca3f-4d4b-9f9d-63d3f3ca7557"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "plugins": [
       "expo-sqlite",
+      "expo-updates",
       [
         "expo-notifications",
         {
           "sounds": []
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "693aa27a-ca3f-4d4b-9f9d-63d3f3ca7557"
+      }
+    },
+    "owner": "yaowao"
   }
 }

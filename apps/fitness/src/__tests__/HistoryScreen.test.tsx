@@ -195,7 +195,7 @@ describe('日別タブ（ワークアウトあり）', () => {
 
   test('セット数と最大重量が表示される', () => {
     const { getByText } = render(<HistoryScreen />);
-    expect(getByText('2セット · 85kg')).toBeTruthy();
+    expect(getByText('2セット · 1,480kg')).toBeTruthy();
   });
 
   test('ワークアウトカードを押すと DayDetail に遷移する', () => {

@@ -86,13 +86,13 @@ describe('ナビゲーション押下', () => {
     expect(mockNavigate).toHaveBeenCalledWith('Home');
   });
 
-  test('設定を押すと navigate("Settings") が呼ばれる', () => {
+  test('設定を押すと navigate("SettingsStack") が呼ばれる', () => {
     const { getByLabelText } = render(
       <CustomDrawerContent {...makeProps()} />,
       { wrapper },
     );
     fireEvent.press(getByLabelText('設定'));
-    expect(mockNavigate).toHaveBeenCalledWith('Settings');
+    expect(mockNavigate).toHaveBeenCalledWith('SettingsStack');
   });
 
   test('履歴を押すと navigate("HistoryStack") が呼ばれる', () => {

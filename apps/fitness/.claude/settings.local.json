@@ -53,7 +53,10 @@
       "Bash(node -e \"console.log\\(require\\(''C:/Users/ytata/forge_shots/node_modules/playwright/package.json''\\).version\\)\")",
       "Bash(node -e \"const {chromium} = require\\(''C:/Users/ytata/forge_shots/node_modules/playwright''\\); console.log\\(''ok'', typeof chromium.launch\\)\")",
       "Bash(python create_screenshots.py local)",
-      "Bash(python3 -:*)"
+      "Bash(python3 -:*)",
+      "Bash(pnpm --filter @massapp/recall-kit add expo-updates expo-build-properties)",
+      "Bash(ls \"C:/Users/ytata/AppProject/baseProject/apps/fitness/\"*.plist)",
+      "Bash(ls \"C:/Users/ytata/Downloads/\"*GoogleService*)"
     ]
   }
 }
