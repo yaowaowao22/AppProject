@@ -27,6 +27,22 @@ import { ScreenHeader } from '../components/ScreenHeader';
 import { useWorkout } from '../WorkoutContext';
 import type { WorkoutStackParamList } from '../navigation/RootNavigator';
 
+// ── ヘルパー ──────────────────────────────────────────────────────────────────
+
+function toDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function formatWorkoutDateLabel(dateStr: string): string {
+  const todayStr = toDateStr(new Date());
+  if (dateStr === todayStr) return '今日';
+  const d = new Date(dateStr + 'T00:00:00');
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
 // ── 部位別筋肉サブタイトル ────────────────────────────────────────────────────
 
 const BODY_PART_MUSCLE: Record<BodyPart, string> = {
@@ -46,7 +62,7 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
   const [selectedPart, setSelectedPart] = useState<BodyPart>(BODY_PARTS[0].id as BodyPart);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const insets = useSafeAreaInsets();
-  const { templates, deleteTemplate } = useWorkout();
+  const { templates, deleteTemplate, workoutTargetDate } = useWorkout();
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
   const exercises = EXERCISES_BY_PART[selectedPart] ?? [];
@@ -91,7 +107,7 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="トレーニング" showHamburger />
+      <ScreenHeader title="トレーニング" subtitle={formatWorkoutDateLabel(workoutTargetDate)} showHamburger />
       <View style={styles.subHeaderRow}>
         <Text style={styles.subHeaderTitle}>種目選択</Text>
       </View>

@@ -87,7 +87,7 @@ function formatSectionDate(dateStr: string, todayStr: string): string {
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeNavProp>();
-  const { workouts, personalRecords, deleteSessionFromWorkout } = useWorkout();
+  const { workouts, personalRecords, deleteSessionFromWorkout, setWorkoutTargetDate } = useWorkout();
   const { colors, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
@@ -179,11 +179,13 @@ export default function HomeScreen() {
   const btnContainerHeight = 50 + Math.max(insets.bottom, SPACING.md) + SPACING.md;
 
   function handleStartWorkout() {
+    setWorkoutTargetDate(selectedDate);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (navigation as any).navigate('WorkoutStack', { screen: 'ExerciseSelect' });
   }
 
   function handleChipPress(exerciseId: string) {
+    setWorkoutTargetDate(selectedDate);
     (navigation as any).navigate('WorkoutStack', {
       screen: 'ActiveWorkout',
       params: { exerciseIds: [exerciseId] },
@@ -191,6 +193,7 @@ export default function HomeScreen() {
   }
 
   function handleMenuItemPress(exerciseId: string) {
+    setWorkoutTargetDate(selectedDate);
     const selectedWorkout = workoutByDate.get(selectedDate);
     const existingSession = selectedWorkout?.sessions.find(s => s.exerciseId === exerciseId);
     if (existingSession && selectedWorkout) {
@@ -299,7 +302,7 @@ export default function HomeScreen() {
                           isToday &&
                             !isSelected && {
                               color: colors.accent,
-                              fontWeight: TYPOGRAPHY.bold,
+                              fontWeight: typography.bold,
                             },
                         ]}
                       >

@@ -10,12 +10,13 @@ import { DrawerContentScrollView } from '@react-navigation/drawer';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SPACING, TYPOGRAPHY, RADIUS } from '../theme';
+import { SPACING, RADIUS } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
+import type { DynamicTypography } from '../ThemeContext';
 import { useWorkout } from '../WorkoutContext';
 
-// ── ナビ項目定義 ──────────────────────────────────────────────────────────────
+// ── ナビ頁E��定義 ──────────────────────────────────────────────────────────────
 
 type NavItem = {
   routeName: string;
@@ -25,15 +26,15 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { routeName: 'Home',          label: 'ホーム',         icon: 'barbell-outline',     iconActive: 'barbell' },
+  { routeName: 'Home',          label: 'ホ�Eム',         icon: 'barbell-outline',     iconActive: 'barbell' },
   { routeName: 'WorkoutStack',  label: 'トレーニング',   icon: 'fitness-outline',     iconActive: 'fitness' },
   { routeName: 'HistoryStack',  label: '履歴',           icon: 'time-outline',        iconActive: 'time' },
-  { routeName: 'MonthlyReport', label: '月別レポート',   icon: 'calendar-outline',    iconActive: 'calendar' },
-  { routeName: 'RMCalculator',  label: 'RM計算機',       icon: 'calculator-outline',       iconActive: 'calculator' },
-  { routeName: 'TemplateManage', label: 'テンプレート', icon: 'document-text-outline',    iconActive: 'document-text' },
+  { routeName: 'MonthlyReport', label: '月別レポ�EチE,   icon: 'calendar-outline',    iconActive: 'calendar' },
+  { routeName: 'RMCalculator',  label: 'RM計算橁E,       icon: 'calculator-outline',       iconActive: 'calculator' },
+  { routeName: 'TemplateManage', label: 'チE��プレーチE, icon: 'document-text-outline',    iconActive: 'document-text' },
 ];
 
-// ── ヘルパー ──────────────────────────────────────────────────────────────────
+// ── ヘルパ�E ──────────────────────────────────────────────────────────────────
 
 function formatVolume(v: number): string {
   if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
@@ -46,21 +47,21 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const { state, navigation } = props;
   const insets = useSafeAreaInsets();
   const { weeklyStats } = useWorkout();
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { colors, typography } = useTheme();
+  const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
 
   const activeRouteName = state.routes[state.index]?.name ?? '';
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
-      {/* ステータスバー領域を background 色で塗りつぶし */}
+      {/* スチE�Eタスバ�E領域めEbackground 色で塗りつぶぁE*/}
       <View style={{ height: insets.top, backgroundColor: colors.background }} />
       <DrawerContentScrollView
         {...props}
         scrollEnabled={false}
         contentContainerStyle={[styles.scrollContent, { paddingTop: 0 }]}
       >
-        {/* ── 上部ミニダッシュボード ─────────────────────────────────────── */}
+        {/* ── 上部ミニダチE��ュボ�EチE─────────────────────────────────────── */}
         <View style={[styles.miniDash, { paddingTop: SPACING.sm }]}>
           <Text style={styles.dashTitle}>今週</Text>
           <View style={styles.dashRow}>
@@ -74,7 +75,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
             </View>
             <View style={[styles.dashItem, styles.dashBorder]}>
               <Text style={styles.dashNum}>{weeklyStats.streakDays}</Text>
-              <Text style={styles.dashKey}>日連続</Text>
+              <Text style={styles.dashKey}>日連綁E/Text>
             </View>
           </View>
         </View>
@@ -108,7 +109,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         </View>
       </DrawerContentScrollView>
 
-      {/* ── セパレータ + 設定 ─────────────────────────────────────────── */}
+      {/* ── セパレータ + 設宁E─────────────────────────────────────────── */}
       <View style={styles.footer}>
         <View style={styles.separator} />
         <TouchableOpacity
@@ -116,7 +117,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
           onPress={() => navigation.navigate('SettingsStack')}
           activeOpacity={0.7}
           accessibilityRole="button"
-          accessibilityLabel="設定"
+          accessibilityLabel="設宁E
         >
           <Ionicons
             name="settings-outline"
@@ -124,7 +125,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
             color={colors.textSecondary}
             style={styles.navIcon}
           />
-          <Text style={styles.navLabel}>設定</Text>
+          <Text style={styles.navLabel}>設宁E/Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -135,7 +136,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
 
 const DRAWER_WIDTH = Dimensions.get('window').width * 0.75;
 
-function makeStyles(c: TanrenThemeColors) {
+function makeStyles(c: TanrenThemeColors, typography: DynamicTypography) {
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -154,7 +155,7 @@ function makeStyles(c: TanrenThemeColors) {
     },
     dashTitle: {
       fontSize: 10,
-      fontWeight: TYPOGRAPHY.semiBold,
+      fontWeight: typography.semiBold,
       color: c.textTertiary,
       textTransform: 'uppercase',
       letterSpacing: 0.9,
@@ -174,7 +175,7 @@ function makeStyles(c: TanrenThemeColors) {
     },
     dashNum: {
       fontSize: 20,
-      fontWeight: TYPOGRAPHY.heavy,
+      fontWeight: typography.heavy,
       color: c.textPrimary,
       letterSpacing: -0.5,
       fontVariant: ['tabular-nums'],
@@ -182,7 +183,7 @@ function makeStyles(c: TanrenThemeColors) {
     },
     dashKey: {
       fontSize: 9,
-      fontWeight: TYPOGRAPHY.regular,
+      fontWeight: typography.regular,
       color: c.textTertiary,
     },
 
@@ -205,8 +206,8 @@ function makeStyles(c: TanrenThemeColors) {
       width: 26,
     },
     navLabel: {
-      fontSize: TYPOGRAPHY.body,
-      fontWeight: TYPOGRAPHY.semiBold,
+      fontSize: typography.body,
+      fontWeight: typography.semiBold,
       color: c.textSecondary,
       marginLeft: SPACING.sm,
     },
