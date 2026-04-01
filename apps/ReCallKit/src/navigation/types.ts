@@ -33,6 +33,7 @@ export type DrawerParamList = {
 // ---- Home Stack ----
 export type HomeStackParamList = {
   Home: undefined;
+  ItemDetail: { itemId: number };
 };
 
 // ---- Library Stack ----

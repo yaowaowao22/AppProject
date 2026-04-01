@@ -49,11 +49,13 @@ export function ReviewScreen({ navigation, route }: Props) {
     if (!db || !isReady) return;
     (async () => {
       try {
-        const due = await getDueItems(db);
+        const allItems = forceAll
+          ? await getAllReviewableItems(db)
+          : await getDueItems(db);
         // reviewIds 指定時は対象アイテムに絞り込む
         const filtered = reviewIds && reviewIds.length > 0
-          ? due.filter((ri) => reviewIds.includes(ri.item.id))
-          : due;
+          ? allItems.filter((ri) => reviewIds.includes(ri.item.id))
+          : allItems;
         setItems(filtered);
         if (filtered.length === 0) setIsComplete(true);
       } finally {

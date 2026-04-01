@@ -58,6 +58,10 @@ export function ReviewSelectScreen({ navigation }: Props) {
     navigation.navigate('Review', {});
   }, [navigation]);
 
+  const handleStartExtraLearning = useCallback(() => {
+    navigation.navigate('Review', { forceAll: true });
+  }, [navigation]);
+
   const handleStartGroup = useCallback(async (groupId: number) => {
     if (!db) return;
     const itemIds = await getItemIdsByGroup(db, groupId);
@@ -89,23 +93,25 @@ export function ReviewSelectScreen({ navigation }: Props) {
           <View style={styles.todayCardInfo}>
             <Text style={[styles.todayCardTitle, { color: colors.label }]}>今日の復習</Text>
             <Text style={[styles.todayCardSub, { color: colors.labelSecondary }]}>
-              {dueCount > 0 ? `${dueCount}件が待機中` : '本日分は完了です'}
+              {dueCount > 0 ? `${dueCount}件が待機中` : '本日の復習は完了しました'}
             </Text>
           </View>
         </View>
         <Pressable
           style={({ pressed }) => [
             styles.startButton,
-            { backgroundColor: pressed ? colors.accent + 'CC' : colors.accent },
-            dueCount === 0 && styles.startButtonDisabled,
+            {
+              backgroundColor: dueCount === 0
+                ? (pressed ? colors.accent + 'AA' : colors.accent + 'CC')
+                : (pressed ? colors.accent + 'CC' : colors.accent),
+            },
           ]}
-          onPress={handleStartAll}
-          disabled={dueCount === 0}
+          onPress={dueCount === 0 ? handleStartExtraLearning : handleStartAll}
           accessibilityRole="button"
-          accessibilityLabel="復習を開始"
+          accessibilityLabel={dueCount === 0 ? '追加学習を始める' : '復習を開始'}
         >
           <Text style={styles.startButtonText}>
-            {dueCount > 0 ? 'スタート' : '完了済み'}
+            {dueCount > 0 ? 'スタート' : '追加学習を始める'}
           </Text>
         </Pressable>
       </View>
