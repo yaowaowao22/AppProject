@@ -131,8 +131,11 @@ function ContrastSlider({ label, value, onValueChange, colors }: ContrastSliderP
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      // タッチ開始時は ScrollView に委ねる（縦スクロールを妨げない）
+      onStartShouldSetPanResponder: () => false,
+      // 水平方向の動きが明確になった時だけスライダーが取得する
+      onMoveShouldSetPanResponder: (_, gs) =>
+        Math.abs(gs.dx) > Math.abs(gs.dy) && Math.abs(gs.dx) > 3,
       onPanResponderGrant: (evt) => {
         const w = trackWidthRef.current;
         if (w > 0) {
