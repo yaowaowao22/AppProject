@@ -292,7 +292,7 @@ function DailyTab({ styles, colors }: { styles: ReturnType<typeof makeStyles>; c
 
 function BodyPartListView({ onSelect }: { onSelect: (bp: BodyPart) => void }) {
   const { workouts } = useWorkout();
-  const { colors } = useTheme();
+  const { colors, typography } = useTheme();
 
   const cards = useMemo(() => {
     return BODY_PARTS.map(bp => {
@@ -382,7 +382,7 @@ function BodyPartDetailView({
   onBack: () => void;
 }) {
   const { workouts } = useWorkout();
-  const { colors } = useTheme();
+  const { colors, typography } = useTheme();
   const navigation = useNavigation<NavProp>();
 
   const bp = BODY_PARTS.find(b => b.id === bodyPart)!;
@@ -584,7 +584,7 @@ function BodyPartTab() {
 
 function ExerciseListView({ onSelect }: { onSelect: (exerciseId: string) => void }) {
   const { workouts } = useWorkout();
-  const { colors } = useTheme();
+  const { colors, typography } = useTheme();
   const [filter, setFilter] = useState<BodyPart | 'all'>('all');
 
   type ExRow = {
@@ -728,7 +728,7 @@ function ExerciseDetailView({
   onBack: () => void;
 }) {
   const { workouts, personalRecords } = useWorkout();
-  const { colors } = useTheme();
+  const { colors, typography } = useTheme();
 
   const ex  = EXERCISES.find(e => e.id === exerciseId);
   const pr  = personalRecords.find(p => p.exerciseId === exerciseId);
