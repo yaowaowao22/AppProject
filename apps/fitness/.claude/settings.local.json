@@ -56,7 +56,14 @@
       "Bash(python3 -:*)",
       "Bash(pnpm --filter @massapp/recall-kit add expo-updates expo-build-properties)",
       "Bash(ls \"C:/Users/ytata/AppProject/baseProject/apps/fitness/\"*.plist)",
-      "Bash(ls \"C:/Users/ytata/Downloads/\"*GoogleService*)"
+      "Bash(ls \"C:/Users/ytata/Downloads/\"*GoogleService*)",
+      "Bash(pnpm --filter @massapp/fitness install)",
+      "Bash(pnpm --filter @massapp/fitness why @react-native-firebase/app)",
+      "Bash(pnpm why:*)",
+      "Bash(grep -r \"google-mobile-ads\\\\|admob\\\\|@massapp/ads\" C:/Users/ytata/AppProject/baseProject/apps/fitness/package.json C:/Users/ytata/AppProject/baseProject/apps/fitness/src/ --include=*.ts --include=*.tsx -l)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(eas build:*)"
     ]
   }
 }
