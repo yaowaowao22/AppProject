@@ -216,10 +216,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader
-        title={new Date().toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })}
-        showHamburger
-      />
+      <ScreenHeader title="ホーム" showHamburger />
 
       <ScrollView
         style={styles.scroll}

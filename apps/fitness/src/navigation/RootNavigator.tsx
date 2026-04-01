@@ -144,7 +144,10 @@ export function RootNavigator() {
       <Drawer.Screen
         name="WorkoutStack"
         component={WorkoutStackNavigator}
-        options={{ title: 'トレーニング' }}
+        options={({ route }) => ({
+          title: 'トレーニング',
+          swipeEnabled: !route.state || route.state.index === 0,
+        })}
         listeners={({ navigation }) => ({
           // ドロワーで再選択されたとき WorkoutStack をリセット（完了画面の再表示を防止）
           // focus ではなく drawerItemPress を使うことで HomeScreen からの
@@ -156,11 +159,25 @@ export function RootNavigator() {
           },
         })}
       />
-      <Drawer.Screen name="HistoryStack"  component={HistoryStackNavigator}   options={{ title: '履歴' }} />
+      <Drawer.Screen
+        name="HistoryStack"
+        component={HistoryStackNavigator}
+        options={({ route }) => ({
+          title: '履歴',
+          swipeEnabled: !route.state || route.state.index === 0,
+        })}
+      />
       <Drawer.Screen name="MonthlyReport" component={MonthlyReportScreen}     options={{ title: '月別レポート' }} />
       <Drawer.Screen name="RMCalculator"    component={RMCalculatorScreen}      options={{ title: 'RM計算機' }} />
       <Drawer.Screen name="TemplateManage" component={TemplateManageScreen}    options={{ title: 'テンプレート管理', headerShown: false }} />
-      <Drawer.Screen name="SettingsStack"   component={SettingsStackNavigator}  options={{ title: '設定' }} />
+      <Drawer.Screen
+        name="SettingsStack"
+        component={SettingsStackNavigator}
+        options={({ route }) => ({
+          title: '設定',
+          swipeEnabled: !route.state || route.state.index === 0,
+        })}
+      />
     </Drawer.Navigator>
   );
 }
