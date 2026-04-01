@@ -195,6 +195,20 @@ struct ReCallWidgetEntryView: View {
     }
 }
 
+// MARK: - iOS 16/17 互換ヘルパー
+
+private extension View {
+    /// iOS 17+ では containerBackground を適用、iOS 16 ではそのまま返す
+    @ViewBuilder
+    func widgetBackground() -> some View {
+        if #available(iOSApplicationExtension 17.0, *) {
+            self.containerBackground(.fill.tertiary, for: .widget)
+        } else {
+            self
+        }
+    }
+}
+
 // MARK: - Widget Configuration
 
 @main
@@ -204,7 +218,7 @@ struct ReCallWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: ReviewProvider()) { entry in
             ReCallWidgetEntryView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+                .widgetBackground()
         }
         .configurationDisplayName("ReCallKit 復習")
         .description("今日の復習件数とストリークを確認できます")
@@ -213,11 +227,24 @@ struct ReCallWidget: Widget {
     }
 }
 
-// MARK: - Preview
+// MARK: - Preview（iOS 16 互換 PreviewProvider）
 
-#Preview(as: .systemSmall) {
-    ReCallWidget()
-} timeline: {
-    ReviewEntry(date: .now, reviewCount: 8, streak: 14, totalItems: 56)
-    ReviewEntry(date: .now, reviewCount: 0, streak: 14, totalItems: 56)
+#if DEBUG
+struct ReCallWidget_Previews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            ReCallWidgetEntryView(
+                entry: ReviewEntry(date: .now, reviewCount: 8, streak: 14, totalItems: 56)
+            )
+            .previewContext(WidgetPreviewContext(family: .systemSmall))
+            .previewDisplayName("Small – 復習あり")
+
+            ReCallWidgetEntryView(
+                entry: ReviewEntry(date: .now, reviewCount: 0, streak: 14, totalItems: 56)
+            )
+            .previewContext(WidgetPreviewContext(family: .systemSmall))
+            .previewDisplayName("Small – 完了")
+        }
+    }
 }
+#endif
