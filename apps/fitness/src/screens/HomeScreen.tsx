@@ -13,9 +13,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { SwipeableRow } from '../components/SwipeableRow';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { SectionLabel } from '../components/SectionLabel';
-import { SPACING, TYPOGRAPHY, RADIUS } from '../theme';
+import { SPACING, RADIUS } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
+import type { DynamicTypography } from '../ThemeContext';
 import { useWorkout } from '../WorkoutContext';
 import { EXERCISES, BODY_PARTS } from '../exerciseDB';
 import type { RootDrawerParamList } from '../navigation/RootNavigator';
@@ -87,9 +88,9 @@ function formatSectionDate(dateStr: string, todayStr: string): string {
 export default function HomeScreen() {
   const navigation = useNavigation<HomeNavProp>();
   const { workouts, personalRecords, deleteSessionFromWorkout } = useWorkout();
-  const { colors } = useTheme();
+  const { colors, typography } = useTheme();
   const insets = useSafeAreaInsets();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
 
   const todayStr = useMemo(() => toDateStr(new Date()), []);
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
@@ -473,7 +474,7 @@ export default function HomeScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-function makeStyles(c: TanrenThemeColors) {
+function makeStyles(c: TanrenThemeColors, t: DynamicTypography) {
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -507,8 +508,9 @@ function makeStyles(c: TanrenThemeColors) {
       justifyContent: 'center',
     },
     calMonthLabel: {
-      fontSize: TYPOGRAPHY.bodySmall,
-      fontWeight: TYPOGRAPHY.semiBold,
+      fontSize: t.bodySmall,
+      fontWeight: t.semiBold,
+      fontFamily: t.fontFamily,
       color: c.textPrimary,
     },
     calDayRow: {
@@ -518,8 +520,9 @@ function makeStyles(c: TanrenThemeColors) {
     calDayLabel: {
       flex: 1,
       textAlign: 'center',
-      fontSize: TYPOGRAPHY.captionSmall,
-      fontWeight: TYPOGRAPHY.regular,
+      fontSize: t.captionSmall,
+      fontWeight: t.regular,
+      fontFamily: t.fontFamily,
       color: c.textTertiary,
     },
     calWeekRow: {
@@ -533,8 +536,9 @@ function makeStyles(c: TanrenThemeColors) {
       marginVertical: 1,
     },
     calDayNum: {
-      fontSize: TYPOGRAPHY.captionSmall,
-      fontWeight: TYPOGRAPHY.regular,
+      fontSize: t.captionSmall,
+      fontWeight: t.regular,
+      fontFamily: t.fontFamily,
       color: c.textPrimary,
     },
     calDot: {
@@ -565,16 +569,18 @@ function makeStyles(c: TanrenThemeColors) {
       paddingLeft: SPACING.md,
     },
     statNum: {
-      fontSize: 24,
-      fontWeight: TYPOGRAPHY.heavy,
+      fontSize: Math.round(t.exerciseName * 1.2),
+      fontWeight: t.heavy,
+      fontFamily: t.fontFamily,
       color: c.textPrimary,
       letterSpacing: -1,
       fontVariant: ['tabular-nums'],
-      lineHeight: 24,
+      lineHeight: Math.round(t.exerciseName * 1.2),
     },
     statKey: {
-      fontSize: 10,
-      fontWeight: TYPOGRAPHY.regular,
+      fontSize: t.captionSmall,
+      fontWeight: t.regular,
+      fontFamily: t.fontFamily,
       color: c.textTertiary,
     },
     bodyPartIcons: {
@@ -590,8 +596,9 @@ function makeStyles(c: TanrenThemeColors) {
       marginBottom: SPACING.md,
     },
     emptyDayText: {
-      fontSize: TYPOGRAPHY.bodySmall,
-      fontWeight: TYPOGRAPHY.regular,
+      fontSize: t.bodySmall,
+      fontWeight: t.regular,
+      fontFamily: t.fontFamily,
       color: c.textTertiary,
     },
 
@@ -610,8 +617,9 @@ function makeStyles(c: TanrenThemeColors) {
       alignItems: 'center',
     },
     chipText: {
-      fontSize: 13,
-      fontWeight: TYPOGRAPHY.regular,
+      fontSize: t.caption,
+      fontWeight: t.regular,
+      fontFamily: t.fontFamily,
       color: c.textSecondary,
     },
 
@@ -640,12 +648,14 @@ function makeStyles(c: TanrenThemeColors) {
       flex: 1,
     },
     menuName: {
-      fontSize: TYPOGRAPHY.body,
-      fontWeight: TYPOGRAPHY.semiBold,
+      fontSize: t.body,
+      fontWeight: t.semiBold,
+      fontFamily: t.fontFamily,
       color: c.textPrimary,
     },
     menuMeta: {
-      fontSize: TYPOGRAPHY.captionSmall,
+      fontSize: t.captionSmall,
+      fontFamily: t.fontFamily,
       color: c.textTertiary,
       marginTop: 2,
     },
@@ -660,13 +670,15 @@ function makeStyles(c: TanrenThemeColors) {
       gap: SPACING.xs,
     },
     emptyText: {
-      fontSize: TYPOGRAPHY.bodySmall,
-      fontWeight: TYPOGRAPHY.semiBold,
+      fontSize: t.bodySmall,
+      fontWeight: t.semiBold,
+      fontFamily: t.fontFamily,
       color: c.textSecondary,
     },
     emptySubText: {
-      fontSize: TYPOGRAPHY.captionSmall,
-      fontWeight: TYPOGRAPHY.regular,
+      fontSize: t.captionSmall,
+      fontWeight: t.regular,
+      fontFamily: t.fontFamily,
       color: c.textTertiary,
     },
 
@@ -688,8 +700,9 @@ function makeStyles(c: TanrenThemeColors) {
       justifyContent: 'center',
     },
     ctaText: {
-      fontSize: 17,
-      fontWeight: TYPOGRAPHY.bold,
+      fontSize: t.body,
+      fontWeight: t.bold,
+      fontFamily: t.fontFamily,
       color: c.onAccent,
       letterSpacing: -0.2,
     },

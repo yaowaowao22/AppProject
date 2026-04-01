@@ -77,7 +77,9 @@
       "Bash(eas update:view a0526323-8366-4a32-9c18-3f8712bb2cd1)",
       "Bash(npx expo-updates:*)",
       "Bash(eas credentials:*)",
-      "Bash(eas build:list --platform ios --limit 1 --json)"
+      "Bash(eas build:list --platform ios --limit 1 --json)",
+      "Bash(eas build:view)",
+      "Bash(eas update:view d6eae8af-046f-4114-9d77-4f856310b881)"
     ]
   }
 }

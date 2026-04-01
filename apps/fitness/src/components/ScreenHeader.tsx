@@ -3,9 +3,10 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { SPACING, TYPOGRAPHY, BUTTON_HEIGHT } from '../theme';
+import { SPACING, BUTTON_HEIGHT } from '../theme';
 import { useTheme } from '../ThemeContext';
 import type { TanrenThemeColors } from '../theme';
+import type { DynamicTypography } from '../ThemeContext';
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -29,9 +30,9 @@ export function ScreenHeader({
   rightAction,
 }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors, typography } = useTheme();
   const navigation = useNavigation<any>();
-  const styles = makeStyles(colors, insets.top);
+  const styles = makeStyles(colors, insets.top, typography);
 
   return (
     <View style={styles.header}>
@@ -81,7 +82,7 @@ export function ScreenHeader({
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-function makeStyles(c: TanrenThemeColors, topInset: number) {
+function makeStyles(c: TanrenThemeColors, topInset: number, t: DynamicTypography) {
   return StyleSheet.create({
     header: {
       backgroundColor: c.background,
@@ -92,7 +93,6 @@ function makeStyles(c: TanrenThemeColors, topInset: number) {
       alignItems: 'center',
       paddingHorizontal: SPACING.contentMargin,
       paddingVertical: 5,
-      // 44pt アイコン + 上下 5px = 54pt（SPACING.sm 8→5 に縮小）
       minHeight: BUTTON_HEIGHT.icon + 10,
     },
     iconBtn: {
@@ -111,14 +111,16 @@ function makeStyles(c: TanrenThemeColors, topInset: number) {
       marginHorizontal: SPACING.xs,
     },
     title: {
-      fontSize: 22,
-      fontWeight: TYPOGRAPHY.bold,
+      fontSize: Math.round(t.screenTitle * 0.79), // screenTitle(28) * 0.79 ≈ 22
+      fontWeight: t.bold,
+      fontFamily: t.fontFamily,
       color: c.textPrimary,
       letterSpacing: -0.5,
     },
     subtitle: {
-      fontSize: 10,
-      fontWeight: TYPOGRAPHY.regular,
+      fontSize: t.captionSmall,
+      fontWeight: t.regular,
+      fontFamily: t.fontFamily,
       color: c.textTertiary,
       marginTop: 2,
     },

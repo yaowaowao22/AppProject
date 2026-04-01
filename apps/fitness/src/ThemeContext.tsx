@@ -6,13 +6,16 @@ import React, {
   useMemo,
   useState,
 } from 'react';
+import { Platform } from 'react-native';
+import type { TextStyle } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { TanrenThemeColors, ThemeId, ThemeMeta } from './theme';
-import { THEME_PRESETS } from './theme';
+import { THEME_PRESETS, TYPOGRAPHY } from './theme';
 import { adjustHexLightness, adjustHexSaturation } from './utils/colorUtils';
 
 const STORAGE_KEY = '@tanren_theme_id';
 const CONTRAST_STORAGE_KEY = '@tanren_contrast_settings';
+const FONT_STORAGE_KEY = '@tanren_font_settings';
 
 // ── 型定義 ───────────────────────────────────────────────────────────────────
 
@@ -23,6 +26,63 @@ export interface ContrastSettings {
 
 const DEFAULT_CONTRAST: ContrastSettings = { baseLightness: 50, accentSaturation: 50 };
 
+// ── フォント設定 ─────────────────────────────────────────────────────────────
+
+export interface FontSettings {
+  fontSizeScale: number;         // 0-100、40 = 1.0x（等倍）
+  fontWeightLevel: -1 | 0 | 1;  // -1=細め, 0=標準, +1=太め
+  fontFamily: 'system' | 'serif' | 'mono';
+}
+
+export const DEFAULT_FONT_SETTINGS: FontSettings = {
+  fontSizeScale: 40,
+  fontWeightLevel: 0,
+  fontFamily: 'system',
+};
+
+export interface DynamicTypography {
+  heroNumber:   number;
+  screenTitle:  number;
+  exerciseName: number;
+  body:         number;
+  bodySmall:    number;
+  caption:      number;
+  captionSmall: number;
+  heavy:    TextStyle['fontWeight'];
+  bold:     TextStyle['fontWeight'];
+  semiBold: TextStyle['fontWeight'];
+  regular:  TextStyle['fontWeight'];
+  fontFamily: string | undefined;
+}
+
+const WEIGHT_TABLE: Record<number, Pick<DynamicTypography, 'heavy' | 'bold' | 'semiBold' | 'regular'>> = {
+  [-1]: { heavy: '600', bold: '500', semiBold: '400', regular: '300' },
+  [0]:  { heavy: '800', bold: '700', semiBold: '600', regular: '500' },
+  [1]:  { heavy: '900', bold: '800', semiBold: '700', regular: '600' },
+};
+
+const FONT_FAMILY_MAP: Record<FontSettings['fontFamily'], string | undefined> = {
+  system: undefined,
+  serif:  Platform.select({ ios: 'Georgia', android: 'serif', default: undefined }),
+  mono:   Platform.select({ ios: 'Menlo', android: 'monospace', default: undefined }),
+};
+
+function computeTypography(settings: FontSettings): DynamicTypography {
+  const scale   = 0.80 + settings.fontSizeScale * 0.005; // 0→0.80x, 40→1.00x, 100→1.30x
+  const weights = WEIGHT_TABLE[settings.fontWeightLevel] ?? WEIGHT_TABLE[0];
+  return {
+    heroNumber:   Math.round(TYPOGRAPHY.heroNumber   * scale),
+    screenTitle:  Math.round(TYPOGRAPHY.screenTitle  * scale),
+    exerciseName: Math.round(TYPOGRAPHY.exerciseName * scale),
+    body:         Math.round(TYPOGRAPHY.body         * scale),
+    bodySmall:    Math.round(TYPOGRAPHY.bodySmall    * scale),
+    caption:      Math.round(TYPOGRAPHY.caption      * scale),
+    captionSmall: Math.round(TYPOGRAPHY.captionSmall * scale),
+    ...weights,
+    fontFamily: FONT_FAMILY_MAP[settings.fontFamily],
+  };
+}
+
 interface ThemeContextValue {
   currentThemeId: ThemeId;
   colors: TanrenThemeColors;
@@ -30,6 +90,9 @@ interface ThemeContextValue {
   themeList: Array<ThemeMeta & { colors: TanrenThemeColors }>;
   contrastSettings: ContrastSettings;
   setContrast: (settings: ContrastSettings) => void;
+  fontSettings: FontSettings;
+  setFontSettings: (settings: FontSettings) => void;
+  typography: DynamicTypography;
 }
 
 // ── コントラスト適用ロジック ──────────────────────────────────────────────────
@@ -62,6 +125,9 @@ const ThemeContext = createContext<ThemeContextValue>({
   themeList: [],
   contrastSettings: DEFAULT_CONTRAST,
   setContrast: () => {},
+  fontSettings: DEFAULT_FONT_SETTINGS,
+  setFontSettings: () => {},
+  typography: computeTypography(DEFAULT_FONT_SETTINGS),
 });
 
 // ── Provider ─────────────────────────────────────────────────────────────────
@@ -69,8 +135,9 @@ const ThemeContext = createContext<ThemeContextValue>({
 export function TanrenThemeProvider({ children }: { children: React.ReactNode }) {
   const [currentThemeId, setCurrentThemeId] = useState<ThemeId>('hakukou');
   const [contrastSettings, setContrastSettings] = useState<ContrastSettings>(DEFAULT_CONTRAST);
+  const [fontSettings, setFontSettingsState] = useState<FontSettings>(DEFAULT_FONT_SETTINGS);
 
-  // 起動時に保存済みテーマ・コントラスト設定を読み込む
+  // 起動時に保存済みテーマ・コントラスト・フォント設定を読み込む
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then(saved => {
@@ -89,6 +156,16 @@ export function TanrenThemeProvider({ children }: { children: React.ReactNode })
         }
       })
       .catch(() => {});
+    AsyncStorage.getItem(FONT_STORAGE_KEY)
+      .then(saved => {
+        if (saved) {
+          const parsed = JSON.parse(saved) as FontSettings;
+          if (typeof parsed.fontSizeScale === 'number') {
+            setFontSettingsState(parsed);
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const setTheme = useCallback((id: ThemeId) => {
@@ -99,6 +176,11 @@ export function TanrenThemeProvider({ children }: { children: React.ReactNode })
   const setContrast = useCallback((settings: ContrastSettings) => {
     setContrastSettings(settings);
     AsyncStorage.setItem(CONTRAST_STORAGE_KEY, JSON.stringify(settings)).catch(() => {});
+  }, []);
+
+  const setFontSettings = useCallback((settings: FontSettings) => {
+    setFontSettingsState(settings);
+    AsyncStorage.setItem(FONT_STORAGE_KEY, JSON.stringify(settings)).catch(() => {});
   }, []);
 
   const colors = useMemo((): TanrenThemeColors => {
@@ -116,9 +198,11 @@ export function TanrenThemeProvider({ children }: { children: React.ReactNode })
     [],
   );
 
+  const typography = useMemo(() => computeTypography(fontSettings), [fontSettings]);
+
   const value = useMemo(
-    () => ({ currentThemeId, colors, setTheme, themeList, contrastSettings, setContrast }),
-    [currentThemeId, colors, setTheme, themeList, contrastSettings, setContrast],
+    () => ({ currentThemeId, colors, setTheme, themeList, contrastSettings, setContrast, fontSettings, setFontSettings, typography }),
+    [currentThemeId, colors, setTheme, themeList, contrastSettings, setContrast, fontSettings, setFontSettings, typography],
   );
 
   return (

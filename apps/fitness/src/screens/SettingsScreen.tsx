@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RADIUS, SPACING, TYPOGRAPHY } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
-import type { ContrastSettings } from '../ThemeContext';
+import type { ContrastSettings, FontSettings } from '../ThemeContext';
 import { useWorkout } from '../WorkoutContext';
 import type { WorkoutConfig } from '../WorkoutContext';
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -34,6 +34,22 @@ try {
   buildVersion = Constants?.expoConfig?.version ?? '-';
 } catch {
   // expo-constants が未インストールの場合はフォールバック
+}
+
+// expo-updates OTA診断情報
+let otaUpdateId = '-';
+let otaChannel = '-';
+let otaRuntimeVersion = '-';
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const Updates = require('expo-updates');
+  otaUpdateId = Updates.isEmbeddedLaunch
+    ? 'embedded'
+    : (Updates.updateId?.slice(0, 8) ?? '-');
+  otaChannel = Updates.channel ?? '-';
+  otaRuntimeVersion = Updates.runtimeVersion ?? '-';
+} catch {
+  // expo-updates が未インストールの場合はフォールバック
 }
 
 // ── サブコンポーネント ──────────────────────────────────────────────────────────
@@ -248,10 +264,66 @@ const stepperStyles = StyleSheet.create({
   },
 });
 
+// ── FontSegmentedControl ──────────────────────────────────────────────────────
+
+interface SegmentedControlProps<T extends string | number> {
+  options: Array<{ value: T; label: string }>;
+  selected: T;
+  onSelect: (v: T) => void;
+  colors: TanrenThemeColors;
+}
+
+function SegmentedControl<T extends string | number>({
+  options,
+  selected,
+  onSelect,
+  colors,
+}: SegmentedControlProps<T>) {
+  return (
+    <View style={[segStyles.wrap, { backgroundColor: colors.surface2 }]}>
+      {options.map(opt => {
+        const active = opt.value === selected;
+        return (
+          <TouchableOpacity
+            key={String(opt.value)}
+            style={[segStyles.seg, active && { backgroundColor: colors.accent }]}
+            onPress={() => onSelect(opt.value)}
+            activeOpacity={0.75}
+          >
+            <Text style={[segStyles.label, { color: active ? colors.onAccent : colors.textSecondary }]}>
+              {opt.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+const segStyles = StyleSheet.create({
+  wrap: {
+    flexDirection: 'row',
+    borderRadius: 8,
+    padding: 3,
+    marginHorizontal: SPACING.md,
+    marginVertical: SPACING.sm,
+  },
+  seg: {
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  label: {
+    fontSize: TYPOGRAPHY.caption,
+    fontWeight: '600',
+  },
+});
+
 // ── メイン画面 ────────────────────────────────────────────────────────────────
 
 export default function SettingsScreen() {
-  const { colors, setTheme, themeList, currentThemeId, contrastSettings, setContrast } = useTheme();
+  const { colors, setTheme, themeList, currentThemeId, contrastSettings, setContrast, fontSettings, setFontSettings } = useTheme();
   const { workoutConfig, updateWorkoutConfig, resetAll } = useWorkout();
   const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -405,6 +477,59 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* ── フォント設定 ── */}
+        <SectionHeader title="フォント設定" style={styles.sectionHeader} />
+        <View style={styles.sectionCard}>
+          {/* フォントサイズ */}
+          <ContrastSlider
+            label={`文字サイズ　${Math.round((0.80 + fontSettings.fontSizeScale * 0.005) * 100)}%`}
+            value={fontSettings.fontSizeScale}
+            onValueChange={v => setFontSettings({ ...fontSettings, fontSizeScale: v })}
+            colors={colors}
+          />
+          <View style={styles.rowSeparator} />
+          {/* フォントウェイト */}
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>太さ</Text>
+          </View>
+          <SegmentedControl<FontSettings['fontWeightLevel']>
+            options={[
+              { value: -1, label: '細め' },
+              { value:  0, label: '標準' },
+              { value:  1, label: '太め' },
+            ]}
+            selected={fontSettings.fontWeightLevel}
+            onSelect={v => setFontSettings({ ...fontSettings, fontWeightLevel: v })}
+            colors={colors}
+          />
+          <View style={styles.rowSeparator} />
+          {/* フォント種類 */}
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>フォント種類</Text>
+          </View>
+          <SegmentedControl<FontSettings['fontFamily']>
+            options={[
+              { value: 'system', label: '標準' },
+              { value: 'serif',  label: '明朝体' },
+              { value: 'mono',   label: '等幅' },
+            ]}
+            selected={fontSettings.fontFamily}
+            onSelect={v => setFontSettings({ ...fontSettings, fontFamily: v })}
+            colors={colors}
+          />
+          <View style={styles.rowSeparator} />
+          <View style={[styles.row, { justifyContent: 'flex-end' }]}>
+            <TouchableOpacity
+              onPress={() => setFontSettings({ fontSizeScale: 40, fontWeightLevel: 0, fontFamily: 'system' })}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="フォント設定をリセット"
+            >
+              <Text style={[styles.rowValue, { color: colors.textTertiary }]}>リセット</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* ── トレーニング設定 ── */}
         <SectionHeader title="トレーニング設定" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
@@ -519,6 +644,21 @@ export default function SettingsScreen() {
           <View style={styles.row}>
             <Text style={styles.rowLabel}>ビルド</Text>
             <Text style={styles.rowValue}>{buildVersion}</Text>
+          </View>
+          <View style={styles.rowSeparator} />
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>OTA Update ID</Text>
+            <Text style={styles.rowValue}>{otaUpdateId}</Text>
+          </View>
+          <View style={styles.rowSeparator} />
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>Channel</Text>
+            <Text style={styles.rowValue}>{otaChannel}</Text>
+          </View>
+          <View style={styles.rowSeparator} />
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>Runtime Version</Text>
+            <Text style={styles.rowValue}>{otaRuntimeVersion}</Text>
           </View>
         </View>
       </ScrollView>
