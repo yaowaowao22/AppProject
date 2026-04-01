@@ -88,7 +88,7 @@ function Stepper({ value, min, max, step, unit, decimals = 0, onChangeValue, col
         accessibilityLabel="減らす"
       >
         <Text style={[stepperStyles.btnText, { color: canDec ? colors.background : colors.textTertiary }]}>
-          ∁E        </Text>
+          −        </Text>
       </TouchableOpacity>
 
       <Text style={[stepperStyles.valueText, { color: colors.textPrimary }]}>

@@ -704,7 +704,7 @@ function ExerciseListView({ onSelect }: { onSelect: (exerciseId: string) => void
         ListEmptyComponent={
           <View style={{ paddingTop: SPACING.xl, alignItems: 'center' }}>
             <Text style={{ fontSize: typography.bodySmall, color: colors.textTertiary }}>
-              こ�E部位�E記録はありません
+              この部位の記録はありません
             </Text>
           </View>
         }
