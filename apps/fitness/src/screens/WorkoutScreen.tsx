@@ -277,8 +277,8 @@ function buildRows(
 export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   const { exerciseIds, existingWorkoutId, existingSession } = route.params;
   const { workouts, startSession, addSet, completeSession, updateSession, workoutConfig, personalRecords } = useWorkout();
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { colors, typography } = useTheme();
+  const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const exerciseId = exerciseIds[currentIndex];
@@ -751,7 +751,7 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
 // ── スタイル ──────────────────────────────────────────────────────────────────
 
-function makeStyles(c: TanrenThemeColors) {
+function makeStyles(c: TanrenThemeColors, t: DynamicTypography) {
   return StyleSheet.create({
   container: {
     flex: 1,
@@ -781,8 +781,9 @@ function makeStyles(c: TanrenThemeColors) {
     backgroundColor: c.accent,
   },
   tabText: {
-    fontSize: 13,
-    fontWeight: TYPOGRAPHY.semiBold,
+    fontSize: t.caption,
+    fontWeight: t.semiBold,
+    fontFamily: t.fontFamily,
     color: c.textSecondary,
   },
   tabTextActive: {
@@ -830,16 +831,18 @@ function makeStyles(c: TanrenThemeColors) {
     backgroundColor: c.accent,
   },
   exIconText: {
-    fontSize: TYPOGRAPHY.body,
-    fontWeight: TYPOGRAPHY.bold,
+    fontSize: t.body,
+    fontWeight: t.bold,
+    fontFamily: t.fontFamily,
     color: c.textSecondary,
   },
   exTextCol: {
     flex: 1,
   },
   exName: {
-    fontSize: TYPOGRAPHY.body,
-    fontWeight: TYPOGRAPHY.semiBold,
+    fontSize: t.body,
+    fontWeight: t.semiBold,
+    fontFamily: t.fontFamily,
     color: c.textPrimary,
     letterSpacing: -0.2,
   },
@@ -847,7 +850,8 @@ function makeStyles(c: TanrenThemeColors) {
     color: c.accent,
   },
   exDet: {
-    fontSize: TYPOGRAPHY.captionSmall,
+    fontSize: t.captionSmall,
+    fontFamily: t.fontFamily,
     color: c.textTertiary,
     marginTop: 2,
   },
@@ -872,8 +876,9 @@ function makeStyles(c: TanrenThemeColors) {
     justifyContent: 'center',
   },
   startBtnText: {
-    fontSize: 17,
-    fontWeight: TYPOGRAPHY.bold,
+    fontSize: t.body,
+    fontWeight: t.bold,
+    fontFamily: t.fontFamily,
     color: c.onAccent,
     letterSpacing: -0.2,
   },
@@ -886,8 +891,9 @@ function makeStyles(c: TanrenThemeColors) {
     borderBottomColor: c.separator,
   },
   tmplSectionLabel: {
-    fontSize: TYPOGRAPHY.captionSmall,
-    fontWeight: TYPOGRAPHY.semiBold,
+    fontSize: t.captionSmall,
+    fontWeight: t.semiBold,
+    fontFamily: t.fontFamily,
     color: c.textTertiary,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -908,13 +914,15 @@ function makeStyles(c: TanrenThemeColors) {
     gap: 4,
   },
   tmplName: {
-    fontSize: TYPOGRAPHY.bodySmall,
-    fontWeight: TYPOGRAPHY.semiBold,
+    fontSize: t.bodySmall,
+    fontWeight: t.semiBold,
+    fontFamily: t.fontFamily,
     color: c.textPrimary,
     letterSpacing: -0.2,
   },
   tmplMeta: {
-    fontSize: TYPOGRAPHY.caption,
+    fontSize: t.caption,
+    fontFamily: t.fontFamily,
     color: c.textTertiary,
   },
 
@@ -924,8 +932,9 @@ function makeStyles(c: TanrenThemeColors) {
     paddingBottom: SPACING.xs,
   },
   subHeaderTitle: {
-    fontSize: TYPOGRAPHY.exerciseName,
-    fontWeight: TYPOGRAPHY.bold,
+    fontSize: t.exerciseName,
+    fontWeight: t.bold,
+    fontFamily: t.fontFamily,
     color: c.textPrimary,
     letterSpacing: -0.4,
   },
@@ -937,13 +946,15 @@ function makeStyles(c: TanrenThemeColors) {
     gap: SPACING.xs,
   },
   detailBackText: {
-    fontSize: TYPOGRAPHY.bodySmall,
-    fontWeight: TYPOGRAPHY.semiBold,
+    fontSize: t.bodySmall,
+    fontWeight: t.semiBold,
+    fontFamily: t.fontFamily,
     color: c.accent,
   },
   detailBackInfo: {
-    fontSize: TYPOGRAPHY.caption,
-    fontWeight: TYPOGRAPHY.semiBold,
+    fontSize: t.caption,
+    fontWeight: t.semiBold,
+    fontFamily: t.fontFamily,
     color: c.textTertiary,
   },
 
@@ -972,13 +983,15 @@ function makeStyles(c: TanrenThemeColors) {
     flex: 1,
   },
   actName: {
-    fontSize: TYPOGRAPHY.exerciseName,
-    fontWeight: TYPOGRAPHY.bold,
+    fontSize: t.exerciseName,
+    fontWeight: t.bold,
+    fontFamily: t.fontFamily,
     color: c.textPrimary,
     letterSpacing: -0.4,
   },
   actSub: {
-    fontSize: TYPOGRAPHY.captionSmall,
+    fontSize: t.captionSmall,
+    fontFamily: t.fontFamily,
     color: c.textTertiary,
     marginTop: 2,
   },
@@ -990,13 +1003,14 @@ function makeStyles(c: TanrenThemeColors) {
     flexShrink: 0,
   },
   setBadgeText: {
-    fontSize: TYPOGRAPHY.caption,
-    fontWeight: TYPOGRAPHY.semiBold,
+    fontSize: t.caption,
+    fontWeight: t.semiBold,
+    fontFamily: t.fontFamily,
     color: c.textSecondary,
   },
   setBadgeNum: {
     color: c.textPrimary,
-    fontWeight: TYPOGRAPHY.heavy,
+    fontWeight: t.heavy,
   },
 
   numCtrl: {
@@ -1015,26 +1029,29 @@ function makeStyles(c: TanrenThemeColors) {
     gap: 4,
   },
   numLabel: {
-    fontSize: TYPOGRAPHY.captionSmall,
-    fontWeight: TYPOGRAPHY.semiBold,
+    fontSize: t.captionSmall,
+    fontWeight: t.semiBold,
+    fontFamily: t.fontFamily,
     color: c.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
   numVal: {
-    fontSize: 42,
-    fontWeight: TYPOGRAPHY.heavy,
+    fontSize: t.heroNumber,
+    fontWeight: t.heavy,
+    fontFamily: t.fontFamily,
     color: c.textPrimary,
-    lineHeight: 46,
+    lineHeight: t.heroNumber + 4,
     letterSpacing: -1.5,
     minWidth: 64,
     textAlign: 'center',
   },
   numValInput: {
-    fontSize: 42,
-    fontWeight: TYPOGRAPHY.heavy,
+    fontSize: t.heroNumber,
+    fontWeight: t.heavy,
+    fontFamily: t.fontFamily,
     color: c.accent,
-    lineHeight: 46,
+    lineHeight: t.heroNumber + 4,
     letterSpacing: -1.5,
     minWidth: 64,
     textAlign: 'center',
@@ -1042,7 +1059,8 @@ function makeStyles(c: TanrenThemeColors) {
     ...Platform.select({ android: { includeFontPadding: false } }),
   },
   numUnit: {
-    fontSize: TYPOGRAPHY.caption,
+    fontSize: t.caption,
+    fontFamily: t.fontFamily,
     color: c.textTertiary,
     marginTop: -2,
   },
@@ -1095,8 +1113,9 @@ function makeStyles(c: TanrenThemeColors) {
     borderRadius: RADIUS.card,
   },
   prevBtnText: {
-    fontSize: TYPOGRAPHY.bodySmall,
-    fontWeight: TYPOGRAPHY.regular,
+    fontSize: t.bodySmall,
+    fontWeight: t.regular,
+    fontFamily: t.fontFamily,
     color: c.textSecondary,
   },
   doneBtn: {
@@ -1114,8 +1133,9 @@ function makeStyles(c: TanrenThemeColors) {
     backgroundColor: c.success,
   },
   doneBtnText: {
-    fontSize: 17,
-    fontWeight: TYPOGRAPHY.bold,
+    fontSize: t.body,
+    fontWeight: t.bold,
+    fontFamily: t.fontFamily,
     color: c.onAccent,
     letterSpacing: -0.2,
   },
@@ -1135,8 +1155,9 @@ function makeStyles(c: TanrenThemeColors) {
     backgroundColor: c.success,
   },
   sectionLabel: {
-    fontSize: 11,
-    fontWeight: TYPOGRAPHY.semiBold,
+    fontSize: t.captionSmall,
+    fontWeight: t.semiBold,
+    fontFamily: t.fontFamily,
     color: c.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.9,
@@ -1171,8 +1192,9 @@ function makeStyles(c: TanrenThemeColors) {
     marginVertical: SPACING.sm,
   },
   setNumLabel: {
-    fontSize: 13,
-    fontWeight: TYPOGRAPHY.semiBold,
+    fontSize: t.caption,
+    fontWeight: t.semiBold,
+    fontFamily: t.fontFamily,
     color: c.textTertiary,
     width: 28,
     flexShrink: 0,
@@ -1181,18 +1203,19 @@ function makeStyles(c: TanrenThemeColors) {
     color: c.accent,
   },
   setVals: {
-    fontSize: TYPOGRAPHY.bodySmall,
-    fontWeight: TYPOGRAPHY.semiBold,
+    fontSize: t.bodySmall,
+    fontWeight: t.semiBold,
+    fontFamily: t.fontFamily,
     color: c.textPrimary,
     flex: 1,
   },
   setValsDone: {
     color: c.textTertiary,
-    fontWeight: TYPOGRAPHY.regular,
+    fontWeight: t.regular,
   },
   setValsFuture: {
     color: 'rgba(245,245,247,0.3)',
-    fontWeight: TYPOGRAPHY.regular,
+    fontWeight: t.regular,
   },
   setActivePip: {
     width: 5,
@@ -1245,18 +1268,19 @@ function makeStyles(c: TanrenThemeColors) {
   },
   histLblCurrent: {
     color: c.accent,
-    fontWeight: TYPOGRAPHY.semiBold,
+    fontWeight: t.semiBold,
   },
   histBarVal: {
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.semiBold,
+    fontSize: t.captionSmall,
+    fontWeight: t.semiBold,
+    fontFamily: t.fontFamily,
     color: c.textSecondary,
     marginBottom: 2,
     textAlign: 'center',
   },
   histBarValCurrent: {
     color: c.accent,
-    fontWeight: TYPOGRAPHY.bold,
+    fontWeight: t.bold,
   },
   histNote: {
     flexDirection: 'row',
@@ -1294,8 +1318,9 @@ function makeStyles(c: TanrenThemeColors) {
     justifyContent: 'center',
   },
   endBtnText: {
-    fontSize: TYPOGRAPHY.bodySmall,
-    fontWeight: TYPOGRAPHY.regular,
+    fontSize: t.bodySmall,
+    fontWeight: t.regular,
+    fontFamily: t.fontFamily,
     color: c.textSecondary,
   },
 
@@ -1317,8 +1342,9 @@ function makeStyles(c: TanrenThemeColors) {
     marginBottom: 4,
   },
   completeTitle: {
-    fontSize: TYPOGRAPHY.screenTitle,
-    fontWeight: TYPOGRAPHY.bold,
+    fontSize: t.screenTitle,
+    fontWeight: t.bold,
+    fontFamily: t.fontFamily,
     color: c.textPrimary,
     letterSpacing: -0.5,
   },
@@ -1331,7 +1357,8 @@ function makeStyles(c: TanrenThemeColors) {
     justifyContent: 'center',
   },
   completeSub: {
-    fontSize: TYPOGRAPHY.caption,
+    fontSize: t.caption,
+    fontFamily: t.fontFamily,
     color: c.textTertiary,
     marginTop: 2,
   },
@@ -1350,13 +1377,15 @@ function makeStyles(c: TanrenThemeColors) {
     flex: 1,
   },
   completeRowName: {
-    fontSize: TYPOGRAPHY.body,
-    fontWeight: TYPOGRAPHY.semiBold,
+    fontSize: t.body,
+    fontWeight: t.semiBold,
+    fontFamily: t.fontFamily,
     color: c.textPrimary,
     letterSpacing: -0.2,
   },
   completeRowDetail: {
-    fontSize: TYPOGRAPHY.captionSmall,
+    fontSize: t.captionSmall,
+    fontFamily: t.fontFamily,
     color: c.textTertiary,
     marginTop: 2,
   },
@@ -1367,8 +1396,9 @@ function makeStyles(c: TanrenThemeColors) {
     paddingVertical: 3,
   },
   completePRText: {
-    fontSize: TYPOGRAPHY.captionSmall,
-    fontWeight: TYPOGRAPHY.heavy,
+    fontSize: t.captionSmall,
+    fontWeight: t.heavy,
+    fontFamily: t.fontFamily,
     color: c.accent,
     letterSpacing: 0.5,
   },
@@ -1386,8 +1416,9 @@ function makeStyles(c: TanrenThemeColors) {
     justifyContent: 'center',
   },
   completeHomeBtnText: {
-    fontSize: 17,
-    fontWeight: TYPOGRAPHY.bold,
+    fontSize: t.body,
+    fontWeight: t.bold,
+    fontFamily: t.fontFamily,
     color: c.onAccent,
     letterSpacing: -0.2,
   },
@@ -1400,8 +1431,8 @@ type WorkoutCompleteProps = NativeStackScreenProps<WorkoutStackParamList, 'Worko
 
 export function WorkoutCompleteScreen({ navigation, route }: WorkoutCompleteProps) {
   const { reportItems, startedAt } = route.params;
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeCompleteStyles(colors), [colors]);
+  const { colors, typography } = useTheme();
+  const styles = useMemo(() => makeCompleteStyles(colors, typography), [colors, typography]);
 
   const durationSec = Math.round((Date.now() - new Date(startedAt).getTime()) / 1000);
   const minutes = Math.floor(durationSec / 60);

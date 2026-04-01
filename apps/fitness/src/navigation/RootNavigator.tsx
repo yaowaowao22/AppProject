@@ -71,6 +71,7 @@ function WorkoutStackNavigator() {
         headerShown: false,
         contentStyle: { backgroundColor: colors.background },
         animation: 'slide_from_right',
+        gestureEnabled: true,
       }}
     >
       <WorkoutStack.Screen name="ExerciseSelect" component={ExerciseSelectScreen} />
@@ -99,6 +100,8 @@ function HistoryStackNavigator() {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: colors.background },
+        animation: 'slide_from_right',
+        gestureEnabled: true,
       }}
     >
       <HistoryStack.Screen name="HistoryList" component={HistoryScreen} />
