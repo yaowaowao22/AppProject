@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=800">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:         #ffffff;
+    --surface:    #ffffff;
+    --border:     rgba(0,0,0,0.13);
+    --text:       #0a0a10;
+    --text-dim:   rgba(10,10,16,0.82);
+    --text-faint: rgba(10,10,16,0.62);
+    --u: 8px;
+    --slit-0: #b04a00;  /* 灼熱橙 — 鍛鉄アクセント */
+  }
+
+  body {
+    background: var(--bg);
+    font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    padding: 40px;
+    width: 800px;
+  }
+
+  .section {
+    position: relative;
+    padding: 28px 28px 28px 40px;
+    margin-bottom: 0;
+    background: var(--surface);
+  }
+  .section::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--slit-0);
+  }
+
+  .section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+  }
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #b04a00;
+    background: rgba(176,74,0,0.08);
+    border: 1px solid rgba(176,74,0,0.22);
+    border-radius: 4px;
+    padding: 4px 10px;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+  .section-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.65;
+    margin-bottom: 24px;
+  }
+
+  /* iPhone mockup */
+  .phone-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 0 4px;
+  }
+  .phone {
+    width: 260px;
+    background: #111113;
+    border-radius: 40px;
+    padding: 16px 12px 20px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.18);
+    border: 1.5px solid rgba(255,255,255,0.08);
+    position: relative;
+  }
+  /* notch */
+  .phone-notch {
+    width: 80px;
+    height: 22px;
+    background: #111113;
+    border-radius: 0 0 14px 14px;
+    margin: 0 auto 10px;
+    position: relative;
+    z-index: 2;
+  }
+  .phone-screen {
+    background: #111113;
+    border-radius: 28px;
+    overflow: hidden;
+    padding: 24px 20px 20px;
+  }
+  /* nav bar */
+  .phone-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .phone-nav-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(245,245,247,0.9);
+    letter-spacing: 0.04em;
+  }
+  .phone-nav-chip {
+    font-size: 10px;
+    color: rgba(245,245,247,0.5);
+    background: rgba(255,255,255,0.07);
+    border-radius: 4px;
+    padding: 2px 7px;
+  }
+
+  /* hero number block */
+  .hero-block {
+    margin-bottom: 18px;
+  }
+  .hero-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(245,245,247,0.4);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+  .hero-num-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+  }
+  .hero-btn {
+    width: 36px;
+    height: 36px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 300;
+    color: rgba(245,245,247,0.7);
+    flex-shrink: 0;
+  }
+  .hero-val {
+    font-size: 52px;
+    font-weight: 800;
+    color: #F5F5F7;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    flex: 1;
+    text-align: center;
+  }
+  .hero-unit {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(245,245,247,0.5);
+    margin-left: 4px;
+    margin-top: 10px;
+    align-self: flex-end;
+  }
+
+  .divider {
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+    margin: 14px 0;
+  }
+
+  /* セット完了ボタン */
+  .cta-btn {
+    background: #FF6200;
+    border-radius: 14px;
+    padding: 14px;
+    text-align: center;
+    margin-top: 20px;
+  }
+  .cta-btn span {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.04em;
+  }
+
+  /* set log */
+  .set-log {
+    margin-top: 14px;
+  }
+  .set-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .set-num {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(245,245,247,0.35);
+    width: 28px;
+  }
+  .set-data {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(245,245,247,0.65);
+  }
+  .set-check {
+    font-size: 12px;
+    color: #2DB55D;
+  }
+
+  /* annotation area */
+  .annotation {
+    display: flex;
+    gap: 24px;
+    margin-top: 22px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .ann-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .ann-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+  .ann-dot-orange { background: #FF6200; }
+  .ann-dot-white  { background: #F5F5F7; }
+  .ann-dot-green  { background: #2DB55D; }
+  .ann-text {
+    font-size: 12px;
+    color: var(--text-faint);
+    line-height: 1.5;
+  }
+  .ann-text strong {
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<div class="section">
+  <div class="section-head">
+    <div>
+      <div class="section-label">第2章 — ヒーローナンバー設計</div>
+      <div class="section-title">記録UI — 重量と回数を画面の主役に</div>
+    </div>
+    <div class="badge">鍛鉄の間</div>
+  </div>
+  <div class="section-desc">
+    58pxの巨大な数値が画面上半分を占有する。キーボードは一切表示しない。<br>
+    「−」「＋」ボタンで 2.5kg刻み・1rep刻みに調整し、「セット完了」で記録。
+  </div>
+
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+
+        <div class="phone-nav">
+          <div class="phone-nav-title">ベンチプレス（バーベル）</div>
+          <div class="phone-nav-chip">Set 3</div>
+        </div>
+
+        <!-- 重量 -->
+        <div class="hero-block">
+          <div class="hero-label">重量</div>
+          <div class="hero-num-row">
+            <div class="hero-btn">−</div>
+            <div class="hero-val">80.0<span class="hero-unit">kg</span></div>
+            <div class="hero-btn">＋</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- 回数 -->
+        <div class="hero-block">
+          <div class="hero-label">回数</div>
+          <div class="hero-num-row">
+            <div class="hero-btn">−</div>
+            <div class="hero-val">8<span class="hero-unit">reps</span></div>
+            <div class="hero-btn">＋</div>
+          </div>
+        </div>
+
+        <!-- セット完了ボタン -->
+        <div class="cta-btn">
+          <span>セット完了</span>
+        </div>
+
+        <!-- ログ -->
+        <div class="set-log">
+          <div class="set-row">
+            <div class="set-num">S1</div>
+            <div class="set-data">80.0 kg × 8 reps</div>
+            <div class="set-check">✓</div>
+          </div>
+          <div class="set-row">
+            <div class="set-num">S2</div>
+            <div class="set-data">80.0 kg × 8 reps</div>
+            <div class="set-check">✓</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="annotation">
+    <div class="ann-item">
+      <div class="ann-dot ann-dot-white"></div>
+      <div class="ann-text"><strong>Hero Number</strong><br>58px Heavy weight。視線が迷わない</div>
+    </div>
+    <div class="ann-item">
+      <div class="ann-dot ann-dot-orange"></div>
+      <div class="ann-text"><strong>オレンジ3点ルール</strong><br>セット完了ボタンのみに使用</div>
+    </div>
+    <div class="ann-item">
+      <div class="ann-dot ann-dot-green"></div>
+      <div class="ann-text"><strong>完了グリーン</strong><br>記録済みセットの確認表示</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

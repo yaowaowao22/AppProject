@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=800">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:         #ffffff;
+    --surface:    #ffffff;
+    --border:     rgba(0,0,0,0.10);
+    --text:       #0a0a10;
+    --text-dim:   rgba(10,10,16,0.82);
+    --text-faint: rgba(10,10,16,0.62);
+    --u: 8px;
+    --slit-0: #b04a00;  /* 灼熱橙 */
+  }
+
+  body {
+    background: var(--bg);
+    font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    padding: 40px;
+    width: 800px;
+  }
+
+  .section {
+    position: relative;
+    padding: 28px 28px 28px 40px;
+    background: var(--surface);
+  }
+  .section::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--slit-0);
+  }
+
+  .section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+  }
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #b04a00;
+    background: rgba(176,74,0,0.08);
+    border: 1px solid rgba(176,74,0,0.22);
+    border-radius: 4px;
+    padding: 4px 10px;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+
+  /* stats grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .stat-cell {
+    background: var(--surface);
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .stat-cell.highlight {
+    background: rgba(176,74,0,0.04);
+  }
+  .stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .stat-val {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .stat-val.orange {
+    color: #b04a00;
+  }
+  .stat-unit {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-faint);
+    margin-top: 2px;
+  }
+  .stat-sub {
+    font-size: 11px;
+    color: rgba(10,10,16,0.45);
+    margin-top: 1px;
+  }
+
+  /* bottom row: 2列のワイドセル */
+  .stats-wide {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+    margin-top: -1px;
+  }
+  .stat-wide-cell {
+    background: var(--surface);
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .stat-wide-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stat-wide-val {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .stat-wide-val.orange {
+    color: #b04a00;
+  }
+
+  /* period bar */
+  .period-row {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .period-day {
+    flex: 1;
+    text-align: center;
+    padding: 10px 8px;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .period-day:last-child { border-right: none; }
+  .period-day.active {
+    background: rgba(176,74,0,0.06);
+  }
+  .period-date {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-faint);
+    letter-spacing: 0.06em;
+  }
+  .period-commits {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text);
+    margin-top: 3px;
+  }
+  .period-commits.orange { color: #b04a00; }
+  .period-desc {
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-top: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="section">
+  <div class="section-head">
+    <div>
+      <div class="section-label">第6章 — 4日間の開発数値</div>
+      <div class="section-title">152コミット · 20,434行 · 4日間</div>
+    </div>
+    <div class="badge">TANREN</div>
+  </div>
+
+  <!-- 上段3列 -->
+  <div class="stats-grid">
+    <div class="stat-cell highlight">
+      <div class="stat-label">総コミット数</div>
+      <div class="stat-val orange">152</div>
+      <div class="stat-unit">commits</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">開発日数</div>
+      <div class="stat-val">4</div>
+      <div class="stat-unit">days</div>
+      <div class="stat-sub">3/29 〜 4/1</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">画面数</div>
+      <div class="stat-val">15</div>
+      <div class="stat-unit">screens</div>
+    </div>
+  </div>
+
+  <!-- 下段 -->
+  <div class="stats-wide">
+    <div class="stat-wide-cell">
+      <div class="stat-wide-left">
+        <div class="stat-label">テーマ数</div>
+        <div class="stat-wide-val orange">30</div>
+        <div class="stat-unit">種 — 全て和名</div>
+      </div>
+    </div>
+    <div class="stat-wide-cell">
+      <div class="stat-wide-left">
+        <div class="stat-label">全ソース行数</div>
+        <div class="stat-wide-val">20,434</div>
+        <div class="stat-unit">lines（.ts / .tsx）</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 日別コミット数バー -->
+  <div class="period-row" style="margin-top:20px;">
+    <div class="period-day">
+      <div class="period-date">Day 1 · 3/29</div>
+      <div class="period-commits">1</div>
+      <div class="period-desc">骨格構築</div>
+    </div>
+    <div class="period-day">
+      <div class="period-date">Day 2 · 3/30</div>
+      <div class="period-commits">25</div>
+      <div class="period-desc">機能拡張</div>
+    </div>
+    <div class="period-day">
+      <div class="period-date">Day 3 · 3/31</div>
+      <div class="period-commits">41</div>
+      <div class="period-desc">HIG準拠+テスト</div>
+    </div>
+    <div class="period-day active">
+      <div class="period-date">Day 4 · 4/1</div>
+      <div class="period-commits orange">65</div>
+      <div class="period-desc">テーマ完成+審査</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
