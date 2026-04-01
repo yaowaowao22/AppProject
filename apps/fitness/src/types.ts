@@ -20,6 +20,7 @@ export interface Exercise {
   icon: string;          // Ionicons アイコン名
   equipment: EquipmentType;
   muscleDetail?: string; // 補助筋群テキスト（例: "胸・肩・上腕三頭筋"）
+  isCustom?: boolean;   // ユーザー登録のカスタム種目
 }
 
 // ── セット記録 ────────────────────────────────────────────────────────────────

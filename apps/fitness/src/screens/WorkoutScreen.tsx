@@ -662,7 +662,7 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
               <Text style={styles.sectionLabel}>セット</Text>
               {pr && (
                 <View style={{ backgroundColor: colors.accentDim, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 }}>
-                  <Text style={{ color: colors.accent, fontWeight: TYPOGRAPHY.heavy as any, fontSize: 11 }}>
+                  <Text style={{ color: colors.accent, fontWeight: typography.heavy as any, fontSize: typography.captionSmall }}>
                     PR {pr.maxWeight}kg
                   </Text>
                 </View>
@@ -1514,7 +1514,7 @@ export function WorkoutCompleteScreen({ navigation, route }: WorkoutCompleteProp
   );
 }
 
-function makeCompleteStyles(c: TanrenThemeColors) {
+function makeCompleteStyles(c: TanrenThemeColors, t: DynamicTypography) {
   return StyleSheet.create({
     safe: { flex: 1, backgroundColor: c.background },
     header: {
@@ -1536,13 +1536,15 @@ function makeCompleteStyles(c: TanrenThemeColors) {
       color: c.accent,
     },
     title: {
-      fontSize: 28,
-      fontWeight: TYPOGRAPHY.bold,
+      fontSize: t.screenTitle,
+      fontWeight: t.bold,
+      fontFamily: t.fontFamily,
       color: c.textPrimary,
       letterSpacing: -0.5,
     },
     sub: {
-      fontSize: TYPOGRAPHY.bodySmall,
+      fontSize: t.bodySmall,
+      fontFamily: t.fontFamily,
       color: c.textTertiary,
       marginTop: 4,
     },
@@ -1561,19 +1563,22 @@ function makeCompleteStyles(c: TanrenThemeColors) {
       gap: 2,
     },
     statVal: {
-      fontSize: TYPOGRAPHY.exerciseName,
-      fontWeight: TYPOGRAPHY.bold,
+      fontSize: t.exerciseName,
+      fontWeight: t.bold,
+      fontFamily: t.fontFamily,
       color: c.textPrimary,
       letterSpacing: -0.5,
     },
     statLbl: {
-      fontSize: TYPOGRAPHY.captionSmall,
+      fontSize: t.captionSmall,
+      fontFamily: t.fontFamily,
       color: c.textTertiary,
       textAlign: 'center',
     },
     sectionLabel: {
-      fontSize: 11,
-      fontWeight: TYPOGRAPHY.semiBold,
+      fontSize: t.captionSmall,
+      fontWeight: t.semiBold,
+      fontFamily: t.fontFamily,
       color: c.textTertiary,
       textTransform: 'uppercase',
       letterSpacing: 0.9,
@@ -1596,12 +1601,14 @@ function makeCompleteStyles(c: TanrenThemeColors) {
     },
     rowLeft: { flex: 1 },
     exName: {
-      fontSize: TYPOGRAPHY.body,
-      fontWeight: TYPOGRAPHY.semiBold,
+      fontSize: t.body,
+      fontWeight: t.semiBold,
+      fontFamily: t.fontFamily,
       color: c.textPrimary,
     },
     exMeta: {
-      fontSize: TYPOGRAPHY.caption,
+      fontSize: t.caption,
+      fontFamily: t.fontFamily,
       color: c.textTertiary,
       marginTop: 2,
     },
@@ -1613,8 +1620,9 @@ function makeCompleteStyles(c: TanrenThemeColors) {
       marginLeft: 8,
     },
     prText: {
-      fontSize: 11,
-      fontWeight: TYPOGRAPHY.bold,
+      fontSize: t.captionSmall,
+      fontWeight: t.bold,
+      fontFamily: t.fontFamily,
       color: c.accent,
     },
     doneBtn: {
@@ -1627,8 +1635,9 @@ function makeCompleteStyles(c: TanrenThemeColors) {
       justifyContent: 'center',
     },
     doneBtnText: {
-      fontSize: TYPOGRAPHY.body,
-      fontWeight: TYPOGRAPHY.bold,
+      fontSize: t.body,
+      fontWeight: t.bold,
+      fontFamily: t.fontFamily,
       color: c.onAccent,
     },
   });

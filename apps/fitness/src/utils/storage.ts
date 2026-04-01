@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS, APP } from '../config';
-import type { DailyWorkout, PersonalRecord, WorkoutTemplate, AppSettings } from '../types';
+import type { DailyWorkout, Exercise, PersonalRecord, WorkoutTemplate, AppSettings } from '../types';
 
 export async function saveWorkouts(workouts: DailyWorkout[]): Promise<void> {
   try {
@@ -64,6 +64,25 @@ export async function saveAppSettings(settings: AppSettings): Promise<void> {
     await AsyncStorage.setItem(STORAGE_KEYS.APP_SETTINGS, JSON.stringify(settings));
   } catch (e) {
     console.warn('[storage] saveAppSettings failed:', e);
+  }
+}
+
+export async function saveCustomExercises(exercises: Exercise[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.CUSTOM_EXERCISES, JSON.stringify(exercises));
+  } catch (e) {
+    console.warn('[storage] saveCustomExercises failed:', e);
+  }
+}
+
+export async function loadCustomExercises(): Promise<Exercise[]> {
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEYS.CUSTOM_EXERCISES);
+    if (!raw) return [];
+    return JSON.parse(raw) as Exercise[];
+  } catch (e) {
+    console.warn('[storage] loadCustomExercises failed:', e);
+    return [];
   }
 }
 

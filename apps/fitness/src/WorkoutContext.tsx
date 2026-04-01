@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { DailyWorkout, PersonalRecord, WeeklyStats, WorkoutSession, WorkoutSet, WorkoutTemplate } from './types';
-import { loadPersonalRecords, loadWorkouts, loadTemplates, savePersonalRecords, saveWorkouts, saveTemplates } from './utils/storage';
+import type { DailyWorkout, Exercise, PersonalRecord, WeeklyStats, WorkoutSession, WorkoutSet, WorkoutTemplate } from './types';
+import { loadPersonalRecords, loadWorkouts, loadTemplates, savePersonalRecords, saveWorkouts, saveTemplates, loadCustomExercises, saveCustomExercises } from './utils/storage';
 import { STORAGE_KEYS, WORKOUT } from './config';
 
 // ── ワークアウト設定型 ─────────────────────────────────────────────────────────
@@ -28,6 +28,9 @@ interface WorkoutContextValue {
   currentSession: WorkoutSession | null;
   weeklyStats: WeeklyStats;
   templates: WorkoutTemplate[];
+  customExercises: Exercise[];
+  addCustomExercise: (name: string, bodyPart: Exercise['bodyPart'], equipment: Exercise['equipment']) => Promise<void>;
+  deleteCustomExercise: (id: string) => Promise<void>;
   startSession: (exerciseId: string) => void;
   addSet: (weight: number | null, reps: number | null) => void;
   completeSession: () => Promise<void>;
@@ -90,6 +93,9 @@ const WorkoutContext = createContext<WorkoutContextValue>({
   currentSession: null,
   weeklyStats: DEFAULT_WEEKLY_STATS,
   templates: [],
+  customExercises: [],
+  addCustomExercise: async () => {},
+  deleteCustomExercise: async () => {},
   startSession: () => {},
   addSet: () => {},
   completeSession: async () => {},
@@ -112,21 +118,24 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const [currentSession, setCurrentSession] = useState<WorkoutSession | null>(null);
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStats>(DEFAULT_WEEKLY_STATS);
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
+  const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [workoutConfig, setWorkoutConfig] = useState<WorkoutConfig>(DEFAULT_WORKOUT_CONFIG);
 
   // 起動時にストレージからロード
   useEffect(() => {
     (async () => {
-      const [loadedWorkouts, loadedRecords, loadedTemplates, savedConfig] = await Promise.all([
+      const [loadedWorkouts, loadedRecords, loadedTemplates, loadedCustomExercises, savedConfig] = await Promise.all([
         loadWorkouts(),
         loadPersonalRecords(),
         loadTemplates(),
+        loadCustomExercises(),
         AsyncStorage.getItem(STORAGE_KEYS.WORKOUT_CONFIG),
       ]);
       setWorkouts(loadedWorkouts);
       setPersonalRecords(loadedRecords);
       setWeeklyStats(computeWeeklyStats(loadedWorkouts));
       setTemplates(loadedTemplates);
+      setCustomExercises(loadedCustomExercises);
       if (savedConfig) {
         setWorkoutConfig({ ...DEFAULT_WORKOUT_CONFIG, ...JSON.parse(savedConfig) });
       }
@@ -277,6 +286,33 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     await saveWorkouts(updatedWorkouts);
   }, [workouts]);
 
+  // カスタム種目追加
+  const addCustomExercise = useCallback(async (
+    name: string,
+    bodyPart: Exercise['bodyPart'],
+    equipment: Exercise['equipment'],
+  ) => {
+    const newExercise: Exercise = {
+      id: `custom_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+      name,
+      nameEn: name,
+      bodyPart,
+      icon: 'barbell-outline',
+      equipment,
+      isCustom: true,
+    };
+    const updated = [...customExercises, newExercise];
+    setCustomExercises(updated);
+    await saveCustomExercises(updated);
+  }, [customExercises]);
+
+  // カスタム種目削除
+  const deleteCustomExercise = useCallback(async (id: string) => {
+    const updated = customExercises.filter(e => e.id !== id);
+    setCustomExercises(updated);
+    await saveCustomExercises(updated);
+  }, [customExercises]);
+
   // テンプレート保存
   const saveTemplate = useCallback(async (name: string, exerciseIds: string[]) => {
     const newTemplate: WorkoutTemplate = {
@@ -345,7 +381,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <WorkoutContext.Provider
-      value={{ workouts, personalRecords, currentSession, weeklyStats, templates, startSession, addSet, completeSession, deleteWorkout, deleteSessionFromWorkout, saveTemplate, updateTemplate, deleteTemplate, workoutConfig, updateWorkoutConfig, updateSession, resetAll }}
+      value={{ workouts, personalRecords, currentSession, weeklyStats, templates, customExercises, addCustomExercise, deleteCustomExercise, startSession, addSet, completeSession, deleteWorkout, deleteSessionFromWorkout, saveTemplate, updateTemplate, deleteTemplate, workoutConfig, updateWorkoutConfig, updateSession, resetAll }}
     >
       {children}
     </WorkoutContext.Provider>
