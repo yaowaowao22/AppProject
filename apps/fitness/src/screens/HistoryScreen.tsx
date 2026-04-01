@@ -33,7 +33,7 @@ import { LineChart } from '../components/LineChart';
 
 const CHART_H = 120;
 
-const WEEK_DAYS = ['日', '朁E, '火', '水', '木', '釁E, '圁E];
+const WEEK_DAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
 const TABS: { id: HistoryTabType; label: string }[] = [
   { id: 'daily',    label: '日別' },
@@ -45,13 +45,13 @@ const BP_FILTERS: Array<{ id: BodyPart | 'all'; label: string }> = [
   { id: 'all',       label: '全て' },
   { id: 'chest',     label: '胸' },
   { id: 'back',      label: '背中' },
-  { id: 'legs',      label: '脁E },
+  { id: 'legs',      label: '脚' },
   { id: 'shoulders', label: '肩' },
-  { id: 'arms',      label: '腁E },
+  { id: 'arms',      label: '腕' },
   { id: 'core',      label: '体幹' },
 ];
 
-// ── 静的スタイル�E�カラー非依存！E─────────────────────────────────────────────
+// ── 静的スタイル�E�カラー非依存！E─────────────────────────────────────────────
 
 const S = StyleSheet.create({
   bpCard: {
@@ -137,11 +137,11 @@ const S = StyleSheet.create({
   setColBadge: { width: 36, alignItems: 'flex-end' },
 });
 
-// ── ヘルパ�E ──────────────────────────────────────────────────────────────────
+// ── ヘルパ�E ──────────────────────────────────────────────────────────────────
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
-  return `${d.getMonth() + 1}朁E{d.getDate()}日�E�E{WEEK_DAYS[d.getDay()]}�E�`;
+  return `${d.getMonth() + 1}月${d.getDate()}日（${WEEK_DAYS[d.getDay()]}）`;
 }
 
 function formatDateShort(dateStr: string): string {
@@ -150,7 +150,7 @@ function formatDateShort(dateStr: string): string {
 }
 
 function formatDuration(seconds: number): string {
-  return `${Math.round(seconds / 60)}刁E;
+  return `${Math.round(seconds / 60)}分`;
 }
 
 function getMaxWeight(session: WorkoutSession): number | null {
@@ -240,7 +240,7 @@ function DailyTab({ styles, colors }: { styles: ReturnType<typeof makeStyles>; c
                   {ex?.name ?? session.exerciseId}
                 </Text>
                 <Text style={styles.exerciseStat}>
-                  {session.sets.length}セチE��{vol > 0 ? ` · ${vol.toLocaleString()}kg` : ' · 自釁E}
+                  {session.sets.length}セット{vol > 0 ? ` · ${vol.toLocaleString()}kg` : ' · 自重'}
                 </Text>
               </View>
             );
@@ -249,7 +249,7 @@ function DailyTab({ styles, colors }: { styles: ReturnType<typeof makeStyles>; c
           <View style={styles.statsRow}>
             <Text style={styles.statItem}>{volume.toLocaleString()} kg</Text>
             <Text style={styles.statDot}>·</Text>
-            <Text style={styles.statItem}>{totalSets}セチE��</Text>
+            <Text style={styles.statItem}>{totalSets}セット</Text>
           </View>
         </TouchableOpacity>
       </SwipeableRow>
@@ -265,9 +265,9 @@ function DailyTab({ styles, colors }: { styles: ReturnType<typeof makeStyles>; c
           onPress={() => (navigation as any).navigate('WorkoutStack')}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel="トレーニングを開始すめE
+          accessibilityLabel="トレーニングを開始する"
         >
-          <Text style={styles.ctaText}>トレーニングを開姁E/Text>
+          <Text style={styles.ctaText}>トレーニングを開始</Text>
         </TouchableOpacity>
       </View>
     );
@@ -345,7 +345,7 @@ function BodyPartListView({ onSelect }: { onSelect: (bp: BodyPart) => void }) {
             {item.label}
           </Text>
           <Text style={{ fontSize: typography.captionSmall, color: colors.textTertiary }}>
-            {item.sessionCount}セチE��ョン
+            {item.sessionCount}セッション
           </Text>
           {item.totalVolume > 0 && (
             <Text style={{ fontSize: typography.captionSmall, color: colors.textTertiary, fontVariant: ['tabular-nums'] }}>
@@ -387,7 +387,7 @@ function BodyPartDetailView({
 
   const bp = BODY_PARTS.find(b => b.id === bodyPart)!;
 
-  // 週別ボリューム�E�直迁E週�E�E
+  // 週別ボリューム�E�直迁E週�E�E
   const chartData = useMemo(() => {
     const today = new Date();
     const weekKeys: string[] = [];
@@ -412,7 +412,7 @@ function BodyPartDetailView({
     }));
   }, [workouts, bodyPart]);
 
-  // セチE��ョン一覧�E�日付降頁E��E
+  // セッション一覧�E�日付降頁E��E
   const sessions = useMemo<BPDetailSession[]>(() => {
     const sorted = [...workouts].sort((a, b) => b.date.localeCompare(a.date));
     const result: BPDetailSession[] = [];
@@ -451,7 +451,7 @@ function BodyPartDetailView({
 
   return (
     <View style={{ flex: 1 }}>
-      {/* 戻る�Eタン */}
+      {/* 戻る�Eタン */}
       <TouchableOpacity
         style={S.detailBackRow}
         onPress={onBack}
@@ -496,7 +496,7 @@ function BodyPartDetailView({
               marginBottom: SPACING.sm,
               marginTop: 2,
             }}>
-              週別ボリューム�E�直迁E週�E�E
+              週別ボリューム�E�直迁E週�E�E
             </Text>
           </View>
         }
@@ -511,7 +511,7 @@ function BodyPartDetailView({
             accessibilityRole="button"
             accessibilityLabel={`${formatDate(group.date)}の詳細`}
           >
-            {/* 日付�EチE��ー */}
+            {/* 日付�EチE��ー */}
             <Text style={{
               fontSize: typography.caption,
               fontWeight: typography.bold,
@@ -539,7 +539,7 @@ function BodyPartDetailView({
                 </Text>
                 <View style={{ flexDirection: 'row', gap: SPACING.xs }}>
                   <Text style={{ fontSize: typography.captionSmall, color: colors.textTertiary, fontVariant: ['tabular-nums'] }}>
-                    {item.setCount}セチE��
+                    {item.setCount}セット
                   </Text>
                   {item.maxWeight !== null && (
                     <Text style={{ fontSize: typography.captionSmall, color: colors.textTertiary, fontVariant: ['tabular-nums'] }}>
@@ -558,7 +558,7 @@ function BodyPartDetailView({
         )}
         ListEmptyComponent={
           <View style={{ paddingTop: SPACING.xl, alignItems: 'center' }}>
-            <Text style={{ fontSize: typography.bodySmall, color: colors.textTertiary }}>記録なぁE/Text>
+            <Text style={{ fontSize: typography.bodySmall, color: colors.textTertiary }}>記録なし</Text>
           </View>
         }
       />
@@ -704,7 +704,7 @@ function ExerciseListView({ onSelect }: { onSelect: (exerciseId: string) => void
         ListEmptyComponent={
           <View style={{ paddingTop: SPACING.xl, alignItems: 'center' }}>
             <Text style={{ fontSize: typography.bodySmall, color: colors.textTertiary }}>
-              こ�E部位�E記録はありません
+              こ�E部位�E記録はありません
             </Text>
           </View>
         }
@@ -747,7 +747,7 @@ function ExerciseDetailView({
     return result.slice(-12);
   }, [workouts, exerciseId]);
 
-  // セチE��ョン一覧�E�日付降頁E��E
+  // セッション一覧�E�日付降頁E��E
   const sessions = useMemo<ExDetailSession[]>(() => {
     const sorted = [...workouts].sort((a, b) => b.date.localeCompare(a.date));
     const result: ExDetailSession[] = [];
@@ -781,7 +781,7 @@ function ExerciseDetailView({
         <View style={S.setColBadge} />
       </View>
 
-      {/* セチE��衁E*/}
+      {/* セット衁E*/}
       {(() => {
         const sessionMax = getMaxWeight(session);
         return session.sets.map((set: WorkoutSet, idx: number) => {
@@ -799,10 +799,10 @@ function ExerciseDetailView({
               {idx + 1}
             </Text>
             <Text style={[S.setColWt, { fontSize: typography.caption, fontWeight: typography.semiBold, color: colors.textPrimary, fontVariant: ['tabular-nums'] }]}>
-              {set.weight !== null ? `${set.weight} kg` : '自釁E}
+              {set.weight !== null ? `${set.weight} kg` : '自重'}
             </Text>
             <Text style={[S.setColReps, { fontSize: typography.caption, color: colors.textSecondary, fontVariant: ['tabular-nums'] }]}>
-              {set.reps !== null ? `${set.reps} 回` : ' E}
+              {set.reps !== null ? `${set.reps} 回` : '-'}
             </Text>
             <View style={[S.setColBadge, { justifyContent: 'center', alignItems: 'flex-end' }]}>
               {isPR && (
@@ -820,7 +820,7 @@ function ExerciseDetailView({
 
   return (
     <View style={{ flex: 1 }}>
-      {/* 戻る�Eタン */}
+      {/* 戻る�Eタン */}
       <TouchableOpacity
         style={S.detailBackRow}
         onPress={onBack}
@@ -869,21 +869,21 @@ function ExerciseDetailView({
               marginBottom: SPACING.sm,
               marginTop: 2,
             }}>
-              最大重量の推移�E�直迁E2回！E
+              最大重量の推移�E�直迁E2回！E
             </Text>
           </View>
         }
         ItemSeparatorComponent={() => <View style={{ height: SPACING.sm }} />}
         renderItem={({ item }) => (
           <View style={[S.sessionBlock, { backgroundColor: colors.cardBackground }]}>
-            {/* セチE��ョンヘッダー */}
+            {/* セッションヘッダー */}
             <View style={[S.sessionHeader, { borderBottomWidth: 1, borderBottomColor: colors.separator }]}>
               <Text style={{ fontSize: typography.caption, fontWeight: typography.semiBold, color: colors.textSecondary }}>
                 {formatDate(item.date)}
               </Text>
               <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
                 <Text style={{ fontSize: typography.captionSmall, color: colors.textTertiary, fontVariant: ['tabular-nums'] }}>
-                  {item.session.sets.length}セチE��
+                  {item.session.sets.length}セット
                 </Text>
                 {item.maxWeight !== null && (
                   <Text style={{ fontSize: typography.captionSmall, color: colors.textTertiary, fontVariant: ['tabular-nums'] }}>
@@ -892,13 +892,13 @@ function ExerciseDetailView({
                 )}
               </View>
             </View>
-            {/* セチE��チE�Eブル */}
+            {/* セットチE�Eブル */}
             {renderSetTable(item.session)}
           </View>
         )}
         ListEmptyComponent={
           <View style={{ paddingTop: SPACING.xl, alignItems: 'center' }}>
-            <Text style={{ fontSize: typography.bodySmall, color: colors.textTertiary }}>記録なぁE/Text>
+            <Text style={{ fontSize: typography.bodySmall, color: colors.textTertiary }}>記録なし</Text>
           </View>
         }
       />
@@ -920,7 +920,7 @@ function ExerciseTab() {
   return <ExerciseListView onSelect={setSelectedExerciseId} />;
 }
 
-// ── メインコンポ�EネンチE───────────────────────────────────────────────────────
+// ── メインコンポ�EネンチE───────────────────────────────────────────────────────
 
 export function HistoryScreen() {
   const [activeTab, setActiveTab] = useState<HistoryTabType>('daily');
@@ -953,7 +953,7 @@ export function HistoryScreen() {
         })}
       </View>
 
-      {/* タブコンチE��チE*/}
+      {/* タブコンチE��チE*/}
       {activeTab === 'daily'    && <DailyTab    styles={styles} colors={colors} />}
       {activeTab === 'bodyPart' && <BodyPartTab />}
       {activeTab === 'exercise' && <ExerciseTab />}
@@ -961,7 +961,7 @@ export function HistoryScreen() {
   );
 }
 
-// ── スタイル�E�EailyTab + 共通要素�E�E──────────────────────────────────────────
+// ── スタイル�E�EailyTab + 共通要素�E�E──────────────────────────────────────────
 
 function makeStyles(c: TanrenThemeColors, typography: DynamicTypography) {
   return StyleSheet.create({

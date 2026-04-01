@@ -26,12 +26,12 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { routeName: 'Home',          label: 'ホ�Eム',         icon: 'barbell-outline',     iconActive: 'barbell' },
+  { routeName: 'Home',          label: 'ホーム',         icon: 'barbell-outline',     iconActive: 'barbell' },
   { routeName: 'WorkoutStack',  label: 'トレーニング',   icon: 'fitness-outline',     iconActive: 'fitness' },
   { routeName: 'HistoryStack',  label: '履歴',           icon: 'time-outline',        iconActive: 'time' },
-  { routeName: 'MonthlyReport', label: '月別レポ�EチE,   icon: 'calendar-outline',    iconActive: 'calendar' },
-  { routeName: 'RMCalculator',  label: 'RM計算橁E,       icon: 'calculator-outline',       iconActive: 'calculator' },
-  { routeName: 'TemplateManage', label: 'チE��プレーチE, icon: 'document-text-outline',    iconActive: 'document-text' },
+  { routeName: 'MonthlyReport', label: '月別レポート',   icon: 'calendar-outline',    iconActive: 'calendar' },
+  { routeName: 'RMCalculator',  label: 'RM計算機',       icon: 'calculator-outline',       iconActive: 'calculator' },
+  { routeName: 'TemplateManage', label: 'テンプレート', icon: 'document-text-outline',    iconActive: 'document-text' },
 ];
 
 // ── ヘルパ�E ──────────────────────────────────────────────────────────────────
@@ -117,7 +117,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
           onPress={() => navigation.navigate('SettingsStack')}
           activeOpacity={0.7}
           accessibilityRole="button"
-          accessibilityLabel="設宁E
+          accessibilityLabel="設定"
         >
           <Ionicons
             name="settings-outline"
