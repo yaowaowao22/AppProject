@@ -79,7 +79,11 @@
       "Bash(eas credentials:*)",
       "Bash(eas build:list --platform ios --limit 1 --json)",
       "Bash(eas build:view)",
-      "Bash(eas update:view d6eae8af-046f-4114-9d77-4f856310b881)"
+      "Bash(eas update:view d6eae8af-046f-4114-9d77-4f856310b881)",
+      "Bash(powershell -Command \"\\(Get-Content HistoryScreen.tsx\\) -replace ''TYPOGRAPHY\\\\.'', ''typography.'' | Set-Content HistoryScreen.tsx\")",
+      "Bash(powershell -Command \"\\(Get-Content ProgressScreen.tsx\\) -replace ''TYPOGRAPHY\\\\.'', ''typography.'' | Set-Content ProgressScreen.tsx\")",
+      "Bash(powershell -Command \"\\(Get-Content CustomDrawerContent.tsx\\) -replace ''TYPOGRAPHY\\\\.'', ''typography.'' | Set-Content CustomDrawerContent.tsx\")",
+      "Bash(powershell -Command \"\\(Get-Content SettingsScreen.tsx\\) -replace ''TYPOGRAPHY\\\\.'', ''typography.'' | Set-Content SettingsScreen.tsx\")"
     ]
   }
 }

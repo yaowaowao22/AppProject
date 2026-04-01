@@ -29,6 +29,8 @@ interface WorkoutContextValue {
   weeklyStats: WeeklyStats;
   templates: WorkoutTemplate[];
   customExercises: Exercise[];
+  workoutTargetDate: string;
+  setWorkoutTargetDate: (date: string) => void;
   addCustomExercise: (name: string, bodyPart: Exercise['bodyPart'], equipment: Exercise['equipment']) => Promise<void>;
   deleteCustomExercise: (id: string) => Promise<void>;
   startSession: (exerciseId: string) => void;
@@ -94,6 +96,8 @@ const WorkoutContext = createContext<WorkoutContextValue>({
   weeklyStats: DEFAULT_WEEKLY_STATS,
   templates: [],
   customExercises: [],
+  workoutTargetDate: toDateStr(new Date()),
+  setWorkoutTargetDate: () => {},
   addCustomExercise: async () => {},
   deleteCustomExercise: async () => {},
   startSession: () => {},
@@ -120,6 +124,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [workoutConfig, setWorkoutConfig] = useState<WorkoutConfig>(DEFAULT_WORKOUT_CONFIG);
+  const [workoutTargetDate, setWorkoutTargetDate] = useState<string>(() => toDateStr(new Date()));
 
   // 起動時にストレージからロード
   useEffect(() => {
@@ -179,7 +184,6 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     if (!currentSession || currentSession.sets.length === 0) { setCurrentSession(null); return; }
 
     const now = new Date().toISOString();
-    const todayStr = toDateStr(new Date());
 
     const completedSession: WorkoutSession = { ...currentSession, completedAt: now };
 
@@ -228,13 +232,13 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
     // DailyWorkoutに追加（同日があればマージ、なければ新規作成）
     const updatedWorkouts = [...workouts];
-    const todayIdx = updatedWorkouts.findIndex(w => w.date === todayStr);
+    const targetIdx = updatedWorkouts.findIndex(w => w.date === workoutTargetDate);
 
-    if (todayIdx >= 0) {
-      const existing = updatedWorkouts[todayIdx];
+    if (targetIdx >= 0) {
+      const existing = updatedWorkouts[targetIdx];
       const firstStartedAt = existing.sessions[0]?.startedAt ?? now;
       const duration = Math.floor((Date.now() - new Date(firstStartedAt).getTime()) / 1000);
-      updatedWorkouts[todayIdx] = {
+      updatedWorkouts[targetIdx] = {
         ...existing,
         sessions: [...existing.sessions, completedSession],
         totalVolume: existing.totalVolume + sessionVolume,
@@ -246,7 +250,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       );
       updatedWorkouts.push({
         id: newId(),
-        date: todayStr,
+        date: workoutTargetDate,
         sessions: [completedSession],
         totalVolume: sessionVolume,
         duration,
@@ -262,7 +266,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       saveWorkouts(updatedWorkouts),
       savePersonalRecords(updatedRecords),
     ]);
-  }, [currentSession, workouts, personalRecords]);
+  }, [currentSession, workouts, personalRecords, workoutTargetDate]);
 
   // ワークアウト設定更新
   const updateWorkoutConfig = useCallback(async (partial: Partial<WorkoutConfig>) => {
@@ -381,7 +385,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <WorkoutContext.Provider
-      value={{ workouts, personalRecords, currentSession, weeklyStats, templates, customExercises, addCustomExercise, deleteCustomExercise, startSession, addSet, completeSession, deleteWorkout, deleteSessionFromWorkout, saveTemplate, updateTemplate, deleteTemplate, workoutConfig, updateWorkoutConfig, updateSession, resetAll }}
+      value={{ workouts, personalRecords, currentSession, weeklyStats, templates, customExercises, workoutTargetDate, setWorkoutTargetDate, addCustomExercise, deleteCustomExercise, startSession, addSet, completeSession, deleteWorkout, deleteSessionFromWorkout, saveTemplate, updateTemplate, deleteTemplate, workoutConfig, updateWorkoutConfig, updateSession, resetAll }}
     >
       {children}
     </WorkoutContext.Provider>
