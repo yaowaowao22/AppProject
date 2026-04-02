@@ -349,7 +349,7 @@ function makeStyles(c: TanrenThemeColors) {
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: SPACING.contentMargin,
-    marginBottom: SPACING.sectionGap,
+    marginBottom: SPACING.md,
   },
   navBtn: {
     width: 44,
