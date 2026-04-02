@@ -436,6 +436,7 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   const editingRowRef = useRef<number>(-1);
   const activeIdxRef = useRef(0);
   const commitGuardRef = useRef(false);
+  const setListScrollRef = useRef<ScrollView>(null);
 
   // 種目切り替え：セッション開始 + 前回データで行初期化
   useEffect(() => {
@@ -554,6 +555,7 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
   function handleClearRow(i: number) {
     setRows(prev => prev.map((r, idx) => idx === i ? { ...r, weight: null, reps: null, done: false } : r));
+    setManualActiveIdx(i);
   }
 
   function handleSetComplete() {
@@ -580,6 +582,10 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
     // 常に次の行へ移動（inputWeight/inputReps は変更しない）
     setManualActiveIdx(nextActive);
+    // 新規行が追加される場合（全完了→空行追加）は末尾にスクロール
+    if (nextActive >= rows.length) {
+      setTimeout(() => setListScrollRef.current?.scrollToEnd({ animated: true }), 50);
+    }
     setSetDone(true);
     if (doneTimeoutRef.current) clearTimeout(doneTimeoutRef.current);
     doneTimeoutRef.current = setTimeout(() => setSetDone(false), 1500);
@@ -790,6 +796,7 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
       <View style={styles.setSeparator} />
 
       <ScrollView
+        ref={setListScrollRef}
         style={styles.scrollArea}
         contentContainerStyle={styles.activeContent}
         bounces={false}

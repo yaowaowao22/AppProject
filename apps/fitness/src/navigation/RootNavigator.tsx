@@ -21,6 +21,7 @@ import ContactScreen from '../screens/ContactScreen';
 import DayDetailScreen from '../screens/DayDetailScreen';
 import SessionEditScreen from '../screens/SessionEditScreen';
 import { CustomDrawerContent } from '../components/CustomDrawerContent';
+import { StackWithHeader } from '../components/StackWithHeader';
 
 // ── Param lists ──────────────────────────────────────────────────────────────
 
@@ -68,28 +69,30 @@ const SettingsStack  = createNativeStackNavigator<SettingsStackParamList>();
 function WorkoutStackNavigator() {
   const { colors } = useTheme();
   return (
-    <WorkoutStack.Navigator
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.background },
-        animation: 'slide_from_right',
-        gestureEnabled: true,
-      }}
-    >
-      <WorkoutStack.Screen name="ExerciseSelect" component={ExerciseSelectScreen} />
-      <WorkoutStack.Screen name="OrderConfirm"   component={OrderConfirmScreen} />
-      <WorkoutStack.Screen name="ActiveWorkout"  component={ActiveWorkoutScreen} />
-      <WorkoutStack.Screen
-        name="WorkoutComplete"
-        component={WorkoutCompleteScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_bottom',
+    <StackWithHeader>
+      <WorkoutStack.Navigator
+        screenOptions={{
           headerShown: false,
-          gestureEnabled: false,
+          contentStyle: { backgroundColor: colors.background },
+          animation: 'slide_from_right',
+          gestureEnabled: true,
         }}
-      />
-    </WorkoutStack.Navigator>
+      >
+        <WorkoutStack.Screen name="ExerciseSelect" component={ExerciseSelectScreen} />
+        <WorkoutStack.Screen name="OrderConfirm"   component={OrderConfirmScreen} />
+        <WorkoutStack.Screen name="ActiveWorkout"  component={ActiveWorkoutScreen} />
+        <WorkoutStack.Screen
+          name="WorkoutComplete"
+          component={WorkoutCompleteScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_bottom',
+            headerShown: false,
+            gestureEnabled: false,
+          }}
+        />
+      </WorkoutStack.Navigator>
+    </StackWithHeader>
   );
 }
 
@@ -98,20 +101,22 @@ function WorkoutStackNavigator() {
 function HistoryStackNavigator() {
   const { colors } = useTheme();
   return (
-    <HistoryStack.Navigator
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.background },
-        animation: 'slide_from_right',
-        gestureEnabled: true,
-      }}
-    >
-      <HistoryStack.Screen name="HistoryList"    component={HistoryScreen} />
-      <HistoryStack.Screen name="DayDetail"      component={DayDetailScreen} />
-      <HistoryStack.Screen name="SessionEdit"    component={SessionEditScreen} />
-      <HistoryStack.Screen name="BodyPartDetail" component={BodyPartDetailScreen} />
-      <HistoryStack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} />
-    </HistoryStack.Navigator>
+    <StackWithHeader>
+      <HistoryStack.Navigator
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+          animation: 'slide_from_right',
+          gestureEnabled: true,
+        }}
+      >
+        <HistoryStack.Screen name="HistoryList"    component={HistoryScreen} />
+        <HistoryStack.Screen name="DayDetail"      component={DayDetailScreen} />
+        <HistoryStack.Screen name="SessionEdit"    component={SessionEditScreen} />
+        <HistoryStack.Screen name="BodyPartDetail" component={BodyPartDetailScreen} />
+        <HistoryStack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} />
+      </HistoryStack.Navigator>
+    </StackWithHeader>
   );
 }
 
@@ -120,17 +125,19 @@ function HistoryStackNavigator() {
 function SettingsStackNavigator() {
   const { colors } = useTheme();
   return (
-    <SettingsStack.Navigator
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.background },
-      }}
-    >
-      <SettingsStack.Screen name="SettingsMain"   component={SettingsScreen} />
-      <SettingsStack.Screen name="PrivacyPolicy"  component={PrivacyPolicyScreen} />
-      <SettingsStack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
-      <SettingsStack.Screen name="Contact"        component={ContactScreen} />
-    </SettingsStack.Navigator>
+    <StackWithHeader>
+      <SettingsStack.Navigator
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      >
+        <SettingsStack.Screen name="SettingsMain"   component={SettingsScreen} />
+        <SettingsStack.Screen name="PrivacyPolicy"  component={PrivacyPolicyScreen} />
+        <SettingsStack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
+        <SettingsStack.Screen name="Contact"        component={ContactScreen} />
+      </SettingsStack.Navigator>
+    </StackWithHeader>
   );
 }
 
