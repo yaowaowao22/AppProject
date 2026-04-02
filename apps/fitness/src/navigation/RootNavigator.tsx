@@ -153,7 +153,7 @@ export function RootNavigator() {
         component={WorkoutStackNavigator}
         options={({ route }) => ({
           title: 'トレーニング',
-          swipeEnabled: !route.state || route.state.index === 0,
+          swipeEnabled: !(route as any).state || (route as any).state.index === 0,
         })}
         listeners={({ navigation }) => ({
           // ドロワーで再選択されたとき WorkoutStack をリセット（完了画面の再表示を防止）
@@ -171,7 +171,7 @@ export function RootNavigator() {
         component={HistoryStackNavigator}
         options={({ route }) => ({
           title: '履歴',
-          swipeEnabled: !route.state || route.state.index === 0,
+          swipeEnabled: !(route as any).state || (route as any).state.index === 0,
         })}
       />
       <Drawer.Screen name="MonthlyReport" component={MonthlyReportScreen}     options={{ title: '月別レポート' }} />
@@ -182,7 +182,7 @@ export function RootNavigator() {
         component={SettingsStackNavigator}
         options={({ route }) => ({
           title: '設定',
-          swipeEnabled: !route.state || route.state.index === 0,
+          swipeEnabled: !(route as any).state || (route as any).state.index === 0,
         })}
       />
     </Drawer.Navigator>
