@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Circle, G, Line as SvgLine, Path, Text as SvgText } from 'react-native-svg';
 import { BODY_PARTS, EXERCISES, getExerciseById } from '../exerciseDB';
 import { RADIUS, SPACING, TYPOGRAPHY } from '../theme';
 import type { TanrenThemeColors } from '../theme';
@@ -23,6 +24,134 @@ function toDateStr(d: Date): string {
 
 function fmtVol(vol: number): string {
   return vol >= 1000 ? `${(vol / 1000).toFixed(1)}k` : String(Math.round(vol));
+}
+
+// ── DailyLineChart ────────────────────────────────────────────────────────────
+
+type DayDatum = { volume: number; label: string; isToday: boolean };
+
+function DailyLineChart({ data, colors }: { data: DayDatum[]; colors: TanrenThemeColors }) {
+  const [chartWidth, setChartWidth] = useState(0);
+
+  const maxVol = Math.max(...data.map(d => d.volume), 0);
+  const hasData = maxVol > 0;
+
+  const CHART_H = 110;
+  const Y_W     = 38;
+  const PAD_T   = 14;
+  const PAD_R   = 4;
+  const X_H     = 20;
+
+  const plotW = Math.max(chartWidth - Y_W - PAD_R, 0);
+  const plotH = CHART_H - PAD_T;
+  const n     = data.length;
+
+  const xOf = (i: number) =>
+    Y_W + (n <= 1 ? plotW / 2 : (i / (n - 1)) * plotW);
+  const yOf = (vol: number) =>
+    PAD_T + (hasData ? (1 - vol / maxVol) * plotH : plotH);
+
+  // Y軸: 0・中間・最大 の 3刻み（きりのよい数値）
+  const yTicks = useMemo((): number[] => {
+    if (!hasData) return [0];
+    const mag  = Math.pow(10, Math.floor(Math.log10(maxVol)));
+    const step = [1, 2, 2.5, 5, 10]
+      .map(f => f * mag)
+      .find(s => Math.ceil(maxVol / s) <= 3) ?? mag;
+    const top = Math.ceil(maxVol / step) * step;
+    const mid = Math.round(top / 2 / step) * step;
+    return [...new Set([0, mid, top])].sort((a, b) => a - b);
+  }, [maxVol, hasData]);
+
+  // X軸ラベル: 1日目・7日おき・最終日
+  const xLabelIdx = useMemo((): number[] => {
+    const s = new Set<number>([0]);
+    for (let i = 6; i < n - 1; i += 7) s.add(i);
+    s.add(n - 1);
+    return [...s].sort((a, b) => a - b);
+  }, [n]);
+
+  const pathD = hasData && chartWidth > 0
+    ? data.map((d, i) =>
+        `${i === 0 ? 'M' : 'L'}${xOf(i).toFixed(1)},${yOf(d.volume).toFixed(1)}`
+      ).join(' ')
+    : '';
+
+  return (
+    <View onLayout={e => setChartWidth(e.nativeEvent.layout.width)}>
+      {chartWidth > 0 && (
+        <Svg width={chartWidth} height={CHART_H + X_H}>
+          {/* グリッド線 & Y軸ラベル */}
+          {yTicks.map(tick => {
+            const y = yOf(tick);
+            return (
+              <G key={tick}>
+                <SvgLine
+                  x1={Y_W} y1={y} x2={Y_W + plotW} y2={y}
+                  stroke={colors.separator}
+                  strokeWidth={tick === 0 ? 0.8 : 0.5}
+                  strokeDasharray={tick === 0 ? undefined : '3 3'}
+                />
+                <SvgText
+                  x={Y_W - 4} y={y + 3.5}
+                  fontSize={9} fill={colors.textTertiary}
+                  textAnchor="end"
+                >
+                  {fmtVol(tick)}
+                </SvgText>
+              </G>
+            );
+          })}
+
+          {/* 折れ線 */}
+          {hasData && (
+            <Path
+              d={pathD}
+              stroke={colors.accent}
+              strokeWidth={1.8}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
+
+          {/* ドット */}
+          {hasData && data.map((d, i) => {
+            if (d.volume === 0) return null;
+            return (
+              <Circle
+                key={i}
+                cx={xOf(i)}
+                cy={yOf(d.volume)}
+                r={d.isToday ? 4.5 : 2.5}
+                fill={d.isToday ? colors.accent : colors.cardBackground}
+                stroke={colors.accent}
+                strokeWidth={1.5}
+              />
+            );
+          })}
+
+          {/* X軸日付ラベル */}
+          {xLabelIdx.map(i => {
+            const d = data[i];
+            return (
+              <SvgText
+                key={i}
+                x={xOf(i)}
+                y={CHART_H + X_H - 3}
+                fontSize={9}
+                fill={d.isToday ? colors.textPrimary : colors.textTertiary}
+                fontWeight={d.isToday ? '600' : '400'}
+                textAnchor={i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}
+              >
+                {d.label}
+              </SvgText>
+            );
+          })}
+        </Svg>
+      )}
+    </View>
+  );
 }
 
 // ── MonthlyReportScreen ───────────────────────────────────────────────────────
@@ -108,11 +237,6 @@ export default function MonthlyReportScreen() {
       };
     });
   }, [monthWorkouts, year, month]);
-
-  const maxDailyVol = useMemo(
-    () => Math.max(...dailyData.map(d => d.volume), 1),
-    [dailyData],
-  );
 
   // ── 種目別ランキング TOP5 ─────────────────────────────────────────────────
   const exerciseRanking = useMemo(() => {
@@ -258,44 +382,7 @@ export default function MonthlyReportScreen() {
           <Text style={styles.sectionLabel}>日別推移</Text>
           <View style={styles.chartBox}>
             <Text style={styles.chartTitle}>{monthLabel}の日別ボリューム</Text>
-            <View style={styles.chartBars}>
-              {dailyData.map((day, idx) => {
-                const ratio = day.volume / maxDailyVol;
-                const barH = Math.max(ratio * 72, day.volume > 0 ? 4 : 0);
-                const showLabel = idx === 0 || (idx + 1) % 7 === 0 || idx === dailyData.length - 1;
-                return (
-                  <View key={idx} style={styles.barCol}>
-                    {day.volume > 0 && (showLabel || day.isToday) && (
-                      <Text
-                        style={[
-                          styles.barTopVal,
-                          day.isToday && styles.barTopValCurrent,
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {fmtVol(day.volume)}
-                      </Text>
-                    )}
-                    <View
-                      style={[
-                        styles.weekBarFill,
-                        { height: barH },
-                        day.isToday ? styles.weekBarCurrent : styles.weekBarDefault,
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        styles.barLabel,
-                        day.isToday && styles.barLabelCurrent,
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {showLabel ? day.label : ''}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
+            <DailyLineChart data={dailyData} colors={colors} />
           </View>
 
           {/* ── 種目別ランキング TOP5 ── */}
@@ -498,50 +585,6 @@ function makeStyles(c: TanrenThemeColors) {
     color: c.textSecondary,
     marginBottom: 14,
   },
-  chartBars: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    height: 96,
-    gap: 2,
-  },
-  barCol: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    height: '100%',
-  },
-  barTopVal: {
-    fontSize: 8,
-    color: c.textTertiary,
-    marginBottom: 3,
-    fontVariant: ['tabular-nums'],
-  },
-  barTopValCurrent: {
-    color: c.textPrimary,
-    fontWeight: TYPOGRAPHY.semiBold,
-  },
-  weekBarFill: {
-    width: '100%',
-    borderTopLeftRadius: 3,
-    borderTopRightRadius: 3,
-  },
-  weekBarDefault: {
-    backgroundColor: c.surface2,
-  },
-  weekBarCurrent: {
-    backgroundColor: c.accent, // アクセント箇所2
-  },
-  barLabel: {
-    fontSize: 9,
-    color: c.textTertiary,
-    marginTop: 5,
-    fontVariant: ['tabular-nums'],
-  },
-  barLabelCurrent: {
-    color: c.textPrimary,
-    fontWeight: TYPOGRAPHY.semiBold,
-  },
-
   // ── 種目別ランキング TOP5 ─────────────────────────────────────────────────
   rankCard: {
     backgroundColor: c.cardBackground,
