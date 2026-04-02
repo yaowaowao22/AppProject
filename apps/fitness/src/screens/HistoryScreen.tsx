@@ -1077,18 +1077,18 @@ function HistoryTabBar({
 export function HistoryScreen() {
   const route = useRoute<RouteProp<HistoryStackParamList, 'HistoryList'>>();
   const [activeTab, setActiveTab] = useState<HistoryTabType>(
-    route.params?.initialTab ?? 'daily',
+    route.params?.tab ?? 'daily',
   );
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
   usePersistentHeader({ title: '履歴', showHamburger: true });
 
-  // タブ切り替え後に別画面から HistoryList へ navigate して戻ってきた場合に対応
+  // 詳細画面からタブ切替で戻ってきた場合に activeTab を同期
   useEffect(() => {
-    if (route.params?.initialTab) {
-      setActiveTab(route.params.initialTab);
+    if (route.params?.tab) {
+      setActiveTab(route.params.tab);
     }
-  }, [route.params?.initialTab]);
+  }, [route.params?.tab, route.params?._key]);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -1110,12 +1110,13 @@ export function BodyPartDetailScreen() {
   const { colors } = useTheme();
   const route = useRoute<RouteProp<HistoryStackParamList, 'BodyPartDetail'>>();
   const navigation = useNavigation<NavProp>();
-  usePersistentHeader({ title: '履歴', showHamburger: true });
+  const bp = BODY_PARTS.find(b => b.id === route.params.bodyPart);
+  usePersistentHeader({ title: '履歴', subtitle: bp?.label, showBack: true });
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
       <HistoryTabBar
         activeTab="bodyPart"
-        onTabPress={(tab) => navigation.navigate('HistoryList', { initialTab: tab })}
+        onTabPress={(tab) => navigation.navigate('HistoryList', { tab, _key: Date.now() })}
       />
       <BodyPartDetailView bodyPart={route.params.bodyPart} />
     </SafeAreaView>
@@ -1126,12 +1127,14 @@ export function ExerciseDetailScreen() {
   const { colors } = useTheme();
   const route = useRoute<RouteProp<HistoryStackParamList, 'ExerciseDetail'>>();
   const navigation = useNavigation<NavProp>();
-  usePersistentHeader({ title: '履歴', showHamburger: true });
+  const { customExercises } = useWorkout();
+  const ex = getExerciseById(route.params.exerciseId, customExercises);
+  usePersistentHeader({ title: '履歴', subtitle: ex?.name, showBack: true });
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
       <HistoryTabBar
         activeTab="exercise"
-        onTabPress={(tab) => navigation.navigate('HistoryList', { initialTab: tab })}
+        onTabPress={(tab) => navigation.navigate('HistoryList', { tab, _key: Date.now() })}
       />
       <ExerciseDetailView exerciseId={route.params.exerciseId} />
     </SafeAreaView>

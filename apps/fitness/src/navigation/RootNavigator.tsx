@@ -33,7 +33,7 @@ export type WorkoutStackParamList = {
 };
 
 export type HistoryStackParamList = {
-  HistoryList:    { initialTab?: HistoryTabType } | undefined;
+  HistoryList:    { tab?: HistoryTabType; _key?: number } | undefined;
   DayDetail:      { workoutId: string };
   SessionEdit:    { workoutId: string; exerciseId: string };
   BodyPartDetail: { bodyPart: BodyPart };

@@ -4,10 +4,11 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -65,11 +66,28 @@ export function usePersistentHeader(config: HeaderConfig) {
     throw new Error('usePersistentHeader must be used within PersistentHeaderProvider');
   }
   const { setHeaderConfig } = ctx;
+  const navigation = useNavigation();
 
-  const applyConfig = useCallback(() => {
-    setHeaderConfig(config);
+  // ref に最新 config を保持し、フォーカスハンドラが常に最新値を読めるようにする
+  const configRef = useRef(config);
+  configRef.current = config;
+
+  // フォーカス時にヘッダーを適用（ref 経由で常に最新）
+  useFocusEffect(
+    useCallback(() => {
+      setHeaderConfig(configRef.current);
+    }, [setHeaderConfig]),
+  );
+
+  // config プロパティ変更時、画面がフォーカス中なら即時適用
+  useEffect(() => {
+    if (navigation.isFocused()) {
+      setHeaderConfig(config);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     setHeaderConfig,
+    navigation,
     config.title,
     config.subtitle,
     config.showBack,
@@ -77,17 +95,7 @@ export function usePersistentHeader(config: HeaderConfig) {
     config.showHamburger,
     config.rightAction,
     config.visible,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   ]);
-
-  // useEffect でマウント時・設定変更時に即時適用。
-  // Drawer 内の初期画面では useFocusEffect がフォーカスイベントを
-  // 取り逃す場合があるため、両方で保証する。
-  useEffect(() => {
-    applyConfig();
-  }, [applyConfig]);
-
-  useFocusEffect(applyConfig);
 }
 
 /**
