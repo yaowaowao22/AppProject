@@ -188,7 +188,7 @@ export default function HomeScreen() {
     setWorkoutTargetDate(selectedDate);
     (navigation as any).navigate('WorkoutStack', {
       screen: 'ActiveWorkout',
-      params: { exerciseIds: [exerciseId] },
+      params: { exerciseIds: [exerciseId], fromHome: true },
     });
   }
 
@@ -203,12 +203,13 @@ export default function HomeScreen() {
           exerciseIds: [exerciseId],
           existingWorkoutId: selectedWorkout.id,
           existingSession,
+          fromHome: true,
         },
       });
     } else {
       (navigation as any).navigate('WorkoutStack', {
         screen: 'ActiveWorkout',
-        params: { exerciseIds: [exerciseId] },
+        params: { exerciseIds: [exerciseId], fromHome: true },
       });
     }
   }

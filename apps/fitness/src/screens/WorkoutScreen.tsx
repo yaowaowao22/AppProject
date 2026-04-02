@@ -413,7 +413,7 @@ function buildRows(
 }
 
 export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
-  const { exerciseIds, existingWorkoutId, existingSession } = route.params;
+  const { exerciseIds, existingWorkoutId, existingSession, fromHome } = route.params;
   const { workouts, startSession, completeSession, updateSession, workoutConfig, personalRecords, customExercises } = useWorkout();
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
@@ -702,13 +702,13 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
       {/* 種目情報行: 戻るボタン + 戻り先ラベル + 種目名・進捗 */}
       <TouchableOpacity
         style={styles.detailBackRow}
-        onPress={() => navigation.goBack()}
+        onPress={() => fromHome ? (navigation as any).navigate('Home') : navigation.goBack()}
         activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel="順序確認に戻る"
+        accessibilityLabel={fromHome ? 'ホームに戻る' : '順序確認に戻る'}
       >
         <Ionicons name="chevron-back" size={20} color={colors.accent} />
-        <Text style={styles.detailBackText}>順序確認</Text>
+        <Text style={styles.detailBackText}>{fromHome ? 'ホーム' : '順序確認'}</Text>
         <View style={{ flex: 1 }} />
         <Text style={styles.detailBackInfo}>
           {exercise?.name ?? 'ワークアウト'}

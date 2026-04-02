@@ -28,7 +28,7 @@ import { StackWithHeader } from '../components/StackWithHeader';
 export type WorkoutStackParamList = {
   ExerciseSelect:  undefined;
   OrderConfirm:    { exerciseIds: string[] };
-  ActiveWorkout:   { exerciseIds: string[]; existingWorkoutId?: string; existingSession?: WorkoutSession };
+  ActiveWorkout:   { exerciseIds: string[]; existingWorkoutId?: string; existingSession?: WorkoutSession; fromHome?: boolean };
   WorkoutComplete: { reportItems: ReportItem[]; startedAt: string };
 };
 
@@ -130,6 +130,8 @@ function SettingsStackNavigator() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: colors.background },
+          animation: 'slide_from_right',
+          gestureEnabled: true,
         }}
       >
         <SettingsStack.Screen name="SettingsMain"   component={SettingsScreen} />
