@@ -13,7 +13,7 @@ import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SwipeableRow } from '../components/SwipeableRow';
-import { ScreenHeader } from '../components/ScreenHeader';
+import { usePersistentHeader } from '../contexts/PersistentHeaderContext';
 import { useWorkout } from '../WorkoutContext';
 import { BODY_PARTS, EXERCISES, getExerciseById } from '../exerciseDB';
 import { SPACING, RADIUS, BUTTON_HEIGHT } from '../theme';
@@ -1079,10 +1079,10 @@ export function HistoryScreen() {
   const [activeTab, setActiveTab] = useState<HistoryTabType>('daily');
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
+  usePersistentHeader({ title: '履歴', showHamburger: true });
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="履歴" showHamburger />
 
       {/* タブバー */}
       <HistoryTabBar activeTab={activeTab} onTabPress={setActiveTab} />
@@ -1101,9 +1101,9 @@ export function BodyPartDetailScreen() {
   const { colors } = useTheme();
   const route = useRoute<RouteProp<HistoryStackParamList, 'BodyPartDetail'>>();
   const navigation = useNavigation<NavProp>();
+  usePersistentHeader({ title: '履歴', showHamburger: true });
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
-      <ScreenHeader title="履歴" showHamburger />
       <HistoryTabBar activeTab="bodyPart" onTabPress={() => navigation.goBack()} />
       <BodyPartDetailView bodyPart={route.params.bodyPart} />
     </SafeAreaView>
@@ -1114,9 +1114,9 @@ export function ExerciseDetailScreen() {
   const { colors } = useTheme();
   const route = useRoute<RouteProp<HistoryStackParamList, 'ExerciseDetail'>>();
   const navigation = useNavigation<NavProp>();
+  usePersistentHeader({ title: '履歴', showHamburger: true });
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
-      <ScreenHeader title="履歴" showHamburger />
       <HistoryTabBar activeTab="exercise" onTabPress={() => navigation.goBack()} />
       <ExerciseDetailView exerciseId={route.params.exerciseId} />
     </SafeAreaView>

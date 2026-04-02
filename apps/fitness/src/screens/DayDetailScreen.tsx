@@ -11,7 +11,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { SwipeableRow } from '../components/SwipeableRow';
-import { ScreenHeader } from '../components/ScreenHeader';
+import { usePersistentHeader } from '../contexts/PersistentHeaderContext';
 import { useWorkout } from '../WorkoutContext';
 import { getExerciseById } from '../exerciseDB';
 import { SPACING, TYPOGRAPHY } from '../theme';
@@ -49,10 +49,17 @@ export default function DayDetailScreen() {
 
   const workout = workouts.find(w => w.id === workoutId);
 
+  const dateLabel = workout ? formatDate(workout.date) : '詳細';
+  const totalSets = workout ? workout.sessions.reduce((sum, s) => sum + s.sets.length, 0) : 0;
+  const subtitleText = workout
+    ? `${workout.sessions.length}種目 · ${totalSets}セット · ${workout.totalVolume.toLocaleString()}kg`
+    : undefined;
+
+  usePersistentHeader({ title: dateLabel, subtitle: subtitleText, showBack: true });
+
   if (!workout) {
     return (
       <SafeAreaView style={styles.safe} edges={['bottom']}>
-        <ScreenHeader title="詳細" showBack />
         <View style={styles.empty}>
           <Text style={styles.emptyText}>データが見つかりません</Text>
         </View>
@@ -60,13 +67,8 @@ export default function DayDetailScreen() {
     );
   }
 
-  const dateLabel = formatDate(workout.date);
-  const totalSets = workout.sessions.reduce((sum, s) => sum + s.sets.length, 0);
-  const subtitleText = `${workout.sessions.length}種目 · ${totalSets}セット · ${workout.totalVolume.toLocaleString()}kg`;
-
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
-      <ScreenHeader title={dateLabel} showBack subtitle={subtitleText} />
       <FlatList
         data={workout.sessions}
         keyExtractor={(s: WorkoutSession) => s.exerciseId}
