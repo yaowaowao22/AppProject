@@ -51,6 +51,7 @@ export default function SessionEditScreen() {
     title: exercise?.name ?? exerciseId,
     subtitle: `${sets.length}セット`,
     showBack: true,
+    onBack: () => navigation.goBack(),
   });
 
   if (!workout || !session) {

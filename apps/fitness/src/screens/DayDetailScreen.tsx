@@ -55,7 +55,7 @@ export default function DayDetailScreen() {
     ? `${workout.sessions.length}種目 · ${totalSets}セット · ${workout.totalVolume.toLocaleString()}kg`
     : undefined;
 
-  usePersistentHeader({ title: dateLabel, subtitle: subtitleText, showBack: true });
+  usePersistentHeader({ title: dateLabel, subtitle: subtitleText, showBack: true, onBack: () => navigation.goBack() });
 
   if (!workout) {
     return (

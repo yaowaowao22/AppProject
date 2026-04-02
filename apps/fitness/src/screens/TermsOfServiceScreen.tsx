@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SPACING, TYPOGRAPHY } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
+import { useNavigation } from '@react-navigation/native';
 import { usePersistentHeader } from '../contexts/PersistentHeaderContext';
 
 const SECTIONS = [
@@ -44,7 +45,8 @@ const SECTIONS = [
 export default function TermsOfServiceScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  usePersistentHeader({ title: '利用規約', showBack: true });
+  const navigation = useNavigation();
+  usePersistentHeader({ title: '利用規約', showBack: true, onBack: () => navigation.goBack() });
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>

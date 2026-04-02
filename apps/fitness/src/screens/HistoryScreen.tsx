@@ -508,25 +508,6 @@ function BodyPartDetailView({ bodyPart }: { bodyPart: BodyPart }) {
 
   return (
     <View style={{ flex: 1 }}>
-      {/* 戻る�Eタン */}
-      <TouchableOpacity
-        style={S.detailBackRow}
-        onPress={() => navigation.goBack()}
-        activeOpacity={0.7}
-        accessibilityRole="button"
-        accessibilityLabel="部位一覧に戻る"
-      >
-        <Ionicons name="chevron-back" size={20} color={colors.accent} />
-        <Text style={{ fontSize: typography.bodySmall, fontWeight: typography.semiBold, color: colors.accent }}>
-          部位一覧
-        </Text>
-        <View style={{ flex: 1 }} />
-        <Ionicons name={bp.icon as any} size={16} color={colors.textTertiary} />
-        <Text style={{ fontSize: typography.bodySmall, fontWeight: typography.bold, color: colors.textPrimary, marginLeft: 4 }}>
-          {bp.label}
-        </Text>
-      </TouchableOpacity>
-
       <FlatList
         data={dayGroups}
         keyExtractor={group => group.date}
@@ -798,7 +779,6 @@ type ExDetailSession = {
 function ExerciseDetailView({ exerciseId }: { exerciseId: string }) {
   const { workouts, personalRecords, customExercises } = useWorkout();
   const { colors, typography } = useTheme();
-  const navigation = useNavigation<NavProp>();
 
   const ex  = getExerciseById(exerciseId, customExercises);
   const pr  = personalRecords.find(p => p.exerciseId === exerciseId);
@@ -906,29 +886,6 @@ function ExerciseDetailView({ exerciseId }: { exerciseId: string }) {
 
   return (
     <View style={{ flex: 1 }}>
-      {/* 戻る�Eタン */}
-      <TouchableOpacity
-        style={S.detailBackRow}
-        onPress={() => navigation.goBack()}
-        activeOpacity={0.7}
-        accessibilityRole="button"
-        accessibilityLabel="種目一覧に戻る"
-      >
-        <Ionicons name="chevron-back" size={20} color={colors.accent} />
-        <Text style={{ fontSize: typography.bodySmall, fontWeight: typography.semiBold, color: colors.accent }}>
-          種目一覧
-        </Text>
-        <View style={{ flex: 1 }} />
-        {ex && (
-          <>
-            <Ionicons name={ex.icon as any} size={16} color={colors.textTertiary} />
-            <Text style={{ fontSize: typography.bodySmall, fontWeight: typography.bold, color: colors.textPrimary, marginLeft: 4 }}>
-              {ex.name}
-            </Text>
-          </>
-        )}
-      </TouchableOpacity>
-
       <FlatList
         data={sessions}
         keyExtractor={item => item.key}
@@ -1111,7 +1068,7 @@ export function BodyPartDetailScreen() {
   const route = useRoute<RouteProp<HistoryStackParamList, 'BodyPartDetail'>>();
   const navigation = useNavigation<NavProp>();
   const bp = BODY_PARTS.find(b => b.id === route.params.bodyPart);
-  usePersistentHeader({ title: '履歴', subtitle: bp?.label, showBack: true });
+  usePersistentHeader({ title: '履歴', subtitle: bp?.label, showBack: true, onBack: () => navigation.goBack() });
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
       <HistoryTabBar
@@ -1129,7 +1086,7 @@ export function ExerciseDetailScreen() {
   const navigation = useNavigation<NavProp>();
   const { customExercises } = useWorkout();
   const ex = getExerciseById(route.params.exerciseId, customExercises);
-  usePersistentHeader({ title: '履歴', subtitle: ex?.name, showBack: true });
+  usePersistentHeader({ title: '履歴', subtitle: ex?.name, showBack: true, onBack: () => navigation.goBack() });
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
       <HistoryTabBar

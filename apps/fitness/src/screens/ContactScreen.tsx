@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RADIUS, SPACING, TYPOGRAPHY, BUTTON_HEIGHT } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
+import { useNavigation } from '@react-navigation/native';
 import { usePersistentHeader } from '../contexts/PersistentHeaderContext';
 
 // ── 問い合わせカテゴリ ─────────────────────────────────────────────────────────
@@ -34,7 +35,8 @@ const SUPPORT_EMAIL = 'selectinfo.yaowao@gmail.com';
 export default function ContactScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  usePersistentHeader({ title: 'お問い合わせ', showBack: true });
+  const navigation = useNavigation();
+  usePersistentHeader({ title: 'お問い合わせ', showBack: true, onBack: () => navigation.goBack() });
 
   const [category, setCategory] = useState<CategoryId>('bug');
   const [subject, setSubject]   = useState('');
