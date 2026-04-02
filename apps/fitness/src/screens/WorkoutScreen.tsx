@@ -567,9 +567,10 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
       const updated = prev.map((r, i) => i === idx ? { ...r, done: true } : r);
       const nextIdx = updated.findIndex(r => !r.done);
       if (nextIdx >= 0) {
-        // 次の行にはコピーしない。そのまま返す
-        newRows = updated;
-        return updated;
+        // 次の行に weight/reps をコピー（入力値として表示）
+        const withCopy = updated.map((r, i) => i === nextIdx ? { ...r, weight, reps } : r);
+        newRows = withCopy;
+        return withCopy;
       }
       // 全行完了 → 空の新規行を追加
       const result = [...updated, { weight: null, reps: null, done: false }];
