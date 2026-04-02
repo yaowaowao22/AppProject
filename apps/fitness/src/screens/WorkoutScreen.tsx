@@ -424,6 +424,8 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   const [editingField, setEditingField] = useState<'weight' | 'reps' | null>(null);
   const [editValue, setEditValue] = useState('');
   const [manualActiveIdx, setManualActiveIdx] = useState<number | null>(null);
+  const [inputWeight, setInputWeight] = useState<number | null>(null);
+  const [inputReps, setInputReps] = useState<number | null>(null);
   const workoutStartedAt = useRef(new Date().toISOString());
 
   const weightScale = useRef(new Animated.Value(1)).current;
@@ -446,13 +448,21 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
         done: true,
       }));
       setRows([...existingRows, { weight: null, reps: null, done: false }]);
+      // 入力欄は最後の既存セットの値を引き継ぐ
+      const lastSet = existingSession.sets[existingSession.sets.length - 1];
+      setInputWeight(lastSet?.weight ?? null);
+      setInputReps(lastSet?.reps ?? null);
     } else {
       startSession(exerciseId);
       const prev = workouts
         .flatMap(w => w.sessions.map(s => ({ ...s, date: w.date })))
         .filter(s => s.exerciseId === exerciseId && !!s.completedAt)
         .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
-      setRows(buildRows(prev?.sets ?? null, workoutConfig.defaultSets, workoutConfig.defaultWeight, workoutConfig.defaultReps));
+      const builtRows = buildRows(prev?.sets ?? null, workoutConfig.defaultSets, workoutConfig.defaultWeight, workoutConfig.defaultReps);
+      setRows(builtRows);
+      // 入力欄は最初の行の値で初期化
+      setInputWeight(builtRows[0]?.weight ?? null);
+      setInputReps(builtRows[0]?.reps ?? null);
     }
     setManualActiveIdx(null);
     setSetDone(false);
@@ -486,7 +496,7 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
     if (allDone) return;
     commitGuardRef.current = false;
     editingRowRef.current = activeIdx;
-    const val = field === 'weight' ? activeRow.weight : activeRow.reps;
+    const val = field === 'weight' ? inputWeight : inputReps;
     setEditValue(val !== null ? String(val) : '');
     setEditingField(field);
     setTimeout(() => {
@@ -498,14 +508,11 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   function commitEdit() {
     if (!editingField || commitGuardRef.current) return;
     const num = parseFloat(editValue);
-    const rowIdx = editingRowRef.current;
     if (!isNaN(num) && num >= 0) {
       if (editingField === 'weight') {
-        const clamped = Math.max(0, Math.round(num * 10) / 10);
-        setRows(prev => prev.map((r, i) => i === rowIdx ? { ...r, weight: clamped } : r));
+        setInputWeight(Math.max(0, Math.round(num * 10) / 10));
       } else {
-        const clamped = Math.max(1, Math.floor(num));
-        setRows(prev => prev.map((r, i) => i === rowIdx ? { ...r, reps: clamped } : r));
+        setInputReps(Math.max(1, Math.floor(num)));
       }
     }
     setEditingField(null);
@@ -514,43 +521,31 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
   function adjustWeight(delta: number) {
     if (allDone) return;
-    const idx = activeIdxRef.current;
-    setRows(prev => prev.map((r, i) => {
-      if (i !== idx) return r;
-      const cur = r.weight ?? 0;
-      return { ...r, weight: Math.max(0, Math.round((cur + delta) * 10) / 10) };
-    }));
+    setInputWeight(prev => Math.max(0, Math.round(((prev ?? 0) + delta) * 10) / 10));
     bump(weightScale);
   }
 
   function adjustReps(delta: number) {
     if (allDone) return;
-    const idx = activeIdxRef.current;
-    setRows(prev => prev.map((r, i) => {
-      if (i !== idx) return r;
-      const cur = r.reps ?? 0;
-      return { ...r, reps: Math.max(1, cur + delta) };
-    }));
+    setInputReps(prev => Math.max(1, (prev ?? 0) + delta));
     bump(repsScale);
   }
 
   function handleRowTap(i: number) {
-    // 編集中の値を切り替え前に確実に保存する（editingRowRef.current で正確な行を特定）
+    // 編集中の値を inputWeight/inputReps に確定してから行切り替え
     if (editingField !== null) {
       commitGuardRef.current = true;
-      const rowIdx = editingRowRef.current;
       const numVal = parseFloat(editValue);
-      setRows(prev => prev.map((r, idx) => {
-        if (idx === rowIdx && !isNaN(numVal) && numVal >= 0) {
-          if (editingField === 'weight') return { ...r, weight: Math.max(0, Math.round(numVal * 10) / 10) };
-          return { ...r, reps: Math.max(1, Math.floor(numVal)) };
-        }
-        // タップした行が done なら同時に解除
-        if (idx === i && r.done) return { ...r, done: false };
-        return r;
-      }));
+      if (!isNaN(numVal) && numVal >= 0) {
+        if (editingField === 'weight') setInputWeight(Math.max(0, Math.round(numVal * 10) / 10));
+        else setInputReps(Math.max(1, Math.floor(numVal)));
+      }
       setEditingField(null);
       setEditValue('');
+      // タップした行が done なら同時に解除
+      if (rows[i].done) {
+        setRows(prev => prev.map((r, idx) => idx === i ? { ...r, done: false } : r));
+      }
     } else if (rows[i].done) {
       setRows(prev => prev.map((r, idx) => idx === i ? { ...r, done: false } : r));
     }
@@ -564,10 +559,13 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   function handleSetComplete() {
     if (allDone) return;
     const idx = activeIdxRef.current;
-
     const nextActive = idx + 1;
+
+    // inputWeight/inputReps を現在行にコピーしてから done=true に
     setRows(prev => {
-      let updated = prev.map((r, i) => i === idx ? { ...r, done: true } : r);
+      let updated = prev.map((r, i) =>
+        i === idx ? { ...r, weight: inputWeight, reps: inputReps, done: true } : r
+      );
       // update mode: 既存セッションの行は常に done=true を維持（誤タップで解除された場合も復元）
       if (isUpdateMode && existingSession) {
         const existingCount = existingSession.sets.length;
@@ -580,7 +578,7 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
       return updated;
     });
 
-    // 常に次の行へ移動（addSet / updateSession はここでは呼ばない）
+    // 常に次の行へ移動（inputWeight/inputReps は変更しない）
     setManualActiveIdx(nextActive);
     setSetDone(true);
     if (doneTimeoutRef.current) clearTimeout(doneTimeoutRef.current);
@@ -725,9 +723,9 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
                 />
               ) : (
                 <Text style={styles.numVal}>
-                  {activeRow.weight === null
+                  {inputWeight === null
                     ? '—'
-                    : activeRow.weight % 1 === 0 ? activeRow.weight.toString() : activeRow.weight.toFixed(1)}
+                    : inputWeight % 1 === 0 ? inputWeight.toString() : inputWeight.toFixed(1)}
                 </Text>
               )}
             </Animated.View>
@@ -760,7 +758,7 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
                   selectTextOnFocus
                 />
               ) : (
-                <Text style={styles.numVal}>{activeRow.reps !== null ? String(activeRow.reps) : '—'}</Text>
+                <Text style={styles.numVal}>{inputReps !== null ? String(inputReps) : '—'}</Text>
               )}
             </Animated.View>
           </TouchableOpacity>
