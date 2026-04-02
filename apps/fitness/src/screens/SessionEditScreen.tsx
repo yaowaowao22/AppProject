@@ -13,7 +13,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { ScreenHeader } from '../components/ScreenHeader';
+import { usePersistentHeader } from '../contexts/PersistentHeaderContext';
 import { useWorkout } from '../WorkoutContext';
 import { getExerciseById } from '../exerciseDB';
 import { BUTTON_HEIGHT, RADIUS, SPACING, TYPOGRAPHY } from '../theme';
@@ -47,10 +47,15 @@ export default function SessionEditScreen() {
 
   const [sets, setSets] = useState<WorkoutSet[]>(() => session?.sets ?? []);
 
+  usePersistentHeader({
+    title: exercise?.name ?? exerciseId,
+    subtitle: `${sets.length}セット`,
+    showBack: true,
+  });
+
   if (!workout || !session) {
     return (
       <SafeAreaView style={styles.safe} edges={['bottom']}>
-        <ScreenHeader title="編集" showBack />
         <View style={styles.empty}>
           <Text style={styles.emptyText}>データが見つかりません</Text>
         </View>
@@ -90,11 +95,6 @@ export default function SessionEditScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
-      <ScreenHeader
-        title={exercise?.name ?? exerciseId}
-        showBack
-        subtitle={`${sets.length}セット`}
-      />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}

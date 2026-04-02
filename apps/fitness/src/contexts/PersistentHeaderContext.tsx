@@ -2,6 +2,7 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -72,6 +73,13 @@ export function usePersistentHeader(config: HeaderConfig) {
     config.visible,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ]);
+
+  // useEffect でマウント時・設定変更時に即時適用。
+  // Drawer 内の初期画面では useFocusEffect がフォーカスイベントを
+  // 取り逃す場合があるため、両方で保証する。
+  useEffect(() => {
+    applyConfig();
+  }, [applyConfig]);
 
   useFocusEffect(applyConfig);
 }

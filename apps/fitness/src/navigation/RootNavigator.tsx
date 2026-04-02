@@ -9,7 +9,7 @@ import {
   ActiveWorkoutScreen,
   WorkoutCompleteScreen,
 } from '../screens/WorkoutScreen';
-import type { ReportItem, WorkoutSession, BodyPart } from '../types';
+import type { ReportItem, WorkoutSession, BodyPart, HistoryTabType } from '../types';
 import OrderConfirmScreen from '../screens/OrderConfirmScreen';
 import MonthlyReportScreen from '../screens/MonthlyReportScreen';
 import RMCalculatorScreen from '../screens/RMCalculatorScreen';
@@ -33,7 +33,7 @@ export type WorkoutStackParamList = {
 };
 
 export type HistoryStackParamList = {
-  HistoryList:    undefined;
+  HistoryList:    { initialTab?: HistoryTabType } | undefined;
   DayDetail:      { workoutId: string };
   SessionEdit:    { workoutId: string; exerciseId: string };
   BodyPartDetail: { bodyPart: BodyPart };

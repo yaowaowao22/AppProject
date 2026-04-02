@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -1075,10 +1075,20 @@ function HistoryTabBar({
 }
 
 export function HistoryScreen() {
-  const [activeTab, setActiveTab] = useState<HistoryTabType>('daily');
+  const route = useRoute<RouteProp<HistoryStackParamList, 'HistoryList'>>();
+  const [activeTab, setActiveTab] = useState<HistoryTabType>(
+    route.params?.initialTab ?? 'daily',
+  );
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
   usePersistentHeader({ title: '履歴', showHamburger: true });
+
+  // タブ切り替え後に別画面から HistoryList へ navigate して戻ってきた場合に対応
+  useEffect(() => {
+    if (route.params?.initialTab) {
+      setActiveTab(route.params.initialTab);
+    }
+  }, [route.params?.initialTab]);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -1103,7 +1113,10 @@ export function BodyPartDetailScreen() {
   usePersistentHeader({ title: '履歴', showHamburger: true });
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
-      <HistoryTabBar activeTab="bodyPart" onTabPress={() => navigation.goBack()} />
+      <HistoryTabBar
+        activeTab="bodyPart"
+        onTabPress={(tab) => navigation.navigate('HistoryList', { initialTab: tab })}
+      />
       <BodyPartDetailView bodyPart={route.params.bodyPart} />
     </SafeAreaView>
   );
@@ -1116,7 +1129,10 @@ export function ExerciseDetailScreen() {
   usePersistentHeader({ title: '履歴', showHamburger: true });
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
-      <HistoryTabBar activeTab="exercise" onTabPress={() => navigation.goBack()} />
+      <HistoryTabBar
+        activeTab="exercise"
+        onTabPress={(tab) => navigation.navigate('HistoryList', { initialTab: tab })}
+      />
       <ExerciseDetailView exerciseId={route.params.exerciseId} />
     </SafeAreaView>
   );
