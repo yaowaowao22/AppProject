@@ -8,7 +8,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SwipeableRow } from '../components/SwipeableRow';
@@ -185,7 +186,7 @@ function getWeekMonday(dateStr: string): string {
 
 // ── ナビ垁E────────────────────────────────────────────────────────────────────
 
-type NavProp = NativeStackNavigationProp<HistoryStackParamList, 'HistoryList'>;
+type NavProp = NativeStackNavigationProp<HistoryStackParamList>;
 
 // ── 日別タチE──────────────────────────────────────────────────────────────────
 
@@ -381,13 +382,7 @@ type DayGroup = {
   items: BPDetailSession[];
 };
 
-function BodyPartDetailView({
-  bodyPart,
-  onBack,
-}: {
-  bodyPart: BodyPart;
-  onBack: () => void;
-}) {
+function BodyPartDetailView({ bodyPart }: { bodyPart: BodyPart }) {
   const { workouts, customExercises } = useWorkout();
   const { colors, typography } = useTheme();
   const navigation = useNavigation<NavProp>();
@@ -516,7 +511,7 @@ function BodyPartDetailView({
       {/* 戻る�Eタン */}
       <TouchableOpacity
         style={S.detailBackRow}
-        onPress={onBack}
+        onPress={() => navigation.goBack()}
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel="部位一覧に戻る"
@@ -656,17 +651,8 @@ function BodyPartDetailView({
 }
 
 function BodyPartTab() {
-  const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPart | null>(null);
-
-  if (selectedBodyPart !== null) {
-    return (
-      <BodyPartDetailView
-        bodyPart={selectedBodyPart}
-        onBack={() => setSelectedBodyPart(null)}
-      />
-    );
-  }
-  return <BodyPartListView onSelect={setSelectedBodyPart} />;
+  const navigation = useNavigation<NavProp>();
+  return <BodyPartListView onSelect={(bp) => navigation.navigate('BodyPartDetail', { bodyPart: bp })} />;
 }
 
 // ── 種目別タチE────────────────────────────────────────────────────────────────
@@ -809,15 +795,10 @@ type ExDetailSession = {
   maxWeight: number | null;
 };
 
-function ExerciseDetailView({
-  exerciseId,
-  onBack,
-}: {
-  exerciseId: string;
-  onBack: () => void;
-}) {
+function ExerciseDetailView({ exerciseId }: { exerciseId: string }) {
   const { workouts, personalRecords, customExercises } = useWorkout();
   const { colors, typography } = useTheme();
+  const navigation = useNavigation<NavProp>();
 
   const ex  = getExerciseById(exerciseId, customExercises);
   const pr  = personalRecords.find(p => p.exerciseId === exerciseId);
@@ -929,7 +910,7 @@ function ExerciseDetailView({
       {/* 戻る�Eタン */}
       <TouchableOpacity
         style={S.detailBackRow}
-        onPress={onBack}
+        onPress={() => navigation.goBack()}
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel="種目一覧に戻る"
@@ -1040,17 +1021,8 @@ function ExerciseDetailView({
 }
 
 function ExerciseTab() {
-  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
-
-  if (selectedExerciseId !== null) {
-    return (
-      <ExerciseDetailView
-        exerciseId={selectedExerciseId}
-        onBack={() => setSelectedExerciseId(null)}
-      />
-    );
-  }
-  return <ExerciseListView onSelect={setSelectedExerciseId} />;
+  const navigation = useNavigation<NavProp>();
+  return <ExerciseListView onSelect={(exerciseId) => navigation.navigate('ExerciseDetail', { exerciseId })} />;
 }
 
 // ── メインコンポ�EネンチE───────────────────────────────────────────────────────
@@ -1090,6 +1062,28 @@ export function HistoryScreen() {
       {activeTab === 'daily'    && <DailyTab    styles={styles} colors={colors} />}
       {activeTab === 'bodyPart' && <BodyPartTab />}
       {activeTab === 'exercise' && <ExerciseTab />}
+    </SafeAreaView>
+  );
+}
+
+// ── 詳細スクリーン（Stack push 用） ────────────────────────────────────────────
+
+export function BodyPartDetailScreen() {
+  const { colors } = useTheme();
+  const route = useRoute<RouteProp<HistoryStackParamList, 'BodyPartDetail'>>();
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
+      <BodyPartDetailView bodyPart={route.params.bodyPart} />
+    </SafeAreaView>
+  );
+}
+
+export function ExerciseDetailScreen() {
+  const { colors } = useTheme();
+  const route = useRoute<RouteProp<HistoryStackParamList, 'ExerciseDetail'>>();
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
+      <ExerciseDetailView exerciseId={route.params.exerciseId} />
     </SafeAreaView>
   );
 }

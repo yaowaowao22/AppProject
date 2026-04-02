@@ -557,6 +557,10 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
     setManualActiveIdx(i);
   }
 
+  function handleClearRow(i: number) {
+    setRows(prev => prev.map((r, idx) => idx === i ? { ...r, weight: null, reps: null, done: false } : r));
+  }
+
   function handleSetComplete() {
     if (allDone) return;
     const idx = activeIdxRef.current;
@@ -564,7 +568,12 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
     let newRows: SetRow[] = [];
     setRows(prev => {
-      const updated = prev.map((r, i) => i === idx ? { ...r, done: true } : r);
+      let updated = prev.map((r, i) => i === idx ? { ...r, done: true } : r);
+      // update mode: 既存セッションの行は常に done=true を維持（誤タップで解除された場合も復元）
+      if (isUpdateMode && existingSession) {
+        const existingCount = existingSession.sets.length;
+        updated = updated.map((r, i) => i < existingCount ? { ...r, done: true } : r);
+      }
       const nextIdx = updated.findIndex(r => !r.done);
       if (nextIdx >= 0) {
         // 次の行にはコピーしない
@@ -837,6 +846,16 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
                 </View>
               )}
               {isActive && <View style={styles.setActivePip} />}
+              {(row.weight !== null || row.reps !== null || row.done) && (
+                <TouchableOpacity
+                  onPress={() => handleClearRow(i)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={styles.setClearBtn}
+                  accessibilityLabel="クリア"
+                >
+                  <Ionicons name="close" size={13} color={colors.textTertiary} />
+                </TouchableOpacity>
+              )}
             </TouchableOpacity>
           );
         })}
@@ -1432,6 +1451,14 @@ function makeStyles(c: TanrenThemeColors, t: DynamicTypography) {
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+  },
+  setClearBtn: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginLeft: 6,
   },
 
   histSection: {

@@ -3,13 +3,13 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../ThemeContext';
 import HomeScreen from '../screens/HomeScreen';
-import { HistoryScreen } from '../screens/HistoryScreen';
+import { HistoryScreen, BodyPartDetailScreen, ExerciseDetailScreen } from '../screens/HistoryScreen';
 import {
   ExerciseSelectScreen,
   ActiveWorkoutScreen,
   WorkoutCompleteScreen,
 } from '../screens/WorkoutScreen';
-import type { ReportItem, WorkoutSession } from '../types';
+import type { ReportItem, WorkoutSession, BodyPart } from '../types';
 import OrderConfirmScreen from '../screens/OrderConfirmScreen';
 import MonthlyReportScreen from '../screens/MonthlyReportScreen';
 import RMCalculatorScreen from '../screens/RMCalculatorScreen';
@@ -32,9 +32,11 @@ export type WorkoutStackParamList = {
 };
 
 export type HistoryStackParamList = {
-  HistoryList: undefined;
-  DayDetail:   { workoutId: string };
-  SessionEdit: { workoutId: string; exerciseId: string };
+  HistoryList:    undefined;
+  DayDetail:      { workoutId: string };
+  SessionEdit:    { workoutId: string; exerciseId: string };
+  BodyPartDetail: { bodyPart: BodyPart };
+  ExerciseDetail: { exerciseId: string };
 };
 
 export type SettingsStackParamList = {
@@ -104,9 +106,11 @@ function HistoryStackNavigator() {
         gestureEnabled: true,
       }}
     >
-      <HistoryStack.Screen name="HistoryList" component={HistoryScreen} />
-      <HistoryStack.Screen name="DayDetail"   component={DayDetailScreen} />
-      <HistoryStack.Screen name="SessionEdit" component={SessionEditScreen} />
+      <HistoryStack.Screen name="HistoryList"    component={HistoryScreen} />
+      <HistoryStack.Screen name="DayDetail"      component={DayDetailScreen} />
+      <HistoryStack.Screen name="SessionEdit"    component={SessionEditScreen} />
+      <HistoryStack.Screen name="BodyPartDetail" component={BodyPartDetailScreen} />
+      <HistoryStack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} />
     </HistoryStack.Navigator>
   );
 }
