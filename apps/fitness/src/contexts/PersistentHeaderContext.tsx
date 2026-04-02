@@ -8,7 +8,7 @@ import React, {
   useState,
   type ReactNode,
 } from 'react';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -66,7 +66,6 @@ export function usePersistentHeader(config: HeaderConfig) {
     throw new Error('usePersistentHeader must be used within PersistentHeaderProvider');
   }
   const { setHeaderConfig } = ctx;
-  const navigation = useNavigation();
 
   // ref に最新 config を保持し、フォーカスハンドラが常に最新値を読めるようにする
   const configRef = useRef(config);
@@ -79,15 +78,12 @@ export function usePersistentHeader(config: HeaderConfig) {
     }, [setHeaderConfig]),
   );
 
-  // config プロパティ変更時、画面がフォーカス中なら即時適用
+  // マウント時・config変更時に即時適用（フォーカス状態に依存しない）
   useEffect(() => {
-    if (navigation.isFocused()) {
-      setHeaderConfig(config);
-    }
+    setHeaderConfig(config);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     setHeaderConfig,
-    navigation,
     config.title,
     config.subtitle,
     config.showBack,
