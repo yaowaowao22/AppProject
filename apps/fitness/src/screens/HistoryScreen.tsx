@@ -1027,6 +1027,54 @@ function ExerciseTab() {
 
 // ── メインコンポ�EネンチE───────────────────────────────────────────────────────
 
+function HistoryTabBar({
+  activeTab,
+  onTabPress,
+}: {
+  activeTab: HistoryTabType;
+  onTabPress: (tab: HistoryTabType) => void;
+}) {
+  const { colors, typography } = useTheme();
+  return (
+    <View style={{
+      flexDirection: 'row',
+      paddingHorizontal: SPACING.contentMargin,
+      paddingVertical: SPACING.sm,
+      gap: SPACING.sm,
+    }}>
+      {TABS.map(tab => {
+        const isActive = activeTab === tab.id;
+        return (
+          <TouchableOpacity
+            key={tab.id}
+            style={{
+              flex: 1,
+              height: 36,
+              borderRadius: RADIUS.chip,
+              backgroundColor: isActive ? colors.accent : colors.surface2,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onPress={() => onTabPress(tab.id)}
+            activeOpacity={0.7}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isActive }}
+            accessibilityLabel={tab.label}
+          >
+            <Text style={{
+              fontSize: typography.caption,
+              fontWeight: typography.semiBold,
+              color: isActive ? colors.onAccent : colors.textSecondary,
+            }}>
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
 export function HistoryScreen() {
   const [activeTab, setActiveTab] = useState<HistoryTabType>('daily');
   const { colors, typography } = useTheme();
@@ -1037,26 +1085,7 @@ export function HistoryScreen() {
       <ScreenHeader title="履歴" showHamburger />
 
       {/* タブバー */}
-      <View style={styles.tabBar}>
-        {TABS.map(tab => {
-          const isActive = activeTab === tab.id;
-          return (
-            <TouchableOpacity
-              key={tab.id}
-              style={[styles.tabItem, isActive && styles.tabItemActive]}
-              onPress={() => setActiveTab(tab.id)}
-              activeOpacity={0.7}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isActive }}
-              accessibilityLabel={tab.label}
-            >
-              <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      <HistoryTabBar activeTab={activeTab} onTabPress={setActiveTab} />
 
       {/* タブコンチE��チE*/}
       {activeTab === 'daily'    && <DailyTab    styles={styles} colors={colors} />}
@@ -1071,9 +1100,11 @@ export function HistoryScreen() {
 export function BodyPartDetailScreen() {
   const { colors } = useTheme();
   const route = useRoute<RouteProp<HistoryStackParamList, 'BodyPartDetail'>>();
+  const navigation = useNavigation<NavProp>();
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
       <ScreenHeader title="履歴" showHamburger />
+      <HistoryTabBar activeTab="bodyPart" onTabPress={() => navigation.goBack()} />
       <BodyPartDetailView bodyPart={route.params.bodyPart} />
     </SafeAreaView>
   );
@@ -1082,9 +1113,11 @@ export function BodyPartDetailScreen() {
 export function ExerciseDetailScreen() {
   const { colors } = useTheme();
   const route = useRoute<RouteProp<HistoryStackParamList, 'ExerciseDetail'>>();
+  const navigation = useNavigation<NavProp>();
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
       <ScreenHeader title="履歴" showHamburger />
+      <HistoryTabBar activeTab="exercise" onTabPress={() => navigation.goBack()} />
       <ExerciseDetailView exerciseId={route.params.exerciseId} />
     </SafeAreaView>
   );
