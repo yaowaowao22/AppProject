@@ -818,8 +818,7 @@ function ExerciseDetailView({ exerciseId }: { exerciseId: string }) {
     for (const w of sorted) {
       const matched = w.sessions.filter(s => s.exerciseId === exerciseId);
       for (const session of matched) {
-        const maxW = getMaxWeight(session);
-        result.push({ label: formatDateShort(w.date), value: maxW ?? 0 });
+        result.push({ label: formatDateShort(w.date), value: getVolume(session) });
       }
     }
     return result;
@@ -983,7 +982,7 @@ function ExerciseDetailView({ exerciseId }: { exerciseId: string }) {
               marginBottom: SPACING.sm,
               marginTop: 2,
             }}>
-              {`最大重量の推移（${periodLabel}）`}
+              {`総重量の推移（${periodLabel}）`}
             </Text>
           </View>
         }
