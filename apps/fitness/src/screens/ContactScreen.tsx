@@ -27,7 +27,7 @@ const CATEGORIES = [
 
 type CategoryId = typeof CATEGORIES[number]['id'];
 
-const SUPPORT_EMAIL = 'support@tanren-app.com';
+const SUPPORT_EMAIL = 'selectinfo.yaowao@gmail.com';
 
 // ── ContactScreen ─────────────────────────────────────────────────────────────
 
