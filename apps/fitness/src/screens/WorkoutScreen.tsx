@@ -411,7 +411,7 @@ function buildRows(
 
 export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   const { exerciseIds, existingWorkoutId, existingSession } = route.params;
-  const { workouts, startSession, addSet, completeSession, updateSession, workoutConfig, personalRecords, customExercises } = useWorkout();
+  const { workouts, startSession, completeSession, updateSession, workoutConfig, personalRecords, customExercises } = useWorkout();
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
 
@@ -564,9 +564,8 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   function handleSetComplete() {
     if (allDone) return;
     const idx = activeIdxRef.current;
-    const { weight, reps } = activeRow;
 
-    let newRows: SetRow[] = [];
+    const nextActive = idx + 1;
     setRows(prev => {
       let updated = prev.map((r, i) => i === idx ? { ...r, done: true } : r);
       // update mode: 既存セッションの行は常に done=true を維持（誤タップで解除された場合も復元）
@@ -574,27 +573,15 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
         const existingCount = existingSession.sets.length;
         updated = updated.map((r, i) => i < existingCount ? { ...r, done: true } : r);
       }
-      const nextIdx = updated.findIndex(r => !r.done);
-      if (nextIdx >= 0) {
-        // 次の行にはコピーしない
-        newRows = updated;
-        return updated;
+      // 次の行がなければ空行を追加
+      if (nextActive >= updated.length) {
+        return [...updated, { weight: null, reps: null, done: false }];
       }
-      // 全行完了 → 空の新規行を追加
-      const result = [...updated, { weight: null, reps: null, done: false }];
-      newRows = result;
-      return result;
+      return updated;
     });
 
-    if (isUpdateMode) {
-      // update mode: addSet は使わず updateSession で既存セッションを更新
-      const doneRows = newRows.filter(r => r.done);
-      void updateSession(existingWorkoutId!, buildUpdatedSession(existingSession!, doneRows));
-    } else {
-      addSet(weight ?? 0, reps ?? 0);
-    }
-
-    setManualActiveIdx(null);
+    // 常に次の行へ移動（addSet / updateSession はここでは呼ばない）
+    setManualActiveIdx(nextActive);
     setSetDone(true);
     if (doneTimeoutRef.current) clearTimeout(doneTimeoutRef.current);
     doneTimeoutRef.current = setTimeout(() => setSetDone(false), 1500);
@@ -641,7 +628,12 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   }
 
   async function handleExerciseComplete() {
-    await completeSession();
+    const doneRows = rows.filter(r => r.done);
+    if (isUpdateMode && existingSession) {
+      if (doneRows.length > 0) await updateSession(existingWorkoutId!, buildUpdatedSession(existingSession!, doneRows));
+    } else if (doneRows.length > 0) {
+      await completeSession(doneRows.map(r => ({ weight: r.weight, reps: r.reps })));
+    }
     const nextIndex = currentIndex + 1;
     if (nextIndex < exerciseIds.length) {
       setCurrentIndex(nextIndex);
@@ -655,15 +647,25 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
   async function handlePreviousExercise() {
     if (currentIndex === 0) return;
-    if (rows.some(r => r.done)) {
-      await completeSession();
+    const doneRows = rows.filter(r => r.done);
+    if (doneRows.length > 0) {
+      if (isUpdateMode && existingSession) {
+        await updateSession(existingWorkoutId!, buildUpdatedSession(existingSession!, doneRows));
+      } else {
+        await completeSession(doneRows.map(r => ({ weight: r.weight, reps: r.reps })));
+      }
     }
     setCurrentIndex(prev => prev - 1);
   }
 
   async function doWorkoutEnd() {
-    if (rows.some(r => r.done)) {
-      await completeSession();
+    const doneRows = rows.filter(r => r.done);
+    if (doneRows.length > 0) {
+      if (isUpdateMode && existingSession) {
+        await updateSession(existingWorkoutId!, buildUpdatedSession(existingSession!, doneRows));
+      } else {
+        await completeSession(doneRows.map(r => ({ weight: r.weight, reps: r.reps })));
+      }
     }
     navigation.replace('WorkoutComplete', {
       reportItems: buildReport(currentIndex),

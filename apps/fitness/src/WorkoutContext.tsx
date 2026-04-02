@@ -35,7 +35,7 @@ interface WorkoutContextValue {
   deleteCustomExercise: (id: string) => Promise<void>;
   startSession: (exerciseId: string) => void;
   addSet: (weight: number | null, reps: number | null) => void;
-  completeSession: () => Promise<void>;
+  completeSession: (overrideSets?: Array<{weight: number | null, reps: number | null}>) => Promise<void>;
   deleteWorkout: (id: string) => Promise<void>;
   deleteSessionFromWorkout: (workoutId: string, exerciseId: string) => Promise<void>;
   saveTemplate: (name: string, exerciseIds: string[]) => Promise<void>;
@@ -180,12 +180,32 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   }, [personalRecords]);
 
   // セッション完了: volume計算 → DailyWorkout更新 → PR更新 → 永続化
-  const completeSession = useCallback(async () => {
-    if (!currentSession || currentSession.sets.length === 0) { setCurrentSession(null); return; }
+  const completeSession = useCallback(async (overrideSets?: Array<{weight: number | null, reps: number | null}>) => {
+    if (!currentSession) { setCurrentSession(null); return; }
 
     const now = new Date().toISOString();
 
-    const completedSession: WorkoutSession = { ...currentSession, completedAt: now };
+    // overrideSets が渡された場合、rows から WorkoutSet を構築して使用
+    let finalSets: WorkoutSet[];
+    if (overrideSets && overrideSets.length > 0) {
+      finalSets = overrideSets.map(s => {
+        const pr = personalRecords.find(r => r.exerciseId === currentSession.exerciseId);
+        const isPersonalRecord = s.weight !== null && (pr === undefined || pr.maxWeight === null || s.weight > pr.maxWeight);
+        return {
+          id: newId(),
+          weight: s.weight,
+          reps: s.reps,
+          completedAt: now,
+          isPersonalRecord,
+        };
+      });
+    } else {
+      finalSets = currentSession.sets;
+    }
+
+    if (finalSets.length === 0) { setCurrentSession(null); return; }
+
+    const completedSession: WorkoutSession = { ...currentSession, sets: finalSets, completedAt: now };
 
     // セッションのtotalVolume（weight × reps の合計）
     const sessionVolume = completedSession.sets.reduce((sum, s) => {
