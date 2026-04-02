@@ -17,7 +17,7 @@ import { useTheme } from '../ThemeContext';
 import type { ContrastSettings, FontSettings, DynamicTypography } from '../ThemeContext';
 import { useWorkout } from '../WorkoutContext';
 import type { WorkoutConfig } from '../WorkoutContext';
-import { ScreenHeader } from '../components/ScreenHeader';
+import { usePersistentHeader } from '../contexts/PersistentHeaderContext';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { SettingsStackParamList } from '../navigation/RootNavigator';
@@ -329,6 +329,7 @@ export default function SettingsScreen() {
   const { workoutConfig, updateWorkoutConfig, resetAll } = useWorkout();
   const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
   const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
+  usePersistentHeader({ title: '設定', showHamburger: true });
 
   const [appSettings, setAppSettings] = useState<AppSettings>({ showCalendar: true, showQuickStart: true });
 
@@ -375,7 +376,6 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
-      <ScreenHeader title="設定" showHamburger />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
