@@ -1,6 +1,6 @@
 import React, { type ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { PersistentHeaderProvider, useHeaderConfig } from '../contexts/PersistentHeaderContext';
+import { PersistentHeaderProvider, useHeaderConfig, type HeaderConfig } from '../contexts/PersistentHeaderContext';
 import { ScreenHeader } from './ScreenHeader';
 
 // ── Inner component (consumes context) ───────────────────────────────────────
@@ -27,9 +27,15 @@ function StackWithHeaderInner({ children }: { children: ReactNode }) {
 
 // ── Public wrapper ────────────────────────────────────────────────────────────
 
-export function StackWithHeader({ children }: { children: ReactNode }) {
+export function StackWithHeader({
+  children,
+  initialConfig,
+}: {
+  children: ReactNode;
+  initialConfig?: HeaderConfig;
+}) {
   return (
-    <PersistentHeaderProvider>
+    <PersistentHeaderProvider initialConfig={initialConfig}>
       <StackWithHeaderInner>{children}</StackWithHeaderInner>
     </PersistentHeaderProvider>
   );

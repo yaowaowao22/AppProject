@@ -101,7 +101,7 @@ function WorkoutStackNavigator() {
 function HistoryStackNavigator() {
   const { colors } = useTheme();
   return (
-    <StackWithHeader>
+    <StackWithHeader initialConfig={{ title: '履歴', showHamburger: true }}>
       <HistoryStack.Navigator
         screenOptions={{
           headerShown: false,

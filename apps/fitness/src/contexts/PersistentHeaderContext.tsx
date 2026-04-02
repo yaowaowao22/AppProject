@@ -32,8 +32,14 @@ const PersistentHeaderContext = createContext<PersistentHeaderContextValue | nul
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
-export function PersistentHeaderProvider({ children }: { children: ReactNode }) {
-  const [headerConfig, setHeaderConfig] = useState<HeaderConfig>({ title: '' });
+export function PersistentHeaderProvider({
+  children,
+  initialConfig,
+}: {
+  children: ReactNode;
+  initialConfig?: HeaderConfig;
+}) {
+  const [headerConfig, setHeaderConfig] = useState<HeaderConfig>(initialConfig ?? { title: '' });
 
   const value = useMemo(
     () => ({ headerConfig, setHeaderConfig }),
