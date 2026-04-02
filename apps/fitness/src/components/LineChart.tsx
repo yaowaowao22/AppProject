@@ -56,17 +56,20 @@ export interface LineChartProps {
   highlightLast?: boolean;
   /** 強調ポイントの色（省略時: lineColor） */
   highlightColor?: string;
+  /** Y軸ラベルを表示するか（デフォルト: false） */
+  showYAxis?: boolean;
   /** 将来拡張用（現在は無効） */
   animated?: boolean;
 }
 
 // ── 定数 ─────────────────────────────────────────────────────────────────────
 
-const PAD_TOP    = 24; // 値ラベル用の上余白
-const PAD_BOTTOM = 28; // X軸ラベル用の下余白
-const PAD_LEFT   = 16;
-const PAD_RIGHT  = 16;
-const GRID_LINES = 3;  // 水平グリッド線の本数
+const PAD_TOP         = 24; // 値ラベル用の上余白
+const PAD_BOTTOM      = 28; // X軸ラベル用の下余白
+const PAD_LEFT        = 16;
+const PAD_LEFT_YAXIS  = 40; // Y軸ラベルあり時の左余白
+const PAD_RIGHT       = 16;
+const GRID_LINES      = 3;  // 水平グリッド線の本数
 
 // ── Catmull-Rom → cubic bezier 変換 ──────────────────────────────────────────
 
@@ -131,6 +134,7 @@ export function LineChart({
   formatValue,
   highlightLast = false,
   highlightColor,
+  showYAxis = false,
   // animated はフューチャーリザーブ
 }: LineChartProps): React.ReactElement {
   const { width: windowWidth } = useWindowDimensions();
@@ -138,6 +142,7 @@ export function LineChart({
   const areaColor = fillColor ?? lineColor;
   const hlColor   = highlightColor ?? lineColor;
   const gradientId = 'lgFill';
+  const padLeft   = showYAxis ? PAD_LEFT_YAXIS : PAD_LEFT;
 
   // ── データが空の場合 ────────────────────────────────────────────────────────
   if (data.length === 0) {
@@ -156,11 +161,11 @@ export function LineChart({
     const minV     = rawMin - margin;
     const maxV     = rawMax + margin;
 
-    const plotW = svgWidth - PAD_LEFT - PAD_RIGHT;
+    const plotW = svgWidth - padLeft - PAD_RIGHT;
     const plotH = height  - PAD_TOP  - PAD_BOTTOM;
 
     const toX = (i: number) =>
-      PAD_LEFT + (data.length === 1 ? plotW / 2 : (i / (data.length - 1)) * plotW);
+      padLeft + (data.length === 1 ? plotW / 2 : (i / (data.length - 1)) * plotW);
     const toY = (v: number) =>
       PAD_TOP + plotH - ((v - minV) / (maxV - minV)) * plotH;
 
@@ -183,7 +188,7 @@ export function LineChart({
       minVal: minV,
       maxVal: maxV,
     };
-  }, [data, svgWidth, height]);
+  }, [data, svgWidth, height, padLeft]);
 
   // ── パス生成 ────────────────────────────────────────────────────────────────
   const linePth = data.length === 1
@@ -209,7 +214,7 @@ export function LineChart({
       {showGrid && gridYs.map((gy, i) => (
         <Line
           key={i}
-          x1={PAD_LEFT}
+          x1={padLeft}
           y1={gy}
           x2={svgWidth - PAD_RIGHT}
           y2={gy}
@@ -219,6 +224,29 @@ export function LineChart({
           opacity={0.6}
         />
       ))}
+
+      {/* Y軸ラベル */}
+      {showYAxis && gridYs.map((gy, g) => {
+        const v = maxVal - (g / GRID_LINES) * (maxVal - minVal);
+        const displayV = Math.max(0, v);
+        const txt = formatValue
+          ? formatValue(Math.round(displayV))
+          : displayV >= 1000
+            ? `${Math.round(displayV / 100) / 10}k`
+            : String(Math.round(displayV));
+        return (
+          <SvgText
+            key={g}
+            x={padLeft - 4}
+            y={gy + 3}
+            textAnchor="end"
+            fontSize={8}
+            fill={labelColor}
+          >
+            {txt}
+          </SvgText>
+        );
+      })}
 
       {/* エリア塗りつぶし */}
       {showArea && areaPth !== '' && (

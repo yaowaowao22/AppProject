@@ -575,6 +575,7 @@ function BodyPartDetailView({
                 labelColor={colors.textTertiary}
                 highlightLast
                 highlightColor={colors.accent}
+                showYAxis
               />
             </View>
             <Text style={{
@@ -991,6 +992,7 @@ function ExerciseDetailView({
                 labelColor={colors.textTertiary}
                 highlightLast
                 highlightColor={colors.accent}
+                showYAxis
               />
             </View>
             <Text style={{
