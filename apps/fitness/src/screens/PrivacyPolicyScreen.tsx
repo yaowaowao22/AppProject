@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SPACING, TYPOGRAPHY } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
-import { ScreenHeader } from '../components/ScreenHeader';
+import { usePersistentHeader } from '../contexts/PersistentHeaderContext';
 
 const SECTIONS = [
   {
@@ -48,10 +48,10 @@ const SECTIONS = [
 export default function PrivacyPolicyScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  usePersistentHeader({ title: 'プライバシーポリシー', showBack: true });
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
-      <ScreenHeader title="プライバシーポリシー" showBack />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
