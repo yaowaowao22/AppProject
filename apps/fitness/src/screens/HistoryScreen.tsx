@@ -51,6 +51,13 @@ const BP_FILTERS: Array<{ id: BodyPart | 'all'; label: string }> = [
   { id: 'core',      label: '体幹' },
 ];
 
+const PERIOD_FILTERS: Array<{ id: string; label: string; days: number }> = [
+  { id: '7d',   label: '7d',   days: 7 },
+  { id: '30d',  label: '30d',  days: 30 },
+  { id: '90d',  label: '90d',  days: 90 },
+  { id: '365d', label: '365d', days: 365 },
+];
+
 // ── 静的スタイル�E�カラー非依存！E─────────────────────────────────────────────
 
 const S = StyleSheet.create({
@@ -387,30 +394,85 @@ function BodyPartDetailView({
 
   const bp = BODY_PARTS.find(b => b.id === bodyPart)!;
 
-  // 週別ボリューム�E�直迁E週�E�E
+  const [periodDays, setPeriodDays] = useState(30);
+
   const chartData = useMemo(() => {
     const today = new Date();
-    const weekKeys: string[] = [];
-    for (let i = 7; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i * 7);
-      weekKeys.push(getWeekMonday(d.toISOString().split('T')[0]));
-    }
-    const volByWeek: Record<string, number> = {};
-    for (const w of workouts) {
-      const wk = getWeekMonday(w.date);
-      if (!weekKeys.includes(wk)) continue;
-      for (const s of w.sessions) {
-        const ex = getExerciseById(s.exerciseId, customExercises);
-        if (ex?.bodyPart !== bodyPart) continue;
-        volByWeek[wk] = (volByWeek[wk] ?? 0) + getVolume(s);
+    const cutoff = new Date(today);
+    cutoff.setDate(today.getDate() - periodDays);
+    const cutoffStr = cutoff.toISOString().split('T')[0];
+
+    if (periodDays <= 30) {
+      const volByDay: Record<string, number> = {};
+      for (const w of workouts) {
+        if (w.date < cutoffStr) continue;
+        for (const s of w.sessions) {
+          const ex = getExerciseById(s.exerciseId, customExercises);
+          if (ex?.bodyPart !== bodyPart) continue;
+          volByDay[w.date] = (volByDay[w.date] ?? 0) + getVolume(s);
+        }
       }
+      const days: string[] = [];
+      for (let i = periodDays - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        days.push(d.toISOString().split('T')[0]);
+      }
+      return days.map(d => ({
+        label: formatDateShort(d),
+        value: Math.round(volByDay[d] ?? 0),
+      }));
+    } else if (periodDays <= 90) {
+      const weeks = Math.ceil(periodDays / 7);
+      const weekKeys: string[] = [];
+      for (let i = weeks; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i * 7);
+        weekKeys.push(getWeekMonday(d.toISOString().split('T')[0]));
+      }
+      const volByWeek: Record<string, number> = {};
+      for (const w of workouts) {
+        if (w.date < cutoffStr) continue;
+        const wk = getWeekMonday(w.date);
+        for (const s of w.sessions) {
+          const ex = getExerciseById(s.exerciseId, customExercises);
+          if (ex?.bodyPart !== bodyPart) continue;
+          volByWeek[wk] = (volByWeek[wk] ?? 0) + getVolume(s);
+        }
+      }
+      const unique = [...new Set(weekKeys)];
+      return unique.map(k => ({
+        label: formatDateShort(k),
+        value: Math.round(volByWeek[k] ?? 0),
+      }));
+    } else {
+      const monthKeys: string[] = [];
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        monthKeys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+      }
+      const volByMonth: Record<string, number> = {};
+      for (const w of workouts) {
+        if (w.date < cutoffStr) continue;
+        const mk = w.date.substring(0, 7);
+        for (const s of w.sessions) {
+          const ex = getExerciseById(s.exerciseId, customExercises);
+          if (ex?.bodyPart !== bodyPart) continue;
+          volByMonth[mk] = (volByMonth[mk] ?? 0) + getVolume(s);
+        }
+      }
+      return monthKeys.map(k => ({
+        label: `${parseInt(k.split('-')[1])}月`,
+        value: Math.round(volByMonth[k] ?? 0),
+      }));
     }
-    return weekKeys.map(k => ({
-      label: formatDateShort(k),
-      value: Math.round(volByWeek[k] ?? 0),
-    }));
-  }, [workouts, bodyPart, customExercises]);
+  }, [workouts, bodyPart, customExercises, periodDays]);
+
+  const periodLabel = periodDays <= 30
+    ? `日別ボリューム（直近${periodDays}日）`
+    : periodDays <= 90
+      ? `週別ボリューム（直近${Math.ceil(periodDays / 7)}週）`
+      : '月別ボリューム（直近12ヶ月）';
 
   // セッション一覧�E�日付降頁E��E
   const sessions = useMemo<BPDetailSession[]>(() => {
@@ -477,6 +539,32 @@ function BodyPartDetailView({
         contentContainerStyle={{ paddingBottom: SPACING.xl }}
         ListHeaderComponent={
           <View style={{ marginBottom: SPACING.sm }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={[S.filterScrollContent, { paddingHorizontal: SPACING.sm }]}
+              style={{ flexGrow: 0, marginHorizontal: SPACING.contentMargin }}
+            >
+              {PERIOD_FILTERS.map(f => {
+                const active = periodDays === f.days;
+                return (
+                  <TouchableOpacity
+                    key={f.id}
+                    style={[S.filterChip, { backgroundColor: active ? colors.accent : colors.surface2 }]}
+                    onPress={() => setPeriodDays(f.days)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{
+                      fontSize: typography.caption,
+                      fontWeight: typography.semiBold,
+                      color: active ? colors.onAccent : colors.textSecondary,
+                    }}>
+                      {f.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
             <View style={[S.chartWrap, { backgroundColor: colors.cardBackground }]}>
               <LineChart
                 data={chartData}
@@ -496,7 +584,7 @@ function BodyPartDetailView({
               marginBottom: SPACING.sm,
               marginTop: 2,
             }}>
-              週別ボリューム�E�直迁E週�E�E
+              {periodLabel}
             </Text>
           </View>
         }
@@ -733,9 +821,17 @@ function ExerciseDetailView({
   const ex  = getExerciseById(exerciseId, customExercises);
   const pr  = personalRecords.find(p => p.exerciseId === exerciseId);
 
-  // 最大重量推移チャート（直迁E2回！E
+  const [periodDays, setPeriodDays] = useState(90);
+
   const chartData = useMemo(() => {
-    const sorted = [...workouts].sort((a, b) => a.date.localeCompare(b.date));
+    const today = new Date();
+    const cutoff = new Date(today);
+    cutoff.setDate(today.getDate() - periodDays);
+    const cutoffStr = cutoff.toISOString().split('T')[0];
+
+    const sorted = [...workouts]
+      .filter(w => w.date >= cutoffStr)
+      .sort((a, b) => a.date.localeCompare(b.date));
     const result: { label: string; value: number }[] = [];
     for (const w of sorted) {
       const matched = w.sessions.filter(s => s.exerciseId === exerciseId);
@@ -744,12 +840,21 @@ function ExerciseDetailView({
         result.push({ label: formatDateShort(w.date), value: maxW ?? 0 });
       }
     }
-    return result.slice(-12);
-  }, [workouts, exerciseId]);
+    return result;
+  }, [workouts, exerciseId, periodDays]);
+
+  const periodLabel = periodDays <= 7 ? '直近7日' : periodDays <= 30 ? '直近30日' : periodDays <= 90 ? '直近90日' : '直近1年';
 
   // セッション一覧�E�日付降頁E��E
   const sessions = useMemo<ExDetailSession[]>(() => {
-    const sorted = [...workouts].sort((a, b) => b.date.localeCompare(a.date));
+    const today = new Date();
+    const cutoff = new Date(today);
+    cutoff.setDate(today.getDate() - periodDays);
+    const cutoffStr = cutoff.toISOString().split('T')[0];
+
+    const sorted = [...workouts]
+      .filter(w => w.date >= cutoffStr)
+      .sort((a, b) => b.date.localeCompare(a.date));
     const result: ExDetailSession[] = [];
     for (const w of sorted) {
       const matched = w.sessions.filter(s => s.exerciseId === exerciseId);
@@ -763,7 +868,7 @@ function ExerciseDetailView({
       }
     }
     return result;
-  }, [workouts, exerciseId]);
+  }, [workouts, exerciseId, periodDays]);
 
   const renderSetTable = (session: WorkoutSession) => (
     <View style={{ paddingBottom: SPACING.sm, backgroundColor: colors.cardBackground }}>
@@ -850,6 +955,32 @@ function ExerciseDetailView({
         contentContainerStyle={{ paddingBottom: SPACING.xl }}
         ListHeaderComponent={
           <View style={{ marginBottom: SPACING.sm }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={[S.filterScrollContent, { paddingHorizontal: SPACING.sm }]}
+              style={{ flexGrow: 0, marginHorizontal: SPACING.contentMargin }}
+            >
+              {PERIOD_FILTERS.map(f => {
+                const active = periodDays === f.days;
+                return (
+                  <TouchableOpacity
+                    key={f.id}
+                    style={[S.filterChip, { backgroundColor: active ? colors.accent : colors.surface2 }]}
+                    onPress={() => setPeriodDays(f.days)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{
+                      fontSize: typography.caption,
+                      fontWeight: typography.semiBold,
+                      color: active ? colors.onAccent : colors.textSecondary,
+                    }}>
+                      {f.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
             <View style={[S.chartWrap, { backgroundColor: colors.cardBackground }]}>
               <LineChart
                 data={chartData}
@@ -869,7 +1000,7 @@ function ExerciseDetailView({
               marginBottom: SPACING.sm,
               marginTop: 2,
             }}>
-              最大重量の推移�E�直迁E2回！E
+              {`最大重量の推移（${periodLabel}）`}
             </Text>
           </View>
         }
