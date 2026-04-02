@@ -2,7 +2,7 @@ import React, { ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, DrawerActions } from '@react-navigation/native';
 import { SPACING, BUTTON_HEIGHT } from '../theme';
 import { useTheme } from '../ThemeContext';
 import type { TanrenThemeColors } from '../theme';
@@ -40,7 +40,7 @@ export function ScreenHeader({
         {showHamburger ? (
           <TouchableOpacity
             style={styles.iconBtn}
-            onPress={() => navigation.openDrawer()}
+            onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
             accessibilityRole="button"
             accessibilityLabel="メニューを開く"
           >
