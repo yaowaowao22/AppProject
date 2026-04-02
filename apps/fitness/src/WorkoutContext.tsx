@@ -238,9 +238,31 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       const existing = updatedWorkouts[targetIdx];
       const firstStartedAt = existing.sessions[0]?.startedAt ?? now;
       const duration = Math.floor((Date.now() - new Date(firstStartedAt).getTime()) / 1000);
+
+      // 同じ exerciseId のセッションが既にあるか確認
+      const sameExIdx = existing.sessions.findIndex(
+        s => s.exerciseId === completedSession.exerciseId
+      );
+
+      let newSessions;
+      if (sameExIdx >= 0) {
+        // 既存セッションにセットをマージ
+        newSessions = existing.sessions.map((s, i) => {
+          if (i !== sameExIdx) return s;
+          return {
+            ...s,
+            sets: [...s.sets, ...completedSession.sets],
+            completedAt: completedSession.completedAt,
+          };
+        });
+      } else {
+        // 新しいセッションとして追加
+        newSessions = [...existing.sessions, completedSession];
+      }
+
       updatedWorkouts[targetIdx] = {
         ...existing,
-        sessions: [...existing.sessions, completedSession],
+        sessions: newSessions,
         totalVolume: existing.totalVolume + sessionVolume,
         duration,
       };

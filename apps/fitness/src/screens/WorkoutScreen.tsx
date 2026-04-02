@@ -567,13 +567,12 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
       const updated = prev.map((r, i) => i === idx ? { ...r, done: true } : r);
       const nextIdx = updated.findIndex(r => !r.done);
       if (nextIdx >= 0) {
-        // 次の未完了行に完了した行の weight/reps をコピー
-        const withCopy = updated.map((r, i) => i === nextIdx ? { ...r, weight, reps } : r);
-        newRows = withCopy;
-        return withCopy;
+        // 次の行にはコピーしない。そのまま返す
+        newRows = updated;
+        return updated;
       }
-      // 最後の行を完了 → 新規行に最後の完了行の weight/reps をコピー
-      const result = [...updated, { weight, reps, done: false }];
+      // 全行完了 → 空の新規行を追加
+      const result = [...updated, { weight: null, reps: null, done: false }];
       newRows = result;
       return result;
     });
