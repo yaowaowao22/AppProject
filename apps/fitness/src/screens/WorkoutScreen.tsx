@@ -848,16 +848,14 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
                 </View>
               )}
               {isActive && <View style={styles.setActivePip} />}
-              {(row.weight !== null || row.reps !== null || row.done) && (
-                <TouchableOpacity
-                  onPress={() => handleClearRow(i)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  style={styles.setClearBtn}
-                  accessibilityLabel="クリア"
-                >
-                  <Ionicons name="close" size={13} color={colors.textTertiary} />
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                onPress={() => handleClearRow(i)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={styles.setClearBtn}
+                accessibilityLabel="クリア"
+              >
+                <Ionicons name="close" size={13} color={colors.textTertiary} />
+              </TouchableOpacity>
             </TouchableOpacity>
           );
         })}
