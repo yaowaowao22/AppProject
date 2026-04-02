@@ -24,7 +24,7 @@ import { SPACING, RADIUS, BUTTON_HEIGHT } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
 import type { DynamicTypography } from '../ThemeContext';
-import { ScreenHeader } from '../components/ScreenHeader';
+import { usePersistentHeader } from '../contexts/PersistentHeaderContext';
 import { BottomSheet } from '../components/BottomSheet';
 import { SwipeableRow } from '../components/SwipeableRow';
 import { useWorkout } from '../WorkoutContext';
@@ -140,27 +140,30 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
     return `${d.getMonth() + 1}/${d.getDate()}`;
   }
 
+  const addButtonAction = useMemo(() => (
+    <TouchableOpacity
+      onPress={() => {
+        setNewPart(selectedPart);
+        setNewName('');
+        setNewEquipment('バーベル');
+        setAddModalVisible(true);
+      }}
+      accessibilityRole="button"
+      accessibilityLabel="種目を追加"
+    >
+      <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
+    </TouchableOpacity>
+  ), [selectedPart, colors.accent]);
+
+  usePersistentHeader({
+    title: 'トレーニング',
+    subtitle: formatWorkoutDateLabel(workoutTargetDate),
+    showHamburger: true,
+    rightAction: addButtonAction,
+  });
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader
-        title="トレーニング"
-        subtitle={formatWorkoutDateLabel(workoutTargetDate)}
-        showHamburger
-        rightAction={
-          <TouchableOpacity
-            onPress={() => {
-              setNewPart(selectedPart);
-              setNewName('');
-              setNewEquipment('バーベル');
-              setAddModalVisible(true);
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="種目を追加"
-          >
-            <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
-          </TouchableOpacity>
-        }
-      />
       <View style={styles.subHeaderRow}>
         <Text style={styles.subHeaderTitle}>種目選択</Text>
       </View>
@@ -689,9 +692,13 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
   const isLastExercise = currentIndex === exerciseIds.length - 1;
 
+  usePersistentHeader({
+    title: 'トレーニング',
+    showHamburger: true,
+  });
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="トレーニング" showHamburger />
       {/* 種目情報行: 戻るボタン + 戻り先ラベル + 種目名・進捗 */}
       <TouchableOpacity
         style={styles.detailBackRow}
@@ -1665,6 +1672,8 @@ export function WorkoutCompleteScreen({ navigation, route }: WorkoutCompleteProp
   const { reportItems, startedAt } = route.params;
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeCompleteStyles(colors, typography), [colors, typography]);
+
+  usePersistentHeader({ title: '', visible: false });
 
   const durationSec = Math.round((Date.now() - new Date(startedAt).getTime()) / 1000);
   const minutes = Math.floor(durationSec / 60);

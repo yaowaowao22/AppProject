@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ScreenHeader } from '../components/ScreenHeader';
+import { usePersistentHeader } from '../contexts/PersistentHeaderContext';
 import { SPACING, TYPOGRAPHY, RADIUS, BUTTON_HEIGHT } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
@@ -30,6 +30,8 @@ export default function OrderConfirmScreen({ navigation, route }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { saveTemplate, customExercises } = useWorkout();
+
+  usePersistentHeader({ title: 'トレーニング', showHamburger: true });
 
   const [data, setData] = useState<ExerciseItem[]>(() =>
     exerciseIds
@@ -126,7 +128,6 @@ export default function OrderConfirmScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="トレーニング" showHamburger />
       <TouchableOpacity
         style={styles.detailBackRow}
         onPress={() => navigation.goBack()}
