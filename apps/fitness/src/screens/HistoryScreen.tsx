@@ -1073,6 +1073,7 @@ export function BodyPartDetailScreen() {
   const route = useRoute<RouteProp<HistoryStackParamList, 'BodyPartDetail'>>();
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
+      <ScreenHeader title="履歴" showHamburger />
       <BodyPartDetailView bodyPart={route.params.bodyPart} />
     </SafeAreaView>
   );
@@ -1083,6 +1084,7 @@ export function ExerciseDetailScreen() {
   const route = useRoute<RouteProp<HistoryStackParamList, 'ExerciseDetail'>>();
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
+      <ScreenHeader title="履歴" showHamburger />
       <ExerciseDetailView exerciseId={route.params.exerciseId} />
     </SafeAreaView>
   );
