@@ -722,18 +722,6 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
           {exercise?.name ?? 'ワークアウト'}
           {exerciseIds.length > 1 ? `　${currentIndex + 1}/${exerciseIds.length}` : ''}
         </Text>
-        <TouchableOpacity
-          onPress={() => setMemoSheetVisible(true)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={styles.memoIconBtn}
-          accessibilityLabel="メモ"
-        >
-          <Ionicons
-            name={memo.trim() ? 'document-text' : 'document-text-outline'}
-            size={16}
-            color={memo.trim() ? colors.accent : colors.textTertiary}
-          />
-        </TouchableOpacity>
       </TouchableOpacity>
 
       {/* 数値コントロール（アクティブ行を反映・固定） */}
@@ -894,18 +882,25 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
       </View>
 
-      {/* メモ表示（設定済みの場合） */}
-      {memo.trim() !== '' && (
-        <TouchableOpacity
-          style={styles.memoDisplay}
-          onPress={() => setMemoSheetVisible(true)}
-          activeOpacity={0.7}
-          accessibilityLabel="メモを編集"
-        >
-          <Ionicons name="document-text-outline" size={14} color={colors.textTertiary} style={{ marginTop: 1 }} />
+      {/* メモエリア（常時表示） */}
+      <TouchableOpacity
+        style={styles.memoDisplay}
+        onPress={() => setMemoSheetVisible(true)}
+        activeOpacity={0.7}
+        accessibilityLabel={memo.trim() ? 'メモを編集' : 'メモを追加'}
+      >
+        <Ionicons
+          name={memo.trim() ? 'document-text' : 'document-text-outline'}
+          size={14}
+          color={memo.trim() ? colors.accent : colors.textTertiary}
+          style={{ marginTop: 1 }}
+        />
+        {memo.trim() ? (
           <Text style={styles.memoDisplayText} numberOfLines={3}>{memo}</Text>
-        </TouchableOpacity>
-      )}
+        ) : (
+          <Text style={styles.memoPlaceholderText}>メモを追加...</Text>
+        )}
+      </TouchableOpacity>
 
       <View style={{ height: 20 }} />
       </ScrollView>
@@ -1607,10 +1602,6 @@ function makeStyles(c: TanrenThemeColors, t: DynamicTypography) {
   },
 
   // メモ
-  memoIconBtn: {
-    marginLeft: 8,
-    padding: 4,
-  },
   memoDisplay: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -1627,6 +1618,12 @@ function makeStyles(c: TanrenThemeColors, t: DynamicTypography) {
     fontFamily: t.fontFamily,
     color: c.textSecondary,
     lineHeight: t.caption * 1.5,
+  },
+  memoPlaceholderText: {
+    flex: 1,
+    fontSize: t.caption,
+    fontFamily: t.fontFamily,
+    color: c.textTertiary,
   },
   memoInput: {
     height: 120,
