@@ -369,6 +369,7 @@ function newId(): string {
 function buildUpdatedSession(
   existingSession: WorkoutSession,
   doneRows: SetRow[],
+  notes?: string,
 ): WorkoutSession {
   const existingSetCount = existingSession.sets.length;
   const sets: WorkoutSet[] = doneRows.map((row, i) => {
@@ -385,7 +386,7 @@ function buildUpdatedSession(
       isPersonalRecord: false,
     };
   });
-  return { ...existingSession, sets };
+  return { ...existingSession, sets, notes: notes !== undefined ? (notes || undefined) : existingSession.notes };
 }
 
 function buildRows(
@@ -427,6 +428,8 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   const [editingField, setEditingField] = useState<'weight' | 'reps' | null>(null);
   const [editValue, setEditValue] = useState('');
   const [manualActiveIdx, setManualActiveIdx] = useState<number | null>(null);
+  const [memo, setMemo] = useState('');
+  const [memoSheetVisible, setMemoSheetVisible] = useState(false);
   const [inputWeight, setInputWeight] = useState<number | null>(null);
   const [inputReps, setInputReps] = useState<number | null>(null);
   const workoutStartedAt = useRef(new Date().toISOString());
@@ -456,6 +459,7 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
       const lastSet = existingSession.sets[existingSession.sets.length - 1];
       setInputWeight(lastSet?.weight ?? null);
       setInputReps(lastSet?.reps ?? null);
+      setMemo(existingSession.notes || '');
     } else {
       startSession(exerciseId);
       const prev = workouts
@@ -467,6 +471,7 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
       // 入力欄は最初の行の値で初期化
       setInputWeight(builtRows[0]?.weight ?? null);
       setInputReps(builtRows[0]?.reps ?? null);
+      setMemo('');
     }
     setManualActiveIdx(null);
     setSetDone(false);
@@ -636,10 +641,11 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
   async function handleExerciseComplete() {
     const doneRows = rows.filter(r => r.done);
+    const trimmedMemo = memo.trim();
     if (isUpdateMode && existingSession) {
-      if (doneRows.length > 0) await updateSession(existingWorkoutId!, buildUpdatedSession(existingSession!, doneRows));
+      if (doneRows.length > 0) await updateSession(existingWorkoutId!, buildUpdatedSession(existingSession!, doneRows, trimmedMemo));
     } else if (doneRows.length > 0) {
-      await completeSession(doneRows.map(r => ({ weight: r.weight, reps: r.reps })));
+      await completeSession(doneRows.map(r => ({ weight: r.weight, reps: r.reps })), trimmedMemo || undefined);
     }
     const nextIndex = currentIndex + 1;
     if (nextIndex < exerciseIds.length) {
@@ -655,11 +661,12 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   async function handlePreviousExercise() {
     if (currentIndex === 0) return;
     const doneRows = rows.filter(r => r.done);
+    const trimmedMemo = memo.trim();
     if (doneRows.length > 0) {
       if (isUpdateMode && existingSession) {
-        await updateSession(existingWorkoutId!, buildUpdatedSession(existingSession!, doneRows));
+        await updateSession(existingWorkoutId!, buildUpdatedSession(existingSession!, doneRows, trimmedMemo));
       } else {
-        await completeSession(doneRows.map(r => ({ weight: r.weight, reps: r.reps })));
+        await completeSession(doneRows.map(r => ({ weight: r.weight, reps: r.reps })), trimmedMemo || undefined);
       }
     }
     setCurrentIndex(prev => prev - 1);
@@ -667,11 +674,12 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
   async function doWorkoutEnd() {
     const doneRows = rows.filter(r => r.done);
+    const trimmedMemo = memo.trim();
     if (doneRows.length > 0) {
       if (isUpdateMode && existingSession) {
-        await updateSession(existingWorkoutId!, buildUpdatedSession(existingSession!, doneRows));
+        await updateSession(existingWorkoutId!, buildUpdatedSession(existingSession!, doneRows, trimmedMemo));
       } else {
-        await completeSession(doneRows.map(r => ({ weight: r.weight, reps: r.reps })));
+        await completeSession(doneRows.map(r => ({ weight: r.weight, reps: r.reps })), trimmedMemo || undefined);
       }
     }
     navigation.replace('WorkoutComplete', {
@@ -714,6 +722,18 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
           {exercise?.name ?? 'ワークアウト'}
           {exerciseIds.length > 1 ? `　${currentIndex + 1}/${exerciseIds.length}` : ''}
         </Text>
+        <TouchableOpacity
+          onPress={() => setMemoSheetVisible(true)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={styles.memoIconBtn}
+          accessibilityLabel="メモ"
+        >
+          <Ionicons
+            name={memo.trim() ? 'document-text' : 'document-text-outline'}
+            size={16}
+            color={memo.trim() ? colors.accent : colors.textTertiary}
+          />
+        </TouchableOpacity>
       </TouchableOpacity>
 
       {/* 数値コントロール（アクティブ行を反映・固定） */}
@@ -874,6 +894,18 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
 
       </View>
 
+      {/* メモ表示（設定済みの場合） */}
+      {memo.trim() !== '' && (
+        <TouchableOpacity
+          style={styles.memoDisplay}
+          onPress={() => setMemoSheetVisible(true)}
+          activeOpacity={0.7}
+          accessibilityLabel="メモを編集"
+        >
+          <Ionicons name="document-text-outline" size={14} color={colors.textTertiary} style={{ marginTop: 1 }} />
+          <Text style={styles.memoDisplayText} numberOfLines={3}>{memo}</Text>
+        </TouchableOpacity>
+      )}
 
       <View style={{ height: 20 }} />
       </ScrollView>
@@ -910,6 +942,32 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
           <Text style={styles.endBtnText}>終了</Text>
         </TouchableOpacity>
       </View>
+
+      {/* メモ入力BottomSheet */}
+      <BottomSheet
+        visible={memoSheetVisible}
+        onClose={() => setMemoSheetVisible(false)}
+        title="メモ"
+        subtitle={exercise?.name}
+      >
+        <TextInput
+          style={styles.memoInput}
+          value={memo}
+          onChangeText={setMemo}
+          placeholder="トレーニングのメモを入力..."
+          placeholderTextColor={colors.textTertiary}
+          multiline
+          autoFocus
+          textAlignVertical="top"
+        />
+        <TouchableOpacity
+          style={styles.memoSaveBtn}
+          onPress={() => setMemoSheetVisible(false)}
+          activeOpacity={0.88}
+        >
+          <Text style={styles.memoSaveBtnText}>閉じる</Text>
+        </TouchableOpacity>
+      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -1546,6 +1604,57 @@ function makeStyles(c: TanrenThemeColors, t: DynamicTypography) {
     backgroundColor: c.separator,
     marginHorizontal: SPACING.contentMargin,
     marginVertical: 8,
+  },
+
+  // メモ
+  memoIconBtn: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  memoDisplay: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginHorizontal: SPACING.contentMargin,
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: c.surface1,
+    borderRadius: RADIUS.card,
+  },
+  memoDisplayText: {
+    flex: 1,
+    fontSize: t.caption,
+    fontFamily: t.fontFamily,
+    color: c.textSecondary,
+    lineHeight: t.caption * 1.5,
+  },
+  memoInput: {
+    height: 120,
+    backgroundColor: c.surface2,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 12,
+    fontSize: t.body,
+    fontFamily: t.fontFamily,
+    color: c.textPrimary,
+    marginTop: 12,
+  },
+  memoSaveBtn: {
+    height: BUTTON_HEIGHT.secondary,
+    backgroundColor: c.accent,
+    borderRadius: RADIUS.btnCTA,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  memoSaveBtnText: {
+    fontSize: t.body,
+    fontWeight: t.bold,
+    fontFamily: t.fontFamily,
+    color: c.onAccent,
+    letterSpacing: -0.2,
   },
   endBtn: {
     marginHorizontal: SPACING.contentMargin,

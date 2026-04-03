@@ -35,7 +35,7 @@ interface WorkoutContextValue {
   deleteCustomExercise: (id: string) => Promise<void>;
   startSession: (exerciseId: string) => void;
   addSet: (weight: number | null, reps: number | null) => void;
-  completeSession: (overrideSets?: Array<{weight: number | null, reps: number | null}>) => Promise<void>;
+  completeSession: (overrideSets?: Array<{weight: number | null, reps: number | null}>, notes?: string) => Promise<void>;
   deleteWorkout: (id: string) => Promise<void>;
   deleteSessionFromWorkout: (workoutId: string, exerciseId: string) => Promise<void>;
   saveTemplate: (name: string, exerciseIds: string[]) => Promise<void>;
@@ -180,7 +180,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   }, [personalRecords]);
 
   // セッション完了: volume計算 → DailyWorkout更新 → PR更新 → 永続化
-  const completeSession = useCallback(async (overrideSets?: Array<{weight: number | null, reps: number | null}>) => {
+  const completeSession = useCallback(async (overrideSets?: Array<{weight: number | null, reps: number | null}>, notes?: string) => {
     if (!currentSession) { setCurrentSession(null); return; }
 
     const now = new Date().toISOString();
@@ -205,7 +205,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
     if (finalSets.length === 0) { setCurrentSession(null); return; }
 
-    const completedSession: WorkoutSession = { ...currentSession, sets: finalSets, completedAt: now };
+    const completedSession: WorkoutSession = { ...currentSession, sets: finalSets, completedAt: now, notes: notes || undefined };
 
     // セッションのtotalVolume（weight × reps の合計）
     const sessionVolume = completedSession.sets.reduce((sum, s) => {
