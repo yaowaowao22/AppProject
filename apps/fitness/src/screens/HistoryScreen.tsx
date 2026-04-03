@@ -176,6 +176,28 @@ function getVolume(session: WorkoutSession): number {
   );
 }
 
+function getEstimated1RM(weight: number, reps: number): number {
+  if (reps <= 0 || weight <= 0) return 0;
+  if (reps === 1) return weight;
+  const epley   = weight * (1 + reps / 30);
+  const brzycki = weight * 36 / (37 - reps);
+  const lander  = (100 * weight) / (101.3 - 2.67123 * reps);
+  return (epley + brzycki + lander) / 3;
+}
+
+function getSessionBest1RM(session: WorkoutSession): number {
+  let best = 0;
+  for (const s of session.sets) {
+    if (s.weight !== null && s.weight > 0 && s.reps !== null && s.reps > 0) {
+      const rm = getEstimated1RM(s.weight, s.reps);
+      if (rm > best) best = rm;
+    }
+  }
+  return best;
+}
+
+type ChartMode = 'volume' | 'rm';
+
 /** dateStr の週の月曜日めEYYYY-MM-DD で返す */
 function getWeekMonday(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
@@ -390,21 +412,32 @@ function BodyPartDetailView({ bodyPart }: { bodyPart: BodyPart }) {
   const bp = BODY_PARTS.find(b => b.id === bodyPart)!;
 
   const [periodDays, setPeriodDays] = useState(30);
+  const [chartMode, setChartMode] = useState<ChartMode>('volume');
 
   const chartData = useMemo(() => {
     const today = new Date();
     const cutoff = new Date(today);
     cutoff.setDate(today.getDate() - periodDays);
     const cutoffStr = cutoff.toISOString().split('T')[0];
+    const isVol = chartMode === 'volume';
+
+    const aggregate = (map: Record<string, number>, key: string, session: WorkoutSession) => {
+      if (isVol) {
+        map[key] = (map[key] ?? 0) + getVolume(session);
+      } else {
+        const rm = getSessionBest1RM(session);
+        if (rm > 0) map[key] = Math.max(map[key] ?? 0, rm);
+      }
+    };
 
     if (periodDays <= 30) {
-      const volByDay: Record<string, number> = {};
+      const dataByDay: Record<string, number> = {};
       for (const w of workouts) {
         if (w.date < cutoffStr) continue;
         for (const s of w.sessions) {
           const ex = getExerciseById(s.exerciseId, customExercises);
           if (ex?.bodyPart !== bodyPart) continue;
-          volByDay[w.date] = (volByDay[w.date] ?? 0) + getVolume(s);
+          aggregate(dataByDay, w.date, s);
         }
       }
       const days: string[] = [];
@@ -415,7 +448,7 @@ function BodyPartDetailView({ bodyPart }: { bodyPart: BodyPart }) {
       }
       return days.map(d => ({
         label: formatDateShort(d),
-        value: Math.round(volByDay[d] ?? 0),
+        value: Math.round(dataByDay[d] ?? 0),
       }));
     } else if (periodDays <= 90) {
       const weeks = Math.ceil(periodDays / 7);
@@ -425,20 +458,20 @@ function BodyPartDetailView({ bodyPart }: { bodyPart: BodyPart }) {
         d.setDate(today.getDate() - i * 7);
         weekKeys.push(getWeekMonday(d.toISOString().split('T')[0]));
       }
-      const volByWeek: Record<string, number> = {};
+      const dataByWeek: Record<string, number> = {};
       for (const w of workouts) {
         if (w.date < cutoffStr) continue;
         const wk = getWeekMonday(w.date);
         for (const s of w.sessions) {
           const ex = getExerciseById(s.exerciseId, customExercises);
           if (ex?.bodyPart !== bodyPart) continue;
-          volByWeek[wk] = (volByWeek[wk] ?? 0) + getVolume(s);
+          aggregate(dataByWeek, wk, s);
         }
       }
       const unique = [...new Set(weekKeys)];
       return unique.map(k => ({
         label: formatDateShort(k),
-        value: Math.round(volByWeek[k] ?? 0),
+        value: Math.round(dataByWeek[k] ?? 0),
       }));
     } else {
       const monthKeys: string[] = [];
@@ -446,28 +479,29 @@ function BodyPartDetailView({ bodyPart }: { bodyPart: BodyPart }) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
         monthKeys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
       }
-      const volByMonth: Record<string, number> = {};
+      const dataByMonth: Record<string, number> = {};
       for (const w of workouts) {
         if (w.date < cutoffStr) continue;
         const mk = w.date.substring(0, 7);
         for (const s of w.sessions) {
           const ex = getExerciseById(s.exerciseId, customExercises);
           if (ex?.bodyPart !== bodyPart) continue;
-          volByMonth[mk] = (volByMonth[mk] ?? 0) + getVolume(s);
+          aggregate(dataByMonth, mk, s);
         }
       }
       return monthKeys.map(k => ({
         label: `${parseInt(k.split('-')[1])}月`,
-        value: Math.round(volByMonth[k] ?? 0),
+        value: Math.round(dataByMonth[k] ?? 0),
       }));
     }
-  }, [workouts, bodyPart, customExercises, periodDays]);
+  }, [workouts, bodyPart, customExercises, periodDays, chartMode]);
 
+  const modeLabel = chartMode === 'volume' ? 'ボリューム' : '推定1RM';
   const periodLabel = periodDays <= 30
-    ? `日別ボリューム（直近${periodDays}日）`
+    ? `日別${modeLabel}（直近${periodDays}日）`
     : periodDays <= 90
-      ? `週別ボリューム（直近${Math.ceil(periodDays / 7)}週）`
-      : '月別ボリューム（直近12ヶ月）';
+      ? `週別${modeLabel}（直近${Math.ceil(periodDays / 7)}週）`
+      : `月別${modeLabel}（直近12ヶ月）`;
 
   // セッション一覧�E�日付降頁E��E
   const sessions = useMemo<BPDetailSession[]>(() => {
@@ -541,6 +575,23 @@ function BodyPartDetailView({ bodyPart }: { bodyPart: BodyPart }) {
                 );
               })}
             </ScrollView>
+            <View style={{ flexDirection: 'row', marginHorizontal: SPACING.contentMargin, marginTop: SPACING.xs, gap: SPACING.xs }}>
+              {([['volume', '総重量'], ['rm', '推定1RM']] as const).map(([mode, label]) => {
+                const active = chartMode === mode;
+                return (
+                  <TouchableOpacity
+                    key={mode}
+                    style={[S.filterChip, { backgroundColor: active ? colors.accent : colors.surface2 }]}
+                    onPress={() => setChartMode(mode)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ fontSize: typography.caption, fontWeight: typography.semiBold, color: active ? colors.onAccent : colors.textSecondary }}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
             <View style={[S.chartWrap, { backgroundColor: colors.cardBackground }]}>
               <LineChart
                 data={chartData}
@@ -784,6 +835,7 @@ function ExerciseDetailView({ exerciseId }: { exerciseId: string }) {
   const pr  = personalRecords.find(p => p.exerciseId === exerciseId);
 
   const [periodDays, setPeriodDays] = useState(90);
+  const [chartMode, setChartMode] = useState<ChartMode>('volume');
 
   const chartData = useMemo(() => {
     const today = new Date();
@@ -798,11 +850,12 @@ function ExerciseDetailView({ exerciseId }: { exerciseId: string }) {
     for (const w of sorted) {
       const matched = w.sessions.filter(s => s.exerciseId === exerciseId);
       for (const session of matched) {
-        result.push({ label: formatDateShort(w.date), value: getVolume(session) });
+        const value = chartMode === 'volume' ? getVolume(session) : getSessionBest1RM(session);
+        result.push({ label: formatDateShort(w.date), value: Math.round(value) });
       }
     }
     return result;
-  }, [workouts, exerciseId, periodDays]);
+  }, [workouts, exerciseId, periodDays, chartMode]);
 
   const periodLabel = periodDays <= 7 ? '直近7日' : periodDays <= 30 ? '直近30日' : periodDays <= 90 ? '直近90日' : '直近1年';
 
@@ -919,6 +972,23 @@ function ExerciseDetailView({ exerciseId }: { exerciseId: string }) {
                 );
               })}
             </ScrollView>
+            <View style={{ flexDirection: 'row', marginHorizontal: SPACING.contentMargin, marginTop: SPACING.xs, gap: SPACING.xs }}>
+              {([['volume', '総重量'], ['rm', '推定1RM']] as const).map(([mode, label]) => {
+                const active = chartMode === mode;
+                return (
+                  <TouchableOpacity
+                    key={mode}
+                    style={[S.filterChip, { backgroundColor: active ? colors.accent : colors.surface2 }]}
+                    onPress={() => setChartMode(mode)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ fontSize: typography.caption, fontWeight: typography.semiBold, color: active ? colors.onAccent : colors.textSecondary }}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
             <View style={[S.chartWrap, { backgroundColor: colors.cardBackground }]}>
               <LineChart
                 data={chartData}
@@ -939,7 +1009,7 @@ function ExerciseDetailView({ exerciseId }: { exerciseId: string }) {
               marginBottom: SPACING.sm,
               marginTop: 2,
             }}>
-              {`総重量の推移（${periodLabel}）`}
+              {`${chartMode === 'volume' ? '総重量' : '推定1RM'}の推移（${periodLabel}）`}
             </Text>
           </View>
         }
