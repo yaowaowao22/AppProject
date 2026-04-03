@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DailyWorkout, Exercise, PersonalRecord, WeeklyStats, WorkoutSession, WorkoutSet, WorkoutTemplate } from './types';
-import { loadPersonalRecords, loadWorkouts, loadTemplates, savePersonalRecords, saveWorkouts, saveTemplates, loadCustomExercises, saveCustomExercises } from './utils/storage';
+import { loadPersonalRecords, loadWorkouts, loadTemplates, savePersonalRecords, saveWorkouts, saveTemplates, loadCustomExercises, saveCustomExercises, loadHiddenExerciseIds, saveHiddenExerciseIds } from './utils/storage';
 import { STORAGE_KEYS, WORKOUT } from './config';
 
 // ── ワークアウト設定型 ─────────────────────────────────────────────────────────
@@ -31,6 +31,10 @@ interface WorkoutContextValue {
   customExercises: Exercise[];
   workoutTargetDate: string;
   setWorkoutTargetDate: (date: string) => void;
+  hiddenExerciseIds: string[];
+  hideExercise: (id: string) => Promise<void>;
+  unhideExercise: (id: string) => Promise<void>;
+  unhideAll: () => Promise<void>;
   addCustomExercise: (name: string, bodyPart: Exercise['bodyPart'], equipment: Exercise['equipment']) => Promise<void>;
   deleteCustomExercise: (id: string) => Promise<void>;
   startSession: (exerciseId: string) => void;
@@ -96,6 +100,10 @@ const WorkoutContext = createContext<WorkoutContextValue>({
   weeklyStats: DEFAULT_WEEKLY_STATS,
   templates: [],
   customExercises: [],
+  hiddenExerciseIds: [],
+  hideExercise: async () => {},
+  unhideExercise: async () => {},
+  unhideAll: async () => {},
   workoutTargetDate: toDateStr(new Date()),
   setWorkoutTargetDate: () => {},
   addCustomExercise: async () => {},
@@ -123,17 +131,19 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStats>(DEFAULT_WEEKLY_STATS);
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
+  const [hiddenExerciseIds, setHiddenExerciseIds] = useState<string[]>([]);
   const [workoutConfig, setWorkoutConfig] = useState<WorkoutConfig>(DEFAULT_WORKOUT_CONFIG);
   const [workoutTargetDate, setWorkoutTargetDate] = useState<string>(() => toDateStr(new Date()));
 
   // 起動時にストレージからロード
   useEffect(() => {
     (async () => {
-      const [loadedWorkouts, loadedRecords, loadedTemplates, loadedCustomExercises, savedConfig] = await Promise.all([
+      const [loadedWorkouts, loadedRecords, loadedTemplates, loadedCustomExercises, loadedHiddenIds, savedConfig] = await Promise.all([
         loadWorkouts(),
         loadPersonalRecords(),
         loadTemplates(),
         loadCustomExercises(),
+        loadHiddenExerciseIds(),
         AsyncStorage.getItem(STORAGE_KEYS.WORKOUT_CONFIG),
       ]);
       setWorkouts(loadedWorkouts);
@@ -141,6 +151,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       setWeeklyStats(computeWeeklyStats(loadedWorkouts));
       setTemplates(loadedTemplates);
       setCustomExercises(loadedCustomExercises);
+      setHiddenExerciseIds(loadedHiddenIds);
       if (savedConfig) {
         setWorkoutConfig({ ...DEFAULT_WORKOUT_CONFIG, ...JSON.parse(savedConfig) });
       }
@@ -332,6 +343,24 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     await saveWorkouts(updatedWorkouts);
   }, [workouts]);
 
+  // プリセット種目の非表示
+  const hideExercise = useCallback(async (id: string) => {
+    const updated = [...hiddenExerciseIds, id];
+    setHiddenExerciseIds(updated);
+    await saveHiddenExerciseIds(updated);
+  }, [hiddenExerciseIds]);
+
+  const unhideExercise = useCallback(async (id: string) => {
+    const updated = hiddenExerciseIds.filter(x => x !== id);
+    setHiddenExerciseIds(updated);
+    await saveHiddenExerciseIds(updated);
+  }, [hiddenExerciseIds]);
+
+  const unhideAll = useCallback(async () => {
+    setHiddenExerciseIds([]);
+    await saveHiddenExerciseIds([]);
+  }, []);
+
   // カスタム種目追加
   const addCustomExercise = useCallback(async (
     name: string,
@@ -427,7 +456,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <WorkoutContext.Provider
-      value={{ workouts, personalRecords, currentSession, weeklyStats, templates, customExercises, workoutTargetDate, setWorkoutTargetDate, addCustomExercise, deleteCustomExercise, startSession, addSet, completeSession, deleteWorkout, deleteSessionFromWorkout, saveTemplate, updateTemplate, deleteTemplate, workoutConfig, updateWorkoutConfig, updateSession, resetAll }}
+      value={{ workouts, personalRecords, currentSession, weeklyStats, templates, customExercises, hiddenExerciseIds, hideExercise, unhideExercise, unhideAll, workoutTargetDate, setWorkoutTargetDate, addCustomExercise, deleteCustomExercise, startSession, addSet, completeSession, deleteWorkout, deleteSessionFromWorkout, saveTemplate, updateTemplate, deleteTemplate, workoutConfig, updateWorkoutConfig, updateSession, resetAll }}
     >
       {children}
     </WorkoutContext.Provider>

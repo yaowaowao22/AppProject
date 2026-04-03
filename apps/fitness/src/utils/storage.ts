@@ -86,6 +86,25 @@ export async function loadCustomExercises(): Promise<Exercise[]> {
   }
 }
 
+export async function saveHiddenExerciseIds(ids: string[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.HIDDEN_EXERCISES, JSON.stringify(ids));
+  } catch (e) {
+    console.warn('[storage] saveHiddenExerciseIds failed:', e);
+  }
+}
+
+export async function loadHiddenExerciseIds(): Promise<string[]> {
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEYS.HIDDEN_EXERCISES);
+    if (!raw) return [];
+    return JSON.parse(raw) as string[];
+  } catch (e) {
+    console.warn('[storage] loadHiddenExerciseIds failed:', e);
+    return [];
+  }
+}
+
 export async function loadAppSettings(): Promise<AppSettings> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEYS.APP_SETTINGS);

@@ -65,7 +65,7 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
   const [selectedPart, setSelectedPart] = useState<BodyPart>(BODY_PARTS[0].id as BodyPart);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const insets = useSafeAreaInsets();
-  const { templates, deleteTemplate, workoutTargetDate, customExercises, addCustomExercise, deleteCustomExercise } = useWorkout();
+  const { templates, deleteTemplate, workoutTargetDate, customExercises, addCustomExercise, deleteCustomExercise, hiddenExerciseIds, hideExercise, unhideAll } = useWorkout();
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
   const [addModalVisible, setAddModalVisible] = useState(false);
@@ -74,7 +74,9 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
   const [newEquipment, setNewEquipment] = useState<EquipmentType>('バーベル');
   const presetExercises = EXERCISES_BY_PART[selectedPart] ?? [];
   const customForPart = customExercises.filter(e => e.bodyPart === selectedPart);
-  const exercises = [...presetExercises, ...customForPart];
+  const allForPart = [...presetExercises, ...customForPart];
+  const exercises = allForPart.filter(e => !hiddenExerciseIds.includes(e.id));
+  const hiddenCountForPart = allForPart.filter(e => hiddenExerciseIds.includes(e.id)).length;
 
   // タブ切替時に選択状態をリセット
   useFocusEffect(
@@ -131,6 +133,35 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
             await deleteCustomExercise(id);
           },
         },
+      ],
+    );
+  }
+
+  function handleHideExercise(id: string, name: string) {
+    Alert.alert(
+      '種目を非表示',
+      `「${name}」をリストから非表示にしますか？\n設定からいつでも復元できます。`,
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '非表示にする',
+          style: 'destructive',
+          onPress: async () => {
+            setSelectedIds(prev => prev.filter(x => x !== id));
+            await hideExercise(id);
+          },
+        },
+      ],
+    );
+  }
+
+  function handleUnhideAll() {
+    Alert.alert(
+      '非表示の種目を復元',
+      'このタブで非表示にした種目をすべて表示しますか？',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: '復元する', onPress: () => unhideAll() },
       ],
     );
   }
@@ -273,8 +304,22 @@ export function ExerciseSelectScreen({ navigation }: ExerciseSelectProps) {
               </SwipeableRow>
             );
           }
-          return row;
+          return (
+            <SwipeableRow onDelete={() => handleHideExercise(item.id, item.name)}>
+              {row}
+            </SwipeableRow>
+          );
         }}
+        ListFooterComponent={hiddenCountForPart > 0 ? (
+          <TouchableOpacity
+            style={styles.unhideBtn}
+            onPress={handleUnhideAll}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="eye-outline" size={14} color={colors.textTertiary} />
+            <Text style={styles.unhideBtnText}>非表示 {hiddenCountForPart}件 · 復元する</Text>
+          </TouchableOpacity>
+        ) : null}
       />
 
       {/* 開始ボタン（選択時のみ表示） */}
@@ -1082,6 +1127,18 @@ function makeStyles(c: TanrenThemeColors, t: DynamicTypography) {
     fontFamily: t.fontFamily,
     color: c.textTertiary,
     marginTop: 2,
+  },
+  unhideBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: SPACING.contentMargin,
+    paddingVertical: 14,
+  },
+  unhideBtnText: {
+    fontSize: t.caption,
+    fontFamily: t.fontFamily,
+    color: c.textTertiary,
   },
 
   // 開始ボタン

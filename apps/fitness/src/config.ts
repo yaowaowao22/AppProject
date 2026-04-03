@@ -13,6 +13,7 @@ export const STORAGE_KEYS = {
   SUBSCRIPTION_STATUS: 'tanren_subscription_status', // { isPremium: boolean; expiresAt: string | null }
   REVIEW_REQUESTED:    'tanren_review_requested',    // 'true' | null
   CUSTOM_EXERCISES:    'tanren_custom_exercises',    // Exercise[]（カスタム種目）
+  HIDDEN_EXERCISES:    'tanren_hidden_exercises',    // string[]（非表示にしたプリセット種目ID）
 } as const;
 
 // ── アニメーション ────────────────────────────────────────────────────────────
