@@ -14,6 +14,7 @@ import { SwipeableRow } from '../components/SwipeableRow';
 import { usePersistentHeader } from '../contexts/PersistentHeaderContext';
 import { useWorkout } from '../WorkoutContext';
 import { getExerciseById } from '../exerciseDB';
+import { getSessionBest1RM } from '../utils/rmUtils';
 import { SPACING, TYPOGRAPHY } from '../theme';
 import type { TanrenThemeColors } from '../theme';
 import { useTheme } from '../ThemeContext';
@@ -80,6 +81,7 @@ export default function DayDetailScreen() {
             set.weight !== null ? (m === null ? set.weight : Math.max(m, set.weight)) : m, null);
           const hasPR = item.sets.some(s => s.isPersonalRecord);
           const setCount = item.sets.length;
+          const rm = Math.round(getSessionBest1RM(item));
 
           return (
             <SwipeableRow onDelete={() => deleteSessionFromWorkout(workoutId, item.exerciseId)}>
@@ -98,7 +100,7 @@ export default function DayDetailScreen() {
                 <View style={styles.rowLeft}>
                   <Text style={styles.name}>{ex?.name ?? item.exerciseId}</Text>
                   <Text style={styles.detail}>
-                    {setCount}セット{maxW !== null ? ` · 最大${maxW}kg` : ' · 自重'}
+                    {setCount}セット{maxW !== null ? ` · 最大${maxW}kg` : ' · 自重'}{rm > 0 ? ` · 推定1RM ${rm}kg` : ''}
                   </Text>
                 </View>
                 <View style={styles.rowRight}>

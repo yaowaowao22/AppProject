@@ -29,6 +29,7 @@ import type {
 } from '../types';
 import type { HistoryStackParamList } from '../navigation/RootNavigator';
 import { LineChart } from '../components/LineChart';
+import { getEstimated1RM, getSessionBest1RM } from '../utils/rmUtils';
 
 // ── 定数 ──────────────────────────────────────────────────────────────────────
 
@@ -176,26 +177,6 @@ function getVolume(session: WorkoutSession): number {
   );
 }
 
-function getEstimated1RM(weight: number, reps: number): number {
-  if (reps <= 0 || weight <= 0) return 0;
-  if (reps === 1) return weight;
-  const epley   = weight * (1 + reps / 30);
-  const brzycki = weight * 36 / (37 - reps);
-  const lander  = (100 * weight) / (101.3 - 2.67123 * reps);
-  return (epley + brzycki + lander) / 3;
-}
-
-function getSessionBest1RM(session: WorkoutSession): number {
-  let best = 0;
-  for (const s of session.sets) {
-    if (s.weight !== null && s.weight > 0 && s.reps !== null && s.reps > 0) {
-      const rm = getEstimated1RM(s.weight, s.reps);
-      if (rm > best) best = rm;
-    }
-  }
-  return best;
-}
-
 type ChartMode = 'volume' | 'rm';
 
 /** dateStr の週の月曜日めEYYYY-MM-DD で返す */
@@ -264,13 +245,14 @@ function DailyTab({ styles, colors }: { styles: ReturnType<typeof makeStyles>; c
           {item.sessions.map(session => {
             const ex = getExerciseById(session.exerciseId, customExercises);
             const vol = Math.round(getVolume(session));
+            const rm  = Math.round(getSessionBest1RM(session));
             return (
               <View key={session.id} style={styles.exerciseRow}>
                 <Text style={styles.exerciseName} numberOfLines={1}>
                   {ex?.name ?? session.exerciseId}
                 </Text>
                 <Text style={styles.exerciseStat}>
-                  {session.sets.length}セット{vol > 0 ? ` · ${vol.toLocaleString()}kg` : ' · 自重'}
+                  {session.sets.length}セット{vol > 0 ? ` · ${vol.toLocaleString()}kg` : ' · 自重'}{rm > 0 ? ` · 1RM ${rm}kg` : ''}
                 </Text>
               </View>
             );
