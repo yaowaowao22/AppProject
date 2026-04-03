@@ -126,27 +126,38 @@ interface ContrastSliderProps {
 function ContrastSlider({ label, value, onValueChange, colors }: ContrastSliderProps) {
   const [trackWidth, setTrackWidth] = useState(0);
   const trackWidthRef = useRef(0);
+  const trackPageLeftRef = useRef(0);
   const onChangeRef = useRef(onValueChange);
   onChangeRef.current = onValueChange;
 
+  const computeValue = (pageX: number) => {
+    const w = trackWidthRef.current;
+    if (w <= 0) return;
+    const pad = SPACING.md;
+    const trackW = w - pad * 2;
+    if (trackW <= 0) return;
+    const relX = pageX - trackPageLeftRef.current - pad;
+    onChangeRef.current(Math.round(Math.min(100, Math.max(0, (relX / trackW) * 100))));
+  };
+
   const panResponder = useRef(
     PanResponder.create({
-      // タッチ開始時は ScrollView に委ねる（縦スクロールを妨げない）
-      onStartShouldSetPanResponder: () => false,
+      // タップで即座に値を設定できるようにする
+      onStartShouldSetPanResponder: () => true,
       // 水平方向の動きが明確になった時だけスライダーが取得する
       onMoveShouldSetPanResponder: (_, gs) =>
         Math.abs(gs.dx) > Math.abs(gs.dy) && Math.abs(gs.dx) > 3,
+      // 縦スクロール時は ScrollView に制御を返す
+      onPanResponderTerminationRequest: (_, gs) =>
+        Math.abs(gs.dy) > Math.abs(gs.dx),
       onPanResponderGrant: (evt) => {
-        const w = trackWidthRef.current;
-        if (w > 0) {
-          onChangeRef.current(Math.min(100, Math.max(0, Math.round((evt.nativeEvent.locationX / w) * 100))));
-        }
+        // 初回タッチの locationX と pageX から touchArea の絶対位置を算出
+        trackPageLeftRef.current = evt.nativeEvent.pageX - evt.nativeEvent.locationX;
+        computeValue(evt.nativeEvent.pageX);
       },
       onPanResponderMove: (evt) => {
-        const w = trackWidthRef.current;
-        if (w > 0) {
-          onChangeRef.current(Math.min(100, Math.max(0, Math.round((evt.nativeEvent.locationX / w) * 100))));
-        }
+        // pageX を使うことで Android でも安定した座標を取得
+        computeValue(evt.nativeEvent.pageX);
       },
     }),
   ).current;
@@ -157,8 +168,10 @@ function ContrastSlider({ label, value, onValueChange, colors }: ContrastSliderP
     setTrackWidth(w);
   };
 
-  const thumbLeft = trackWidth > 0
-    ? Math.min(trackWidth - THUMB_SIZE, Math.max(0, (value / 100) * trackWidth - THUMB_SIZE / 2))
+  const pad = SPACING.md;
+  const usableWidth = trackWidth > 0 ? trackWidth - pad * 2 : 0;
+  const thumbLeft = usableWidth > 0
+    ? Math.max(0, Math.min(trackWidth - THUMB_SIZE, pad + (value / 100) * usableWidth - THUMB_SIZE / 2))
     : 0;
 
   return (
