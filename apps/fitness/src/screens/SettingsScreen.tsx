@@ -125,20 +125,11 @@ interface ContrastSliderProps {
 
 function ContrastSlider({ label, value, onValueChange, colors }: ContrastSliderProps) {
   const [trackWidth, setTrackWidth] = useState(0);
+  const touchAreaRef = useRef<View>(null);
   const trackWidthRef = useRef(0);
   const trackPageLeftRef = useRef(0);
   const onChangeRef = useRef(onValueChange);
   onChangeRef.current = onValueChange;
-
-  const computeValue = (pageX: number) => {
-    const w = trackWidthRef.current;
-    if (w <= 0) return;
-    const pad = SPACING.md;
-    const trackW = w - pad * 2;
-    if (trackW <= 0) return;
-    const relX = pageX - trackPageLeftRef.current - pad;
-    onChangeRef.current(Math.round(Math.min(100, Math.max(0, (relX / trackW) * 100))));
-  };
 
   const panResponder = useRef(
     PanResponder.create({
@@ -151,13 +142,28 @@ function ContrastSlider({ label, value, onValueChange, colors }: ContrastSliderP
       onPanResponderTerminationRequest: (_, gs) =>
         Math.abs(gs.dy) > Math.abs(gs.dx),
       onPanResponderGrant: (evt) => {
-        // 初回タッチの locationX と pageX から touchArea の絶対位置を算出
-        trackPageLeftRef.current = evt.nativeEvent.pageX - evt.nativeEvent.locationX;
-        computeValue(evt.nativeEvent.pageX);
+        // measureInWindow でスクロール込みの絶対座標を取得（locationX は grant 時に 0 になる Android バグを回避）
+        const pageX = evt.nativeEvent.pageX;
+        touchAreaRef.current?.measureInWindow((x, _y, w) => {
+          trackPageLeftRef.current = x;
+          trackWidthRef.current = w;
+          const pad = SPACING.md;
+          const trackW = w - pad * 2;
+          if (trackW > 0) {
+            const relX = pageX - x - pad;
+            onChangeRef.current(Math.round(Math.min(100, Math.max(0, (relX / trackW) * 100))));
+          }
+        });
       },
       onPanResponderMove: (evt) => {
-        // pageX を使うことで Android でも安定した座標を取得
-        computeValue(evt.nativeEvent.pageX);
+        // grant で更新した trackPageLeftRef を使って計算
+        const w = trackWidthRef.current;
+        if (w <= 0) return;
+        const pad = SPACING.md;
+        const trackW = w - pad * 2;
+        if (trackW <= 0) return;
+        const relX = evt.nativeEvent.pageX - trackPageLeftRef.current - pad;
+        onChangeRef.current(Math.round(Math.min(100, Math.max(0, (relX / trackW) * 100))));
       },
     }),
   ).current;
@@ -181,6 +187,7 @@ function ContrastSlider({ label, value, onValueChange, colors }: ContrastSliderP
         <Text style={[contrastSliderStyles.valueText, { color: colors.textTertiary }]}>{value}</Text>
       </View>
       <View
+        ref={touchAreaRef}
         style={contrastSliderStyles.touchArea}
         onLayout={handleLayout}
         {...panResponder.panHandlers}
