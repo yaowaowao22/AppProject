@@ -4,6 +4,13 @@ import type { DailyWorkout, Exercise, PersonalRecord, WeeklyStats, WorkoutSessio
 import { loadPersonalRecords, loadWorkouts, loadTemplates, savePersonalRecords, saveWorkouts, saveTemplates, loadCustomExercises, saveCustomExercises, loadHiddenExerciseIds, saveHiddenExerciseIds } from './utils/storage';
 import { STORAGE_KEYS, WORKOUT } from './config';
 
+// テーマ関連のストレージキー（resetAll で削除対象）
+const THEME_STORAGE_KEYS = [
+  '@tanren_theme_id',
+  '@tanren_contrast_settings',
+  '@tanren_font_settings',
+] as const;
+
 // ── ワークアウト設定型 ─────────────────────────────────────────────────────────
 
 export interface WorkoutConfig {
@@ -417,14 +424,24 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     await saveTemplates(updated);
   }, [templates]);
 
-  // 全データリセット
+  // 全データリセット（トレーニングデータ＋テーマのみ削除。サブスクリプション等は保持）
   const resetAll = useCallback(async () => {
-    await AsyncStorage.clear();
+    const preserveKeys: Set<string> = new Set([
+      STORAGE_KEYS.SUBSCRIPTION_STATUS,
+      STORAGE_KEYS.LAUNCH_DATES,
+      STORAGE_KEYS.REVIEW_REQUESTED,
+    ]);
+    const keysToRemove = [
+      ...Object.values(STORAGE_KEYS).filter(k => !preserveKeys.has(k)),
+      ...THEME_STORAGE_KEYS,
+    ];
+    await AsyncStorage.multiRemove(keysToRemove);
     setWorkouts([]);
     setPersonalRecords([]);
     setCurrentSession(null);
     setWeeklyStats(DEFAULT_WEEKLY_STATS);
     setTemplates([]);
+    setCustomExercises([]);
     setWorkoutConfig(DEFAULT_WORKOUT_CONFIG);
   }, []);
 

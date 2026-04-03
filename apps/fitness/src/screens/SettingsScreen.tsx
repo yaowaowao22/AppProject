@@ -26,17 +26,17 @@ import { APP } from '../config';
 import type { AppSettings } from '../types';
 import { loadAppSettings, saveAppSettings } from '../utils/storage';
 
-// expo-constants は任意依存。インスト�Eル済みならビルド番号を表示する
+// expo-constants は任意依存。インストール済みならビルド番号を表示する
 let buildVersion = '-';
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const Constants = require('expo-constants').default;
   buildVersion = Constants?.expoConfig?.version ?? '-';
 } catch {
-  // expo-constants が未インスト�Eルの場合�Eフォールバック
+  // expo-constants が未インストールの場合はフォールバック
 }
 
-// expo-updates OTA診断惁E��
+// expo-updates OTA診断情報
 let otaUpdateId = '-';
 let otaChannel = '-';
 let otaRuntimeVersion = '-';
@@ -49,10 +49,10 @@ try {
   otaChannel = Updates.channel ?? '-';
   otaRuntimeVersion = Updates.runtimeVersion ?? '-';
 } catch {
-  // expo-updates が未インスト�Eルの場合�Eフォールバック
+  // expo-updates が未インストールの場合はフォールバック
 }
 
-// ── サブコンポ�EネンチE──────────────────────────────────────────────────────────
+// ── サブコンポーネント ──────────────────────────────────────────────────────────
 
 function SectionHeader({ title, style }: { title: string; style?: object }) {
   return <Text style={style}>{title}</Text>;
@@ -372,7 +372,7 @@ export default function SettingsScreen() {
   const handleDeleteAll = () => {
     Alert.alert(
       '全データを削除',
-      'すべてのトレーニングデータが削除されます。テーマ設定も初期化されます。この操作�E允E��戻せません。',
+      'すべてのトレーニングデータが削除されます。テーマ設定も初期化されます。この操作は元に戻せません。',
       [
         { text: 'キャンセル', style: 'cancel' },
         {
@@ -401,7 +401,7 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── 表示設宁E── */}
+        {/* ── 表示設定 ── */}
         <SectionHeader title="表示設定" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           <View style={styles.row}>
@@ -499,7 +499,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* ── フォント設宁E── */}
+        {/* ── フォント設定 ── */}
         <SectionHeader title="フォント設定" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           {/* フォントサイズ */}
@@ -510,7 +510,7 @@ export default function SettingsScreen() {
             colors={colors}
           />
           <View style={styles.rowSeparator} />
-          {/* フォントウェイチE*/}
+          {/* フォントウェイト */}
           <View style={styles.row}>
             <Text style={styles.rowLabel}>太さ</Text>
           </View>
@@ -525,7 +525,7 @@ export default function SettingsScreen() {
             colors={colors}
           />
           <View style={styles.rowSeparator} />
-          {/* フォント種顁E*/}
+          {/* フォント種類 */}
           <View style={styles.row}>
             <Text style={styles.rowLabel}>フォント種類</Text>
           </View>
@@ -552,7 +552,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* ── トレーニング設宁E── */}
+        {/* ── トレーニング設定 ── */}
         <SectionHeader title="トレーニング設定" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           <View style={styles.row}>
@@ -604,7 +604,7 @@ export default function SettingsScreen() {
             onPress={handleDeleteAll}
             activeOpacity={0.88}
             accessibilityRole="button"
-            accessibilityLabel="すべてのデータを削除�E��Eに戻せません�E�"
+            accessibilityLabel="すべてのデータを削除。元に戻せません。"
           >
             <Text style={[styles.rowLabel, styles.destructiveText]}>
               全データを削除
@@ -650,7 +650,7 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ── アプリ惁E�� ── */}
+        {/* ── アプリ情報 ── */}
         <SectionHeader title="アプリ情報" style={styles.sectionHeader} />
         <View style={styles.sectionCard}>
           <View style={styles.row}>
@@ -721,7 +721,7 @@ function makeStyles(c: TanrenThemeColors, typography: DynamicTypography) {
       overflow: 'hidden',
     },
 
-    // ── チE�Eマ�EグリチE�� ──
+    // ── テーマグリッド ──
     themeGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -755,7 +755,7 @@ function makeStyles(c: TanrenThemeColors, typography: DynamicTypography) {
       textAlign: 'center',
     },
 
-    // ── リスト衁E──
+    // ── リスト行 ──
     row: {
       flexDirection: 'row',
       alignItems: 'center',
