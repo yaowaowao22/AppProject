@@ -4,9 +4,11 @@ import type { WorkoutSession } from '../types';
 export function getEstimated1RM(weight: number, reps: number): number {
   if (reps <= 0 || weight <= 0) return 0;
   if (reps === 1) return weight;
-  const epley   = weight * (1 + reps / 30);
-  const brzycki = weight * 36 / (37 - reps);
-  const lander  = (100 * weight) / (101.3 - 2.67123 * reps);
+  // Brzycki/Lander式は reps >= 37 で除算ゼロまたは負値になるため上限を設ける
+  const safeReps = Math.min(reps, 36);
+  const epley   = weight * (1 + safeReps / 30);
+  const brzycki = weight * 36 / (37 - safeReps);
+  const lander  = (100 * weight) / (101.3 - 2.67123 * safeReps);
   return (epley + brzycki + lander) / 3;
 }
 

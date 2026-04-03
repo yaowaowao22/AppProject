@@ -144,13 +144,11 @@ export function LineChart({
   const gradientId = 'lgFill';
   const padLeft   = showYAxis ? PAD_LEFT_YAXIS : PAD_LEFT;
 
-  // ── データが空の場合 ────────────────────────────────────────────────────────
-  if (data.length === 0) {
-    return <View style={{ width: svgWidth, height }} />;
-  }
-
   // ── 座標計算（useMemo でメモ化） ────────────────────────────────────────────
-  const { points, gridYs, labelStep, minVal, maxVal } = useMemo(() => {
+  // NOTE: hooks はデータが空でも必ず呼ぶ（Rules of Hooks）。空判定は hooks より後に行う。
+  const computed = useMemo(() => {
+    if (data.length === 0) return null;
+
     const values  = data.map(d => d.value);
     const rawMin  = Math.min(...values);
     const rawMax  = Math.max(...values);
@@ -189,6 +187,13 @@ export function LineChart({
       maxVal: maxV,
     };
   }, [data, svgWidth, height, padLeft]);
+
+  // ── データが空の場合 ────────────────────────────────────────────────────────
+  if (!computed) {
+    return <View style={{ width: svgWidth, height }} />;
+  }
+
+  const { points, gridYs, labelStep, minVal, maxVal } = computed;
 
   // ── パス生成 ────────────────────────────────────────────────────────────────
   const linePth = data.length === 1
