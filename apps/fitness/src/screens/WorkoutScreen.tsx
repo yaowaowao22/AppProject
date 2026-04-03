@@ -795,6 +795,17 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
         </View>
       </View>
 
+      {/* 推定1RM */}
+      {inputWeight !== null && inputReps !== null && inputReps > 0 && (
+        <View style={styles.rmRow}>
+          <Text style={styles.rmLabel}>推定1RM</Text>
+          <Text style={styles.rmValue}>
+            {Math.round(inputWeight * (1 + inputReps / 30))}
+            <Text style={styles.rmUnit}>kg</Text>
+          </Text>
+        </View>
+      )}
+
       {/* セット完了ボタン（固定） */}
       {!allDone && (
         <TouchableOpacity
@@ -1366,6 +1377,36 @@ function makeStyles(c: TanrenThemeColors, t: DynamicTypography) {
     color: c.textSecondary,
     lineHeight: 28,
     includeFontPadding: false,
+  },
+
+  rmRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 4,
+    marginHorizontal: SPACING.contentMargin,
+    marginBottom: 4,
+  },
+  rmLabel: {
+    fontSize: t.captionSmall,
+    fontWeight: t.semiBold,
+    fontFamily: t.fontFamily,
+    color: c.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  rmValue: {
+    fontSize: t.body,
+    fontWeight: t.bold,
+    fontFamily: t.fontFamily,
+    color: c.accent,
+    letterSpacing: -0.3,
+  },
+  rmUnit: {
+    fontSize: t.captionSmall,
+    fontWeight: t.regular,
+    color: c.textTertiary,
   },
 
   btnRow: {
