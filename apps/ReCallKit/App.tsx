@@ -49,7 +49,7 @@ export default function App() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  errorContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  errorTitle: { fontSize: 17, fontWeight: '600', marginBottom: 8 },
+  errorContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#ffffff' },
+  errorTitle: { fontSize: 17, fontWeight: '600', marginBottom: 8, color: '#000000' },
   errorMessage: { fontSize: 13, color: '#666', textAlign: 'center' },
 });

@@ -22,10 +22,14 @@ export function RootNavigator() {
     if (!isReady || !db) return;
 
     (async () => {
-      const row = await db.getFirstAsync<{ value: string }>(
-        `SELECT value FROM app_settings WHERE key = 'onboarding_completed'`
-      );
-      setOnboardingCompleted(row?.value === 'true');
+      try {
+        const row = await db.getFirstAsync<{ value: string }>(
+          `SELECT value FROM app_settings WHERE key = 'onboarding_completed'`
+        );
+        setOnboardingCompleted(row?.value === 'true');
+      } catch {
+        setOnboardingCompleted(false);
+      }
     })();
   }, [isReady, db]);
 
@@ -52,8 +56,8 @@ export function RootNavigator() {
   // DB初期化待ち or オンボーディングフラグ確認待ち
   if (!isReady || onboardingCompleted === null) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.loading, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
