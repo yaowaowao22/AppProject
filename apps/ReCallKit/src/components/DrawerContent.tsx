@@ -90,7 +90,7 @@ const SCREEN_ITEMS = [
 // DrawerContent — "余白の沈黙" (DDP: Marginal Silence) 準拠
 // ============================================================
 
-export function DrawerContent({ navigation }: DrawerContentComponentProps) {
+export function DrawerContent({ navigation, state: drawerState }: DrawerContentComponentProps) {
   const { sidebarColors: sc } = useTheme();
   const insets = useSafeAreaInsets();
   const { db, isReady } = useDatabase();
@@ -169,7 +169,6 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
   }, [navigation, fetchData]);
 
   // ---- アクティブ画面名（ドロワー state から導出）----
-  const drawerState = navigation.getState();
   const activeScreenName = drawerState?.routes[drawerState.index]?.name ?? 'Home';
 
   // ---- フィルターアクティブ ID ----
