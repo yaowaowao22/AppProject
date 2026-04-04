@@ -28,7 +28,7 @@ import { StackWithHeader } from '../components/StackWithHeader';
 export type WorkoutStackParamList = {
   ExerciseSelect:  undefined;
   OrderConfirm:    { exerciseIds: string[] };
-  ActiveWorkout:   { exerciseIds: string[]; existingWorkoutId?: string; existingSession?: WorkoutSession; fromHome?: boolean };
+  ActiveWorkout:   { exerciseIds: string[]; existingWorkoutId?: string; existingSession?: WorkoutSession; fromHome?: boolean; _ts?: number };
   WorkoutComplete: { reportItems: ReportItem[]; startedAt: string };
 };
 

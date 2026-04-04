@@ -459,14 +459,24 @@ function buildRows(
 }
 
 export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
-  const { exerciseIds, existingWorkoutId, existingSession, fromHome } = route.params;
+  const { exerciseIds, existingWorkoutId, existingSession, fromHome, _ts } = route.params;
   const { workouts, startSession, completeSession, updateSession, workoutConfig, personalRecords, customExercises } = useWorkout();
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors, typography), [colors, typography]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const exerciseId = exerciseIds[currentIndex];
+  const safeIndex = Math.min(currentIndex, exerciseIds.length - 1);
+  const exerciseId = exerciseIds[safeIndex];
   const exercise = getExerciseById(exerciseId, customExercises);
+
+  // ホームから別日のメニューを開いた時に状態をリセット
+  const prevTsRef = useRef(_ts);
+  if (_ts !== undefined && _ts !== prevTsRef.current) {
+    prevTsRef.current = _ts;
+    if (currentIndex !== 0) {
+      setCurrentIndex(0);
+    }
+  }
 
   const [rows, setRows] = useState<SetRow[]>(() => buildRows(null, workoutConfig.defaultSets, workoutConfig.defaultWeight, workoutConfig.defaultReps));
   const [setDone, setSetDone] = useState(false);
@@ -490,8 +500,11 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   const setListScrollRef = useRef<ScrollView>(null);
 
   // 種目切り替え：セッション開始 + 前回データで行初期化
+  // _ts を依存に含めることで、ホームから別日のメニューを開いた際も確実にリセットされる
   useEffect(() => {
-    const isFirst = currentIndex === 0;
+    if (!exerciseId) return;
+
+    const isFirst = safeIndex === 0;
     if (isFirst && existingSession != null) {
       // update mode: 既存セッションの行を done=true で初期化し、空行を1つ追加
       const existingRows: SetRow[] = existingSession.sets.map(s => ({
@@ -520,13 +533,16 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
     }
     setManualActiveIdx(null);
     setSetDone(false);
+    setEditingField(null);
+    setEditValue('');
+    workoutStartedAt.current = new Date().toISOString();
     if (doneTimeoutRef.current) clearTimeout(doneTimeoutRef.current);
 
     return () => {
       if (doneTimeoutRef.current) clearTimeout(doneTimeoutRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exerciseId]);
+  }, [exerciseId, _ts]);
 
   // 現在のアクティブ行（最初の未完了行、またはユーザー選択行）
   const autoActiveIdx = rows.findIndex(r => !r.done);
@@ -536,7 +552,7 @@ export function ActiveWorkoutScreen({ navigation, route }: ActiveWorkoutProps) {
   const activeRow = allDone ? rows[rows.length - 1] : rows[activeIdx];
 
   // 既存セッション更新モード（本日のメニューから遷移した場合）
-  const isUpdateMode = currentIndex === 0 && existingSession != null && existingWorkoutId != null;
+  const isUpdateMode = safeIndex === 0 && existingSession != null && existingWorkoutId != null;
 
   const bump = useCallback((anim: Animated.Value) => {
     anim.setValue(1);
