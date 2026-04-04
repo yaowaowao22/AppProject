@@ -10,11 +10,15 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
-  { error: Error | null }
+  { error: Error | null; componentStack: string }
 > {
-  state = { error: null };
+  state = { error: null, componentStack: '' };
   static getDerivedStateFromError(error: Error) {
     return { error };
+  }
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('[ErrorBoundary]', error, info.componentStack);
+    this.setState({ componentStack: info.componentStack ?? '' });
   }
   render() {
     if (this.state.error) {
@@ -22,6 +26,9 @@ class ErrorBoundary extends React.Component<
         <View style={styles.errorContainer}>
           <Text style={styles.errorTitle}>エラーが発生しました</Text>
           <Text style={styles.errorMessage}>{String(this.state.error)}</Text>
+          <Text style={styles.errorStack} numberOfLines={10}>
+            {this.state.componentStack}
+          </Text>
         </View>
       );
     }
@@ -52,4 +59,5 @@ const styles = StyleSheet.create({
   errorContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#ffffff' },
   errorTitle: { fontSize: 17, fontWeight: '600', marginBottom: 8, color: '#000000' },
   errorMessage: { fontSize: 13, color: '#666', textAlign: 'center' },
+  errorStack: { fontSize: 10, color: '#999', marginTop: 12, textAlign: 'left' },
 });
