@@ -36,7 +36,9 @@ export default function App() {
         <SafeAreaProvider>
           <DatabaseProvider>
             <ThemeProvider>
-              <RootNavigator />
+              <TaskProvider>
+                <RootNavigator />
+              </TaskProvider>
             </ThemeProvider>
           </DatabaseProvider>
         </SafeAreaProvider>
