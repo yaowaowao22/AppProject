@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DatabaseProvider } from './src/hooks/useDatabase';
@@ -10,26 +10,29 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
-  { error: Error | null; componentStack: string }
+  { error: Error | null; jsStack: string; componentStack: string }
 > {
-  state = { error: null, componentStack: '' };
+  state = { error: null, jsStack: '', componentStack: '' };
   static getDerivedStateFromError(error: Error) {
-    return { error };
+    return { error, jsStack: error.stack ?? '' };
   }
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error('[ErrorBoundary]', error, info.componentStack);
+    console.error('[ErrorBoundary] error:', error);
+    console.error('[ErrorBoundary] jsStack:', error.stack);
+    console.error('[ErrorBoundary] componentStack:', info.componentStack);
     this.setState({ componentStack: info.componentStack ?? '' });
   }
   render() {
     if (this.state.error) {
       return (
-        <View style={styles.errorContainer}>
+        <ScrollView style={styles.errorScroll} contentContainerStyle={styles.errorContainer}>
           <Text style={styles.errorTitle}>エラーが発生しました</Text>
           <Text style={styles.errorMessage}>{String(this.state.error)}</Text>
-          <Text style={styles.errorStack} numberOfLines={10}>
-            {this.state.componentStack}
-          </Text>
-        </View>
+          <Text style={styles.errorSectionLabel}>▼ JS Stack</Text>
+          <Text style={styles.errorStack}>{this.state.jsStack}</Text>
+          <Text style={styles.errorSectionLabel}>▼ Component Stack</Text>
+          <Text style={styles.errorStack}>{this.state.componentStack}</Text>
+        </ScrollView>
       );
     }
     return this.props.children;
@@ -56,8 +59,10 @@ export default function App() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  errorContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#ffffff' },
+  errorScroll: { flex: 1, backgroundColor: '#ffffff' },
+  errorContainer: { padding: 24, paddingTop: 60, paddingBottom: 40 },
   errorTitle: { fontSize: 17, fontWeight: '600', marginBottom: 8, color: '#000000' },
-  errorMessage: { fontSize: 13, color: '#666', textAlign: 'center' },
-  errorStack: { fontSize: 10, color: '#999', marginTop: 12, textAlign: 'left' },
+  errorMessage: { fontSize: 13, color: '#c0392b', marginBottom: 12 },
+  errorSectionLabel: { fontSize: 11, fontWeight: '600', color: '#555', marginTop: 12, marginBottom: 4 },
+  errorStack: { fontSize: 10, color: '#444', fontFamily: 'monospace' },
 });
