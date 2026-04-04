@@ -31,7 +31,7 @@ import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
 import type { ReviewStackParamList } from '../../navigation/types';
 
-type Props = NativeStackScreenProps<ReviewStackParamList, 'Review'>;
+type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewSession'>;
 
 export function ReviewScreen({ navigation, route }: Props) {
   const { db, isReady } = useDatabase();

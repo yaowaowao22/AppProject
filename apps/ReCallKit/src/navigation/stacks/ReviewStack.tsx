@@ -30,7 +30,7 @@ export function ReviewStack() {
       />
       {/* 復習実行（モーダル: ハンバーガー非表示） */}
       <Stack.Screen
-        name="Review"
+        name="ReviewSession"
         component={ReviewScreen}
         options={{
           title: '復習',

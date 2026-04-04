@@ -55,17 +55,17 @@ export function ReviewSelectScreen({ navigation }: Props) {
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
   const handleStartAll = useCallback(() => {
-    navigation.navigate('Review', {});
+    navigation.navigate('ReviewSession', {});
   }, [navigation]);
 
   const handleStartExtraLearning = useCallback(() => {
-    navigation.navigate('Review', { forceAll: true });
+    navigation.navigate('ReviewSession', { forceAll: true });
   }, [navigation]);
 
   const handleStartGroup = useCallback(async (groupId: number) => {
     if (!db) return;
     const itemIds = await getItemIdsByGroup(db, groupId);
-    navigation.navigate('Review', { reviewIds: itemIds });
+    navigation.navigate('ReviewSession', { reviewIds: itemIds });
   }, [db, navigation]);
 
   if (!isReady || loading) {

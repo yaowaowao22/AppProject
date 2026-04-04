@@ -34,7 +34,7 @@ import { useSidebarFilter } from '../../hooks/useSidebarFilter';
 import { useWidgetData } from '../../hooks/useWidgetData';
 import type { HomeStackParamList, DrawerParamList } from '../../navigation/types';
 
-type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
+type Props = NativeStackScreenProps<HomeStackParamList, 'HomeMain'>;
 
 // アイテムタイプのラベルと色
 const TYPE_META: Record<string, { label: string; color: string; bg: string }> = {
@@ -136,7 +136,7 @@ export function HomeScreen({ navigation }: Props) {
   const handleStartExtraReview = () => {
     (navigation.getParent<DrawerNavigationProp<DrawerParamList>>() as any)?.navigate(
       'Review',
-      { screen: 'Review', params: { forceAll: true } }
+      { screen: 'ReviewSession', params: { forceAll: true } }
     );
   };
 

@@ -33,13 +33,13 @@ export type DrawerParamList = {
 
 // ---- Home Stack ----
 export type HomeStackParamList = {
-  Home: undefined;
+  HomeMain: undefined;
   ItemDetail: { itemId: number };
 };
 
 // ---- Library Stack ----
 export type LibraryStackParamList = {
-  Library: { filterTag?: string };
+  LibraryMain: { filterTag?: string };
   ItemDetail: { itemId: number };
   AddItem: { clipboardText?: string };
   URLAnalysis: { initialUrl?: string };
@@ -56,7 +56,7 @@ export type LibraryStackParamList = {
 // ---- Review Stack ----
 export type ReviewStackParamList = {
   ReviewSelect: undefined;
-  Review: { reviewIds?: number[]; forceAll?: boolean };
+  ReviewSession: { reviewIds?: number[]; forceAll?: boolean };
   Quiz: { itemIds: number[] };
 };
 
@@ -68,12 +68,12 @@ export type MapStackParamList = {
 
 // ---- Journal Stack ----
 export type JournalStackParamList = {
-  Journal: undefined;
+  JournalMain: undefined;
 };
 
 // ---- Settings Stack ----
 export type SettingsStackParamList = {
-  Settings: undefined;
+  SettingsMain: undefined;
 };
 
 // ---- Task Stack ----

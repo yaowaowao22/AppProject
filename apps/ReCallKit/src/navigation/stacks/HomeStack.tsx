@@ -19,7 +19,7 @@ export function HomeStack() {
       }}
     >
       <Stack.Screen
-        name="Home"
+        name="HomeMain"
         component={HomeScreen}
         options={{
           title: '今日',

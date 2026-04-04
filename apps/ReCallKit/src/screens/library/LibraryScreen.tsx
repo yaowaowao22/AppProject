@@ -35,7 +35,7 @@ import type { ItemWithMeta } from '../../types';
 import { useDB } from '../../hooks/useDatabase';
 import { HeaderHamburger } from '../../components/HeaderHamburger';
 
-type Props = NativeStackScreenProps<LibraryStackParamList, 'Library'>;
+type Props = NativeStackScreenProps<LibraryStackParamList, 'LibraryMain'>;
 
 // ---- アイコン/ラベルマッピング ----------------------------
 const TYPE_ICONS: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {

@@ -23,7 +23,7 @@ export function LibraryStack() {
       }}
     >
       <Stack.Screen
-        name="Library"
+        name="LibraryMain"
         component={LibraryScreen}
         options={{
           title: 'ライブラリ',

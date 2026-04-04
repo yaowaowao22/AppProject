@@ -18,7 +18,7 @@ export function JournalStack() {
       }}
     >
       <Stack.Screen
-        name="Journal"
+        name="JournalMain"
         component={JournalScreen}
         options={{
           title: 'ジャーナル',
