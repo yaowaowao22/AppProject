@@ -70,10 +70,10 @@ export function ReviewScreen({ navigation, route }: Props) {
 
   const handleRate = useCallback(
     async (rating: SimpleRating) => {
-      if (!db || !currentItem) return;
+      if (!db || !currentItem || !currentItem.item.review) return;
 
       const quality = SIMPLE_RATINGS[rating];
-      const review = currentItem.item.review!;
+      const review = currentItem.item.review;
 
       await submitReviewRating(
         db,

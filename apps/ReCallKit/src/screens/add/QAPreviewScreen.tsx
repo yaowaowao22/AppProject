@@ -72,7 +72,8 @@ async function upsertCategoryTag(
     'SELECT id FROM tags WHERE name = ?',
     [categoryLabel],
   );
-  return row!.id;
+  if (!row) throw new Error(`Tag not found after upsert: ${categoryLabel}`);
+  return row.id;
 }
 
 // ============================================================

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   ScrollView,
   View,
@@ -51,33 +51,45 @@ export function AddItemScreen({ navigation }: Props) {
     if (!URL_PATTERN.test(url)) return;
 
     setFetching(true);
-    const metadata = await fetchUrlMetadata(url);
-    setFetching(false);
+    try {
+      const metadata = await fetchUrlMetadata(url);
 
-    if (!metadata) return;
+      if (!metadata) return;
 
-    // タイトルが空の場合のみ自動入力
-    if (metadata.title) {
-      setTitle((prev) => {
-        if (prev.trim() === '') {
-          setTitleAutoFilled(true);
-          return metadata.title ?? '';
-        }
-        return prev;
-      });
+      // タイトルが空の場合のみ自動入力
+      if (metadata.title) {
+        setTitle((prev) => {
+          if (prev.trim() === '') {
+            setTitleAutoFilled(true);
+            return metadata.title ?? '';
+          }
+          return prev;
+        });
+      }
+
+      // descriptionをcontentとexcerptに自動入力（空の場合のみ）
+      if (metadata.description) {
+        setContent((prev) => {
+          if (prev.trim() === '') {
+            setContentAutoFilled(true);
+            return metadata.description ?? '';
+          }
+          return prev;
+        });
+        setExcerpt(metadata.description);
+      }
+    } catch (err) {
+      console.error('[AddItemScreen] fetchMetadata error:', err);
+    } finally {
+      setFetching(false);
     }
+  }, []);
 
-    // descriptionをcontentとexcerptに自動入力（空の場合のみ）
-    if (metadata.description) {
-      setContent((prev) => {
-        if (prev.trim() === '') {
-          setContentAutoFilled(true);
-          return metadata.description ?? '';
-        }
-        return prev;
-      });
-      setExcerpt(metadata.description);
-    }
+  // unmount 時にタイマーをキャンセル（unmount 後の setState を防ぐ）
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
   }, []);
 
   const handleUrlChange = useCallback(
