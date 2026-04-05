@@ -23,6 +23,7 @@ import {
   getTodayCompletedCount,
   getTotalItemCount,
   getRecentlyReviewedItems,
+  getAllReviewableItems,
   type ReviewableItem,
 } from '../../db/reviewRepository';
 import { StreakRing } from '../../components/StreakRing';
@@ -70,6 +71,7 @@ export function HomeScreen({ navigation }: Props) {
 
   const [dueItems, setDueItems] = useState<ReviewableItem[]>([]);
   const [recentlyReviewed, setRecentlyReviewed] = useState<ReviewableItem[]>([]);
+  const [allItems, setAllItems] = useState<ReviewableItem[]>([]);
   const [streakDays, setStreakDays] = useState(0);
   const [todayCompleted, setTodayCompleted] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
@@ -84,15 +86,17 @@ export function HomeScreen({ navigation }: Props) {
     setLoading(true);
     setLoadError(null);
     try {
-      const [due, recent, streak, completed, total] = await Promise.all([
+      const [due, recent, streak, completed, total, all] = await Promise.all([
         getDueItems(db),
         getRecentlyReviewedItems(db),
         getStreakDays(db),
         getTodayCompletedCount(db),
         getTotalItemCount(db),
+        getAllReviewableItems(db),
       ]);
       setDueItems(due);
       setRecentlyReviewed(recent);
+      setAllItems(all);
       setStreakDays(streak);
       setTodayCompleted(completed);
       setTotalItems(total);
@@ -110,14 +114,15 @@ export function HomeScreen({ navigation }: Props) {
     }, [loadData])
   );
 
-  // ウィジェット用Q&Aデータ（最近復習した内容から最大20件）
-  const quizItems = useMemo(() =>
-    recentlyReviewed.map((ri) => ({
+  // ウィジェット用Q&Aデータ（全アイテムからランダムに最大20件）
+  const quizItems = useMemo(() => {
+    const source = allItems.length > 0 ? allItems : recentlyReviewed;
+    const shuffled = [...source].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 20).map((ri) => ({
       question: ri.item.title,
       answer: ri.item.content ?? '',
-    })).slice(0, 20),
-    [recentlyReviewed]
-  );
+    }));
+  }, [allItems, recentlyReviewed]);
 
   // iOS ウィジェットへデータを同期
   useWidgetData(dueItems.length, streakDays, totalItems, quizItems);
