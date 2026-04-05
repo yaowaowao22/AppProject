@@ -46,6 +46,8 @@ export function AddItemScreen({ navigation }: Props) {
 
   // debounce用タイマー
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // アンマウント後の setState を防ぐフラグ
+  const isMounted = useRef(true);
 
   const fetchMetadata = useCallback(async (url: string) => {
     if (!URL_PATTERN.test(url)) return;
@@ -54,7 +56,7 @@ export function AddItemScreen({ navigation }: Props) {
     try {
       const metadata = await fetchUrlMetadata(url);
 
-      if (!metadata) return;
+      if (!metadata || !isMounted.current) return;
 
       // タイトルが空の場合のみ自動入力
       if (metadata.title) {
@@ -81,13 +83,14 @@ export function AddItemScreen({ navigation }: Props) {
     } catch (err) {
       console.error('[AddItemScreen] fetchMetadata error:', err);
     } finally {
-      setFetching(false);
+      if (isMounted.current) setFetching(false);
     }
   }, []);
 
-  // unmount 時にタイマーをキャンセル（unmount 後の setState を防ぐ）
+  // unmount 時にタイマーキャンセル + isMounted フラグ解除
   useEffect(() => {
     return () => {
+      isMounted.current = false;
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
   }, []);

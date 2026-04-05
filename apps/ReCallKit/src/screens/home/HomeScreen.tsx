@@ -74,6 +74,7 @@ export function HomeScreen({ navigation }: Props) {
   const [todayCompleted, setTodayCompleted] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // タグフィルター用: タグが付いているアイテムIDのセット（非同期取得）
   const [taggedItemIds, setTaggedItemIds] = useState<Set<number>>(new Set());
@@ -81,6 +82,7 @@ export function HomeScreen({ navigation }: Props) {
   const loadData = useCallback(async () => {
     if (!db || !isReady) return;
     setLoading(true);
+    setLoadError(null);
     try {
       const [due, recent, streak, completed, total] = await Promise.all([
         getDueItems(db),
@@ -94,6 +96,9 @@ export function HomeScreen({ navigation }: Props) {
       setStreakDays(streak);
       setTodayCompleted(completed);
       setTotalItems(total);
+    } catch (err) {
+      console.error('[HomeScreen] loadData error:', err);
+      setLoadError('データの読み込みに失敗しました');
     } finally {
       setLoading(false);
     }
@@ -134,7 +139,7 @@ export function HomeScreen({ navigation }: Props) {
   };
 
   const handleStartExtraReview = () => {
-    (navigation.getParent<DrawerNavigationProp<DrawerParamList>>() as any)?.navigate(
+    navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate(
       'Review',
       { screen: 'ReviewSession', params: { forceAll: true } }
     );
@@ -142,7 +147,7 @@ export function HomeScreen({ navigation }: Props) {
 
   const handleOpenURLAnalysis = () => {
     // LibraryStack 内の URLAnalysis モーダルへネストナビゲート
-    (navigation.getParent<DrawerNavigationProp<DrawerParamList>>() as any)?.navigate(
+    navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate(
       'Library',
       { screen: 'URLAnalysis' }
     );
