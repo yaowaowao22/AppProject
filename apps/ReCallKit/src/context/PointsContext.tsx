@@ -20,12 +20,7 @@ interface PointsContextValue {
   refresh: () => Promise<void>;
 }
 
-const PointsContext = createContext<PointsContextValue>({
-  totalPoints: 0,
-  earn: async () => {},
-  spend: async () => {},
-  refresh: async () => {},
-});
+const PointsContext = createContext<PointsContextValue | null>(null);
 
 export function PointsProvider({ children }: { children: ReactNode }) {
   const { db, isReady } = useDatabase();
@@ -68,6 +63,8 @@ export function PointsProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function usePoints() {
-  return useContext(PointsContext);
+export function usePoints(): PointsContextValue {
+  const ctx = useContext(PointsContext);
+  if (!ctx) throw new Error('usePoints must be used within PointsProvider');
+  return ctx;
 }

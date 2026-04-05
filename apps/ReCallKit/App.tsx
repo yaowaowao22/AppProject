@@ -46,9 +46,11 @@ export default function App() {
         <SafeAreaProvider>
           <DatabaseProvider>
             <ThemeProvider>
-              <TaskProvider>
-                <RootNavigator />
-              </TaskProvider>
+              <PointsProvider>
+                <TaskProvider>
+                  <RootNavigator />
+                </TaskProvider>
+              </PointsProvider>
             </ThemeProvider>
           </DatabaseProvider>
         </SafeAreaProvider>
