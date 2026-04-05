@@ -1,0 +1,64 @@
+// ============================================================
+// URL取り込みジョブ リポジトリ
+// url_import_jobs テーブルの CRUD 操作
+// ============================================================
+
+import type { SQLiteDatabase } from 'expo-sqlite';
+
+export type JobStatus = 'pending' | 'processing' | 'done' | 'failed';
+
+export interface UrlImportJob {
+  id: number;
+  url: string;
+  status: JobStatus;
+  title: string | null;
+  error_msg: string | null;
+  item_id: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** ジョブを新規登録（status: pending） */
+export async function createJob(db: SQLiteDatabase, url: string): Promise<number> {
+  const result = await db.runAsync(
+    `INSERT INTO url_import_jobs (url, status, created_at, updated_at)
+     VALUES (?, 'pending', datetime('now','localtime'), datetime('now','localtime'))`,
+    [url],
+  );
+  return result.lastInsertRowId;
+}
+
+/** ジョブのフィールドを更新 */
+export async function updateJob(
+  db: SQLiteDatabase,
+  id: number,
+  fields: Partial<{ status: JobStatus; title: string; error_msg: string; item_id: number }>,
+): Promise<void> {
+  const sets: string[] = ["updated_at = datetime('now','localtime')"];
+  const values: (string | number)[] = [];
+
+  if (fields.status !== undefined) { sets.push('status = ?');    values.push(fields.status); }
+  if (fields.title !== undefined)  { sets.push('title = ?');     values.push(fields.title); }
+  if (fields.error_msg !== undefined) { sets.push('error_msg = ?'); values.push(fields.error_msg); }
+  if (fields.item_id !== undefined)   { sets.push('item_id = ?');   values.push(fields.item_id); }
+
+  await db.runAsync(
+    `UPDATE url_import_jobs SET ${sets.join(', ')} WHERE id = ?`,
+    [...values, id],
+  );
+}
+
+/** 全ジョブを取得（新しい順） */
+export async function listJobs(db: SQLiteDatabase): Promise<UrlImportJob[]> {
+  return db.getAllAsync<UrlImportJob>(
+    'SELECT * FROM url_import_jobs ORDER BY created_at DESC',
+  );
+}
+
+/** 単一ジョブを取得 */
+export async function getJob(db: SQLiteDatabase, id: number): Promise<UrlImportJob | null> {
+  return db.getFirstAsync<UrlImportJob>(
+    'SELECT * FROM url_import_jobs WHERE id = ?',
+    [id],
+  );
+}

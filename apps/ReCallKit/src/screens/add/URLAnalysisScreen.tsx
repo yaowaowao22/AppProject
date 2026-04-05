@@ -1,65 +1,45 @@
 // ============================================================
 // URLAnalysisScreen
-// URLを入力 → Bedrock AI解析 → QAPreviewへ遷移する専用画面
-// ios-uiux準拠・ローディングステップ表示・エラーカード付き
+// URLを入力 → 「スタート」ボタンでジョブ登録 → URLImportList へ遷移
+// 実際の解析・保存処理は URLImportListScreen がバックグラウンドで実行する
 // ============================================================
 
-import React, { useState, useRef, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
 import {
   View,
   Text,
   TextInput,
   Pressable,
   StyleSheet,
-  ActivityIndicator,
   Keyboard,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { useDatabase } from '../../hooks/useDatabase';
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
-import { analyzeUrlPipeline } from '../../services/urlAnalysisPipeline';
-import { getRemainingCount, consumeOne } from '../../utils/analysisLimit';
+import { createJob } from '../../db/urlJobRepository';
 import type { LibraryStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'URLAnalysis'>;
 
 const URL_PATTERN = /^https?:\/\/.+/i;
 
-// フェッチ → AI解析 のステップ切り替えタイミング（ms）
-const STEP_SWITCH_MS = 3500;
-
 export function URLAnalysisScreen({ route, navigation }: Props) {
+  const { db, isReady } = useDatabase();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
   const [url, setUrl] = useState(route.params?.initialUrl ?? '');
-  const [loading, setLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState<'fetch' | 'analyze'>('fetch');
   const [error, setError] = useState<string | null>(null);
-
-  const stepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isValidUrl = URL_PATTERN.test(url.trim());
 
-  const handleBack = useCallback(() => {
-    if (loading) {
-      Alert.alert(
-        '取り込み終了',
-        '解析を中断しますか？',
-        [
-          { text: 'キャンセル', style: 'cancel' },
-          { text: 'OK', onPress: () => navigation.popToTop() },
-        ],
-      );
-    } else {
-      navigation.goBack();
-    }
-  }, [loading, navigation]);
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -71,76 +51,28 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
     });
   }, [navigation, handleBack, colors.accent]);
 
-  const handleAnalyze = useCallback(async () => {
-    if (!isValidUrl || loading) return;
+  const handleStart = useCallback(async () => {
+    if (!isValidUrl || !db || !isReady) return;
 
     Keyboard.dismiss();
-    setError(null);
-    setLoading(true);
-    setLoadingStep('fetch');
-
-    // 一定時間後に「AIが解析中...」へステップ切り替え
-    stepTimerRef.current = setTimeout(() => {
-      setLoadingStep('analyze');
-    }, STEP_SWITCH_MS);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      // 解析回数制限チェック
-      const remaining = await getRemainingCount();
-      if (remaining <= 0) {
-        setError('本日の無料解析回数（3回）を使い切りました。明日またお試しください');
-        setLoading(false);
-        return;
-      }
-
-      const result = await analyzeUrlPipeline(url.trim());
-
-      // 解析成功 → 1回消費
-      await consumeOne();
-
-      navigation.navigate('QAPreview', {
-        url: result.sourceUrl,
-        title: result.title,
-        summary: result.summary,
-        qa_pairs: result.qa_pairs,
-        category: result.category,
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'URL解析に失敗しました');
-    } finally {
-      if (stepTimerRef.current) {
-        clearTimeout(stepTimerRef.current);
-        stepTimerRef.current = null;
-      }
-      setLoading(false);
+      await createJob(db, url.trim());
+    } catch {
+      setError('ジョブの登録に失敗しました。もう一度お試しください');
+      return;
     }
-  }, [url, isValidUrl, loading, navigation]);
+
+    // URLImportList へ遷移（解析はそちらでバックグラウンド実行）
+    navigation.replace('URLImportList');
+  }, [url, isValidUrl, db, isReady, navigation]);
 
   const handleClear = useCallback(() => {
     setUrl('');
     setError(null);
   }, []);
 
-  // ─── ローディング画面 ───
-  if (loading) {
-    return (
-      <View style={[styles.root, { backgroundColor: colors.backgroundGrouped }]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.accent} />
-          <Text style={[styles.loadingText, { color: colors.label }]}>
-            {loadingStep === 'fetch' ? 'ページを読み込み中...' : 'AIが解析中...'}
-          </Text>
-          {loadingStep === 'analyze' && (
-            <Text style={[styles.loadingSubText, { color: colors.labelSecondary }]}>
-              Bedrockが内容を分析しています
-            </Text>
-          )}
-        </View>
-      </View>
-    );
-  }
-
-  // ─── メイン画面 ───
   return (
     <View
       style={[
@@ -152,7 +84,7 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
         {/* URL入力ラベル */}
         <Text style={[styles.label, { color: colors.labelSecondary }]}>解析するURL</Text>
 
-        {/* URL入力エリア（アイコン＋TextInput＋クリアボタン） */}
+        {/* URL入力エリア */}
         <View
           style={[
             styles.inputRow,
@@ -179,7 +111,7 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="go"
-            onSubmitEditing={isValidUrl ? handleAnalyze : undefined}
+            onSubmitEditing={isValidUrl ? handleStart : undefined}
           />
           {url.length > 0 && (
             <Pressable
@@ -195,10 +127,10 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
 
         {/* 説明テキスト */}
         <Text style={[styles.description, { color: colors.labelTertiary }]}>
-          URLのページをAIが自動解析してQ&Aを生成します
+          スタートするとバックグラウンドで解析が始まります。取り込み一覧で進捗を確認できます。
         </Text>
 
-        {/* エラーカード */}
+        {/* エラー */}
         {error && (
           <View
             style={[
@@ -210,34 +142,16 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
               CardShadow,
             ]}
           >
-            <View style={styles.errorBody}>
-              <Ionicons name="alert-circle-outline" size={18} color={colors.error} />
-              <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
-            </View>
-            <Pressable
-              style={({ pressed }) => [
-                styles.retryButton,
-                {
-                  borderColor: colors.accent,
-                  backgroundColor: colors.accent + '14',
-                  opacity: pressed ? 0.7 : 1,
-                },
-              ]}
-              onPress={handleAnalyze}
-              accessibilityRole="button"
-              accessibilityLabel="再試行"
-            >
-              <Ionicons name="refresh-outline" size={16} color={colors.accent} />
-              <Text style={[styles.retryText, { color: colors.accent }]}>再試行</Text>
-            </Pressable>
+            <Ionicons name="alert-circle-outline" size={18} color={colors.error} />
+            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
           </View>
         )}
       </View>
 
-      {/* 解析ボタン */}
+      {/* スタートボタン */}
       <Pressable
         style={({ pressed }) => [
-          styles.analyzeButton,
+          styles.startButton,
           {
             backgroundColor: isValidUrl
               ? pressed
@@ -249,25 +163,25 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
           },
           !isValidUrl && styles.buttonDisabled,
         ]}
-        onPress={handleAnalyze}
+        onPress={handleStart}
         disabled={!isValidUrl}
         accessibilityRole="button"
-        accessibilityLabel="解析する"
+        accessibilityLabel="スタート"
         accessibilityState={{ disabled: !isValidUrl }}
       >
-        <View style={styles.analyzeButtonInner}>
+        <View style={styles.startButtonInner}>
           <Ionicons
-            name="search-outline"
-            size={18}
+            name="play-circle-outline"
+            size={20}
             color={isValidUrl ? '#FFFFFF' : colors.labelTertiary}
           />
           <Text
             style={[
-              styles.analyzeButtonText,
+              styles.startButtonText,
               { color: isValidUrl ? '#FFFFFF' : colors.labelTertiary },
             ]}
           >
-            解析する
+            スタート
           </Text>
         </View>
       </Pressable>
@@ -278,7 +192,6 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
 // ============================================================
 // スタイル
 // ============================================================
-
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -287,23 +200,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: Spacing.m,
     gap: Spacing.s,
-  },
-
-  // ローディング
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.m,
-    paddingHorizontal: Spacing.xl,
-  },
-  loadingText: {
-    ...TypeScale.headline,
-    textAlign: 'center',
-  },
-  loadingSubText: {
-    ...TypeScale.subheadline,
-    textAlign: 'center',
   },
 
   // URL入力エリア
@@ -337,53 +233,35 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  // エラーカード
+  // エラー
   errorCard: {
-    borderRadius: Radius.m,
-    borderWidth: 1,
-    padding: Spacing.m,
-    gap: Spacing.s,
-    marginTop: Spacing.s,
-  },
-  errorBody: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing.s,
+    borderRadius: Radius.m,
+    borderWidth: 1,
+    padding: Spacing.m,
+    marginTop: Spacing.s,
   },
   errorText: {
     flex: 1,
     ...TypeScale.subheadline,
     lineHeight: 20,
   },
-  retryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.xs,
-    height: 36,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    alignSelf: 'flex-start',
-    paddingHorizontal: Spacing.m,
-  },
-  retryText: {
-    ...TypeScale.subheadline,
-    fontWeight: '600',
-  },
 
-  // 解析ボタン
-  analyzeButton: {
+  // スタートボタン
+  startButton: {
     borderRadius: Radius.m,
     height: 50,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  analyzeButtonInner: {
+  startButtonInner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.s,
   },
-  analyzeButtonText: {
+  startButtonText: {
     ...TypeScale.headline,
   },
   buttonDisabled: {

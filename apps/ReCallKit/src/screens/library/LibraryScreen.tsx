@@ -499,6 +499,20 @@ export function LibraryScreen({ navigation }: Props) {
       {/* FAB群（選択モード中は非表示） */}
       {!selectionMode && (
         <>
+          {/* URL取り込み一覧ボタン */}
+          <Pressable
+            style={[
+              styles.fab,
+              styles.fabSecondary,
+              { backgroundColor: colors.backgroundSecondary, bottom: insets.bottom + Spacing.l + 128, borderColor: colors.separator, shadowColor: colors.cardShadowColor },
+            ]}
+            onPress={() => navigation.navigate('URLImportList')}
+            accessibilityRole="button"
+            accessibilityLabel="URL取り込み一覧"
+          >
+            <Ionicons name="cloud-download-outline" size={22} color={colors.accent} />
+          </Pressable>
+
           {/* グループ作成ボタン */}
           <Pressable
             style={[

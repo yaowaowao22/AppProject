@@ -3,7 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 // ============================================================
 // スキーマバージョン管理
 // ============================================================
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 
 const CREATE_TABLES_SQL = `
   -- アイテム（URL・テキスト・メモ）
@@ -164,6 +164,25 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_point_events_created ON point_events(created_at);
     `);
     await setSchemaVersion(db, 4);
+  }
+
+  if (currentVersion < 5) {
+    // URL取り込みジョブキュー
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS url_import_jobs (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        url         TEXT    NOT NULL,
+        status      TEXT    NOT NULL DEFAULT 'pending',
+        title       TEXT,
+        error_msg   TEXT,
+        item_id     INTEGER REFERENCES items(id) ON DELETE SET NULL,
+        created_at  TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+        updated_at  TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_url_jobs_status  ON url_import_jobs(status);
+      CREATE INDEX IF NOT EXISTS idx_url_jobs_created ON url_import_jobs(created_at);
+    `);
+    await setSchemaVersion(db, 5);
   }
 }
 
