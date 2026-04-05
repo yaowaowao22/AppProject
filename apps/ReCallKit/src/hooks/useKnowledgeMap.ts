@@ -2,7 +2,7 @@
 // useKnowledgeMap — 知識マップ用データフック
 // アイテム（最大80件）とタグを一括取得する
 // ============================================================
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useDB } from './useDatabase';
 import type { ItemWithMeta, ItemType, Tag, Review } from '../types';
 
@@ -36,6 +36,7 @@ export function useKnowledgeMap() {
   const db = useDB();
   const [items, setItems] = useState<ItemWithMeta[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const mounted = useRef(true);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -54,7 +55,7 @@ export function useKnowledgeMap() {
       `);
 
       if (!rows.length) {
-        setItems([]);
+        if (mounted.current) setItems([]);
         return;
       }
 
@@ -67,6 +68,8 @@ export function useKnowledgeMap() {
          WHERE it.item_id IN (${ph})`,
         ids,
       );
+
+      if (!mounted.current) return;
 
       const tagMap = new Map<number, Tag[]>();
       for (const tr of tagRows) {
@@ -104,12 +107,16 @@ export function useKnowledgeMap() {
     } catch (e) {
       console.error('[useKnowledgeMap]', e);
     } finally {
-      setIsLoading(false);
+      if (mounted.current) setIsLoading(false);
     }
   }, [db]);
 
   useEffect(() => {
+    mounted.current = true;
     fetchData();
+    return () => {
+      mounted.current = false;
+    };
   }, [fetchData]);
 
   return { items, isLoading, refresh: fetchData };

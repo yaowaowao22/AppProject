@@ -138,14 +138,20 @@ export function initShareReceiver(db: SQLiteDatabase): () => void {
 
   // アプリが共有リンクで起動されたケース（コールドスタート）
   Linking.getInitialURL().then((url) => {
-    if (url) handle(url);
+    if (url) {
+      handle(url).catch((err) => {
+        console.error('[shareReceiver] コールドスタート処理エラー:', err);
+      });
+    }
   }).catch((err) => {
     console.warn('[shareReceiver] getInitialURL エラー:', err);
   });
 
   // アプリ起動中に受信したケース（ウォームスタート）
   const subscription = Linking.addEventListener('url', ({ url }) => {
-    handle(url);
+    handle(url).catch((err) => {
+      console.error('[shareReceiver] ウォームスタート処理エラー:', err);
+    });
   });
 
   return () => subscription.remove();

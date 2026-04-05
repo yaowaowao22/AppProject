@@ -32,6 +32,13 @@ let _adInitialized = false;
 let _resolveRef: ((v: { earned: boolean; error?: string }) => void) | null = null;
 let _retryTimer: ReturnType<typeof setTimeout> | null = null;
 const _listeners: Set<() => void> = new Set();
+// 広告インスタンスのイベントリスナー解除関数
+const _adUnsubscribers: any[] = [];
+
+function _cleanupAdListeners() {
+  _adUnsubscribers.forEach(unsub => { try { unsub(); } catch {} });
+  _adUnsubscribers.length = 0;
+}
 
 function _notify() {
   _listeners.forEach(fn => fn());
@@ -39,6 +46,9 @@ function _notify() {
 
 function _loadAd() {
   if (_adLoading || _adLoaded) return;
+
+  // 前のインスタンスのリスナーを解除してから新インスタンスを生成
+  _cleanupAdListeners();
 
   let mod: any;
   try {
@@ -56,18 +66,18 @@ function _loadAd() {
   const rewarded = RewardedAd.createForAdRequest(adUnitId);
   _adInstance = rewarded;
 
-  rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
+  _adUnsubscribers.push(rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
     _adLoaded = true;
     _adLoading = false;
     _notify();
-  });
+  }));
 
-  rewarded.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
+  _adUnsubscribers.push(rewarded.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
     _resolveRef?.({ earned: true });
     _resolveRef = null;
-  });
+  }));
 
-  rewarded.addAdEventListener(AdEventType.CLOSED, () => {
+  _adUnsubscribers.push(rewarded.addAdEventListener(AdEventType.CLOSED, () => {
     if (_resolveRef) {
       // EARNED_REWARD が来ずに閉じられた（スキップ）
       _resolveRef({ earned: false, error: '広告が閉じられました' });
@@ -78,9 +88,9 @@ function _loadAd() {
     _adLoading = false;
     _adInstance = null;
     _loadAd();
-  });
+  }));
 
-  rewarded.addAdEventListener(AdEventType.ERROR, (e: any) => {
+  _adUnsubscribers.push(rewarded.addAdEventListener(AdEventType.ERROR, (e: any) => {
     _adLoading = false;
     _adLoaded = false;
     _notify();
@@ -88,13 +98,15 @@ function _loadAd() {
       _resolveRef({ earned: false, error: e?.message || '広告の読み込みに失敗しました' });
       _resolveRef = null;
     }
-    // 10秒後にリトライ
+    // 10秒後にリトライ（マウント中のコンポーネントがある場合のみ）
     if (_retryTimer) clearTimeout(_retryTimer);
     _retryTimer = setTimeout(() => {
+      _retryTimer = null;
+      if (_listeners.size === 0) return;
       _adInstance = null;
       _loadAd();
     }, 10_000);
-  });
+  }));
 
   rewarded.load();
 }
@@ -128,6 +140,8 @@ type UseRewardedAdResult = {
 export function useRewardedAd(): UseRewardedAdResult {
   const [, forceUpdate] = useState(0);
   const mountedRef = useRef(true);
+  // このhookインスタンスが設定したresolveを追跡（unmount時のPromise解放用）
+  const resolveRef = useRef<((v: { earned: boolean; error?: string }) => void) | null>(null);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -139,6 +153,17 @@ export function useRewardedAd(): UseRewardedAdResult {
     return () => {
       mountedRef.current = false;
       _listeners.delete(fn);
+      // retryTimerをキャンセル（unmount後の_loadAd再帰呼び出しを防止）
+      if (_retryTimer) {
+        clearTimeout(_retryTimer);
+        _retryTimer = null;
+      }
+      // showAd()の未解決Promiseを解放（永遠待機を防止）
+      if (resolveRef.current && _resolveRef === resolveRef.current) {
+        _resolveRef = null;
+        resolveRef.current({ earned: false, error: 'コンポーネントがアンマウントされました' });
+        resolveRef.current = null;
+      }
     };
   }, []);
 
@@ -149,6 +174,7 @@ export function useRewardedAd(): UseRewardedAdResult {
         return;
       }
       _resolveRef = resolve;
+      resolveRef.current = resolve; // unmount時クリーンアップ用に追跡
       _adInstance.show();
     });
   }, []);

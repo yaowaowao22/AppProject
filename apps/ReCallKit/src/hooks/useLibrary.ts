@@ -1,7 +1,7 @@
 // ============================================================
 // useLibrary — ライブラリ一覧・タグ取得フック
 // ============================================================
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { useDB } from './useDatabase';
 import type { ItemWithMeta, Tag, ItemType, Review } from '../types';
@@ -63,6 +63,12 @@ export function useItems(filter: LibraryFilter) {
   const db = useDB();
   const [items, setItems] = useState<ItemWithMeta[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   // tagIdsをシリアライズして依存関係に使う
   const tagIdsKey = filter.tagIds.join(',');

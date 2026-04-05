@@ -115,20 +115,47 @@ export async function analyzeUrl(url: string): Promise<AnalysisResult> {
     // Lambda 実行エラー（Unhandled Exception 等）
     if (response.FunctionError) {
       const raw = new TextDecoder().decode(response.Payload);
-      const body = JSON.parse(raw) as { errorMessage?: string };
+      let body: { errorMessage?: string };
+      try {
+        body = JSON.parse(raw) as { errorMessage?: string };
+      } catch {
+        throw new Error(
+          `Lambdaエラーレスポンスのパースに失敗しました（生データ: ${raw.slice(0, 100)}）`,
+        );
+      }
       throw new Error(body.errorMessage ?? 'Lambda実行エラー');
     }
 
     // ハンドラーが返す { statusCode, body } をパース
     const raw = new TextDecoder().decode(response.Payload);
-    const lambdaResp = JSON.parse(raw) as { statusCode: number; body: string };
+    let lambdaResp: { statusCode: number; body: string };
+    try {
+      lambdaResp = JSON.parse(raw) as { statusCode: number; body: string };
+    } catch {
+      throw new Error(
+        `Lambdaレスポンスのパースに失敗しました（生データ: ${raw.slice(0, 100)}）`,
+      );
+    }
 
     if (lambdaResp.statusCode !== 200) {
-      const errBody = JSON.parse(lambdaResp.body) as { error?: string };
+      let errBody: { error?: string };
+      try {
+        errBody = JSON.parse(lambdaResp.body) as { error?: string };
+      } catch {
+        throw new Error(
+          `エラーボディのパースに失敗しました（HTTP ${lambdaResp.statusCode}）`,
+        );
+      }
       throw new Error(errBody.error ?? `サーバーエラー (HTTP ${lambdaResp.statusCode})`);
     }
 
-    return JSON.parse(lambdaResp.body) as AnalysisResult;
+    let analysisResult: AnalysisResult;
+    try {
+      analysisResult = JSON.parse(lambdaResp.body) as AnalysisResult;
+    } catch {
+      throw new Error('解析結果のパースに失敗しました（bodyが不正なJSONです）');
+    }
+    return analysisResult;
   } catch (err) {
     if (err instanceof Error && err.name === 'AbortError') {
       throw new Error('AI解析がタイムアウトしました（60秒）');

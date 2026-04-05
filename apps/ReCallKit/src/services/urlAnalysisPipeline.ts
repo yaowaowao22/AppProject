@@ -20,6 +20,18 @@ export async function analyzeUrlPipeline(url: string): Promise<PipelineResult> {
     );
   }
 
-  const result = await analyzeUrl(url);
-  return { ...result, sourceUrl: url };
+  try {
+    const result = await analyzeUrl(url);
+    return { ...result, sourceUrl: url };
+  } catch (err) {
+    console.error('[urlAnalysisPipeline] analyzeUrl エラー:', err);
+    const message = err instanceof Error ? err.message : 'AI解析に失敗しました';
+    return {
+      title: '',
+      summary: message,
+      qa_pairs: [],
+      category: '',
+      sourceUrl: url,
+    };
+  }
 }

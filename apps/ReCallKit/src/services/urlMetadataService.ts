@@ -66,49 +66,56 @@ export async function fetchUrlMetadata(url: string): Promise<UrlMetadata | null>
 export async function extractBodyText(
   url: string
 ): Promise<{ text: string; metadata: UrlMetadata }> {
-  const html = await fetchHtml(url);
+  const fallbackMetadata: UrlMetadata = { title: null, description: null, image: null };
 
-  // メタデータを同時に抽出
-  const ogTitle = extractMeta(html, /og:title/i);
-  const pageTitle = extractTitle(html);
-  const ogDescription = extractMeta(html, /og:description/i);
-  const metaDescription = extractMeta(html, /description/i, 'name');
-  const ogImage = extractMeta(html, /og:image/i);
-  const metadata: UrlMetadata = {
-    title: ogTitle ?? pageTitle,
-    description: ogDescription ?? metaDescription,
-    image: ogImage,
-  };
+  try {
+    const html = await fetchHtml(url);
 
-  // 除外タグを事前に除去（nav/header/footer/aside/script/style/noscript/iframe/svg）
-  const cleaned = removeExcludedTags(html);
+    // メタデータを同時に抽出
+    const ogTitle = extractMeta(html, /og:title/i);
+    const pageTitle = extractTitle(html);
+    const ogDescription = extractMeta(html, /og:description/i);
+    const metaDescription = extractMeta(html, /description/i, 'name');
+    const ogImage = extractMeta(html, /og:image/i);
+    const metadata: UrlMetadata = {
+      title: ogTitle ?? pageTitle,
+      description: ogDescription ?? metaDescription,
+      image: ogImage,
+    };
 
-  // 優先順位1: <article>
-  let text = extractTagContent(cleaned, 'article');
+    // 除外タグを事前に除去（nav/header/footer/aside/script/style/noscript/iframe/svg）
+    const cleaned = removeExcludedTags(html);
 
-  // 優先順位2: <main>
-  if (!text) {
-    text = extractTagContent(cleaned, 'main');
+    // 優先順位1: <article>
+    let text = extractTagContent(cleaned, 'article');
+
+    // 優先順位2: <main>
+    if (!text) {
+      text = extractTagContent(cleaned, 'main');
+    }
+
+    // 優先順位3: <body> 内の <p> タグを全結合
+    if (!text) {
+      text = extractParagraphs(cleaned);
+    }
+
+    // 100文字未満ならフォールバック: <body> 全体のタグ除去
+    if (text.length < 100) {
+      text = extractTagContent(cleaned, 'body');
+    }
+
+    // タグ除去・空白正規化・4000文字切り詰め
+    text = normalizeText(text);
+
+    if (!text) {
+      return { text: '', metadata };
+    }
+
+    return { text, metadata };
+  } catch {
+    // ネットワークエラー・タイムアウト・パースエラーは空文字列で返す（呼び出し元をブロックしない）
+    return { text: '', metadata: fallbackMetadata };
   }
-
-  // 優先順位3: <body> 内の <p> タグを全結合
-  if (!text) {
-    text = extractParagraphs(cleaned);
-  }
-
-  // 100文字未満ならフォールバック: <body> 全体のタグ除去
-  if (text.length < 100) {
-    text = extractTagContent(cleaned, 'body');
-  }
-
-  // タグ除去・空白正規化・4000文字切り詰め
-  text = normalizeText(text);
-
-  if (!text) {
-    throw new Error('本文を抽出できませんでした');
-  }
-
-  return { text, metadata };
 }
 
 // ────────────────────────────────────────────────────────────
