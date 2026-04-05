@@ -3,15 +3,25 @@
 // 構造:
 //   Root (NativeStack)
 //   └── DrawerNavigator (サイドバー = プライマリナビ)
-//       ├── HomeScreen     → HomeStack
-//       ├── LibraryScreen  → LibraryStack
-//       ├── ReviewScreen   → ReviewStack
-//       ├── MapScreen      → MapStack
-//       ├── JournalScreen  → JournalStack
-//       └── SettingsScreen
+//       ├── Home     → HomeStack
+//       ├── Library  → LibraryStack
+//       ├── Review   → ReviewStack
+//       ├── Map      → MapStack
+//       ├── Journal  → JournalStack
+//       ├── Settings → SettingsStack
+//       └── Tasks    → TaskStack
 // ============================================================
 
 import type { NavigatorScreenParams } from '@react-navigation/native';
+
+// ---- Shared params ----
+export type QAPreviewParams = {
+  url: string;
+  title: string;
+  summary: string;
+  qa_pairs: { question: string; answer: string }[];
+  category: string;
+};
 
 // ---- Root ----
 export type RootStackParamList = {
@@ -43,13 +53,7 @@ export type LibraryStackParamList = {
   ItemDetail: { itemId: number };
   AddItem: { clipboardText?: string };
   URLAnalysis: { initialUrl?: string };
-  QAPreview: {
-    url: string;
-    title: string;
-    summary: string;
-    qa_pairs: { question: string; answer: string }[];
-    category: string;
-  };
+  QAPreview: QAPreviewParams;
   ReviewGroupCreate: undefined;
 };
 
@@ -79,11 +83,5 @@ export type SettingsStackParamList = {
 // ---- Task Stack ----
 export type TaskStackParamList = {
   TaskList: undefined;
-  QAPreview: {
-    url: string;
-    title: string;
-    summary: string;
-    qa_pairs: { question: string; answer: string }[];
-    category: string;
-  };
+  QAPreview: QAPreviewParams;
 };
