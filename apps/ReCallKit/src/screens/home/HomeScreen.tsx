@@ -149,7 +149,7 @@ export function HomeScreen({ navigation }: Props) {
     // LibraryStack 内の URLAnalysis モーダルへネストナビゲート
     navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate(
       'Library',
-      { screen: 'URLAnalysis' }
+      { screen: 'URLAnalysis', params: {} }
     );
   };
 

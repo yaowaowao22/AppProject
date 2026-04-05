@@ -94,7 +94,7 @@ const SCREEN_ITEMS = [
 export function DrawerContent({ navigation, state: drawerState }: DrawerContentComponentProps) {
   // DrawerContentComponentProps の navigation は DrawerNavigationHelpers（ParamListBase汎用）のため、
   // DrawerParamList を明示してキャストし navigate 呼び出しの型安全性を確保する
-  const nav = navigation as DrawerNavigationProp<DrawerParamList>;
+  const nav = navigation as unknown as DrawerNavigationProp<DrawerParamList>;
   const { sidebarColors: sc } = useTheme();
   const insets = useSafeAreaInsets();
   const { db, isReady } = useDatabase();
