@@ -76,11 +76,19 @@ ${answer}`;
 
     await Clipboard.setStringAsync(promptText);
 
-    Alert.alert('コピー完了', 'プロンプトをコピーしました。AIアプリに貼り付けてください');
-
     const canOpen = await Linking.canOpenURL(service.scheme);
     const url = canOpen ? service.scheme : service.webUrl;
-    await Linking.openURL(url);
+
+    Alert.alert(
+      'コピー完了',
+      'プロンプトをコピーしました。AIアプリに貼り付けてください',
+      [
+        {
+          text: `${service.label}を開く`,
+          onPress: () => Linking.openURL(url),
+        },
+      ],
+    );
   }
 
   return (

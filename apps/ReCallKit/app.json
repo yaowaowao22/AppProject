@@ -25,7 +25,12 @@
       },
       "infoPlist": {
         "NSUserNotificationsUsageDescription": "復習リマインダーを毎朝お届けするために通知を使用します",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": [
+          "chatgpt",
+          "googlegemini",
+          "claude"
+        ]
       }
     },
     "android": {
