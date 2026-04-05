@@ -9,8 +9,9 @@ if (Platform.OS === 'ios') {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const bridge = require('recall-widget-bridge');
-    updateWidgetData = bridge.updateWidgetData;
-    updateWidgetQuizData = bridge.updateWidgetQuizData;
+    // bridge の関数が undefined の場合はデフォルトの空関数を維持する
+    if (typeof bridge.updateWidgetData === 'function') updateWidgetData = bridge.updateWidgetData;
+    if (typeof bridge.updateWidgetQuizData === 'function') updateWidgetQuizData = bridge.updateWidgetQuizData;
   } catch {
     // Expo Go など、ネイティブモジュール未ビルド環境では無視
   }
