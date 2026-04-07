@@ -47,6 +47,8 @@ export function SettingsScreen() {
   const [tempMinute, setTempMinute] = useState(0);
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<string | null>(null);
 
   // 初期ロード
   useEffect(() => {
@@ -161,6 +163,31 @@ export function SettingsScreen() {
         },
       ]
     );
+  };
+
+  // ── OTAアップデート確認 ───────────────────────────────────
+  const handleCheckUpdate = async () => {
+    if (Updates.isEmbeddedLaunch === false && __DEV__) {
+      setUpdateStatus('開発環境ではOTA更新は動作しません');
+      return;
+    }
+    setCheckingUpdate(true);
+    setUpdateStatus(null);
+    try {
+      const result = await Updates.checkForUpdateAsync();
+      if (result.isAvailable) {
+        setUpdateStatus('ダウンロード中...');
+        await Updates.fetchUpdateAsync();
+        setUpdateStatus('更新を適用します（再起動）');
+        await Updates.reloadAsync();
+      } else {
+        setUpdateStatus('最新バージョンです');
+      }
+    } catch (e) {
+      setUpdateStatus(`エラー: ${String(e)}`);
+    } finally {
+      setCheckingUpdate(false);
+    }
   };
 
   // ── エクスポート ─────────────────────────────────────────
@@ -391,6 +418,29 @@ export function SettingsScreen() {
               {Updates.runtimeVersion ?? '-'}
             </Text>
           </View>
+          <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+          <TouchableOpacity
+            style={styles.row}
+            onPress={handleCheckUpdate}
+            activeOpacity={0.6}
+            disabled={checkingUpdate}
+          >
+            {checkingUpdate ? (
+              <ActivityIndicator size="small" color={colors.accent} style={{ marginRight: Spacing.s }} />
+            ) : (
+              <Ionicons name="cloud-download-outline" size={20} color={colors.accent} style={{ marginRight: Spacing.s }} />
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rowLabel, { color: colors.accent, flex: 0 }]}>
+                アップデートを確認
+              </Text>
+              {updateStatus !== null && (
+                <Text style={[styles.rowSubLabel, { color: colors.labelSecondary }]}>
+                  {updateStatus}
+                </Text>
+              )}
+            </View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
