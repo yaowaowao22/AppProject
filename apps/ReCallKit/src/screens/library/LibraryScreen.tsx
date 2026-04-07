@@ -548,6 +548,24 @@ export function LibraryScreen({ navigation }: Props) {
         )}
       </View>
 
+      {/* グループ切替 */}
+      <View style={styles.groupToggleRow}>
+        <Pressable
+          style={[styles.groupToggleBtn, groupMode === 'date' && { backgroundColor: colors.accent }]}
+          onPress={() => setGroupMode('date')}
+        >
+          <Ionicons name="calendar-outline" size={13} color={groupMode === 'date' ? '#fff' : colors.labelSecondary} />
+          <Text style={[styles.groupToggleText, { color: groupMode === 'date' ? '#fff' : colors.labelSecondary }]}>日付</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.groupToggleBtn, groupMode === 'category' && { backgroundColor: colors.accent }]}
+          onPress={() => setGroupMode('category')}
+        >
+          <Ionicons name="folder-outline" size={13} color={groupMode === 'category' ? '#fff' : colors.labelSecondary} />
+          <Text style={[styles.groupToggleText, { color: groupMode === 'category' ? '#fff' : colors.labelSecondary }]}>カテゴリ</Text>
+        </Pressable>
+      </View>
+
       {/* フィルターエリア（タグ or カテゴリが存在する場合のみ） */}
       {(tags.length > 0 || categories.length > 0) && (
         <View style={styles.filterArea}>
@@ -905,6 +923,59 @@ const styles = StyleSheet.create({
   cardDate: {
     ...TypeScale.caption2,
     flexShrink: 0,
+  },
+
+  // ---- スワイプアクション ----
+  swipeActionWrapper: {
+    width: SWIPE_ACTION_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swipeActionBtn: {
+    width: SWIPE_ACTION_WIDTH,
+    flex: 1,
+    backgroundColor: '#FF3B30',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    borderRadius: Radius.m,
+    marginBottom: Spacing.s,
+  },
+  swipeActionText: {
+    ...TypeScale.caption1,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
+  },
+
+  // ---- AI深堀ボタン ----
+  deepDiveBtn: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+
+  // ---- グループ切替 ----
+  groupToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: Spacing.m,
+    paddingVertical: 4,
+  },
+  groupToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.s,
+    paddingVertical: 5,
+    borderRadius: Radius.full,
+    backgroundColor: 'transparent',
+  },
+  groupToggleText: {
+    ...TypeScale.caption1,
+    fontWeight: '600' as const,
   },
 
   // ---- 空状態 ----
