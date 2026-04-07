@@ -1,6 +1,7 @@
 // ============================================================
 // ReviewScreen - フルスクリーンモーダル復習画面
 // カードフリップ → 評価ボタン → SM-2更新 → 次のカード
+// スワイプ評価・背景フラッシュ・評価内訳サマリー対応
 // ============================================================
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -11,6 +12,12 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSequence,
+} from 'react-native-reanimated';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../../hooks/useDatabase';
 import {
@@ -33,6 +40,22 @@ import type { ReviewStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewSession'>;
 
+// 評価ごとのフラッシュカラー
+const RATING_COLORS: Record<SimpleRating, string> = {
+  again:   '#FF3B30',
+  hard:    '#FF9500',
+  good:    '#007AFF',
+  perfect: '#34C759',
+};
+
+// 完了画面の内訳表示順
+const SUMMARY_ITEMS: { key: SimpleRating; label: string }[] = [
+  { key: 'perfect', label: '簡単' },
+  { key: 'good',    label: '良かった' },
+  { key: 'hard',    label: '難しかった' },
+  { key: 'again',   label: 'もう一度' },
+];
+
 export function ReviewScreen({ navigation, route }: Props) {
   const { db, isReady } = useDatabase();
   const { colors } = useTheme();
@@ -44,15 +67,25 @@ export function ReviewScreen({ navigation, route }: Props) {
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [ratingCounts, setRatingCounts] = useState<Record<string, number>>({
+    again: 0, hard: 0, good: 0, perfect: 0,
+  });
+
+  // フラッシュオーバーレイ
+  const flashOpacity = useSharedValue(0);
+  const [flashColor, setFlashColor] = useState('#007AFF');
+  const flashAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: flashOpacity.value,
+  }));
 
   useEffect(() => {
     if (!db || !isReady) return;
     (async () => {
       try {
-        const allItems = forceAll
+        // reviewIds 指定時はグループ内アイテムが期限外でも取得できるよう全件対象にする
+        const allItems = (forceAll || (reviewIds && reviewIds.length > 0))
           ? await getAllReviewableItems(db)
           : await getDueItems(db);
-        // reviewIds 指定時は対象アイテムに絞り込む
         const filtered = reviewIds && reviewIds.length > 0
           ? allItems.filter((ri) => reviewIds.includes(ri.item.id))
           : allItems;
@@ -71,6 +104,16 @@ export function ReviewScreen({ navigation, route }: Props) {
   const handleRate = useCallback(
     async (rating: SimpleRating) => {
       if (!db || !currentItem || !currentItem.item.review) return;
+
+      // 背景フラッシュ
+      setFlashColor(RATING_COLORS[rating]);
+      flashOpacity.value = withSequence(
+        withTiming(0.15, { duration: 100 }),
+        withTiming(0, { duration: 200 })
+      );
+
+      // 評価カウントアップ
+      setRatingCounts((prev) => ({ ...prev, [rating]: prev[rating] + 1 }));
 
       const quality = SIMPLE_RATINGS[rating];
       const review = currentItem.item.review;
@@ -108,6 +151,8 @@ export function ReviewScreen({ navigation, route }: Props) {
   // ---- 完了画面 ----
   if (isComplete) {
     const completedCount = items.length;
+    const maxCount = Math.max(...Object.values(ratingCounts), 1);
+
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.completeContainer}>
@@ -118,9 +163,37 @@ export function ReviewScreen({ navigation, route }: Props) {
             {completedCount > 0 ? '復習完了！' : '今日の復習はありません'}
           </Text>
           {completedCount > 0 && (
-            <Text style={[styles.completeSubtitle, { color: colors.labelSecondary }]}>
-              {completedCount}件の復習を完了しました
-            </Text>
+            <>
+              <Text style={[styles.completeSubtitle, { color: colors.labelSecondary }]}>
+                {completedCount}件の復習を完了しました
+              </Text>
+
+              {/* 評価内訳 */}
+              <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
+                {SUMMARY_ITEMS.map(({ key, label }) => {
+                  const count = ratingCounts[key] ?? 0;
+                  const barWidth = count > 0 ? (count / maxCount) * 100 : 0;
+                  return (
+                    <View key={key} style={styles.summaryRow}>
+                      <Text style={[styles.summaryLabel, { color: colors.labelSecondary }]}>
+                        {label}
+                      </Text>
+                      <View style={[styles.summaryTrack, { backgroundColor: colors.backgroundSecondary }]}>
+                        <View
+                          style={[
+                            styles.summaryBar,
+                            { backgroundColor: RATING_COLORS[key], width: `${barWidth}%` },
+                          ]}
+                        />
+                      </View>
+                      <Text style={[styles.summaryCount, { color: colors.label }]}>
+                        {count}枚
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </>
           )}
           <Pressable
             style={[styles.doneButton, { backgroundColor: colors.accent }]}
@@ -136,6 +209,12 @@ export function ReviewScreen({ navigation, route }: Props) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* 背景フラッシュオーバーレイ（評価時に一瞬光る） */}
+      <Animated.View
+        style={[styles.flashOverlay, { backgroundColor: flashColor }, flashAnimatedStyle]}
+        pointerEvents="none"
+      />
+
       {/* プログレスセクション（バー + カウンター） */}
       <ReviewProgressBar currentIndex={currentIndex} total={items.length} />
 
@@ -146,6 +225,8 @@ export function ReviewScreen({ navigation, route }: Props) {
           title={currentItem.item.title}
           content={currentItem.item.content}
           onFlip={() => setIsCardFlipped(true)}
+          isFlipped={isCardFlipped}
+          onSwipeRate={handleRate}
         />
       </View>
 
@@ -177,6 +258,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  // フラッシュオーバーレイ
+  flashOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 999,
   },
 
   // カードエリア
@@ -226,5 +313,40 @@ const styles = StyleSheet.create({
   doneButtonText: {
     ...TypeScale.headline,
     color: '#FFFFFF',
+  },
+
+  // 評価内訳カード
+  summaryCard: {
+    width: '100%',
+    borderRadius: Radius.l,
+    padding: Spacing.m,
+    gap: Spacing.s,
+    marginTop: Spacing.s,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.s,
+  },
+  summaryLabel: {
+    ...TypeScale.footnote,
+    width: 68,
+    textAlign: 'right',
+  },
+  summaryTrack: {
+    flex: 1,
+    height: 8,
+    borderRadius: Radius.full,
+    overflow: 'hidden',
+  },
+  summaryBar: {
+    height: '100%',
+    borderRadius: Radius.full,
+    minWidth: 4,
+  },
+  summaryCount: {
+    ...TypeScale.footnote,
+    width: 28,
+    textAlign: 'right',
   },
 });

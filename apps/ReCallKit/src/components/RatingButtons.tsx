@@ -48,11 +48,18 @@ const RATINGS: {
   },
 ];
 
+const HAPTIC_MAP: Record<SimpleRating, () => Promise<void>> = {
+  again:   () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy),
+  hard:    () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),
+  good:    () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
+  perfect: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+};
+
 export function RatingButtons({ onRate }: RatingButtonsProps) {
   const { colors } = useTheme();
 
   const handlePress = async (rating: SimpleRating) => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await HAPTIC_MAP[rating]();
     onRate(rating);
   };
 
