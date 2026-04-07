@@ -379,7 +379,7 @@ export function URLImportListScreen({ navigation }: Props) {
             <Pressable
               style={({ pressed }) => [
                 styles.actionButton,
-                { borderColor: colors.accent, backgroundColor: colors.accent + '14', opacity: pressed ? 0.7 : 1 },
+                { borderColor: colors.separator, backgroundColor: 'transparent', opacity: pressed ? 0.7 : 1 },
               ]}
               onPress={() => {
                 const result = JSON.parse(item.result_json!);
@@ -392,10 +392,10 @@ export function URLImportListScreen({ navigation }: Props) {
                 });
               }}
               accessibilityRole="button"
-              accessibilityLabel="確認して保存"
+              accessibilityLabel="プレビュー"
             >
-              <Ionicons name="checkbox-outline" size={14} color={colors.accent} />
-              <Text style={[styles.actionButtonText, { color: colors.accent }]}>確認して保存</Text>
+              <Ionicons name="eye-outline" size={14} color={colors.label} />
+              <Text style={[styles.actionButtonText, { color: colors.label }]}>プレビュー</Text>
             </Pressable>
           )}
           {/* 旧フロー互換: item_idのみある場合はライブラリで見るを表示 */}

@@ -6,11 +6,11 @@
 
 import { LOCAL_AI_MAX_TEXT_LENGTH } from '../config/localAI';
 
-const FETCH_TIMEOUT_MS = 30_000;
+const FETCH_TIMEOUT_MS = 15_000;
 
 /** リトライ対象のHTTPステータス */
 const RETRYABLE_STATUS = new Set([403, 429, 500, 502, 503, 504]);
-const MAX_RETRIES = 2;
+const MAX_RETRIES = 1;
 const RETRY_DELAY_MS = 1_500;
 
 /**
@@ -178,24 +178,35 @@ function extractText(html: string): string {
  *
  * 403/429/5xx エラー時はUA を変えてリトライする。
  */
+/**
+ * React Native では AbortController が fetch を確実に中断しない既知問題がある。
+ * Promise.race でタイムアウトを強制し、タイムアウト時はリトライしない。
+ */
+async function fetchWithTimeout(url: string, uaIndex: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => {
+      controller.abort();
+      reject(new Error('TIMEOUT'));
+    }, FETCH_TIMEOUT_MS),
+  );
+  const fetchPromise = fetch(url, {
+    headers: buildFetchHeaders(uaIndex),
+    signal: controller.signal,
+    redirect: 'follow',
+  });
+  return Promise.race([fetchPromise, timeoutPromise]);
+}
+
 export async function fetchAndExtractText(url: string): Promise<string> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
     try {
-      const res = await fetch(url, {
-        headers: buildFetchHeaders(attempt),
-        signal: controller.signal,
-        redirect: 'follow',
-      });
+      const res = await fetchWithTimeout(url, attempt);
 
       if (res.ok) {
         const html = await res.text();
-        clearTimeout(timeoutId);
-
         const text = extractText(html);
         if (text.length === 0) {
           throw new Error('ページからテキストを抽出できませんでした');
@@ -203,34 +214,27 @@ export async function fetchAndExtractText(url: string): Promise<string> {
         return text;
       }
 
-      // リトライ可能なステータスかチェック
       if (RETRYABLE_STATUS.has(res.status) && attempt < MAX_RETRIES) {
-        clearTimeout(timeoutId);
-        console.warn(
-          `[htmlExtractor] HTTP ${res.status} for ${url}, retrying (${attempt + 1}/${MAX_RETRIES})...`,
-        );
+        console.warn(`[htmlExtractor] HTTP ${res.status} → retry (${attempt + 1}/${MAX_RETRIES})`);
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)));
         continue;
       }
 
-      clearTimeout(timeoutId);
       throw new Error(
         `ページの読み込みに失敗しました（HTTP ${res.status}${res.status === 403 ? ' — アクセスがブロックされました' : ''}）`,
       );
     } catch (err) {
-      clearTimeout(timeoutId);
+      const msg = err instanceof Error ? err.message : '';
 
-      if (err instanceof Error && err.name === 'AbortError') {
-        throw new Error('ページの読み込みがタイムアウトしました（30秒）');
+      // タイムアウトはリトライしない（同じURLは再度ハングする可能性が高い）
+      if (msg === 'TIMEOUT' || (err instanceof Error && err.name === 'AbortError')) {
+        throw new Error(`ページの読み込みがタイムアウトしました（${FETCH_TIMEOUT_MS / 1000}秒）`);
       }
 
       lastError = err instanceof Error ? err : new Error('ページの読み込みに失敗しました');
 
-      // ネットワークエラーもリトライ（タイムアウト以外）
-      if (attempt < MAX_RETRIES && lastError.name !== 'AbortError') {
-        console.warn(
-          `[htmlExtractor] ${lastError.message} for ${url}, retrying (${attempt + 1}/${MAX_RETRIES})...`,
-        );
+      if (attempt < MAX_RETRIES) {
+        console.warn(`[htmlExtractor] ${lastError.message} → retry (${attempt + 1}/${MAX_RETRIES})`);
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)));
         continue;
       }

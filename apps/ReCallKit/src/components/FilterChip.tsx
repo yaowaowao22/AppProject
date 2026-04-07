@@ -43,8 +43,8 @@ export function FilterChip({
         styles.chip,
         {
           backgroundColor: active ? resolvedActiveColor : resolvedBgColor,
-          borderWidth: active ? 0 : 1,
-          borderColor: resolvedTextInactiveColor + '50',
+          borderWidth: active ? 0 : StyleSheet.hairlineWidth,
+          borderColor: colors.separator,
           opacity: pressed ? 0.8 : 1,
         },
       ]}

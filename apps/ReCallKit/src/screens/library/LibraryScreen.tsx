@@ -535,7 +535,7 @@ export function LibraryScreen({ navigation }: Props) {
     <View style={[styles.container, { backgroundColor: colors.backgroundGrouped }]}>
 
       {/* 検索バー */}
-      <View style={[styles.searchBar, { backgroundColor: colors.backgroundSecondary }]}>
+      <View style={[styles.searchBar, { backgroundColor: isDark ? 'rgba(118,118,128,0.24)' : 'rgba(142,142,147,0.12)' }]}>
         <Ionicons name="search" size={18} color={colors.labelTertiary} />
         <TextInput
           style={[styles.searchInput, { color: colors.label }]}
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.s,
     marginBottom: Spacing.xs,
     paddingHorizontal: Spacing.m,
-    borderRadius: Radius.s,
+    borderRadius: 10,
     height: 44,
     minHeight: 44,
     gap: Spacing.xs,
