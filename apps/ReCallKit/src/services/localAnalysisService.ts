@@ -331,21 +331,101 @@ export async function downloadModel(): Promise<void> {
 
 /** チャンクあたりの文字数。プロンプト指示 + テキスト + 出力が 4096 トークン内に収まるよう設定 */
 const CHUNK_SIZE = 3_500;
-/** 前後チャンクの重複文字数（文脈の連続性を確保） */
-const CHUNK_OVERLAP = 200;
 
+/**
+ * 自然な区切りが見つからないときのフォールバック重複文字数。
+ * 自然な区切り（。？！\n）で分割できた場合は重複ゼロ。
+ */
+const CHUNK_OVERLAP_FALLBACK = 50;
+
+/**
+ * 段落・文末で分割するパラグラフアウェアチャンキング。
+ *
+ * 戦略:
+ *   1. チャンク末尾 35% の範囲で日本語・英語の文末（。？！\n . ! ?）を後ろから探す
+ *   2. 見つかった場合 → その位置で分割し、オーバーラップなし（重複ゼロ）
+ *   3. 見つからない場合 → hardEnd で分割し、CHUNK_OVERLAP_FALLBACK 文字だけ重複
+ *
+ * 効果:
+ *   - 文中断ちきれ削減 → LLM が断片を補完する無駄トークンを削減
+ *   - オーバーラップ 200 → 0〜50 に削減 → チャンク数・入力トークン削減
+ */
 function splitTextIntoChunks(text: string): string[] {
   if (text.length <= CHUNK_SIZE) return [text];
 
   const chunks: string[] = [];
   let pos = 0;
+
   while (pos < text.length) {
-    const end = Math.min(pos + CHUNK_SIZE, text.length);
-    chunks.push(text.slice(pos, end));
-    if (end === text.length) break;
-    pos = end - CHUNK_OVERLAP;
+    const hardEnd = Math.min(pos + CHUNK_SIZE, text.length);
+
+    if (hardEnd === text.length) {
+      chunks.push(text.slice(pos));
+      break;
+    }
+
+    // チャンク末尾 35% の範囲で自然な区切りを後ろから探す
+    const searchStart = pos + Math.floor(CHUNK_SIZE * 0.65);
+    let naturalEnd = -1;
+
+    for (let i = hardEnd - 1; i >= searchStart; i--) {
+      const ch = text[i];
+      // 日本語文末
+      if (ch === '。' || ch === '？' || ch === '！' || ch === '\n') {
+        naturalEnd = i + 1;
+        break;
+      }
+      // 英語文末（次の文字が空白か行末）
+      if (ch === '.' || ch === '!' || ch === '?') {
+        const next = text[i + 1];
+        if (!next || next === ' ' || next === '\n') {
+          naturalEnd = i + 1;
+          break;
+        }
+      }
+    }
+
+    if (naturalEnd > 0) {
+      // 自然な区切り → オーバーラップ不要
+      chunks.push(text.slice(pos, naturalEnd));
+      pos = naturalEnd;
+    } else {
+      // フォールバック → 小さいオーバーラップ
+      chunks.push(text.slice(pos, hardEnd));
+      pos = hardEnd - CHUNK_OVERLAP_FALLBACK;
+    }
   }
+
   return chunks;
+}
+
+// ============================================================
+// セッションキャッシュ（同一URLの二重推論を防ぐ）
+// ============================================================
+
+/**
+ * セッション中にすでに解析済みのURLをキャッシュ（最大10件）。
+ * 再試行・同一URLの複数登録で推論コストをゼロにする。
+ */
+const _sessionCache = new Map<string, AnalysisResult>();
+const SESSION_CACHE_MAX = 10;
+
+function getCachedResult(url: string): AnalysisResult | null {
+  return _sessionCache.get(url) ?? null;
+}
+
+function setCachedResult(url: string, result: AnalysisResult): void {
+  if (_sessionCache.size >= SESSION_CACHE_MAX) {
+    // 最も古いエントリを削除
+    const firstKey = _sessionCache.keys().next().value;
+    if (firstKey !== undefined) _sessionCache.delete(firstKey);
+  }
+  _sessionCache.set(url, result);
+}
+
+/** テスト用：キャッシュをクリアする */
+export function clearAnalysisCache(): void {
+  _sessionCache.clear();
 }
 
 // ============================================================
@@ -482,7 +562,18 @@ function normalize(parsed: Partial<AnalysisResult>): AnalysisResult {
 // LLM推論ヘルパー（タイムアウト付き）
 // ============================================================
 
-async function runCompletion(context: LlamaContext, prompt: string): Promise<string> {
+/**
+ * 第1チャンク: title/summary/category/tags + Q&A の全JSON → 余裕を持たせる
+ * 継続チャンク: Q&Aのみ → 1536 で十分（約30〜40ペア分）
+ */
+const N_PREDICT_FIRST        = 2048;
+const N_PREDICT_CONTINUATION = 1536;
+
+async function runCompletion(
+  context: LlamaContext,
+  prompt: string,
+  nPredict: number = N_PREDICT_FIRST,
+): Promise<string> {
   let aborted = false;
   const timeoutId = setTimeout(() => {
     aborted = true;
@@ -491,7 +582,12 @@ async function runCompletion(context: LlamaContext, prompt: string): Promise<str
 
   try {
     const completion = await context.completion(
-      { prompt, n_predict: 2048, temperature: 0, stop: ['<end_of_turn>', '<eos>', '</s>'] },
+      {
+        prompt,
+        n_predict: nPredict,
+        temperature: 0,
+        stop: ['<end_of_turn>', '<eos>', '</s>'],
+      },
       (_data: TokenData) => {},
     );
     if (aborted) throw new Error('AI解析がタイムアウトしました（3分）');
@@ -506,7 +602,12 @@ async function runCompletion(context: LlamaContext, prompt: string): Promise<str
 // ============================================================
 
 /**
- * URLのテキストを CHUNK_SIZE ごとに分割し、チャンクごとに推論を実行して Q&A を蓄積する。
+ * URLのテキストを段落境界で分割し、チャンクごとに推論を実行して Q&A を蓄積する。
+ *
+ * 最適化ポイント:
+ *   - セッションキャッシュ: 同一URLは推論をスキップしてキャッシュ結果を返す
+ *   - パラグラフアウェアチャンキング: 自然な区切りで分割してオーバーラップを最小化
+ *   - 継続チャンクの n_predict 削減: 2048 → 1536（Q&Aのみ生成のため）
  *
  * @param onProgress 進捗コールバック（省略可）
  *   - currentChunk: 処理中チャンク番号（0始まり）
@@ -516,6 +617,13 @@ export async function analyzeUrlLocal(
   url: string,
   onProgress?: (currentChunk: number, totalChunks: number) => void,
 ): Promise<AnalysisResult> {
+  // ---- セッションキャッシュチェック ----
+  const cached = getCachedResult(url);
+  if (cached) {
+    console.log('[localAnalysis] キャッシュヒット（推論スキップ）:', url);
+    return cached;
+  }
+
   const text = await fetchAndExtractText(url);
 
   let context: LlamaContext;
@@ -529,25 +637,42 @@ export async function analyzeUrlLocal(
   }
 
   const chunks = splitTextIntoChunks(text);
+  console.log(
+    `[localAnalysis] ${chunks.length}チャンク / ${text.length}文字 / URL: ${url}`,
+  );
 
   // ---- 第1チャンク: title / summary / category / tags + Q&A ----
   onProgress?.(0, chunks.length);
-  const firstRaw = await runCompletion(context, buildFirstChunkPrompt(url, chunks[0], chunks.length));
+  const firstRaw = await runCompletion(
+    context,
+    buildFirstChunkPrompt(url, chunks[0], chunks.length),
+    N_PREDICT_FIRST,
+  );
   const baseResult = parseAnalysisResult(firstRaw);
 
-  if (chunks.length === 1) return baseResult;
+  let finalResult: AnalysisResult;
 
-  // ---- 第2チャンク以降: Q&A のみ追加生成 ----
-  const allQaPairs: QAPair[] = [...baseResult.qa_pairs];
+  if (chunks.length === 1) {
+    finalResult = baseResult;
+  } else {
+    // ---- 第2チャンク以降: Q&A のみ追加生成（n_predict 削減） ----
+    const allQaPairs: QAPair[] = [...baseResult.qa_pairs];
 
-  for (let i = 1; i < chunks.length; i++) {
-    onProgress?.(i, chunks.length);
-    const chunkRaw = await runCompletion(
-      context,
-      buildChunkPrompt(url, chunks[i], i, chunks.length),
-    );
-    allQaPairs.push(...parseChunkQaPairs(chunkRaw));
+    for (let i = 1; i < chunks.length; i++) {
+      onProgress?.(i, chunks.length);
+      const chunkRaw = await runCompletion(
+        context,
+        buildChunkPrompt(url, chunks[i], i, chunks.length),
+        N_PREDICT_CONTINUATION,
+      );
+      allQaPairs.push(...parseChunkQaPairs(chunkRaw));
+    }
+
+    finalResult = { ...baseResult, qa_pairs: allQaPairs };
   }
 
-  return { ...baseResult, qa_pairs: allQaPairs };
+  // ---- セッションキャッシュに保存 ----
+  setCachedResult(url, finalResult);
+
+  return finalResult;
 }
