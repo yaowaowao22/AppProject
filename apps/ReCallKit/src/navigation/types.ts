@@ -24,6 +24,16 @@ export type QAPreviewParams = {
   category: string;
 };
 
+// ---- 単体Screen再利用用の最小ParamList ----
+// 複数のStackに同じScreenを配置するとき、Screen側はこちらを参照する
+export type QAPreviewScreenParamList = {
+  QAPreview: QAPreviewParams;
+};
+
+export type ReviewSessionScreenParamList = {
+  ReviewSession: { reviewIds?: number[]; forceAll?: boolean };
+};
+
 // ---- Root ----
 export type RootStackParamList = {
   Onboarding: undefined;
@@ -47,6 +57,8 @@ export type DrawerParamList = {
 export type HomeStackParamList = {
   HomeMain: undefined;
   ItemDetail: { itemId: number };
+  ReviewSession: { reviewIds?: number[]; forceAll?: boolean };
+  URLImportList: undefined;
 };
 
 // ---- Library Stack ----

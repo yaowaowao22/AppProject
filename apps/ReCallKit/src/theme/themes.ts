@@ -20,6 +20,7 @@ export type ThemeId =
   | 'light-indigo'
   | 'light-crimson'
   | 'light-jade'
+  | 'light-blue'
   | 'dark-amber'
   | 'dark-ocean'
   | 'dark-forest'
@@ -30,6 +31,7 @@ export type ThemeId =
   | 'dark-teal'
   | 'dark-indigo'
   | 'dark-crimson'
+  | 'dark-blue'
   | 'mono-white'
   | 'mono-paper'
   | 'mono-stone'
@@ -333,6 +335,18 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
     swatchBg: '#FFFFFF',
     colors: lightBase('#06796A', 6, 121, 106),
     sidebar: ls('#06796A', 6, 121, 106),
+  },
+
+  // primary: #007AFF / secondary: #5AC8FA / tint: #E3F2FF
+  'light-blue': {
+    id: 'light-blue',
+    name: 'ブルー',
+    category: 'light',
+    isDark: false,
+    swatchColor: '#007AFF',
+    swatchBg: '#FFFFFF',
+    colors: lightBase('#007AFF', 0, 122, 255),
+    sidebar: ls('#007AFF', 0, 122, 255),
   },
 
   // ── ダーク（10） ────────────────────────────────────────────

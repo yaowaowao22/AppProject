@@ -8,6 +8,16 @@ export const RecallAmber = {
   dark: '#F5A623',
 } as const;
 
+// Blue アクションカラー体系（3色）
+// primary   : メインアクション・CTA ボタン（iOS標準ブルー）
+// secondary : 補助強調・アイコン・インジケーター
+// tint      : 背景塗り・ハイライト・フィルターバッジ背景
+export const RecallBlue = {
+  primary:   { light: '#007AFF', dark: '#0A84FF' },
+  secondary: { light: '#5AC8FA', dark: '#64D2FF' },
+  tint:      { light: '#E3F2FF', dark: '#1C3558' },
+} as const;
+
 // iOS システムカラー（React Native の useColorScheme で切り替え）
 export const SystemColors = {
   green: '#30D158',   // ストリーク・正解
