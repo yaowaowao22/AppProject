@@ -474,7 +474,7 @@ export function URLImportListScreen({ navigation }: Props) {
       : isPaused ? colors.labelTertiary : colors.accent;
 
     return (
-      <View style={[styles.card, { backgroundColor: colors.card }, CardShadow]}>
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.separator }, CardShadow]}>
         <View style={styles.cardHeader}>
           <View style={[styles.statusBadge, { backgroundColor: statusColor + '22' }]}>
             {!isPaused && !modelDownload.error
