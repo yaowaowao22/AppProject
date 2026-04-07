@@ -11,7 +11,7 @@ import { HeaderHamburger } from '../components/HeaderHamburger';
 export function makeNavigatorOptions(colors: ColorScheme): NativeStackNavigationOptions {
   return {
     headerStyle: { backgroundColor: colors.background },
-    headerTintColor: colors.accent,
+    headerTintColor: colors.labelSecondary,
     headerTitleStyle: { color: colors.label },
     headerShadowVisible: false,
   };
@@ -50,8 +50,8 @@ export function makeLargeTitleOptions(colors: ColorScheme): NativeStackNavigatio
   return {
     headerTitleStyle: {
       color: colors.label,
-      fontSize: 20,
-      fontWeight: '700',
+      fontSize: 22,
+      fontWeight: '400',
     },
     headerLeft: () => <HeaderHamburger />,
   };
