@@ -716,13 +716,18 @@ export async function analyzeUrlLocal(
   );
 
   // ---- 第1チャンク: title / summary / category / tags + Q&A ----
+  // モデル初回ロード直後は出力が不安定なことがあるため、パース失敗時に1回リトライする
   onProgress?.(0, chunks.length);
-  const firstRaw = await runCompletion(
-    context,
-    buildFirstChunkPrompt(url, chunks[0], chunks.length),
-    N_PREDICT_FIRST,
-  );
-  const baseResult = parseAnalysisResult(firstRaw);
+  const firstPrompt = buildFirstChunkPrompt(url, chunks[0], chunks.length);
+  let baseResult: AnalysisResult;
+  try {
+    const firstRaw = await runCompletion(context, firstPrompt, N_PREDICT_FIRST);
+    baseResult = parseAnalysisResult(firstRaw);
+  } catch (err) {
+    console.warn('[localAnalysis] 第1チャンクパース失敗、リトライします:', err);
+    const retryRaw = await runCompletion(context, firstPrompt, N_PREDICT_FIRST);
+    baseResult = parseAnalysisResult(retryRaw);
+  }
 
   let finalResult: AnalysisResult;
 

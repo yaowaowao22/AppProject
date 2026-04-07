@@ -6,7 +6,7 @@
 // - 全ジョブの進捗を一覧表示（新しい順）
 // ============================================================
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useReducer } from 'react';
 import {
   View,
   Text,
@@ -41,6 +41,15 @@ import {
 import type { LibraryStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'URLImportList'>;
+
+// ---- チャンク進捗（モジュールレベル: 画面遷移しても消えない） ----
+type ChunkProgress = { jobId: number; current: number; total: number } | null;
+let _chunkProgress: ChunkProgress = null;
+const _chunkProgressListeners = new Set<() => void>();
+function setActiveChunkProgress(p: ChunkProgress) {
+  _chunkProgress = p;
+  _chunkProgressListeners.forEach(fn => fn());
+}
 
 // ---- 定数 ----
 const POLL_INTERVAL_MS = 2000;
@@ -198,8 +207,15 @@ export function URLImportListScreen({ navigation }: Props) {
 
   const [jobs, setJobs] = useState<UrlImportJob[]>([]);
   const [loading, setLoading] = useState(true);
-  const [chunkProgress, setChunkProgress] = useState<{ jobId: number; current: number; total: number } | null>(null);
+  const [, forceUpdate] = useReducer(x => x + 1, 0);
   const processingRef = useRef(false);
+
+  // モジュールレベルのチャンク進捗を購読（画面遷移後に戻っても最新値を読める）
+  useEffect(() => {
+    _chunkProgressListeners.add(forceUpdate);
+    return () => { _chunkProgressListeners.delete(forceUpdate); };
+  }, [forceUpdate]);
+  const chunkProgress = _chunkProgress;
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   // ---- モデルダウンロード状態（グローバル購読） ----
@@ -255,10 +271,10 @@ export function URLImportListScreen({ navigation }: Props) {
 
     processingRef.current = true;
     executeJob(db, pending, (current, total) => {
-      setChunkProgress({ jobId: pending.id, current, total });
+      setActiveChunkProgress({ jobId: pending.id, current, total });
     }).finally(() => {
       processingRef.current = false;
-      setChunkProgress(null);
+      setActiveChunkProgress(null);
       loadJobs();
     });
   }, [jobs, db, isReady, loadJobs]);
@@ -329,9 +345,19 @@ export function URLImportListScreen({ navigation }: Props) {
             )}
             <Text style={[styles.statusLabel, { color: statusColor }]}>{cfg.label}</Text>
           </View>
-          <Text style={[styles.timeText, { color: colors.labelTertiary }]}>
-            {relativeTime(item.created_at)}
-          </Text>
+          <View style={styles.cardHeaderRight}>
+            <Text style={[styles.timeText, { color: colors.labelTertiary }]}>
+              {relativeTime(item.created_at)}
+            </Text>
+            <Pressable
+              onPress={() => handleDelete(item)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="削除"
+            >
+              <Ionicons name="trash-outline" size={14} color={colors.labelTertiary} />
+            </Pressable>
+          </View>
         </View>
 
         {/* タイトル or URL */}
@@ -352,7 +378,7 @@ export function URLImportListScreen({ navigation }: Props) {
         {/* 解析中プログレスバー */}
         {progress && (
           <View style={styles.chunkProgressWrap}>
-            <View style={[styles.progressTrack, { backgroundColor: statusColor + '33' }]}>
+            <View style={[styles.progressTrack, { backgroundColor: statusColor + '33', flex: 1 }]}>
               <View style={[
                 styles.progressFill,
                 {
@@ -578,6 +604,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  cardHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.s,
   },
   statusBadge: {
     flexDirection: 'row',
