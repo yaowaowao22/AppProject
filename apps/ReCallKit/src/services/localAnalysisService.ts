@@ -23,6 +23,7 @@ import {
   type ModelDefinition,
 } from '../config/modelCatalog';
 import { fetchAndExtractText } from './htmlExtractorService';
+import { beginBackgroundTask, endBackgroundTask, getBackgroundTimeRemaining } from 'background-task';
 import type { AnalysisResult, QAPair } from '../types/analysis';
 
 // ============================================================
@@ -777,6 +778,14 @@ export async function analyzeUrlLocal(
 
   _activeAnalysisCount++;
 
+  // iOS にバックグラウンド実行時間を要求する。
+  // これにより、バックグラウンド中でもアプリが一時停止されず推論を継続できる。
+  const bgTaskKey = await beginBackgroundTask('ReCallKit URL Analysis');
+  if (bgTaskKey) {
+    console.log('[localAnalysis] バックグラウンドタスク開始:', bgTaskKey,
+      `残り時間: ${Math.round(getBackgroundTimeRemaining())}秒`);
+  }
+
   try {
   // current=-1 をフェッチ中のセンチネルとして使う
   onProgress?.(-1, 0);
@@ -845,6 +854,9 @@ export async function analyzeUrlLocal(
 
   } finally {
     _activeAnalysisCount = Math.max(0, _activeAnalysisCount - 1);
+
+    // バックグラウンドタスクを終了（OS にリソースを返す）
+    endBackgroundTask(bgTaskKey);
 
     // バックグラウンド中に解析が完了した場合 → ここで遅延解放する
     if (_activeAnalysisCount === 0) {

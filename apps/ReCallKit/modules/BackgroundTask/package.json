@@ -1,0 +1,7 @@
+{
+  "name": "background-task",
+  "version": "1.0.0",
+  "description": "iOS UIApplication.beginBackgroundTask wrapper for ReCallKit",
+  "main": "src/index.ts",
+  "license": "MIT"
+}

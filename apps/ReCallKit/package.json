@@ -42,6 +42,7 @@
     "react-native-screens": "~4.16.0",
     "react-native-svg": "15.12.1",
     "react-native-web": "^0.21.0",
+    "background-task": "file:./modules/BackgroundTask",
     "recall-widget-bridge": "file:./modules/RecallWidgetBridge"
   },
   "devDependencies": {
