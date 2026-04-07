@@ -18,14 +18,14 @@ export interface ModelDefinition {
 
 export const MODEL_CATALOG: ModelDefinition[] = [
   {
-    id: 'gemma4-q2k',
-    name: 'Gemma 4 E2B Q2_K',
+    id: 'gemma4-iq2m',
+    name: 'Gemma 4 E2B UD-IQ2_M',
     tag: '軽量',
     description: '最小サイズ・最速。iPhone 12以降で動作。精度はやや低下',
-    sizeGB: 1.7,
-    sizeBytesEstimate: 1_826_000_000,
-    url: 'https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q2_K.gguf',
-    filename: 'gemma-4-E2B-Q2_K.gguf',
+    sizeGB: 2.3,
+    sizeBytesEstimate: 2_459_000_000,
+    url: 'https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-UD-IQ2_M.gguf',
+    filename: 'gemma-4-E2B-UD-IQ2_M.gguf',
     nGpuLayers: 99,
     nCtx: 4096,
   },
