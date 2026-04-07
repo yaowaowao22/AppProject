@@ -1,33 +1,26 @@
 # EAS Build - モノレポルートの除外設定
 # ReCallKit以外の全アプリ・不要ファイルを除外する
 
-# ReCallKit以外の全アプリを除外
+# ---- アプリ: ReCallKit以外を全除外 ----
 apps/*
 !apps/ReCallKit
 
-# ReCallKit内の不要ファイル
+# ---- ReCallKit内の不要ファイル ----
 apps/ReCallKit/node_modules/
 apps/ReCallKit/lambda/
 apps/ReCallKit/dist/
 apps/ReCallKit/.expo/
 apps/ReCallKit/test-results/
 apps/ReCallKit/docs/
-apps/ReCallKit/*.md
-apps/ReCallKit/*.csv
-apps/ReCallKit/*.html
 
-# モノレポルートの不要ファイル
+# ---- モノレポルートの不要ファイル ----
 node_modules/
 .turbo/
 .git/
 docs/
-*.csv
-*.json
-!package.json
-!pnpm-workspace.yaml
-!turbo.json
 
-# 各パッケージのビルド成果物
-packages/**/node_modules/
-packages/**/dist/
-packages/**/.turbo/
+# ---- ビルド不要なデータファイル ----
+*.csv
+apps-*.json
+apps-*.md
+generate-apps.js
