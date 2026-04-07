@@ -6,7 +6,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { Spacing, Radius } from '../theme/spacing';
+import { Spacing } from '../theme/spacing';
 import type { CategoryStats } from '../db/queries';
 
 interface Props {
@@ -30,7 +30,7 @@ export function CategoryMasteryBar({ stats, onPressCategory }: Props) {
   if (stats.length === 0) return null;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.card }]}>
+    <View style={styles.container}>
       {/* ラベル */}
       <Text style={styles.labelUpper}>Mastery</Text>
 
@@ -58,7 +58,7 @@ export function CategoryMasteryBar({ stats, onPressCategory }: Props) {
             </Text>
 
             {/* プログレスバー */}
-            <View style={[styles.track, { backgroundColor: colors.backgroundSecondary }]}>
+            <View style={[styles.track, { backgroundColor: '#F8F9FA' }]}>
               <View
                 style={[
                   styles.fill,
@@ -83,24 +83,23 @@ export function CategoryMasteryBar({ stats, onPressCategory }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: Radius.l,
-    overflow: 'hidden',
     paddingHorizontal: Spacing.m,
     paddingTop: 20,
     paddingBottom: 20,
   },
   labelUpper: {
     fontSize: 11,
+    fontWeight: '500',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     color: '#9AA0A6',
-    marginBottom: Spacing.s,
+    marginBottom: 16,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
-    gap: Spacing.s,
+    gap: 12,
   },
   categoryLabel: {
     flex: 1,
@@ -119,6 +118,7 @@ const styles = StyleSheet.create({
   },
   pctText: {
     fontSize: 13,
+    fontWeight: '500',
     minWidth: 32,
     textAlign: 'right',
   },

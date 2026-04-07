@@ -7,7 +7,6 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
-import { Spacing, Radius } from '../theme/spacing';
 
 export type ShortcutAction = 'review' | 'url_add' | 'library' | 'map' | 'manual_add';
 
@@ -42,7 +41,7 @@ export function ShortcutList({ onPress }: Props) {
   const { colors } = useTheme();
 
   return (
-    <View style={[styles.list, { backgroundColor: colors.card, borderRadius: Radius.l }]}>
+    <View style={styles.list}>
       {SHORTCUTS.map((item, index) => {
         const isLast = index === SHORTCUTS.length - 1;
         return (
@@ -83,12 +82,13 @@ export function ShortcutList({ onPress }: Props) {
 
 const styles = StyleSheet.create({
   list: {
-    overflow: 'hidden',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 20,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.m,
     paddingVertical: 14,
     gap: 16,
   },
