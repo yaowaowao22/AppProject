@@ -21,10 +21,9 @@ import { GoogleCalendarColors } from '../../theme/colors';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
 import type { LibraryStackParamList } from '../../navigation/types';
-import type { Item, Tag, Review, DeepDive } from '../../types';
+import type { Item, Tag, DeepDive } from '../../types';
 import { getDeepDivesForItem } from '../../db/deepDiveRepository';
 import { DeepDiveButton } from '../../components/DeepDiveButton';
-import { DeepDiveResultModal } from '../../components/DeepDiveResultModal';
 import { FetchedTextModal } from '../../components/FetchedTextModal';
 import { subscribeDeepDive } from '../../services/deepDiveService';
 import { getJobByUrl } from '../../db/urlJobRepository';
@@ -42,16 +41,6 @@ function getCategoryPill(category: string): { bg: string; text: string } {
   return CATEGORY_COLORS[category] ?? { bg: GoogleCalendarColors.pillBlueBg, text: GoogleCalendarColors.blue };
 }
 
-// ---- 次の復習までの日数テキスト ----
-function getNextReviewText(review: Review): string {
-  const now = new Date();
-  const next = new Date(review.next_review_at);
-  const diffDays = Math.ceil((next.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays <= 0) return '今日';
-  if (diffDays === 1) return '明日';
-  return `${diffDays}日`;
-}
-
 export function ItemDetailScreen({ route }: Props) {
   const { itemId } = route.params;
   const db = useDB();
@@ -61,10 +50,8 @@ export function ItemDetailScreen({ route }: Props) {
 
   const [item, setItem] = useState<Item | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
-  const [review, setReview] = useState<Review | null>(null);
   const [loading, setLoading] = useState(true);
   const [deepDives, setDeepDives] = useState<DeepDive[]>([]);
-  const [deepDiveModalVisible, setDeepDiveModalVisible] = useState(false);
   const [fetchedText, setFetchedText] = useState<string | null>(null);
   const [showFetchedText, setShowFetchedText] = useState(false);
 
@@ -93,12 +80,6 @@ export function ItemDetailScreen({ route }: Props) {
         [itemId]
       );
       setTags(tagRows);
-
-      const reviewRow = await db.getFirstAsync<Review>(
-        'SELECT * FROM reviews WHERE item_id = ?',
-        [itemId]
-      );
-      setReview(reviewRow ?? null);
 
       const dives = await getDeepDivesForItem(db, itemId);
       setDeepDives(dives);
@@ -370,37 +351,28 @@ export function ItemDetailScreen({ route }: Props) {
       {/* ── セパレーター ── */}
       <View style={[s.sep, { backgroundColor: colors.separator }]} />
 
-      {/* ── Answer セクション ── */}
+      {/* ── Answer セクション + 深堀結果 ── */}
       <View style={s.section}>
         <Text style={[s.sectionTitle, { color: colors.labelTertiary }]}>ANSWER</Text>
         <Text style={[s.detailContent, { color: colors.label }]}>{item.content}</Text>
+        {deepDives.length > 0 && (
+          <View style={{ marginTop: Spacing.m }}>
+            {deepDives.map((dive) => (
+              <View key={dive.id} style={{ marginBottom: Spacing.m }}>
+                <View style={[s.deepDiveDivider, { backgroundColor: colors.separator }]} />
+                <Text style={[s.detailContent, { color: colors.label }]}>
+                  {dive.result ?? ''}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* ── セパレーター ── */}
       <View style={[s.sep, { backgroundColor: colors.separator }]} />
 
-      {/* ── Review Info（3ボックス） ── */}
-      {review && (
-        <View style={s.section}>
-          <Text style={[s.sectionTitle, { color: colors.labelTertiary }]}>REVIEW INFO</Text>
-          <View style={s.reviewBoxRow}>
-            <View style={[s.reviewBox, { borderColor: colors.separator }]}>
-              <Text style={[s.reviewBoxValue, { color: colors.label }]}>{review.repetitions}</Text>
-              <Text style={[s.reviewBoxLabel, { color: colors.labelTertiary }]}>繰り返し</Text>
-            </View>
-            <View style={[s.reviewBox, { borderColor: colors.separator }]}>
-              <Text style={[s.reviewBoxValue, { color: colors.label }]}>{getNextReviewText(review)}</Text>
-              <Text style={[s.reviewBoxLabel, { color: colors.labelTertiary }]}>次の復習</Text>
-            </View>
-            <View style={[s.reviewBox, { borderColor: colors.separator }]}>
-              <Text style={[s.reviewBoxValue, { color: colors.label }]}>{review.easiness_factor.toFixed(1)}</Text>
-              <Text style={[s.reviewBoxLabel, { color: colors.labelTertiary }]}>EF</Text>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {/* ── 深掘りセクション ── */}
+      {/* ── 深掘りボタン ── */}
       <View style={s.section}>
         <Text style={[s.sectionTitle, { color: colors.labelTertiary }]}>AI DEEP DIVE</Text>
         <DeepDiveButton
@@ -408,24 +380,6 @@ export function ItemDetailScreen({ route }: Props) {
           question={item.title}
           answer={item.content}
         />
-        {deepDives.length > 0 && (
-          <View style={{ marginTop: Spacing.s, gap: Spacing.s }}>
-            {deepDives.slice(0, 2).map((dive) => (
-              <Pressable
-                key={dive.id}
-                style={[s.deepDiveCard, { backgroundColor: colors.backgroundSecondary }]}
-                onPress={() => setDeepDiveModalVisible(true)}
-              >
-                <Text style={[s.deepDiveText, { color: colors.label }]} numberOfLines={4}>
-                  {dive.result}
-                </Text>
-                <Text style={[s.deepDiveMore, { color: colors.accent }]}>
-                  タップして全文を見る
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
       </View>
 
       <View style={[s.sep, { backgroundColor: colors.separator }]} />
@@ -462,11 +416,6 @@ export function ItemDetailScreen({ route }: Props) {
           </View>
         )}
       </View>
-      <DeepDiveResultModal
-        visible={deepDiveModalVisible}
-        dives={deepDives}
-        onClose={() => setDeepDiveModalVisible(false)}
-      />
       {fetchedText && (
         <FetchedTextModal
           visible={showFetchedText}
@@ -536,25 +485,10 @@ const s = StyleSheet.create({
     lineHeight: 26,
   },
 
-  // ---- Review Info 3ボックス ----
-  reviewBoxRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  reviewBox: {
-    flex: 1,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  reviewBoxValue: {
-    fontSize: 18,
-    fontWeight: '500' as const,
-  },
-  reviewBoxLabel: {
-    fontSize: 11,
-    marginTop: 2,
+  // ---- 深堀区切り線 ----
+  deepDiveDivider: {
+    height: 1,
+    marginBottom: Spacing.m,
   },
 
   // ---- メタセクション ----
@@ -651,21 +585,6 @@ const s = StyleSheet.create({
     borderRadius: 20,
   },
 
-  // ---- 深掘りカード ----
-  deepDiveCard: {
-    borderRadius: Radius.m,
-    padding: Spacing.m,
-    gap: Spacing.xs,
-  },
-  deepDiveText: {
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  deepDiveMore: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-    textAlign: 'right',
-  },
 
   // ---- 元記事リンク ----
   fetchedTextRow: {
