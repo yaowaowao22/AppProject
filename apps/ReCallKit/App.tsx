@@ -9,7 +9,7 @@ import { ThemeProvider } from './src/theme/ThemeContext';
 import { TaskProvider } from './src/context/TaskContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { releaseModel } from './src/services/localAnalysisService';
-import { OTA_RELOAD_EVENT } from './src/utils/otaReload';
+import { OTA_RELOAD_EVENT, requestOtaReload } from './src/utils/otaReload';
 
 // ============================================================
 // OTA reload 安全実行の仕組み
