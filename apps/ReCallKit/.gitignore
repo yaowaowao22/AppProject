@@ -1,3 +1,8 @@
 # npm lock file — このディレクトリはpnpmモノレポで管理されるため不要
 # EASがnpmを誤検出する原因になるため除外する
 package-lock.json
+
+# ローカルモデルファイル（大容量・gitには不要）
+*.gguf
+*.bin
+lambda/models/
