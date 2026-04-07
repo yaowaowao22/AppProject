@@ -71,10 +71,7 @@ export function RatingButtons({ onRate }: RatingButtonsProps) {
           style={({ pressed }) => [
             styles.button,
             {
-              backgroundColor: pressed
-                ? `${tint}22`
-                : colors.card,
-              borderColor: tint,
+              backgroundColor: pressed ? `${tint}33` : `${tint}26`,
             },
           ]}
           onPress={() => handlePress(key)}
@@ -82,8 +79,8 @@ export function RatingButtons({ onRate }: RatingButtonsProps) {
           accessibilityRole="button"
         >
           <View style={[styles.indicator, { backgroundColor: tint }]} />
-          <Text style={[styles.label, { color: colors.label }]}>{label}</Text>
-          <Text style={[styles.sublabel, { color: colors.labelTertiary }]}>
+          <Text style={[styles.label, { color: tint }]}>{label}</Text>
+          <Text style={[styles.sublabel, { color: tint }]}>
             {sublabel}
           </Text>
         </Pressable>

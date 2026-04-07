@@ -43,7 +43,7 @@ export function FilterChip({
         styles.chip,
         {
           backgroundColor: active ? resolvedActiveColor : resolvedBgColor,
-          borderWidth: active ? 0 : StyleSheet.hairlineWidth,
+          borderWidth: active ? 0 : 1,
           borderColor: resolvedTextInactiveColor + '50',
           opacity: pressed ? 0.8 : 1,
         },
@@ -87,8 +87,8 @@ export function FilterChip({
 
 const styles = StyleSheet.create({
   chip: {
-    paddingHorizontal: 12,
-    paddingVertical: Spacing.xs,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     borderRadius: Radius.full,
     flexShrink: 0,
     flexDirection: 'row',
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     marginRight: -1,
   },
   chipText: {
-    ...TypeScale.caption1,
+    ...TypeScale.footnote,
     fontWeight: '500' as const,
   },
   closeIcon: {
