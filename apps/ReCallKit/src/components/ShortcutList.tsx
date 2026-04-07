@@ -49,7 +49,7 @@ export function ShortcutList({ onPress }: Props) {
             key={item.action}
             style={({ pressed }) => [
               styles.row,
-              !isLast && { borderBottomWidth: 1, borderBottomColor: '#F8F9FA' },
+              !isLast && { borderBottomWidth: 1, borderBottomColor: colors.backgroundSecondary },
               { opacity: pressed ? 0.72 : 1 },
             ]}
             onPress={() => onPress(item.action)}
@@ -57,7 +57,7 @@ export function ShortcutList({ onPress }: Props) {
             accessibilityLabel={item.label}
           >
             {/* 左: アイコン */}
-            <Ionicons name={item.icon} size={20} color="#5F6368" />
+            <Ionicons name={item.icon} size={20} color={colors.labelSecondary} />
 
             {/* 中央: テキスト */}
             <View style={styles.textWrap}>
@@ -65,14 +65,14 @@ export function ShortcutList({ onPress }: Props) {
                 {item.label}
               </Text>
               {item.subLabel && (
-                <Text style={styles.subLabel} numberOfLines={1}>
+                <Text style={[styles.subLabel, { color: colors.labelTertiary }]} numberOfLines={1}>
                   {item.subLabel}
                 </Text>
               )}
             </View>
 
             {/* 右: シェブロン */}
-            <Ionicons name="chevron-forward" size={16} color="#9AA0A6" />
+            <Ionicons name="chevron-forward" size={16} color={colors.labelTertiary} />
           </Pressable>
         );
       })}
@@ -82,7 +82,6 @@ export function ShortcutList({ onPress }: Props) {
 
 const styles = StyleSheet.create({
   list: {
-    paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 20,
   },
@@ -103,7 +102,6 @@ const styles = StyleSheet.create({
   },
   subLabel: {
     fontSize: 12,
-    color: '#9AA0A6',
     lineHeight: 16,
   },
 });

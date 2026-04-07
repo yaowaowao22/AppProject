@@ -49,6 +49,7 @@ import { StatsRow } from '../../components/StatsRow';
 import { CategoryMasteryBar } from '../../components/CategoryMasteryBar';
 import { ShortcutList, type ShortcutAction } from '../../components/ShortcutList';
 import { DateRow } from '../../components/DateRow';
+import { ReviewCTACard } from '../../components/ReviewCTACard';
 import type { HomeStackParamList, DrawerParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'HomeMain'>;
