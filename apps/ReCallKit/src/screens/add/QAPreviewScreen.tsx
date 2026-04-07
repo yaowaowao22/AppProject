@@ -447,6 +447,10 @@ export function QAPreviewScreen({ route, navigation }: Props) {
   const [selected, setSelected] = useState<boolean[]>(() => clippedPairs.map(() => true));
   const [saving, setSaving] = useState(false);
 
+  // ── タイトル編集 ──
+  const [editedTitle, setEditedTitle] = useState(title);
+  const [isTitleEditing, setIsTitleEditing] = useState(false);
+
   // ── カードモード状態 ──
   const [cardIndex, setCardIndex] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
@@ -759,7 +763,7 @@ export function QAPreviewScreen({ route, navigation }: Props) {
             </Text>
           </View>
           <Text style={[styles.sourceCardCompactTitle, { color: colors.label }]} numberOfLines={1}>
-            {title}
+            {editedTitle}
           </Text>
         </View>
 
@@ -902,9 +906,37 @@ export function QAPreviewScreen({ route, navigation }: Props) {
             <Text style={[styles.autoBadgeText, { color: colors.accent }]}>AI自動判定</Text>
           </View>
         </View>
-        <Text style={[styles.sourceTitle, { color: colors.label }]} numberOfLines={3}>
-          {title}
-        </Text>
+        {isTitleEditing ? (
+          <TextInput
+            value={editedTitle}
+            onChangeText={setEditedTitle}
+            onBlur={() => setIsTitleEditing(false)}
+            onSubmitEditing={() => setIsTitleEditing(false)}
+            autoFocus
+            returnKeyType="done"
+            style={[
+              styles.sourceTitle,
+              {
+                color: colors.label,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.accent,
+                paddingVertical: 2,
+              },
+            ]}
+          />
+        ) : (
+          <Pressable
+            onPress={() => setIsTitleEditing(true)}
+            style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}
+            accessibilityRole="button"
+            accessibilityLabel="タイトルを編集"
+          >
+            <Text style={[styles.sourceTitle, { color: colors.label, flex: 1 }]} numberOfLines={3}>
+              {editedTitle}
+            </Text>
+            <Ionicons name="pencil-outline" size={15} color={colors.labelTertiary} style={{ marginTop: 3 }} />
+          </Pressable>
+        )}
         {summary.length > 0 && (
           <Text
             style={[styles.sourceSummary, { color: colors.labelSecondary }]}

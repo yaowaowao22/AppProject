@@ -753,6 +753,13 @@ export async function analyzeUrlLocal(
     finalResult = { ...baseResult, qa_pairs: allQaPairs };
   }
 
+  // ---- タイトルが「無題」のときはサイト名（ホスト名）でフォールバック ----
+  if (finalResult.title === '無題') {
+    try {
+      finalResult = { ...finalResult, title: new URL(url).hostname };
+    } catch { /* URL パース失敗時はそのまま */ }
+  }
+
   // ---- セッションキャッシュに保存 ----
   setCachedResult(url, finalResult);
 
