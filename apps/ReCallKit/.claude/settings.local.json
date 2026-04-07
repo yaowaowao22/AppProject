@@ -6,7 +6,8 @@
       "Bash(claude --print --bare --model claude-haiku-4-5-20251001 --no-session-persistence --dangerously-skip-permissions)",
       "Bash(claude --print --system-prompt \"No special instructions.\" --model claude-haiku-4-5-20251001 --no-session-persistence)",
       "Bash(git -C /c/Users/ytata/AppProject/baseProject diff HEAD -- apps/ReCallKit/src/db/schema.ts)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(find C:/Users/ytata/AppProject/baseProject/apps/ReCallKit -name *.swift -o -name *.tsx -o -name *.ts)"
     ]
   }
 }
