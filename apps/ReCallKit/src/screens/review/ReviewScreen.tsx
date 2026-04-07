@@ -41,12 +41,12 @@ import type { ReviewStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewSession'>;
 
-// 評価ごとのフラッシュカラー
+// 評価ごとのフラッシュカラー（iOS system colors: mockupStyles.RatingColors 準拠）
 const RATING_COLORS: Record<SimpleRating, string> = {
   again:   '#FF3B30',
-  hard:    '#FF9500',
-  good:    '#007AFF',
-  perfect: '#34C759',
+  hard:    '#FF9F0A',
+  good:    '#30D158',
+  perfect: '#0A84FF',
 };
 
 // 完了画面の内訳表示順
@@ -346,15 +346,16 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Spacing.xl,
+    padding: 40,
     gap: Spacing.m,
   },
   completeEmoji: {
-    fontSize: 64,
+    fontSize: 48,
     marginBottom: Spacing.s,
   },
   completeTitle: {
-    ...TypeScale.title2,
+    fontSize: 20,
+    fontWeight: '500' as const,
     textAlign: 'center',
   },
   completeSubtitle: {

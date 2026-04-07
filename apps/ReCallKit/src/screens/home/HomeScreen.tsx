@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
   // due: イラスト帯
   reviewIllust: {
     height: 140,
-    backgroundColor: '#FFF8E1',
+    backgroundColor: '#FFECB3', // gradient(160deg, #FFF8E1→#FFECB3→#FFE082) の中央値で近似
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -768,9 +768,8 @@ const styles = StyleSheet.create({
   },
 
   // ── [4] StatsRow ラッパー ─────────────────────────────
-  statsWrap: {
-    paddingBottom: 20,
-  },
+  // StatsRow.row が paddingBottom:20 を持つため、ラッパー側は不要
+  statsWrap: {},
 
   // ── [5] 週間アクティビティ ────────────────────────────
   weeklyCard: {
@@ -816,12 +815,13 @@ const styles = StyleSheet.create({
   // label-upper 共通スタイル
   labelUpper: {
     fontSize: 11,
+    fontWeight: '500' as const,      // mockup .label-upper { font-weight:500 }
     textTransform: 'uppercase' as const,
     letterSpacing: 0.8,
     color: GoogleCalendarColors.textTertiary,
     marginTop: Spacing.m,
     marginBottom: 14,
-    marginLeft: Spacing.xs,
+    // marginLeft なし: mockup に左インデントなし、container の padding のみ
   },
 
   // ── [6] Recently Added ────────────────────────────────
@@ -830,7 +830,7 @@ const styles = StyleSheet.create({
   },
   recentScrollContent: {
     paddingHorizontal: Spacing.m,
-    gap: Spacing.s,
+    gap: 10, // mockup .recent-scroll { gap:10px }
   },
   recentCard: {
     width: 220,

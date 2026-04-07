@@ -8,12 +8,12 @@ import { useTheme } from '../theme/ThemeContext';
 import { TypeScale } from '../theme/typography';
 import { Spacing, Radius } from '../theme/spacing';
 
-// 評価ごとのカラー（ReviewScreen と同一定義）
+// 評価ごとのカラー（ReviewScreen と同一定義 / iOS system colors 準拠）
 const RATING_COLORS = {
   again:   '#FF3B30',
-  hard:    '#FF9500',
-  good:    '#007AFF',
-  perfect: '#34C759',
+  hard:    '#FF9F0A',
+  good:    '#30D158',
+  perfect: '#0A84FF',
 } as const;
 
 const RATING_LABELS: { key: keyof typeof RATING_COLORS; symbol: string }[] = [
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     ...TypeScale.caption1,
   },
   track: {
-    height: 6,
+    height: 4,
     borderRadius: Radius.full,
     overflow: 'hidden',
   },

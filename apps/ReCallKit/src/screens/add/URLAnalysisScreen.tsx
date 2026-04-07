@@ -47,7 +47,7 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
     navigation.setOptions({
       headerLeft: () => (
         <Pressable onPress={handleBack} hitSlop={8} accessibilityLabel="戻る">
-          <Ionicons name="chevron-back" size={24} color={colors.accent} />
+          <Ionicons name="chevron-back" size={24} color={colors.labelSecondary} />
         </Pressable>
       ),
     });
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: Radius.m,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     paddingHorizontal: Spacing.m,
     height: 50,
   },
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.s,
     borderRadius: Radius.m,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     paddingHorizontal: Spacing.m,
     paddingVertical: Spacing.s,
   },

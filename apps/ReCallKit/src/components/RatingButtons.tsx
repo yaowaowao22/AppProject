@@ -16,6 +16,7 @@ interface RatingButtonsProps {
   onRate: (rating: SimpleRating) => void;
 }
 
+// iOS system colors (mockupStyles.RatingColors 準拠: again=red, hard=amber, good=green, perfect=blue)
 const RATINGS: {
   key: SimpleRating;
   label: string;
@@ -26,25 +27,25 @@ const RATINGS: {
     key: 'again',
     label: 'もう一度',
     sublabel: '忘れた',
-    tint: SystemColors.red,
+    tint: '#FF3B30',
   },
   {
     key: 'hard',
     label: '難しかった',
     sublabel: '苦労した',
-    tint: SystemColors.orange,
+    tint: '#FF9F0A',
   },
   {
     key: 'good',
     label: '良かった',
     sublabel: '少し迷った',
-    tint: SystemColors.blue,
+    tint: '#30D158',
   },
   {
     key: 'perfect',
     label: '簡単',
     sublabel: '完璧',
-    tint: SystemColors.green,
+    tint: '#0A84FF',
   },
 ];
 

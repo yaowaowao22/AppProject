@@ -174,10 +174,12 @@ function SkeletonCard({
   animValue,
   skeletonBg,
   cardBg,
+  borderColor,
 }: {
   animValue: Animated.Value;
   skeletonBg: string;
   cardBg: string;
+  borderColor: string;
 }) {
   const opacity = animValue.interpolate({
     inputRange: [0, 1],
@@ -185,7 +187,7 @@ function SkeletonCard({
   });
 
   return (
-    <View style={[styles.card, { backgroundColor: cardBg }, CardShadow]}>
+    <View style={[styles.card, { backgroundColor: cardBg, borderColor }, CardShadow]}>
       <View style={styles.cardHeader}>
         <Animated.View style={[styles.skeletonBadge, { backgroundColor: skeletonBg, opacity }]} />
         <Animated.View style={[styles.skeletonTime,  { backgroundColor: skeletonBg, opacity }]} />
@@ -309,7 +311,7 @@ export function URLImportListScreen({ navigation }: Props) {
           : colors.labelTertiary;
 
     return (
-      <View style={[styles.card, { backgroundColor: colors.card }, CardShadow]}>
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.separator }, CardShadow]}>
         {/* ヘッダ行 */}
         <View style={styles.cardHeader}>
           <View style={[styles.statusBadge, { backgroundColor: statusColor + '22' }]}>
@@ -437,6 +439,7 @@ export function URLImportListScreen({ navigation }: Props) {
             animValue={shimmerAnim}
             skeletonBg={skeletonBg}
             cardBg={colors.card}
+            borderColor={colors.separator}
           />
         ))}
       </View>
@@ -542,6 +545,7 @@ const styles = StyleSheet.create({
   // ---- カード ----
   card: {
     borderRadius: Radius.m,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: Spacing.m,
     gap: Spacing.s,
   },

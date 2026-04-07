@@ -18,7 +18,7 @@ import * as Updates from 'expo-updates';
 import { useTheme } from '../../theme/ThemeContext';
 import { type ThemePreference, THEMES, THEME_CATEGORIES } from '../../theme/themes';
 import { TypeScale } from '../../theme/typography';
-import { Spacing, Radius } from '../../theme/spacing';
+import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { SettingsStackParamList } from '../../navigation/types';
@@ -242,17 +242,19 @@ export function SettingsScreen() {
 
   return (
     <>
-      {/* ★ OTA確認バナー — このバナーが見えたらOTAが適用されています ★ */}
-      <View style={styles.otaBanner}>
-        <Text style={styles.otaBannerText}>★ OTA v3 適用済み ★</Text>
-      </View>
+      {/* OTA 適用待ちバナー — DL済みで再起動待ちの時のみ表示 */}
+      {isUpdatePending && (
+        <View style={[styles.otaBanner, { backgroundColor: colors.accent }]}>
+          <Text style={styles.otaBannerText}>アップデートを適用できます — 再起動してください</Text>
+        </View>
+      )}
       <ScrollView
         style={[styles.scroll, { backgroundColor: colors.backgroundGrouped }]}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xxl }]}
         showsVerticalScrollIndicator={false}
       >
         {/* ── AI設定 ───────────────────────────────────────── */}
-        <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
+        <Text style={[styles.sectionHeader, { color: colors.labelSecondary }]}>
           AI設定
         </Text>
         <View style={[styles.section, { backgroundColor: colors.card }]}>
@@ -272,7 +274,7 @@ export function SettingsScreen() {
         </View>
 
         {/* ── 復習設定 ─────────────────────────────────────── */}
-        <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
+        <Text style={[styles.sectionHeader, { color: colors.labelSecondary }]}>
           復習設定
         </Text>
         <View style={[styles.section, { backgroundColor: colors.card }]}>
@@ -337,14 +339,14 @@ export function SettingsScreen() {
             <Switch
               value={settings.notifications_enabled === 'true'}
               onValueChange={handleNotificationToggle}
-              trackColor={{ false: colors.separator, true: colors.accent }}
+              trackColor={{ false: colors.separator, true: '#30D158' }}
               thumbColor="#FFFFFF"
             />
           </View>
         </View>
 
         {/* ── 外観 ─────────────────────────────────────────── */}
-        <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
+        <Text style={[styles.sectionHeader, { color: colors.labelSecondary }]}>
           外観
         </Text>
         <View style={[styles.section, { backgroundColor: colors.card }]}>
@@ -364,7 +366,7 @@ export function SettingsScreen() {
         </View>
 
         {/* ── データ ───────────────────────────────────────── */}
-        <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
+        <Text style={[styles.sectionHeader, { color: colors.labelSecondary }]}>
           データ
         </Text>
         <View style={[styles.section, { backgroundColor: colors.card }]}>
@@ -420,7 +422,7 @@ export function SettingsScreen() {
         </View>
 
         {/* ── アプリ情報 ───────────────────────────────────── */}
-        <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
+        <Text style={[styles.sectionHeader, { color: colors.labelSecondary }]}>
           アプリ情報
         </Text>
         <View style={[styles.section, { backgroundColor: colors.card }]}>
@@ -470,7 +472,7 @@ export function SettingsScreen() {
         </View>
 
         {/* ── OTA 診断 ─────────────────────────────────────── */}
-        <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
+        <Text style={[styles.sectionHeader, { color: colors.labelSecondary }]}>
           OTA 診断
         </Text>
         <View style={[styles.section, { backgroundColor: colors.card }]}>
@@ -742,15 +744,14 @@ const PICKER_ITEM_HEIGHT = 44;
 // ============================================================
 const styles = StyleSheet.create({
   otaBanner: {
-    backgroundColor: '#e74c3c',
-    paddingVertical: 10,
+    paddingVertical: 8,
+    paddingHorizontal: Spacing.m,
     alignItems: 'center',
   },
   otaBannerText: {
     color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 1,
+    fontSize: 13,
+    fontWeight: '600',
   },
   loading: {
     flex: 1,
@@ -766,29 +767,32 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
 
-  // セクションヘッダー
+  // セクションヘッダー — mockup: .settings-group-label (font-size:13, weight:400, text-secondary, uppercase, letter-spacing:0.5, padding:0 16px 6px, margin-top:24px)
   sectionHeader: {
-    ...TypeScale.subheadline,
+    fontSize: 13,
+    fontWeight: '400',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginTop: Spacing.s,
-    marginBottom: Spacing.xs,
-    paddingHorizontal: Spacing.xs,
+    lineHeight: 18,
+    marginTop: 20,
+    marginBottom: 6,
+    paddingHorizontal: Spacing.m,
   },
 
-  // セクション枠
+  // セクション枠 — mockup: .settings-list (border-radius:12, shadow)
   section: {
     borderRadius: Radius.m,
     overflow: 'hidden',
+    ...CardShadow,
   },
 
-  // 行
+  // 行 — mockup: .settings-item (padding:12px 16px, min-height:44px)
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: 44,
     paddingHorizontal: Spacing.m,
-    paddingVertical: Spacing.s,
+    paddingVertical: 12,
   },
   rowLabel: {
     ...TypeScale.body,
@@ -807,10 +811,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // セパレーター
+  // セパレーター — mockup: .settings-item + .settings-item (border-top: 0.5px, no inset)
   separator: {
     height: StyleSheet.hairlineWidth,
-    marginLeft: Spacing.m,
   },
 
   // ステッパー

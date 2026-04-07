@@ -258,7 +258,7 @@ export function ItemDetailScreen({ route }: Props) {
 
           {/* タグ編集 */}
           <Text style={[styles.editLabel, { color: colors.labelSecondary }]}>タグ</Text>
-          <View style={[styles.card, { backgroundColor: colors.card }, cardShadow]}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.separator }, cardShadow]}>
             {/* 現在のタグ一覧 */}
             <View style={styles.editTagRow}>
               {editTags.map((tag) => (
@@ -321,7 +321,7 @@ export function ItemDetailScreen({ route }: Props) {
       {tags.length > 0 && (
         <View style={styles.tagRow}>
           {tags.map((tag) => (
-            <View key={tag.id} style={[styles.tag, { backgroundColor: colors.backgroundSecondary }]}>
+            <View key={tag.id} style={[styles.tag, { backgroundColor: colors.backgroundSecondary, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.separator }]}>
               <Text style={[styles.tagText, { color: colors.labelSecondary }]}>{tag.name}</Text>
             </View>
           ))}
@@ -329,13 +329,13 @@ export function ItemDetailScreen({ route }: Props) {
       )}
 
       {/* コンテンツ */}
-      <View style={[styles.card, { backgroundColor: colors.card }, cardShadow]}>
+      <View style={[styles.card, { backgroundColor: colors.card, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.separator }, cardShadow]}>
         <Text style={[styles.content, { color: colors.label }]}>{item.content}</Text>
       </View>
 
       {/* 復習情報 */}
       {review && (
-        <View style={[styles.card, { backgroundColor: colors.card }, cardShadow]}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.separator }, cardShadow]}>
           <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>復習状態</Text>
           <View style={styles.infoRow}>
             <Text style={[styles.infoLabel, { color: colors.labelSecondary }]}>繰り返し回数</Text>
@@ -353,7 +353,7 @@ export function ItemDetailScreen({ route }: Props) {
       )}
 
       {/* メタ情報 */}
-      <View style={[styles.card, { backgroundColor: colors.card }, cardShadow]}>
+      <View style={[styles.card, { backgroundColor: colors.card, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.separator }, cardShadow]}>
         <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>情報</Text>
         <View style={styles.infoRow}>
           <Text style={[styles.infoLabel, { color: colors.labelSecondary }]}>タイプ</Text>

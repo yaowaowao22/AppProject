@@ -280,7 +280,8 @@ const styles = StyleSheet.create({
   card: {
     height: CARD_HEIGHT,
     borderRadius: Radius.l,
-    padding: Spacing.l,
+    paddingVertical: 32,
+    paddingHorizontal: Spacing.l,
     justifyContent: 'space-between',
   },
   absoluteFill: {

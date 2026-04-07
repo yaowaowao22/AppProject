@@ -375,7 +375,11 @@ export function LibraryScreen({ navigation }: Props) {
       <Pressable
         style={({ pressed }) => [
           styles.card,
-          { backgroundColor: colors.card },
+          {
+            backgroundColor: colors.card,
+            borderWidth: StyleSheet.hairlineWidth,
+            borderColor: colors.separator,
+          },
           cardShadow,
           pressed && { opacity: 0.85 },
           isSelected && { borderWidth: 2, borderColor: colors.accent },
@@ -836,7 +840,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xs,
   },
   sectionHeaderText: {
-    ...TypeScale.caption1,
+    ...TypeScale.footnote,
     fontWeight: '600' as const,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -871,7 +875,7 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   cardMetaType: {
-    ...TypeScale.caption2,
+    ...TypeScale.caption1,
     flex: 1,
   },
   categoryBadge: {
@@ -880,7 +884,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
   },
   categoryBadgeText: {
-    ...TypeScale.caption2,
+    ...TypeScale.caption1,
     fontWeight: '500' as const,
   },
   reviewBadge: {
@@ -889,13 +893,15 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
   },
   reviewBadgeText: {
-    ...TypeScale.caption2,
+    ...TypeScale.caption1,
     fontWeight: '500' as const,
   },
 
   // タイトル
   cardTitle: {
-    ...TypeScale.headline,
+    fontSize: 16,
+    fontWeight: '500' as const,
+    lineHeight: 24,
   },
 
   // エクサープト
@@ -923,13 +929,13 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
   },
   tagText: {
-    ...TypeScale.caption2,
+    ...TypeScale.caption1,
   },
   tagMore: {
-    ...TypeScale.caption2,
+    ...TypeScale.caption1,
   },
   cardDate: {
-    ...TypeScale.caption2,
+    ...TypeScale.caption1,
     flexShrink: 0,
   },
 
