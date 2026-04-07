@@ -18,6 +18,30 @@ export interface ModelDefinition {
 
 export const MODEL_CATALOG: ModelDefinition[] = [
   {
+    id: 'llama32-1b-q4km',
+    name: 'Llama 3.2 1B Q4_K_M',
+    tag: '超軽量',
+    description: '最小クラス0.8GB。iPhone 12以降。日本語はやや苦手',
+    sizeGB: 0.8,
+    sizeBytesEstimate: 867_000_000,
+    url: 'https://huggingface.co/unsloth/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf',
+    filename: 'Llama-3.2-1B-Q4_K_M.gguf',
+    nGpuLayers: 99,
+    nCtx: 4096,
+  },
+  {
+    id: 'qwen25-1b5-q4km',
+    name: 'Qwen2.5 1.5B Q4_K_M',
+    tag: '軽量・日本語',
+    description: '1GB・日本語対応。URL解析向き。iPhone 12以降',
+    sizeGB: 1.0,
+    sizeBytesEstimate: 1_063_000_000,
+    url: 'https://huggingface.co/bartowski/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf',
+    filename: 'Qwen2.5-1.5B-Q4_K_M.gguf',
+    nGpuLayers: 99,
+    nCtx: 4096,
+  },
+  {
     id: 'gemma4-iq2m',
     name: 'Gemma 4 E2B UD-IQ2_M',
     tag: '軽量',
