@@ -171,7 +171,7 @@ export function SettingsScreen() {
 
   // ── OTAアップデート確認 ───────────────────────────────────
   const handleCheckUpdate = async () => {
-    if (Updates.isEmbeddedLaunch === false && __DEV__) {
+    if (__DEV__) {
       setUpdateStatus('開発環境ではOTA更新は動作しません');
       return;
     }

@@ -1,17 +1,26 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as Updates from 'expo-updates';
+import { useUpdates } from 'expo-updates';
 import { DatabaseProvider } from './src/hooks/useDatabase';
 import { PointsProvider } from './src/context/PointsContext';
 import { ThemeProvider } from './src/theme/ThemeContext';
 import { TaskProvider } from './src/context/TaskContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
-// OTA は expo-updates がバックグラウンドで自動チェック＆ダウンロードする。
-// 次のコールドスタート時に新バンドルが自動適用されるため、
-// 起動をブロックする OTAGate は不要。
-// 手動で今すぐ適用したい場合は Settings 画面の「アップデートを確認」ボタンを使う。
+// OTA: バックグラウンドで自動ダウンロード後、isUpdatePending が true になった時点で
+// OTAWatcher が reloadAsync() を呼び出して即時適用する。
+function OTAWatcher() {
+  const { isUpdatePending } = useUpdates();
+  useEffect(() => {
+    if (isUpdatePending) {
+      Updates.reloadAsync().catch(console.error);
+    }
+  }, [isUpdatePending]);
+  return null;
+}
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -49,6 +58,7 @@ export default function App() {
     <ErrorBoundary>
       <GestureHandlerRootView style={styles.root}>
         <SafeAreaProvider>
+          <OTAWatcher />
           <DatabaseProvider>
             <ThemeProvider>
               <PointsProvider>
