@@ -63,7 +63,6 @@
     "plugins": [
       "expo-sqlite",
       "expo-updates",
-      "@bacons/apple-targets",
       [
         "expo-notifications",
         {
@@ -81,10 +80,11 @@
       [
         "llama.rn",
         {
-          "enableEntitlements": true,
+          "enableEntitlements": false,
           "forceCxx20": true
         }
-      ]
+      ],
+      "@bacons/apple-targets"
     ],
     "extra": {
       "eas": {
