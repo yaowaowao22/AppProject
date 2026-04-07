@@ -659,7 +659,7 @@ export function SettingsScreen() {
               keyboardShouldPersistTaps="handled"
             >
               {/* システム設定に従う */}
-              <Text style={[styles.themeCategoryHeader, { color: colors.labelTertiary }]}>
+              <Text style={[styles.themeCategoryHeader, { color: colors.labelSecondary }]}>
                 自動
               </Text>
               <View style={[styles.section, { backgroundColor: colors.card }]}>
@@ -683,7 +683,7 @@ export function SettingsScreen() {
               {/* カテゴリ別テーマ一覧 */}
               {THEME_CATEGORIES.map((cat) => (
                 <React.Fragment key={cat.id}>
-                  <Text style={[styles.themeCategoryHeader, { color: colors.labelTertiary }]}>
+                  <Text style={[styles.themeCategoryHeader, { color: colors.labelSecondary }]}>
                     {cat.label}
                   </Text>
                   <View style={[styles.section, { backgroundColor: colors.card }]}>
@@ -913,12 +913,14 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   themeCategoryHeader: {
-    ...TypeScale.subheadline,
+    fontSize: 13,
+    fontWeight: '400',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginTop: Spacing.s,
-    marginBottom: Spacing.xs,
-    paddingHorizontal: Spacing.xs,
+    lineHeight: 18,
+    marginTop: 20,
+    marginBottom: 6,
+    paddingHorizontal: Spacing.m,
   },
   themeRow: {
     flexDirection: 'row',
