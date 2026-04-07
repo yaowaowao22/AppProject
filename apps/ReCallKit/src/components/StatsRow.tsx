@@ -21,11 +21,11 @@ export interface StatItem {
 interface StatsRowProps {
   /** 表示する統計。3件推奨（2〜4件にも対応） */
   stats: [StatItem, StatItem, StatItem] | StatItem[];
-  /** カード背景を使うか否か。デフォルト true */
+  /** カード背景を使うか否か。デフォルト false */
   withCard?: boolean;
 }
 
-export function StatsRow({ stats, withCard = true }: StatsRowProps) {
+export function StatsRow({ stats, withCard = false }: StatsRowProps) {
   const { colors, isDark } = useTheme();
   const cardShadow = isDark ? {} : CardShadow;
 
@@ -82,12 +82,15 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   cell: {
     flex: 1,
     alignItems: 'center',
     gap: Spacing.xs,
     paddingVertical: Spacing.xs,
+    position: 'relative',
   },
   value: {
     ...TypeScale.title2,
@@ -101,8 +104,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   divider: {
+    position: 'absolute',
+    left: 0,
+    top: 4,
+    bottom: 4,
     width: 1,
-    height: 36,
-    borderRadius: 0.5,
   },
 });

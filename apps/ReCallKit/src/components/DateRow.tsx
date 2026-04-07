@@ -5,9 +5,10 @@
 
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { GoogleCalendarColors } from '../theme/colors';
 
-const BLUE = '#1A73E8';
-const SUBTITLE_COLOR = '#5F6368';
+const BLUE = GoogleCalendarColors.blue;
+const SUBTITLE_COLOR = GoogleCalendarColors.textSecondary;
 
 const WEEKDAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
@@ -51,8 +52,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 4,
-    gap: 12,
+    paddingTop: 4,
+    paddingBottom: 20,
+    gap: 14,
   },
   circle: {
     width: 46,
@@ -75,7 +77,7 @@ const styles = StyleSheet.create({
   weekday: {
     color: BLUE,
     fontSize: 12,
-    fontWeight: '600' as const,
+    fontWeight: '500' as const,
     lineHeight: 16,
     letterSpacing: 0.3,
   },
@@ -83,5 +85,6 @@ const styles = StyleSheet.create({
     color: SUBTITLE_COLOR,
     fontSize: 14,
     lineHeight: 18,
+    marginTop: 1,
   },
 });
