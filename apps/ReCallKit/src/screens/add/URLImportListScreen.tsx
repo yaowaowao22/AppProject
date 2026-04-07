@@ -343,7 +343,9 @@ export function URLImportListScreen({ navigation }: Props) {
             ) : (
               <Ionicons name={cfg.iconName} size={14} color={statusColor} />
             )}
-            <Text style={[styles.statusLabel, { color: statusColor }]}>{cfg.label}</Text>
+            <Text style={[styles.statusLabel, { color: statusColor }]}>
+              {item.status === 'processing' && progress?.current === -1 ? 'フェッチ中...' : cfg.label}
+            </Text>
           </View>
           <View style={styles.cardHeaderRight}>
             <Text style={[styles.timeText, { color: colors.labelTertiary }]}>
@@ -375,8 +377,8 @@ export function URLImportListScreen({ navigation }: Props) {
           </Text>
         )}
 
-        {/* 解析中プログレスバー */}
-        {progress && (
+        {/* 解析中プログレスバー（フェッチ中=current:-1 のときは非表示） */}
+        {progress && progress.current >= 0 && (
           <View style={styles.chunkProgressWrap}>
             <View style={[styles.progressTrack, { backgroundColor: statusColor + '33', flex: 1 }]}>
               <View style={[
