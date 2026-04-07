@@ -277,10 +277,6 @@ export function HomeScreen({ navigation }: Props) {
     );
   }
 
-  // ヒーロー表示状態
-  const heroState: 'empty' | 'due' | 'done' =
-    totalItems === 0 ? 'empty' : filteredDueItems.length > 0 ? 'due' : 'done';
-
   return (
     <ScrollView
       style={{ backgroundColor: colors.background }}
@@ -311,104 +307,18 @@ export function HomeScreen({ navigation }: Props) {
       <View style={[styles.sep, { backgroundColor: colors.separator }]} />
 
       {/* ── [3] 復習ヒーローCTA ─────────────────────────── */}
-      <View style={[styles.heroCard, { backgroundColor: colors.card }]}>
-
-        {/* empty: アイテム未登録 */}
-        {heroState === 'empty' && (
-          <View style={styles.heroBody}>
-            <View style={[styles.heroIconCircle, { backgroundColor: colors.accent + '1A' }]}>
-              <Ionicons name="sparkles-outline" size={28} color={colors.accent} />
-            </View>
-            <View style={styles.heroTexts}>
-              <Text style={[styles.heroTitle, { color: colors.label }]}>ようこそ！</Text>
-              <Text style={[styles.heroSub, { color: colors.labelSecondary }]}>
-                URLを追加して最初のフラッシュカードを作りましょう
-              </Text>
-            </View>
-            <Pressable
-              style={({ pressed }) => [
-                styles.heroCTA,
-                { backgroundColor: pressed ? colors.accent + 'CC' : colors.accent },
-              ]}
-              onPress={handleOpenURLAnalysis}
-              accessibilityRole="button"
-              accessibilityLabel="URLから学習カードを追加"
-            >
-              <Ionicons name="link-outline" size={18} color="#FFFFFF" />
-              <Text style={styles.heroCTAText}>URLから追加</Text>
-            </Pressable>
-          </View>
-        )}
-
-        {/* due: 復習が残っている（モック準拠） */}
-        {heroState === 'due' && (
-          <>
-            {/* イラスト帯 */}
-            <View style={styles.reviewIllust}>
-              <View style={[styles.illustCard, styles.illustCardBack2]} />
-              <View style={[styles.illustCard, styles.illustCardBack1]} />
-              <View style={[styles.illustCard, styles.illustCardFront]} />
-            </View>
-
-            {/* ボディ */}
-            <View style={styles.reviewBody}>
-              <Text style={[styles.reviewTitle, { color: colors.label }]}>
-                今日の復習{' '}
-                <Text style={styles.reviewTitleCount}>{filteredDueItems.length}件</Text>
-              </Text>
-              <Text style={styles.reviewMeta}>
-                推定 {estimatedMinutes}分
-                {dueCategories.length > 0 && ` · ${dueCategories.join(', ')}`}
-              </Text>
-              {overdueCount > 0 && (
-                <Text style={styles.reviewOverdue}>期限切れ {overdueCount}件</Text>
-              )}
-              <Pressable
-                style={({ pressed }) => [
-                  styles.reviewStartBtn,
-                  { opacity: pressed ? 0.85 : 1 },
-                ]}
-                onPress={handleStartReview}
-                accessibilityRole="button"
-                accessibilityLabel="復習を始める"
-              >
-                <Ionicons name="play-circle-outline" size={18} color="#FFFFFF" />
-                <Text style={styles.reviewStartBtnText}>復習を始める</Text>
-              </Pressable>
-            </View>
-          </>
-        )}
-
-        {/* done: 本日分完了 */}
-        {heroState === 'done' && (
-          <View style={styles.heroBody}>
-            <View style={styles.doneRow}>
-              <View style={[styles.doneIconWrap, { backgroundColor: colors.success + '1F' }]}>
-                <Ionicons name="checkmark-circle" size={32} color={colors.success} />
-              </View>
-              <View style={styles.doneTexts}>
-                <Text style={[styles.doneTitle, { color: colors.success }]}>本日分完了！</Text>
-                <Text style={[styles.doneSub, { color: colors.labelSecondary }]}>
-                  今日 {todayCompleted} 件復習・{streakDays}日連続
-                </Text>
-              </View>
-            </View>
-            <Pressable
-              style={({ pressed }) => [
-                styles.extraBtn,
-                { borderColor: colors.accent, opacity: pressed ? 0.7 : 1 },
-              ]}
-              onPress={handleStartExtraReview}
-              accessibilityRole="button"
-              accessibilityLabel="追加学習を始める"
-            >
-              <Text style={[styles.extraBtnText, { color: colors.accent }]}>
-                追加学習を始める
-              </Text>
-            </Pressable>
-          </View>
-        )}
-      </View>
+      <ReviewCTACard
+        dueCount={filteredDueItems.length}
+        overdueCount={overdueCount}
+        todayCompleted={todayCompleted}
+        streakDays={streakDays}
+        totalItems={totalItems}
+        estimatedMinutes={estimatedMinutes}
+        categories={dueCategories}
+        onStart={handleStartReview}
+        onStartExtra={handleStartExtraReview}
+        onStartURLAdd={handleOpenURLAnalysis}
+      />
       <View style={[styles.sectionGap, { backgroundColor: colors.backgroundSecondary }]} />
 
       {/* ── [4] StatsRow ────────────────────────────────── */}
