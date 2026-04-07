@@ -68,6 +68,9 @@ importers:
       aws4fetch:
         specifier: ^1.0.20
         version: 1.0.20
+      background-task:
+        specifier: file:./modules/BackgroundTask
+        version: file:apps/ReCallKit/modules/BackgroundTask
       expo:
         specifier: ~54.0.33
         version: 54.0.33(@babel/core@7.29.0)(react-native@0.81.5(@babel/core@7.29.0)(@react-native/metro-config@0.84.1(@babel/core@7.29.0))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -6810,6 +6813,9 @@ packages:
     peerDependencies:
       '@babel/core': ^7.0.0
 
+  background-task@file:apps/ReCallKit/modules/BackgroundTask:
+    resolution: {directory: apps/ReCallKit/modules/BackgroundTask, type: directory}
+
   badgin@1.2.3:
     resolution: {integrity: sha512-NQGA7LcfCpSzIbGRbkgjgdWkjy7HI+Th5VLxTJfW5EeaAf3fnS+xWQaQOCYiny+q6QSvxqoSO04vCx+4u++EJw==}
 
@@ -13472,6 +13478,8 @@ snapshots:
       '@babel/core': 7.29.0
       babel-plugin-jest-hoist: 29.6.3
       babel-preset-current-node-syntax: 1.2.0(@babel/core@7.29.0)
+
+  background-task@file:apps/ReCallKit/modules/BackgroundTask: {}
 
   badgin@1.2.3: {}
 
