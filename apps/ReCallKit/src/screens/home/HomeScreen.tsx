@@ -1,6 +1,12 @@
 // ============================================================
-// HomeScreen - 今日のダッシュボード
-// ストリークリング・URL解析導線・最近復習した内容
+// HomeScreen - 7セクション統合ダッシュボード
+// ① フィルターバッジ
+// ② ヒーロー CTAカード（empty / due / done 状態適応 + 1タップ復習）
+// ③ StatsRow（streak / 今日完了 / 総アイテム）
+// ④ ShortcutList（2×2クイックアクション）
+// ⑤ 週間アクティビティドットグリッド
+// ⑥ CategoryMasteryBar（カテゴリ別習熟度）
+// ⑦ 最近追加（横スクロール）
 // ============================================================
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
@@ -25,7 +31,12 @@ import {
   getAllReviewableItems,
   type ReviewableItem,
 } from '../../db/reviewRepository';
-import { getWeeklyActivity, type DailyActivity } from '../../db/queries';
+import {
+  getWeeklyActivity,
+  getCategoryStats,
+  type DailyActivity,
+  type CategoryStats,
+} from '../../db/queries';
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
@@ -33,11 +44,13 @@ import { SystemColors } from '../../theme/colors';
 import { useSidebarFilter } from '../../hooks/useSidebarFilter';
 import { useWidgetData } from '../../hooks/useWidgetData';
 import { generateHint } from '../../utils/generateHint';
+import { StatsRow } from '../../components/StatsRow';
+import { CategoryMasteryBar } from '../../components/CategoryMasteryBar';
+import { ShortcutList, type ShortcutAction } from '../../components/ShortcutList';
 import type { HomeStackParamList, DrawerParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'HomeMain'>;
 
-// 最近追加アイテムの簡易型（表示用）
 interface RecentItem {
   id: number;
   type: string;
@@ -47,11 +60,11 @@ interface RecentItem {
   created_at: string;
 }
 
-// 曜日ラベル（日曜=0）
 const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
 
-// サイドバーフィルターのラベル文字列を生成
-function getSidebarFilterLabel(filter: NonNullable<ReturnType<typeof useSidebarFilter>['sidebarFilter']>): string {
+function getSidebarFilterLabel(
+  filter: NonNullable<ReturnType<typeof useSidebarFilter>['sidebarFilter']>
+): string {
   if (filter.kind === 'tag') return filter.tagName;
   if (filter.kind === 'collection') return filter.collectionName;
   return '';
@@ -68,19 +81,16 @@ export function HomeScreen({ navigation }: Props) {
   const [todayCompleted, setTodayCompleted] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [weeklyActivity, setWeeklyActivity] = useState<DailyActivity[]>([]);
   const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
-
-  // タグフィルター用: タグが付いているアイテムIDのセット（非同期取得）
+  const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
   const [taggedItemIds, setTaggedItemIds] = useState<Set<number>>(new Set());
 
   const loadData = useCallback(async () => {
     if (!db || !isReady) return;
     setLoading(true);
-    setLoadError(null);
     try {
-      const [due, streak, completed, total, all, weekly, recent] = await Promise.all([
+      const [due, streak, completed, total, all, weekly, recent, catStats] = await Promise.all([
         getDueItems(db),
         getStreakDays(db),
         getTodayCompletedCount(db),
@@ -94,6 +104,7 @@ export function HomeScreen({ navigation }: Props) {
           ORDER BY created_at DESC
           LIMIT 10
         `),
+        getCategoryStats(db),
       ]);
       setDueItems(due);
       setAllItems(all);
@@ -102,61 +113,17 @@ export function HomeScreen({ navigation }: Props) {
       setTotalItems(total);
       setWeeklyActivity(weekly);
       setRecentItems(recent);
+      setCategoryStats(catStats);
     } catch (err) {
       console.error('[HomeScreen] loadData error:', err);
-      setLoadError('データの読み込みに失敗しました');
     } finally {
       setLoading(false);
     }
   }, [db, isReady]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [loadData])
-  );
+  useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
-  // サイドバーフィルターを dueItems に適用（overdueCount より前に宣言が必要）
-  const sidebarFilteredItemsEarly = useMemo<ReviewableItem[]>(() => {
-    if (!sidebarFilter) return dueItems;
-    if (sidebarFilter.kind === 'tag') {
-      return dueItems.filter((ri) => taggedItemIds.has(ri.item.id));
-    }
-    return dueItems;
-  }, [sidebarFilter, dueItems, taggedItemIds]);
-
-  // 期限切れアイテム数（today midnight より前が due のもの）
-  const overdueCount = useMemo(() => {
-    const todayMidnight = new Date();
-    todayMidnight.setHours(0, 0, 0, 0);
-    return sidebarFilteredItemsEarly.filter((ri) => {
-      const next = new Date(ri.item.review!.next_review_at.replace(' ', 'T'));
-      return next < todayMidnight;
-    }).length;
-  }, [sidebarFilteredItemsEarly]);
-
-  // ウィジェット用Q&Aデータ（全アイテムからランダムに最大20件）
-  const quizItems = useMemo(() => {
-    const shuffled = [...allItems].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 20).map((ri) => ({
-      question: ri.item.title,
-      answer: ri.item.content ?? '',
-    }));
-  }, [allItems]);
-
-  // Flashcard Peek ウィジェット用（due順に最大5件、穴埋めヒント付き）
-  const peekItems = useMemo(() => {
-    return dueItems.slice(0, 5).map((ri) => ({
-      id: ri.item.id,
-      question: ri.item.title,
-      hintAnswer: generateHint(ri.item.content ?? ''),
-    }));
-  }, [dueItems]);
-
-  // iOS ウィジェットへデータを同期
-  useWidgetData(dueItems.length, streakDays, totalItems, quizItems, peekItems);
-
-  // サイドバーのタグフィルターが変わったら対象アイテムIDを取得
+  // タグフィルター用 item ID セット
   useEffect(() => {
     if (!sidebarFilter || sidebarFilter.kind !== 'tag' || !db) {
       setTaggedItemIds(new Set());
@@ -168,27 +135,74 @@ export function HomeScreen({ navigation }: Props) {
     ).then((rows) => setTaggedItemIds(new Set(rows.map((r) => r.item_id))));
   }, [sidebarFilter, db]);
 
-  const handleStartReview = () => {
-    navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate('Review');
-  };
+  // フィルター済み due アイテム
+  const filteredDueItems = useMemo<ReviewableItem[]>(() => {
+    if (!sidebarFilter) return dueItems;
+    if (sidebarFilter.kind === 'tag') return dueItems.filter((ri) => taggedItemIds.has(ri.item.id));
+    return dueItems;
+  }, [sidebarFilter, dueItems, taggedItemIds]);
 
-  const handleStartExtraReview = () => {
-    navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate(
-      'Review',
-      { screen: 'ReviewSession', params: { forceAll: true } }
-    );
-  };
+  // 期限切れ件数（today midnight 以前）
+  const overdueCount = useMemo(() => {
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+    return filteredDueItems.filter((ri) => {
+      const next = new Date(ri.item.review!.next_review_at.replace(' ', 'T'));
+      return next < todayMidnight;
+    }).length;
+  }, [filteredDueItems]);
+
+  // ウィジェット同期
+  const quizItems = useMemo(
+    () =>
+      [...allItems]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 20)
+        .map((ri) => ({ question: ri.item.title, answer: ri.item.content ?? '' })),
+    [allItems]
+  );
+  const peekItems = useMemo(
+    () =>
+      dueItems.slice(0, 5).map((ri) => ({
+        id: ri.item.id,
+        question: ri.item.title,
+        hintAnswer: generateHint(ri.item.content ?? ''),
+      })),
+    [dueItems]
+  );
+  useWidgetData(dueItems.length, streakDays, totalItems, quizItems, peekItems);
+
+  // ナビゲーションハンドラー
+  // 1タップ復習: HomeStack 内の ReviewSession に直接遷移（Drawer 経由不要）
+  const handleStartReview = () => navigation.navigate('ReviewSession', {});
+  const handleStartExtraReview = () => navigation.navigate('ReviewSession', { forceAll: true });
 
   const handleOpenURLAnalysis = () => {
-    // LibraryStack 内の URLAnalysis モーダルへネストナビゲート
     navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate(
       'Library',
       { screen: 'URLAnalysis', params: {} }
     );
   };
 
-  // sidebarFilteredItems は overdueCount より前に宣言済み（sidebarFilteredItemsEarly として）
-  const sidebarFilteredItems = sidebarFilteredItemsEarly;
+  const handleShortcut = (action: ShortcutAction) => {
+    switch (action) {
+      case 'review':   handleStartReview(); break;
+      case 'url_add': handleOpenURLAnalysis(); break;
+      case 'library':
+        navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate('Library');
+        break;
+      case 'map':
+        navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate('Map');
+        break;
+    }
+  };
+
+  const handlePressCategory = (category: string) => {
+    navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate(
+      'Library',
+      { screen: 'LibraryMain', params: { filterTag: category } }
+    );
+  };
 
   if (!isReady || loading) {
     return (
@@ -200,63 +214,89 @@ export function HomeScreen({ navigation }: Props) {
 
   const cardShadow = isDark ? {} : CardShadow;
 
+  // ヒーロー表示状態
+  const heroState: 'empty' | 'due' | 'done' =
+    totalItems === 0 ? 'empty' : filteredDueItems.length > 0 ? 'due' : 'done';
+
   return (
     <ScrollView
       style={{ backgroundColor: colors.backgroundGrouped }}
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
-      {/* ――― サイドバーフィルターバッジ ――― */}
+      {/* ① フィルターバッジ */}
       {sidebarFilter && (
-        <View style={styles.sidebarBadgeRow}>
-          <View style={[styles.sidebarBadge, { backgroundColor: colors.accent + '22' }]}>
-            <Text style={[styles.sidebarBadgeText, { color: colors.accent }]}>
+        <View style={styles.badgeRow}>
+          <View style={[styles.badge, { backgroundColor: colors.accent + '22' }]}>
+            <Text style={[styles.badgeText, { color: colors.accent }]}>
               {getSidebarFilterLabel(sidebarFilter)}
             </Text>
             <Pressable
               onPress={clearFilter}
-              style={styles.sidebarBadgeClear}
+              style={styles.badgeClear}
               accessibilityLabel="フィルターを解除"
               accessibilityRole="button"
             >
-              <Text style={[styles.sidebarBadgeClearText, { color: colors.accent }]}>×</Text>
+              <Text style={[styles.badgeClearText, { color: colors.accent }]}>×</Text>
             </Pressable>
           </View>
         </View>
       )}
 
-      {/* ――― 空状態ウェルカムメッセージ ――― */}
-      {totalItems === 0 && (
-        <View style={[styles.welcomeCard, { backgroundColor: colors.accent + '1A' }]}>
-          <Ionicons name="sparkles-outline" size={20} color={colors.accent} />
-          <Text style={[styles.welcomeText, { color: colors.accent }]}>
-            ようこそ！URLを追加して学習を始めましょう
-          </Text>
-        </View>
-      )}
-
-      {/* ――― 今日の復習カード ――― */}
+      {/* ② ヒーローCTAカード（3状態適応） */}
       <View style={[styles.heroCard, { backgroundColor: colors.card }, cardShadow]}>
-        <View style={styles.heroHeader}>
-          <Text style={[styles.heroCountText, { color: colors.label }]}>
-            今日の復習　{sidebarFilteredItems.length}件
-          </Text>
-          {overdueCount > 0 && sidebarFilteredItems.length > 0 && (
-            <View style={[styles.overdueBadge, { backgroundColor: SystemColors.orange + '22' }]}>
-              <Ionicons name="time-outline" size={12} color={SystemColors.orange} />
-              <Text style={[styles.overdueBadgeText, { color: SystemColors.orange }]}>
-                うち {overdueCount} 件が期限切れ
+
+        {/* empty: アイテム未登録 */}
+        {heroState === 'empty' && (
+          <View style={styles.heroBody}>
+            <View style={[styles.heroIconCircle, { backgroundColor: colors.accent + '1A' }]}>
+              <Ionicons name="sparkles-outline" size={28} color={colors.accent} />
+            </View>
+            <View style={styles.heroTexts}>
+              <Text style={[styles.heroTitle, { color: colors.label }]}>ようこそ！</Text>
+              <Text style={[styles.heroSub, { color: colors.labelSecondary }]}>
+                URLを追加して最初のフラッシュカードを作りましょう
               </Text>
             </View>
-          )}
-        </View>
-
-        {/* スタートボタン or 完了/空状態メッセージ */}
-        {sidebarFilteredItems.length > 0 ? (
-          <View style={styles.startButtonSection}>
             <Pressable
               style={({ pressed }) => [
-                styles.startButton,
+                styles.heroCTA,
+                { backgroundColor: pressed ? colors.accent + 'CC' : colors.accent },
+              ]}
+              onPress={handleOpenURLAnalysis}
+              accessibilityRole="button"
+              accessibilityLabel="URLから学習カードを追加"
+            >
+              <Ionicons name="link-outline" size={18} color="#FFFFFF" />
+              <Text style={styles.heroCTAText}>URLから追加</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* due: 復習が残っている（1タップ復習） */}
+        {heroState === 'due' && (
+          <View style={styles.heroBody}>
+            <View style={styles.heroCountRow}>
+              <Text style={[styles.heroCountNum, { color: colors.label }]}>
+                {filteredDueItems.length}
+              </Text>
+              <View style={styles.heroCountSub}>
+                <Text style={[styles.heroCountLabel, { color: colors.labelSecondary }]}>
+                  件の復習
+                </Text>
+                {overdueCount > 0 && (
+                  <View style={[styles.overduePill, { backgroundColor: SystemColors.orange + '22' }]}>
+                    <Ionicons name="time-outline" size={11} color={SystemColors.orange} />
+                    <Text style={[styles.overduePillText, { color: SystemColors.orange }]}>
+                      {overdueCount}件期限切れ
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.heroCTA,
                 overdueCount > 0
                   ? { backgroundColor: pressed ? SystemColors.orange + 'CC' : SystemColors.orange }
                   : { backgroundColor: pressed ? colors.accent + 'CC' : colors.accent },
@@ -265,105 +305,94 @@ export function HomeScreen({ navigation }: Props) {
               accessibilityRole="button"
               accessibilityLabel="復習を始める"
             >
-              <Ionicons
-                name="play-circle-outline"
-                size={20}
-                color="#FFFFFF"
-                style={styles.startButtonIcon}
-              />
-              <Text style={styles.startButtonText}>復習を始める</Text>
+              <Ionicons name="play-circle-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.heroCTAText}>今すぐ復習</Text>
             </Pressable>
             {overdueCount > 0 && (
-              <Text style={[styles.startButtonHint, { color: SystemColors.orange }]}>
-                期限切れが {overdueCount} 件あります。早めに復習しましょう
+              <Text style={[styles.overdueHint, { color: SystemColors.orange }]}>
+                期限切れが {overdueCount} 件あります
               </Text>
             )}
           </View>
-        ) : totalItems === 0 ? (
-          <View style={styles.allDoneRow}>
-            <Text style={[styles.allDoneText, { color: colors.labelSecondary }]}>
-              アイテムを追加して復習を始めましょう
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.extraLearningSection}>
-            <View style={styles.completionRow}>
-              <View style={[styles.completionIcon, { backgroundColor: colors.success + '1F' }]}>
-                <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+        )}
+
+        {/* done: 本日分完了 */}
+        {heroState === 'done' && (
+          <View style={styles.heroBody}>
+            <View style={styles.doneRow}>
+              <View style={[styles.doneIconWrap, { backgroundColor: colors.success + '1F' }]}>
+                <Ionicons name="checkmark-circle" size={32} color={colors.success} />
               </View>
-              <View style={styles.completionText}>
-                <Text style={[styles.allDoneText, { color: colors.success }]}>本日分完了</Text>
-                <Text style={[styles.completedCountLabel, { color: colors.labelSecondary }]}>
-                  今日 {todayCompleted} 件復習しました
+              <View style={styles.doneTexts}>
+                <Text style={[styles.doneTitle, { color: colors.success }]}>本日分完了！</Text>
+                <Text style={[styles.doneSub, { color: colors.labelSecondary }]}>
+                  今日 {todayCompleted} 件復習・{streakDays}日連続
                 </Text>
               </View>
             </View>
-            <Text style={[styles.extraLearningHint, { color: colors.labelSecondary }]}>
-              追加学習しますか？
-            </Text>
             <Pressable
               style={({ pressed }) => [
-                styles.extraLearningButton,
+                styles.extraBtn,
                 { borderColor: colors.accent, opacity: pressed ? 0.7 : 1 },
               ]}
               onPress={handleStartExtraReview}
               accessibilityRole="button"
               accessibilityLabel="追加学習を始める"
             >
-              <Text style={[styles.extraLearningButtonText, { color: colors.accent }]}>
+              <Text style={[styles.extraBtnText, { color: colors.accent }]}>
                 追加学習を始める
               </Text>
             </Pressable>
           </View>
         )}
-
       </View>
 
-      {/* ――― URL解析導線 ――― */}
-      <Pressable
-        style={({ pressed }) => [
-          styles.urlAnalysisCard,
-          { backgroundColor: colors.card, opacity: pressed ? 0.7 : 1 },
-          cardShadow,
+      {/* ③ StatsRow */}
+      <StatsRow
+        stats={[
+          {
+            value: streakDays,
+            label: '連続日数',
+            color: streakDays > 0 ? SystemColors.orange : undefined,
+          },
+          {
+            value: todayCompleted,
+            label: '今日完了',
+            color: todayCompleted > 0 ? SystemColors.green : undefined,
+          },
+          { value: totalItems, label: '総アイテム' },
         ]}
-        onPress={handleOpenURLAnalysis}
-        accessibilityRole="button"
-        accessibilityLabel="URL解析で学習カードを作成"
-      >
-        <View style={[styles.urlAnalysisIcon, { backgroundColor: colors.accent + '1A' }]}>
-          <Ionicons name="link-outline" size={22} color={colors.accent} />
-        </View>
-        <View style={styles.urlAnalysisContent}>
-          <Text style={[styles.urlAnalysisTitle, { color: colors.label }]}>
-            URLから学習カードを作成
-          </Text>
-          <Text style={[styles.urlAnalysisSub, { color: colors.labelSecondary }]}>
-            AIがQ&Aを自動生成します
-          </Text>
-        </View>
-        <Text style={[styles.urlAnalysisChevron, { color: colors.labelTertiary }]}>›</Text>
-      </Pressable>
+      />
 
-      {/* ――― 週間アクティビティ ――― */}
+      {/* ④ ShortcutList */}
+      {totalItems > 0 && (
+        <>
+          <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
+            クイックアクション
+          </Text>
+          <ShortcutList onPress={handleShortcut} reviewDueCount={filteredDueItems.length} />
+        </>
+      )}
+
+      {/* ⑤ 週間アクティビティ */}
       {totalItems > 0 && (
         <>
           <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
             今週のアクティビティ
           </Text>
           <View style={[styles.weeklyCard, { backgroundColor: colors.card }, cardShadow]}>
-            <View style={styles.weeklyGridRow}>
+            <View style={styles.weeklyRow}>
               {weeklyActivity.map((day, i) => {
                 const isToday = i === 6;
                 const dotDate = new Date(day.date + 'T00:00:00');
                 const dayLabel = DAY_LABELS[dotDate.getDay()];
-                const intensity = day.count === 0 ? 0 : day.count <= 2 ? 1 : day.count <= 5 ? 2 : 3;
+                const intensity =
+                  day.count === 0 ? 0 : day.count <= 2 ? 1 : day.count <= 5 ? 2 : 3;
                 const dotBg =
                   intensity === 0
-                    ? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)')
-                    : intensity === 1
-                    ? colors.accent + '55'
-                    : intensity === 2
-                    ? colors.accent + 'AA'
+                    ? isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
+                    : intensity === 1 ? colors.accent + '55'
+                    : intensity === 2 ? colors.accent + 'AA'
                     : colors.accent;
                 return (
                   <View key={day.date} style={styles.dayCol}>
@@ -397,7 +426,17 @@ export function HomeScreen({ navigation }: Props) {
         </>
       )}
 
-      {/* ――― 最近追加 ――― */}
+      {/* ⑥ CategoryMasteryBar */}
+      {categoryStats.length > 0 && (
+        <>
+          <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
+            カテゴリ別習熟度
+          </Text>
+          <CategoryMasteryBar stats={categoryStats} onPressCategory={handlePressCategory} />
+        </>
+      )}
+
+      {/* ⑦ 最近追加 */}
       {recentItems.length > 0 && (
         <>
           <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
@@ -406,12 +445,13 @@ export function HomeScreen({ navigation }: Props) {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={styles.recentScrollView}
+            style={styles.recentScroll}
             contentContainerStyle={styles.recentScrollContent}
           >
             {recentItems.map((item) => {
               const isUrl = item.type === 'url' && item.source_url;
-              const iconName = isUrl ? 'link-outline' : 'document-text-outline';
+              const iconName: React.ComponentProps<typeof Ionicons>['name'] =
+                isUrl ? 'link-outline' : 'document-text-outline';
               const dateStr = item.created_at.slice(5, 10).replace('-', '/');
               return (
                 <Pressable
@@ -424,7 +464,7 @@ export function HomeScreen({ navigation }: Props) {
                   onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}
                   accessibilityRole="button"
                 >
-                  <View style={[styles.recentCardIconWrap, { backgroundColor: colors.accent + '1A' }]}>
+                  <View style={[styles.recentIconWrap, { backgroundColor: colors.accent + '1A' }]}>
                     <Ionicons name={iconName} size={16} color={colors.accent} />
                   </View>
                   <Text
@@ -436,7 +476,7 @@ export function HomeScreen({ navigation }: Props) {
                   <View style={styles.recentCardFooter}>
                     {item.category ? (
                       <Text
-                        style={[styles.recentCardCategory, { color: colors.accent }]}
+                        style={[styles.recentCardCat, { color: colors.accent }]}
                         numberOfLines={1}
                       >
                         {item.category}
@@ -454,31 +494,6 @@ export function HomeScreen({ navigation }: Props) {
           </ScrollView>
         </>
       )}
-
-      {/* ――― ジャーナル導線 ――― */}
-      <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
-        ジャーナル
-      </Text>
-      <Pressable
-        style={({ pressed }) => [
-          styles.journalCard,
-          { backgroundColor: colors.card, opacity: pressed ? 0.7 : 1 },
-          cardShadow,
-        ]}
-        onPress={() => navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate('Journal')}
-        accessibilityRole="button"
-        accessibilityLabel="学びジャーナルを開く"
-      >
-        <View style={styles.journalCardContent}>
-          <Text style={[styles.journalCardTitle, { color: colors.label }]}>
-            学びジャーナル
-          </Text>
-          <Text style={[styles.journalCardSub, { color: colors.labelSecondary }]}>
-            日付別のメモ一覧
-          </Text>
-        </View>
-        <Text style={[styles.journalChevron, { color: colors.labelTertiary }]}>›</Text>
-      </Pressable>
     </ScrollView>
   );
 }
@@ -488,20 +503,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.m,
-    paddingHorizontal: Spacing.xl,
-  },
-  welcomeCard: {
-    borderRadius: Radius.l,
-    padding: Spacing.m,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.s,
-  },
-  welcomeText: {
-    ...TypeScale.subheadline,
-    flex: 1,
-    fontWeight: '500' as const,
   },
   container: {
     padding: Spacing.m,
@@ -509,12 +510,12 @@ const styles = StyleSheet.create({
     gap: Spacing.m,
   },
 
-  // ――― サイドバーフィルターバッジ ―――
-  sidebarBadgeRow: {
+  // ① フィルターバッジ
+  badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  sidebarBadge: {
+  badge: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 6,
@@ -522,50 +523,110 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
     gap: Spacing.xs,
   },
-  sidebarBadgeText: {
+  badgeText: {
     fontSize: 12,
     fontWeight: '500',
   },
-  sidebarBadgeClear: {
+  badgeClear: {
     paddingLeft: 2,
   },
-  sidebarBadgeClearText: {
+  badgeClearText: {
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 16,
   },
 
-  // ――― ヒーローカード ―――
+  // ② ヒーローカード
   heroCard: {
     borderRadius: Radius.l,
+    overflow: 'hidden',
+  },
+  heroBody: {
     padding: Spacing.l,
     gap: Spacing.m,
   },
-  heroHeader: {
+  // empty 状態
+  heroIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+  },
+  heroTexts: {
+    gap: Spacing.xs,
+  },
+  heroTitle: {
+    ...TypeScale.title3,
+    fontWeight: '700' as const,
+  },
+  heroSub: {
+    ...TypeScale.subheadline,
+  },
+  // due 状態
+  heroCountRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
     gap: Spacing.s,
   },
-  heroCountText: {
-    ...TypeScale.title3,
-    fontWeight: '600' as const,
+  heroCountNum: {
+    fontSize: 52,
+    fontWeight: '800' as const,
+    lineHeight: 56,
+    letterSpacing: -2,
   },
-  overdueBadge: {
+  heroCountSub: {
+    gap: Spacing.xs,
+    paddingBottom: Spacing.xs,
+  },
+  heroCountLabel: {
+    ...TypeScale.subheadline,
+  },
+  overduePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
     alignSelf: 'flex-start',
     borderRadius: Radius.xs,
     paddingHorizontal: Spacing.s,
     paddingVertical: 3,
   },
-  overdueBadgeText: {
+  overduePillText: {
     fontSize: 11,
     fontWeight: '600' as const,
     lineHeight: 14,
   },
-  startButtonSection: {
-    gap: Spacing.xs,
+  overdueHint: {
+    ...TypeScale.caption1,
+    textAlign: 'center',
   },
-  startButton: {
+  // done 状態
+  doneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.m,
+  },
+  doneIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doneTexts: {
+    flex: 1,
+    gap: 2,
+  },
+  doneTitle: {
+    ...TypeScale.title3,
+    fontWeight: '700' as const,
+  },
+  doneSub: {
+    ...TypeScale.subheadline,
+  },
+  // 共通CTA
+  heroCTA: {
     borderRadius: Radius.m,
     paddingVertical: Spacing.m,
     alignItems: 'center',
@@ -573,122 +634,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.xs,
   },
-  startButtonIcon: {
-    marginRight: 2,
-  },
-  startButtonText: {
+  heroCTAText: {
     ...TypeScale.headline,
     color: '#FFFFFF',
-  },
-  startButtonHint: {
-    ...TypeScale.caption1,
-    textAlign: 'center',
-  },
-  completionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.m,
-  },
-  completionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  completionText: {
-    flex: 1,
-    gap: 2,
-  },
-  completedCountLabel: {
-    ...TypeScale.caption1,
-  },
-  allDoneRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  allDoneIcon: {
-    ...TypeScale.body,
     fontWeight: '600' as const,
   },
-  allDoneText: {
-    ...TypeScale.body,
-    fontWeight: '600' as const,
-  },
-  extraLearningSection: {
-    gap: Spacing.s,
-  },
-  extraLearningHint: {
-    ...TypeScale.subheadline,
-  },
-  extraLearningButton: {
+  // 追加学習ボタン（アウトライン）
+  extraBtn: {
     borderRadius: Radius.m,
     paddingVertical: Spacing.m,
     alignItems: 'center',
     borderWidth: 1,
     backgroundColor: 'transparent',
   },
-  extraLearningButtonText: {
+  extraBtnText: {
     ...TypeScale.headline,
-  },
-  // ――― URL解析カード ―――
-  urlAnalysisCard: {
-    borderRadius: Radius.m,
-    padding: Spacing.m,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.m,
-  },
-  urlAnalysisIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.m,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  urlAnalysisContent: {
-    flex: 1,
-    gap: Spacing.xs,
-  },
-  urlAnalysisTitle: {
-    ...TypeScale.body,
-    fontWeight: '500' as const,
-  },
-  urlAnalysisSub: {
-    ...TypeScale.caption1,
-  },
-  urlAnalysisChevron: {
-    fontSize: 22,
-    lineHeight: 24,
-    fontWeight: '300' as const,
+    fontWeight: '600' as const,
   },
 
-  // ――― ジャーナル導線 ―――
-  journalCard: {
-    borderRadius: Radius.m,
-    padding: Spacing.m,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  journalCardContent: {
-    flex: 1,
-    gap: Spacing.xs,
-  },
-  journalCardTitle: {
-    ...TypeScale.body,
-    fontWeight: '500' as const,
-  },
-  journalCardSub: {
-    ...TypeScale.caption1,
-  },
-  journalChevron: {
-    fontSize: 22,
-    lineHeight: 24,
-    fontWeight: '300' as const,
-  },
-
-  // ――― 統計 ―――
+  // セクションタイトル
   sectionTitle: {
     ...TypeScale.footnote,
     textTransform: 'uppercase',
@@ -697,12 +661,12 @@ const styles = StyleSheet.create({
     marginBottom: -Spacing.xs,
   },
 
-  // ――― 週間ドットグリッド ―――
+  // ⑤ 週間アクティビティ
   weeklyCard: {
     borderRadius: Radius.l,
     padding: Spacing.m,
   },
-  weeklyGridRow: {
+  weeklyRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -730,8 +694,8 @@ const styles = StyleSheet.create({
     lineHeight: 13,
   },
 
-  // ――― 横スクロールRecentlyAdded ―――
-  recentScrollView: {
+  // ⑦ 最近追加
+  recentScroll: {
     marginHorizontal: -Spacing.m,
   },
   recentScrollContent: {
@@ -746,7 +710,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: 120,
   },
-  recentCardIconWrap: {
+  recentIconWrap: {
     width: 28,
     height: 28,
     borderRadius: Radius.s,
@@ -766,7 +730,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: Spacing.xs,
   },
-  recentCardCategory: {
+  recentCardCat: {
     fontSize: 10,
     fontWeight: '600' as const,
     lineHeight: 12,
