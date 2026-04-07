@@ -7,6 +7,36 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { sm2, sm2ResultToDBParams } from '../sm2/algorithm';
 import type { Quality } from '../sm2/algorithm';
 import type { ItemWithMeta } from '../types';
+import { toMasteryLevel } from './queries';
+import type { MasteryLevel, MasterySummary } from './queries';
+
+// ============================================================
+// 復習セッション型
+// ============================================================
+
+export interface ReviewSessionRecord {
+  id: number;
+  startedAt: string;
+  endedAt: string | null;
+  cardCount: number;
+  accuracy: number;
+  ratingCounts: { again: number; hard: number; good: number; perfect: number };
+  masterySnapshot: MasterySummary;
+}
+
+export interface ReviewSessionItemRecord {
+  id: number;
+  sessionId: number;
+  itemId: number;
+  reviewId: number;
+  quality: number;
+  masteryLevel: MasteryLevel;
+  ratedAt: string;
+  // items テーブルから JOIN
+  title: string;
+  content: string;
+  type: string;
+}
 
 // getDueItems の戻り値型
 export interface ReviewableItem {
@@ -362,4 +392,165 @@ export async function getAccuracyRate(db: SQLiteDatabase): Promise<number> {
     }
   }
   return total > 0 ? Math.round((correct / total) * 100) : 0;
+}
+
+// ============================================================
+// 復習セッション管理
+// ============================================================
+
+/**
+ * 復習セッションを開始し、新規セッションIDを返す
+ */
+export async function startReviewSession(db: SQLiteDatabase): Promise<number> {
+  const result = await db.runAsync(
+    `INSERT INTO review_sessions (started_at) VALUES (datetime('now', 'localtime'))`
+  );
+  return result.lastInsertRowId;
+}
+
+/**
+ * セッション内の1カード評価を記録する
+ * reviewId の現在の repetitions / easiness_factor からマスタリーレベルを算出して保存
+ */
+export async function recordSessionItem(
+  db: SQLiteDatabase,
+  sessionId: number,
+  itemId: number,
+  reviewId: number,
+  quality: Quality
+): Promise<void> {
+  // 現在の reviews 状態からマスタリーレベルを取得
+  const row = await db.getFirstAsync<{ repetitions: number; easiness_factor: number }>(
+    `SELECT repetitions, easiness_factor FROM reviews WHERE id = ?`,
+    [reviewId]
+  );
+  const masteryLevel: MasteryLevel = row
+    ? toMasteryLevel({ repetitions: row.repetitions, easiness_factor: row.easiness_factor })
+    : 'new';
+
+  await db.runAsync(
+    `INSERT INTO review_session_items (session_id, item_id, review_id, quality, mastery_level, rated_at)
+     VALUES (?, ?, ?, ?, ?, datetime('now', 'localtime'))`,
+    [sessionId, itemId, reviewId, quality, masteryLevel]
+  );
+}
+
+/**
+ * 復習セッションを終了し、集計結果を保存する
+ */
+export async function endReviewSession(
+  db: SQLiteDatabase,
+  sessionId: number,
+  ratingCounts: { again: number; hard: number; good: number; perfect: number },
+  accuracy: number
+): Promise<void> {
+  const cardCount =
+    ratingCounts.again + ratingCounts.hard + ratingCounts.good + ratingCounts.perfect;
+
+  // セッション内のマスタリー分布を集計
+  const masteryRows = await db.getAllAsync<{ mastery_level: string }>(
+    `SELECT mastery_level FROM review_session_items WHERE session_id = ?`,
+    [sessionId]
+  );
+  const snapshot: MasterySummary = { new: 0, learning: 0, advanced: 0, master: 0, total: masteryRows.length };
+  for (const r of masteryRows) {
+    const key = r.mastery_level as MasteryLevel;
+    if (key in snapshot) snapshot[key]++;
+  }
+
+  await db.runAsync(
+    `UPDATE review_sessions
+     SET ended_at         = datetime('now', 'localtime'),
+         card_count       = ?,
+         accuracy         = ?,
+         rating_counts    = ?,
+         mastery_snapshot = ?
+     WHERE id = ?`,
+    [
+      cardCount,
+      accuracy,
+      JSON.stringify(ratingCounts),
+      JSON.stringify(snapshot),
+      sessionId,
+    ]
+  );
+}
+
+/**
+ * 復習セッション一覧を新しい順に取得（最大 limit 件）
+ */
+export async function getReviewSessions(
+  db: SQLiteDatabase,
+  limit = 30
+): Promise<ReviewSessionRecord[]> {
+  const rows = await db.getAllAsync<{
+    id: number;
+    started_at: string;
+    ended_at: string | null;
+    card_count: number;
+    accuracy: number;
+    rating_counts: string;
+    mastery_snapshot: string;
+  }>(
+    `SELECT id, started_at, ended_at, card_count, accuracy, rating_counts, mastery_snapshot
+     FROM review_sessions
+     WHERE ended_at IS NOT NULL
+     ORDER BY started_at DESC
+     LIMIT ?`,
+    [limit]
+  );
+
+  return rows.map((r) => ({
+    id: r.id,
+    startedAt: r.started_at,
+    endedAt: r.ended_at,
+    cardCount: r.card_count,
+    accuracy: r.accuracy,
+    ratingCounts: JSON.parse(r.rating_counts || '{}'),
+    masterySnapshot: JSON.parse(r.mastery_snapshot || '{}'),
+  }));
+}
+
+/**
+ * セッション内の全アイテム詳細を取得
+ */
+export async function getSessionItems(
+  db: SQLiteDatabase,
+  sessionId: number
+): Promise<ReviewSessionItemRecord[]> {
+  const rows = await db.getAllAsync<{
+    id: number;
+    session_id: number;
+    item_id: number;
+    review_id: number;
+    quality: number;
+    mastery_level: string;
+    rated_at: string;
+    title: string;
+    content: string;
+    type: string;
+  }>(
+    `SELECT
+       rsi.id, rsi.session_id, rsi.item_id, rsi.review_id,
+       rsi.quality, rsi.mastery_level, rsi.rated_at,
+       i.title, i.content, i.type
+     FROM review_session_items rsi
+     JOIN items i ON i.id = rsi.item_id
+     WHERE rsi.session_id = ?
+     ORDER BY rsi.rated_at ASC`,
+    [sessionId]
+  );
+
+  return rows.map((r) => ({
+    id: r.id,
+    sessionId: r.session_id,
+    itemId: r.item_id,
+    reviewId: r.review_id,
+    quality: r.quality,
+    masteryLevel: r.mastery_level as MasteryLevel,
+    ratedAt: r.rated_at,
+    title: r.title,
+    content: r.content,
+    type: r.type,
+  }));
 }

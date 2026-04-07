@@ -25,6 +25,9 @@ import {
   getDueItems,
   getAllReviewableItems,
   submitReviewRating,
+  startReviewSession,
+  recordSessionItem,
+  endReviewSession,
   type ReviewableItem,
 } from '../../db/reviewRepository';
 import { SIMPLE_RATINGS } from '../../sm2/algorithm';
@@ -71,6 +74,7 @@ export function ReviewScreen({ navigation, route }: Props) {
   const [ratingCounts, setRatingCounts] = useState<Record<string, number>>({
     again: 0, hard: 0, good: 0, perfect: 0,
   });
+  const sessionIdRef = React.useRef<number | null>(null);
 
   // フラッシュオーバーレイ
   const flashOpacity = useSharedValue(0);
@@ -96,7 +100,13 @@ export function ReviewScreen({ navigation, route }: Props) {
           ? allItems.filter((ri) => reviewIds.includes(ri.item.id))
           : allItems;
         setItems(filtered);
-        if (filtered.length === 0) setIsComplete(true);
+        if (filtered.length === 0) {
+          setIsComplete(true);
+        } else {
+          // セッション開始
+          const sid = await startReviewSession(db);
+          sessionIdRef.current = sid;
+        }
       } finally {
         setLoading(false);
       }
@@ -118,12 +128,13 @@ export function ReviewScreen({ navigation, route }: Props) {
         withTiming(0, { duration: 200 })
       );
 
-      // 評価カウントアップ
-      setRatingCounts((prev) => ({ ...prev, [rating]: prev[rating] + 1 }));
+      const newCounts = { ...ratingCounts, [rating]: ratingCounts[rating] + 1 } as Record<string, number>;
+      setRatingCounts(newCounts);
 
       const quality = SIMPLE_RATINGS[rating];
       const review = currentItem.item.review;
 
+      // SM-2 更新
       await submitReviewRating(
         db,
         currentItem.reviewId,
@@ -135,14 +146,43 @@ export function ReviewScreen({ navigation, route }: Props) {
         quality
       );
 
-      if (currentIndex + 1 >= items.length) {
+      // セッションアイテムを記録（SM-2更新後にマスタリーを取得）
+      if (sessionIdRef.current !== null) {
+        await recordSessionItem(
+          db,
+          sessionIdRef.current,
+          currentItem.item.id,
+          currentItem.reviewId,
+          quality
+        );
+      }
+
+      const isLastCard = currentIndex + 1 >= items.length;
+      if (isLastCard) {
+        // セッション終了
+        if (sessionIdRef.current !== null) {
+          const correct = (newCounts.good ?? 0) + (newCounts.perfect ?? 0);
+          const total = items.length;
+          const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+          await endReviewSession(
+            db,
+            sessionIdRef.current,
+            {
+              again:   newCounts.again   ?? 0,
+              hard:    newCounts.hard    ?? 0,
+              good:    newCounts.good    ?? 0,
+              perfect: newCounts.perfect ?? 0,
+            },
+            accuracy
+          );
+        }
         setIsComplete(true);
       } else {
         setCurrentIndex((prev) => prev + 1);
         setIsCardFlipped(false);
       }
     },
-    [db, currentItem, currentIndex, items.length]
+    [db, currentItem, currentIndex, items.length, ratingCounts]
   );
 
   // ---- ローディング ----

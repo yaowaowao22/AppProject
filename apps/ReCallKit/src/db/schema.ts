@@ -3,7 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 // ============================================================
 // スキーマバージョン管理
 // ============================================================
-const SCHEMA_VERSION = 10;
+const SCHEMA_VERSION = 11;
 
 const CREATE_TABLES_SQL = `
   -- アイテム（URL・テキスト・メモ）
@@ -238,6 +238,36 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
       // 冪等: 既に存在する場合は無視
     }
     await setSchemaVersion(db, 10);
+  }
+
+  if (currentVersion < 11) {
+    // 復習セッション管理テーブル
+    // review_sessions : セッション単位（開始〜終了）の集計
+    // review_session_items : セッション内の各カード評価ログ
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS review_sessions (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        started_at      TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+        ended_at        TEXT,
+        card_count      INTEGER NOT NULL DEFAULT 0,
+        accuracy        INTEGER NOT NULL DEFAULT 0,
+        rating_counts   TEXT    NOT NULL DEFAULT '{}',
+        mastery_snapshot TEXT   NOT NULL DEFAULT '{}'
+      );
+      CREATE INDEX IF NOT EXISTS idx_review_sessions_started ON review_sessions(started_at);
+
+      CREATE TABLE IF NOT EXISTS review_session_items (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id   INTEGER NOT NULL REFERENCES review_sessions(id) ON DELETE CASCADE,
+        item_id      INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+        review_id    INTEGER NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
+        quality      INTEGER NOT NULL,
+        mastery_level TEXT   NOT NULL,
+        rated_at     TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_rsi_session ON review_session_items(session_id);
+    `);
+    await setSchemaVersion(db, 11);
   }
 }
 
