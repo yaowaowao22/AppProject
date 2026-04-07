@@ -37,6 +37,7 @@ export function RootNavigator() {
         }
       } catch (e) {
         console.log('[OTA] check error:', e);
+        setOtaUpdating(false); // フェッチ失敗時に画面が固まるのを防ぐ
       }
     })();
   }, []);
