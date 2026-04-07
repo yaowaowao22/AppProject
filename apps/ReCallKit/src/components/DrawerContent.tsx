@@ -85,6 +85,13 @@ const SCREEN_ITEMS = [
     iconFilled:  'clipboard'           as const,
     showBadge: true,  // runningCount を表示
   },
+  {
+    name: 'History' as const,
+    label: '学習履歴',
+    iconOutline: 'stats-chart-outline' as const,
+    iconFilled:  'stats-chart'         as const,
+    showBadge: false,
+  },
 ] as const;
 
 // ============================================================

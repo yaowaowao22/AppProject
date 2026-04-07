@@ -9,7 +9,8 @@
 //       ├── Map      → MapStack
 //       ├── Journal  → JournalStack
 //       ├── Settings → SettingsStack
-//       └── Tasks    → TaskStack
+//       ├── Tasks    → TaskStack
+//       └── History  → HistoryStack
 // ============================================================
 
 import type { NavigatorScreenParams } from '@react-navigation/native';
@@ -39,6 +40,7 @@ export type DrawerParamList = {
   Journal: NavigatorScreenParams<JournalStackParamList> | undefined;
   Settings: NavigatorScreenParams<SettingsStackParamList> | undefined;
   Tasks: NavigatorScreenParams<TaskStackParamList> | undefined;
+  History: NavigatorScreenParams<HistoryStackParamList> | undefined;
 };
 
 // ---- Home Stack ----
@@ -85,4 +87,9 @@ export type SettingsStackParamList = {
 export type TaskStackParamList = {
   TaskList: undefined;
   QAPreview: QAPreviewParams;
+};
+
+// ---- History Stack ----
+export type HistoryStackParamList = {
+  HistoryMain: undefined;
 };

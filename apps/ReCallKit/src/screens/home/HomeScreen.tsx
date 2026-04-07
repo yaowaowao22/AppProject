@@ -26,7 +26,6 @@ import {
   getAllReviewableItems,
   type ReviewableItem,
 } from '../../db/reviewRepository';
-import { StreakRing } from '../../components/StreakRing';
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
@@ -225,32 +224,20 @@ export function HomeScreen({ navigation }: Props) {
         </View>
       )}
 
-      {/* ――― ヒーローセクション: ストリークリング + 今日の復習 ――― */}
+      {/* ――― 今日の復習カード ――― */}
       <View style={[styles.heroCard, { backgroundColor: colors.card }, cardShadow]}>
-        {/* 上段: ストリークリング + ヘッダー */}
-        <View style={styles.heroTop}>
-          <StreakRing days={streakDays} size={80} strokeWidth={6} showLabel />
-          <View style={styles.heroInfo}>
-            <Text style={[styles.heroLabel, { color: colors.labelSecondary }]}>
-              今日の復習
-            </Text>
-            <View style={styles.countRow}>
-              <Text style={[styles.countNumber, { color: colors.accent }]}>
-                {sidebarFilteredItems.length}
-              </Text>
-              <Text style={[styles.countUnit, { color: colors.labelSecondary }]}>
-                件
+        <View style={styles.heroHeader}>
+          <Text style={[styles.heroCountText, { color: colors.label }]}>
+            今日の復習　{sidebarFilteredItems.length}件
+          </Text>
+          {overdueCount > 0 && sidebarFilteredItems.length > 0 && (
+            <View style={[styles.overdueBadge, { backgroundColor: SystemColors.orange + '22' }]}>
+              <Ionicons name="time-outline" size={12} color={SystemColors.orange} />
+              <Text style={[styles.overdueBadgeText, { color: SystemColors.orange }]}>
+                うち {overdueCount} 件が期限切れ
               </Text>
             </View>
-            {overdueCount > 0 && sidebarFilteredItems.length > 0 && (
-              <View style={[styles.overdueBadge, { backgroundColor: SystemColors.orange + '22' }]}>
-                <Ionicons name="time-outline" size={12} color={SystemColors.orange} />
-                <Text style={[styles.overdueBadgeText, { color: SystemColors.orange }]}>
-                  うち {overdueCount} 件が期限切れ
-                </Text>
-              </View>
-            )}
-          </View>
+          )}
         </View>
 
         {/* スタートボタン or 完了/空状態メッセージ */}
@@ -319,24 +306,6 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         )}
 
-        {/* ─── 統計インライン ─── */}
-        <View style={[styles.heroSeparator, { backgroundColor: colors.separator }]} />
-        <View style={styles.heroStatsRow}>
-          <View style={styles.heroStatCell}>
-            <Text style={[styles.heroStatValue, { color: colors.label }]}>{todayCompleted}</Text>
-            <Text style={[styles.heroStatLabel, { color: colors.labelSecondary }]}>今日完了</Text>
-          </View>
-          <View style={[styles.heroStatDivider, { backgroundColor: colors.separator }]} />
-          <View style={styles.heroStatCell}>
-            <Text style={[styles.heroStatValue, { color: colors.label }]}>{totalItems}</Text>
-            <Text style={[styles.heroStatLabel, { color: colors.labelSecondary }]}>総アイテム</Text>
-          </View>
-          <View style={[styles.heroStatDivider, { backgroundColor: colors.separator }]} />
-          <View style={styles.heroStatCell}>
-            <Text style={[styles.heroStatValue, { color: colors.label }]}>{streakDays}</Text>
-            <Text style={[styles.heroStatLabel, { color: colors.labelSecondary }]}>連続日数</Text>
-          </View>
-        </View>
       </View>
 
       {/* ――― URL解析導線 ――― */}
@@ -506,32 +475,12 @@ const styles = StyleSheet.create({
     padding: Spacing.l,
     gap: Spacing.m,
   },
-  heroTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.l,
+  heroHeader: {
+    gap: Spacing.s,
   },
-  heroInfo: {
-    flex: 1,
-    gap: Spacing.xs,
-  },
-  heroLabel: {
-    ...TypeScale.subheadline,
-  },
-  countRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: Spacing.xs,
-  },
-  countNumber: {
-    fontSize: 48,
-    fontWeight: '700',
-    lineHeight: 56,
-    letterSpacing: -2,
-  },
-  countUnit: {
+  heroCountText: {
     ...TypeScale.title3,
-    paddingBottom: Spacing.s,
+    fontWeight: '600' as const,
   },
   overdueBadge: {
     flexDirection: 'row',
@@ -617,30 +566,6 @@ const styles = StyleSheet.create({
   extraLearningButtonText: {
     ...TypeScale.headline,
   },
-  heroSeparator: {
-    height: StyleSheet.hairlineWidth,
-  },
-  heroStatsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  heroStatCell: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 2,
-  },
-  heroStatDivider: {
-    width: StyleSheet.hairlineWidth,
-    height: 28,
-  },
-  heroStatValue: {
-    ...TypeScale.title3,
-    fontWeight: '600' as const,
-  },
-  heroStatLabel: {
-    ...TypeScale.caption2,
-  },
-
   // ――― URL解析カード ―――
   urlAnalysisCard: {
     borderRadius: Radius.m,

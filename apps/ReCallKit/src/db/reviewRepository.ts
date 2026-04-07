@@ -147,9 +147,9 @@ export async function getTotalItemCount(db: SQLiteDatabase): Promise<number> {
 }
 
 /**
- * 最近復習したアイテムを取得（直近5件）
+ * 最近復習したアイテムを取得（デフォルト5件、limit で変更可）
  */
-export async function getRecentlyReviewedItems(db: SQLiteDatabase): Promise<ReviewableItem[]> {
+export async function getRecentlyReviewedItems(db: SQLiteDatabase, limit = 5): Promise<ReviewableItem[]> {
   const rows = await db.getAllAsync<DueRow>(`
     SELECT
       i.id, i.type, i.title, i.content, i.source_url, i.excerpt, i.category,
@@ -161,8 +161,8 @@ export async function getRecentlyReviewedItems(db: SQLiteDatabase): Promise<Revi
     WHERE i.archived = 0
       AND r.last_reviewed_at IS NOT NULL
     ORDER BY r.last_reviewed_at DESC
-    LIMIT 5
-  `);
+    LIMIT ?
+  `, [limit]);
 
   return rows.map((row) => ({
     reviewId: row.review_id,
