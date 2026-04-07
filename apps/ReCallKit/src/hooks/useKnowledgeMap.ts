@@ -17,6 +17,7 @@ interface ItemRow {
   created_at: string;
   updated_at: string;
   archived: 0 | 1;
+  flagged: 0 | 1;
   review_id: number | null;
   next_review_at: string | null;
   last_reviewed_at: string | null;
@@ -89,6 +90,7 @@ export function useKnowledgeMap() {
           created_at: row.created_at,
           updated_at: row.updated_at,
           archived: row.archived,
+          flagged: row.flagged,
           tags: tagMap.get(row.id) ?? [],
           review: row.review_id
             ? ({

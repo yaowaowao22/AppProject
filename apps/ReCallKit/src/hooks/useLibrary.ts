@@ -46,6 +46,7 @@ interface ItemRow {
   created_at: string;
   updated_at: string;
   archived: 0 | 1;
+  flagged: 0 | 1;
   review_id: number | null;
   next_review_at: string | null;
   last_reviewed_at: string | null;
@@ -105,6 +106,9 @@ export function useItems(filter: LibraryFilter) {
       if (filter.category !== null) {
         whereClauses.push('i.category = ?');
         params.push(filter.category);
+      }
+      if (filter.flaggedOnly) {
+        whereClauses.push('i.flagged = 1');
       }
 
       const where = `WHERE ${whereClauses.join(' AND ')}`;
@@ -183,6 +187,7 @@ export function useItems(filter: LibraryFilter) {
         created_at: row.created_at,
         updated_at: row.updated_at,
         archived: row.archived,
+        flagged: row.flagged,
         tags: tagsByItem.get(row.id) ?? [],
         review: row.review_id
           ? ({
@@ -263,14 +268,15 @@ export function useMemoFilter(
   tagIds: number[],
   reviewStatus: ReviewStatusFilter,
   dateRange: DateRangeFilter,
-  category: string | null = null
+  category: string | null = null,
+  flaggedOnly: boolean = false
 ): LibraryFilter {
   // tagIdsの参照が変わるたびに再生成しないようにメモ化
   const tagIdsKey = tagIds.join(',');
   return useMemo(
-    () => ({ search, type, tagIds, reviewStatus, dateRange, category }),
+    () => ({ search, type, tagIds, reviewStatus, dateRange, category, flaggedOnly }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search, type, tagIdsKey, reviewStatus, dateRange, category]
+    [search, type, tagIdsKey, reviewStatus, dateRange, category, flaggedOnly]
   );
 }
 
