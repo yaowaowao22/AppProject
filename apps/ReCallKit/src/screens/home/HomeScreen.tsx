@@ -245,9 +245,6 @@ export function HomeScreen({ navigation }: Props) {
       case 'library':
         navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate('Library');
         break;
-      case 'map':
-        navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate('Map');
-        break;
     }
   };
 

@@ -70,13 +70,6 @@ const SCREEN_ITEMS = [
     showBadge: false,
   },
   {
-    name: 'Map'     as const,
-    label: 'マップ',
-    iconOutline: 'map-outline'         as const,
-    iconFilled:  'map'                 as const,
-    showBadge: false,
-  },
-  {
     name: 'Journal' as const,
     label: 'ジャーナル',
     iconOutline: 'book-outline'        as const,

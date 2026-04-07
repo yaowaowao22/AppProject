@@ -8,7 +8,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 
-export type ShortcutAction = 'review' | 'url_add' | 'library' | 'map' | 'manual_add';
+export type ShortcutAction = 'review' | 'url_add' | 'library' | 'manual_add';
 
 interface ShortcutItem {
   action: ShortcutAction;

@@ -5,7 +5,6 @@ import { SidebarLayout } from '../theme/spacing';
 import { HomeStack } from './stacks/HomeStack';
 import { LibraryStack } from './stacks/LibraryStack';
 import { ReviewStack } from './stacks/ReviewStack';
-import { MapStack } from './stacks/MapStack';
 import { JournalStack } from './stacks/JournalStack';
 import { SettingsStack } from './stacks/SettingsStack';
 import { TaskStack } from './stacks/TaskStack';
@@ -42,7 +41,6 @@ export function DrawerNavigator() {
       <Drawer.Screen name="Home"     component={HomeStack}    options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="Library"  component={LibraryStack} options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="Review"   component={ReviewStack}  options={{ drawerItemStyle: { display: 'none' } }} />
-      <Drawer.Screen name="Map"      component={MapStack}     options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="Journal"  component={JournalStack} options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="Settings" component={SettingsStack} options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="Tasks"    component={TaskStack}    options={{ drawerItemStyle: { display: 'none' } }} />

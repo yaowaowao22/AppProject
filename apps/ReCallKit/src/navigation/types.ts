@@ -6,7 +6,6 @@
 //       ├── Home     → HomeStack
 //       ├── Library  → LibraryStack
 //       ├── Review   → ReviewStack
-//       ├── Map      → MapStack
 //       ├── Journal  → JournalStack
 //       ├── Settings → SettingsStack
 //       ├── Tasks    → TaskStack
@@ -46,7 +45,6 @@ export type DrawerParamList = {
   Home: NavigatorScreenParams<HomeStackParamList> | undefined;
   Library: NavigatorScreenParams<LibraryStackParamList> | undefined;
   Review: NavigatorScreenParams<ReviewStackParamList> | undefined;
-  Map: NavigatorScreenParams<MapStackParamList> | undefined;
   Journal: NavigatorScreenParams<JournalStackParamList> | undefined;
   Settings: NavigatorScreenParams<SettingsStackParamList> | undefined;
   Tasks: NavigatorScreenParams<TaskStackParamList> | undefined;
@@ -79,12 +77,6 @@ export type ReviewStackParamList = {
   ReviewSelect: undefined;
   ReviewSession: { reviewIds?: number[]; forceAll?: boolean };
   Quiz: { itemIds: number[] };
-};
-
-// ---- Map Stack ----
-export type MapStackParamList = {
-  KnowledgeMap: undefined;
-  ItemDetail: { itemId: number };
 };
 
 // ---- Journal Stack ----
