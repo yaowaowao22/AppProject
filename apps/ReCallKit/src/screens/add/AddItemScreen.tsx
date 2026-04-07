@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDB } from '../../hooks/useDatabase';
@@ -43,6 +44,9 @@ export function AddItemScreen({ navigation }: Props) {
   const [fetching, setFetching] = useState(false);
   const [titleAutoFilled, setTitleAutoFilled] = useState(false);
   const [contentAutoFilled, setContentAutoFilled] = useState(false);
+
+  // URL入力フォーカス状態（入力中はAIボタンを隠す）
+  const [urlInputFocused, setUrlInputFocused] = useState(false);
 
   // debounce用タイマー
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -213,23 +217,29 @@ export function AddItemScreen({ navigation }: Props) {
             keyboardType="url"
             autoCapitalize="none"
             autoCorrect={false}
+            returnKeyType="go"
+            onFocus={() => setUrlInputFocused(true)}
+            onBlur={() => setUrlInputFocused(false)}
+            onSubmitEditing={() => Keyboard.dismiss()}
           />
-          {/* AI解析ボタン: URLAnalysisScreenへ遷移 */}
-          <Pressable
-            style={({ pressed }) => [
-              styles.aiAnalyzeButton,
-              {
-                backgroundColor: pressed ? colors.accent + 'CC' : colors.accent,
-                opacity: URL_PATTERN.test(sourceUrl.trim()) ? 1 : 0.4,
-              },
-            ]}
-            onPress={() => navigation.navigate('URLAnalysis', { initialUrl: sourceUrl.trim() })}
-            disabled={!URL_PATTERN.test(sourceUrl.trim())}
-            accessibilityRole="button"
-            accessibilityLabel="AIで解析してQ&Aを生成"
-          >
-            <Text style={styles.aiAnalyzeButtonText}>AIで解析してQ&Aを生成</Text>
-          </Pressable>
+          {/* AI解析ボタン: 入力中は隠す（確定→ボタン押下の順序制御） */}
+          {!urlInputFocused && (
+            <Pressable
+              style={({ pressed }) => [
+                styles.aiAnalyzeButton,
+                {
+                  backgroundColor: pressed ? colors.accent + 'CC' : colors.accent,
+                  opacity: URL_PATTERN.test(sourceUrl.trim()) ? 1 : 0.4,
+                },
+              ]}
+              onPress={() => navigation.navigate('URLAnalysis', { initialUrl: sourceUrl.trim() })}
+              disabled={!URL_PATTERN.test(sourceUrl.trim())}
+              accessibilityRole="button"
+              accessibilityLabel="AIで解析してQ&Aを生成"
+            >
+              <Text style={styles.aiAnalyzeButtonText}>AIで解析してQ&Aを生成</Text>
+            </Pressable>
+          )}
         </>
       )}
 
