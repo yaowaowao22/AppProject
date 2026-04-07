@@ -652,9 +652,17 @@ export function LibraryScreen({ navigation }: Props) {
             {search ? '見つかりませんでした' : 'アイテムがありません'}
           </Text>
           {!search && (
-            <Text style={[styles.emptySubtitle, { color: colors.labelSecondary }]}>
-              ＋ボタンからアイテムを追加してください
-            </Text>
+            <>
+              <Text style={[styles.emptySubtitle, { color: colors.labelSecondary }]}>
+                URLから知識を取り込んで学習を始めましょう
+              </Text>
+              <Pressable
+                style={[styles.ctaButton, { backgroundColor: colors.accent }]}
+                onPress={() => navigation.navigate('URLAnalysis', {})}
+              >
+                <Text style={styles.ctaButtonText}>URLを解析して追加</Text>
+              </Pressable>
+            </>
           )}
         </View>
       ) : (
@@ -986,6 +994,18 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     ...TypeScale.caption1,
     textAlign: 'center',
+  },
+  ctaButton: {
+    marginTop: Spacing.s,
+    paddingHorizontal: Spacing.l,
+    paddingVertical: 10,
+    borderRadius: Radius.full,
+    alignSelf: 'center',
+  },
+  ctaButtonText: {
+    ...TypeScale.subheadline,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
   },
 
   // ---- FAB ----

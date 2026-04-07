@@ -251,6 +251,12 @@ export function TrashScreen({ navigation }: Props) {
           <Text style={[styles.emptySubtitle, { color: colors.labelSecondary }]}>
             削除したアイテムはここに移動されます
           </Text>
+          <Pressable
+            style={[styles.ctaButton, { backgroundColor: colors.accent }]}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.ctaButtonText}>ライブラリへ戻る</Text>
+          </Pressable>
         </View>
       ) : (
         <>

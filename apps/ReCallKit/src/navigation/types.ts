@@ -59,6 +59,7 @@ export type HomeStackParamList = {
   ItemDetail: { itemId: number };
   ReviewSession: { reviewIds?: number[]; forceAll?: boolean };
   URLImportList: undefined;
+  QAPreview: QAPreviewParams;
 };
 
 // ---- Library Stack ----

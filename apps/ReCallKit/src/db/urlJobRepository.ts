@@ -14,6 +14,7 @@ export interface UrlImportJob {
   title: string | null;
   error_msg: string | null;
   item_id: number | null;
+  result_json: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -32,7 +33,7 @@ export async function createJob(db: SQLiteDatabase, url: string): Promise<number
 export async function updateJob(
   db: SQLiteDatabase,
   id: number,
-  fields: Partial<{ status: JobStatus; title: string; error_msg: string; item_id: number }>,
+  fields: Partial<{ status: JobStatus; title: string; error_msg: string; item_id: number; result_json: string }>,
 ): Promise<void> {
   const sets: string[] = ["updated_at = datetime('now','localtime')"];
   const values: (string | number)[] = [];
@@ -41,6 +42,7 @@ export async function updateJob(
   if (fields.title !== undefined)  { sets.push('title = ?');     values.push(fields.title); }
   if (fields.error_msg !== undefined) { sets.push('error_msg = ?'); values.push(fields.error_msg); }
   if (fields.item_id !== undefined)   { sets.push('item_id = ?');   values.push(fields.item_id); }
+  if (fields.result_json !== undefined) { sets.push('result_json = ?'); values.push(fields.result_json); }
 
   await db.runAsync(
     `UPDATE url_import_jobs SET ${sets.join(', ')} WHERE id = ?`,

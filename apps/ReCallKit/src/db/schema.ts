@@ -3,7 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 // ============================================================
 // スキーマバージョン管理
 // ============================================================
-const SCHEMA_VERSION = 9;
+const SCHEMA_VERSION = 10;
 
 const CREATE_TABLES_SQL = `
   -- アイテム（URL・テキスト・メモ）
@@ -227,6 +227,17 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
       // 列が既に存在する場合（マイグレーション途中で再起動したケース）は無視
     }
     await setSchemaVersion(db, 9);
+  }
+
+  if (currentVersion < 10) {
+    // url_import_jobs に result_json 列を追加
+    // analyzeUrlPipeline の結果をJSON文字列で保持し、QAPreviewScreen で保存確認するため
+    try {
+      await db.execAsync(`ALTER TABLE url_import_jobs ADD COLUMN result_json TEXT;`);
+    } catch {
+      // 冪等: 既に存在する場合は無視
+    }
+    await setSchemaVersion(db, 10);
   }
 }
 

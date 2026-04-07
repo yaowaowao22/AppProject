@@ -5,6 +5,7 @@ import { HomeScreen } from '../../screens/home/HomeScreen';
 import { ItemDetailScreen } from '../../screens/library/ItemDetailScreen';
 import { ReviewScreen } from '../../screens/review/ReviewScreen';
 import { URLImportListScreen } from '../../screens/add/URLImportListScreen';
+import { QAPreviewScreen } from '../../screens/add/QAPreviewScreen';
 import { makeNavigatorOptions, makeLargeTitleOptions } from '../sharedScreenOptions';
 import type { HomeStackParamList } from '../types';
 
@@ -32,6 +33,21 @@ export function HomeStack() {
         name="ItemDetail"
         component={ItemDetailScreen}
         options={{ title: '' }}
+      />
+      <Stack.Screen
+        name="ReviewSession"
+        component={ReviewScreen}
+        options={{ title: '復習' }}
+      />
+      <Stack.Screen
+        name="URLImportList"
+        component={URLImportListScreen as React.ComponentType<any>}
+        options={{ title: '取り込み一覧' }}
+      />
+      <Stack.Screen
+        name="QAPreview"
+        component={QAPreviewScreen as React.ComponentType<any>}
+        options={{ title: 'Q&Aプレビュー', presentation: 'modal' }}
       />
     </Stack.Navigator>
   );
