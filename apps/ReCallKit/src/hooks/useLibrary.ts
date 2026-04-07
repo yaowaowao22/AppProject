@@ -17,6 +17,7 @@ export interface LibraryFilter {
   reviewStatus: ReviewStatusFilter;
   dateRange: DateRangeFilter;
   category: string | null;
+  flaggedOnly: boolean;
 }
 
 export const DEFAULT_FILTER: LibraryFilter = {
@@ -26,6 +27,7 @@ export const DEFAULT_FILTER: LibraryFilter = {
   reviewStatus: 'all',
   dateRange: 'all',
   category: null,
+  flaggedOnly: false,
 };
 
 export interface TagWithCount extends Tag {
