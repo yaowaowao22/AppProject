@@ -12,7 +12,7 @@
  * true にするとBedrockの代わりにデバイス内Gemma 4（llama.rn）を使う。
  * EAS Buildが必要。iPhone 15 Pro / 16系（8GB RAM）推奨。
  */
-export const LOCAL_AI_ENABLED = false;
+export const LOCAL_AI_ENABLED = true;
 
 /** HuggingFaceからのGGUFダウンロードURL（初回起動時に ~2.3GB ダウンロード） */
 export const LOCAL_AI_MODEL_URL =
