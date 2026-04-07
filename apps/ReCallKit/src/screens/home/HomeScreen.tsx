@@ -221,6 +221,7 @@ export function HomeScreen({ navigation }: Props) {
 
   // ナビゲーションハンドラー
   const handleStartReview = () => navigation.navigate('ReviewSession', {});
+  const handleStartExtraReview = () => navigation.navigate('ReviewSession', { forceAll: true });
 
   const handleOpenURLAnalysis = () => {
     navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate(
@@ -291,11 +292,7 @@ export function HomeScreen({ navigation }: Props) {
         </View>
       )}
 
-      {/* ── [2] DateRow ────────────────────────────────── */}
-      <DateRow dueCount={filteredDueItems.length} />
-      <View style={[styles.sep, { backgroundColor: colors.separator }]} />
-
-      {/* ── [3] 週間アクティビティ（This Week） ────────── */}
+      {/* ── [2] 週間アクティビティ（This Week） ────────── */}
       {totalItems > 0 && (
         <View style={styles.weeklyCard}>
           <Text style={[styles.labelUpper, { color: colors.labelTertiary }]}>This Week</Text>
@@ -364,7 +361,22 @@ export function HomeScreen({ navigation }: Props) {
         <View style={[styles.sectionGap, { backgroundColor: colors.backgroundSecondary }]} />
       )}
 
-      {/* ── [6] Recently Added ──────────────────────────── */}
+      {/* ── [3] 復習ヒーローCTA ─────────────────────────── */}
+      <ReviewCTACard
+        dueCount={filteredDueItems.length}
+        overdueCount={overdueCount}
+        todayCompleted={todayCompleted}
+        streakDays={streakDays}
+        totalItems={totalItems}
+        estimatedMinutes={estimatedMinutes}
+        categories={dueCategories}
+        onStart={handleStartReview}
+        onStartExtra={handleStartExtraReview}
+        onStartURLAdd={handleOpenURLAnalysis}
+      />
+      <View style={[styles.sectionGap, { backgroundColor: colors.backgroundSecondary }]} />
+
+      {/* ── [4] Recently Added ──────────────────────────── */}
       {recentItems.length > 0 && (
         <>
           <Text style={[styles.labelUpper, { color: colors.labelTertiary }]}>Recently Added</Text>
