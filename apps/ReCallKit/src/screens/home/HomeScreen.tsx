@@ -1,12 +1,11 @@
 // ============================================================
-// HomeScreen - 7セクション統合ダッシュボード
+// HomeScreen - 6セクション統合ダッシュボード
 // [1] ヘッダー（DrawerNavigator が担当）
 // [2] DateRow: 青丸日付 + 曜日 + due件数
 // [3] 週間アクティビティ（This Week）
-// [4] StatsRow（日連続 / 習得済み / カード）
-// [5] Recently Added（横スクロール）
-// [6] Mastery（カテゴリ別習熟度バー）
-// [7] Shortcuts（URLから / 手動）
+// [4] Recently Added（横スクロール）
+// [5] Mastery（カテゴリ別習熟度バー）
+// [6] Shortcuts（URLから / 手動）
 // ============================================================
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
@@ -26,7 +25,6 @@ import { useDatabase } from '../../hooks/useDatabase';
 import {
   getDueItems,
   getStreakDays,
-  getTodayCompletedCount,
   getTotalItemCount,
   getAllReviewableItems,
   type ReviewableItem,
@@ -38,13 +36,11 @@ import {
   type CategoryStats,
 } from '../../db/queries';
 import { useTheme } from '../../theme/ThemeContext';
-import { TypeScale } from '../../theme/typography';
-import { Spacing, Radius } from '../../theme/spacing';
-import { SystemColors, GoogleCalendarColors } from '../../theme/colors';
+import { Spacing } from '../../theme/spacing';
+import { GoogleCalendarColors } from '../../theme/colors';
 import { useSidebarFilter } from '../../hooks/useSidebarFilter';
 import { useWidgetData } from '../../hooks/useWidgetData';
 import { generateHint } from '../../utils/generateHint';
-import { StatsRow } from '../../components/StatsRow';
 import { CategoryMasteryBar } from '../../components/CategoryMasteryBar';
 import { ShortcutList, type ShortcutAction } from '../../components/ShortcutList';
 import { DateRow } from '../../components/DateRow';
@@ -105,7 +101,6 @@ export function HomeScreen({ navigation }: Props) {
   const [dueItems, setDueItems] = useState<ReviewableItem[]>([]);
   const [allItems, setAllItems] = useState<ReviewableItem[]>([]);
   const [streakDays, setStreakDays] = useState(0);
-  const [todayCompleted, setTodayCompleted] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
   const [weeklyActivity, setWeeklyActivity] = useState<DailyActivity[]>([]);
@@ -117,10 +112,9 @@ export function HomeScreen({ navigation }: Props) {
     if (!db || !isReady) return;
     setLoading(true);
     try {
-      const [due, streak, completed, total, all, weekly, recent, catStats] = await Promise.all([
+      const [due, streak, total, all, weekly, recent, catStats] = await Promise.all([
         getDueItems(db),
         getStreakDays(db),
-        getTodayCompletedCount(db),
         getTotalItemCount(db),
         getAllReviewableItems(db),
         getWeeklyActivity(db),
@@ -136,7 +130,6 @@ export function HomeScreen({ navigation }: Props) {
       setDueItems(due);
       setAllItems(all);
       setStreakDays(streak);
-      setTodayCompleted(completed);
       setTotalItems(total);
       setWeeklyActivity(weekly);
       setRecentItems(recent);
@@ -168,12 +161,6 @@ export function HomeScreen({ navigation }: Props) {
     if (sidebarFilter.kind === 'tag') return dueItems.filter((ri) => taggedItemIds.has(ri.item.id));
     return dueItems;
   }, [sidebarFilter, dueItems, taggedItemIds]);
-
-  // 習得済みカード総数（categoryStats の合計）
-  const totalMastered = useMemo(
-    () => categoryStats.reduce((acc, s) => acc + s.masteredCount, 0),
-    [categoryStats]
-  );
 
   // 週間サマリー
   const weekActiveDays = useMemo(
@@ -350,19 +337,6 @@ export function HomeScreen({ navigation }: Props) {
         <View style={[styles.sectionGap, { backgroundColor: colors.backgroundSecondary }]} />
       )}
 
-      {/* ── [4] StatsRow ────────────────────────────────── */}
-      <View style={styles.statsWrap}>
-        <StatsRow
-          withCard={false}
-          stats={[
-            { value: streakDays, label: '日連続', color: streakDays > 0 ? SystemColors.orange : undefined },
-            { value: totalMastered, label: '習得済み' },
-            { value: totalItems, label: 'カード' },
-          ]}
-        />
-      </View>
-      <View style={[styles.sep, { backgroundColor: colors.separator }]} />
-
       {/* ── [6] Recently Added ──────────────────────────── */}
       {recentItems.length > 0 && (
         <>
@@ -491,10 +465,6 @@ const styles = StyleSheet.create({
     height: 8,
     marginHorizontal: -Spacing.m,
   },
-
-  // ── [4] StatsRow ラッパー ─────────────────────────────
-  // StatsRow.row が paddingBottom:20 を持つため、ラッパー側は不要
-  statsWrap: {},
 
   // ── [5] 週間アクティビティ ────────────────────────────
   weeklyCard: {
