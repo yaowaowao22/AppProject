@@ -135,7 +135,9 @@ export function HistoryScreen() {
     );
   }
 
-  const cardShadow = isDark ? {} : CardShadow;
+  const cardShadow = isDark
+    ? { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.separator }
+    : CardShadow;
 
   return (
     <ScrollView
@@ -379,7 +381,8 @@ const styles = StyleSheet.create({
   // ――― 最近の復習カード ―――
   recentCard: {
     borderRadius: Radius.m,
-    padding: Spacing.m,
+    paddingVertical: 14,
+    paddingHorizontal: Spacing.m,
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing.m,
