@@ -65,6 +65,18 @@ export async function getJob(db: SQLiteDatabase, id: number): Promise<UrlImportJ
   );
 }
 
+/** processing のまま残っているジョブを failed に復旧（アプリ異常終了後のリカバリ） */
+export async function recoverStaleJobs(db: SQLiteDatabase): Promise<number> {
+  const result = await db.runAsync(
+    `UPDATE url_import_jobs
+        SET status     = 'failed',
+            error_msg  = 'アプリが異常終了したため中断されました',
+            updated_at = datetime('now','localtime')
+      WHERE status = 'processing'`,
+  );
+  return result.changes;
+}
+
 /** ジョブを削除 */
 export async function deleteJob(db: SQLiteDatabase, id: number): Promise<void> {
   await db.runAsync('DELETE FROM url_import_jobs WHERE id = ?', [id]);

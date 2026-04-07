@@ -35,6 +35,7 @@ import {
   listJobs,
   updateJob,
   deleteJob,
+  recoverStaleJobs,
   type UrlImportJob,
 } from '../../db/urlJobRepository';
 import type { LibraryStackParamList } from '../../navigation/types';
@@ -231,6 +232,17 @@ export function URLImportListScreen({ navigation }: Props) {
     setJobs(rows);
     setLoading(false);
   }, [db, isReady]);
+
+  // マウント時に processing のまま残ったジョブを異常終了扱いに復旧
+  const recoveredRef = useRef(false);
+  useEffect(() => {
+    if (!db || !isReady || recoveredRef.current) return;
+    recoveredRef.current = true;
+    recoverStaleJobs(db).then(n => {
+      if (n > 0) console.warn(`[URLImportList] ${n}件の中断ジョブを異常終了に復旧`);
+      loadJobs();
+    });
+  }, [db, isReady, loadJobs]);
 
   // フォーカス時に再読み込み
   useFocusEffect(useCallback(() => { loadJobs(); }, [loadJobs]));
