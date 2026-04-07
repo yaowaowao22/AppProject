@@ -23,12 +23,13 @@ export type PipelineResult = AnalysisResult & { sourceUrl: string };
 export async function analyzeUrlPipeline(
   url: string,
   onProgress?: (currentChunk: number, totalChunks: number) => void,
+  jobId?: number,
 ): Promise<PipelineResult> {
   let result: AnalysisResult;
 
   if (LOCAL_AI_ENABLED) {
     console.log('[urlAnalysisPipeline] ローカルAI（llama.rn + Gemma 4）モードで解析:', url);
-    result = await analyzeUrlLocal(url, onProgress);
+    result = await analyzeUrlLocal(url, onProgress, jobId);
   } else {
     if (!isAwsConfigured()) {
       throw new Error(

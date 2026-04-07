@@ -65,12 +65,16 @@ export async function getJob(db: SQLiteDatabase, id: number): Promise<UrlImportJ
   );
 }
 
-/** processing のまま残っているジョブを failed に復旧（アプリ異常終了後のリカバリ） */
+/**
+ * processing のまま残っているジョブを pending に戻してリトライ待ちにする。
+ * レジューム状態が保存されていれば analyzeUrlLocal が途中から再開する。
+ * （以前は failed に変更していたが、自動再開のため pending に変更）
+ */
 export async function recoverStaleJobs(db: SQLiteDatabase): Promise<number> {
   const result = await db.runAsync(
     `UPDATE url_import_jobs
-        SET status     = 'failed',
-            error_msg  = 'アプリが異常終了したため中断されました',
+        SET status     = 'pending',
+            error_msg  = NULL,
             updated_at = datetime('now','localtime')
       WHERE status = 'processing'`,
   );

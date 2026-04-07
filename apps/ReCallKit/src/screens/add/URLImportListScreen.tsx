@@ -29,6 +29,7 @@ import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { analyzeUrlPipeline } from '../../services/urlAnalysisPipeline';
 import { notifyImportCompleted, notifyImportFailed } from '../../services/notificationService';
 import { subscribeProcessingTaskFired, completeProcessingTask } from 'background-task';
+import { hasResumptionState } from '../../services/analysisResumptionService';
 import { LOCAL_AI_ENABLED } from '../../config/localAI';
 import {
   subscribeDownloadState,
@@ -132,7 +133,7 @@ async function executeJob(
   await updateJob(db, job.id, { status: 'processing' });
 
   try {
-    const result = await analyzeUrlPipeline(job.url, onChunkProgress);
+    const result = await analyzeUrlPipeline(job.url, onChunkProgress, job.id);
 
     if (result.qa_pairs.length === 0) {
       await updateJob(db, job.id, {
@@ -264,8 +265,17 @@ export function URLImportListScreen({ navigation }: Props) {
   useEffect(() => {
     if (!db || !isReady || recoveredRef.current) return;
     recoveredRef.current = true;
-    recoverStaleJobs(db).then(n => {
-      if (n > 0) console.warn(`[URLImportList] ${n}件の中断ジョブを異常終了に復旧`);
+    recoverStaleJobs(db).then(async n => {
+      if (n > 0) {
+        // 再開可能なジョブがあればトーストを出す
+        const all = await listJobs(db);
+        const resumableCount = (
+          await Promise.all(all.filter(j => j.status === 'pending').map(j => hasResumptionState(j.url)))
+        ).filter(Boolean).length;
+        if (resumableCount > 0) {
+          showToast(`${resumableCount}件の解析を途中から再開します`, 'success');
+        }
+      }
       loadJobs();
     });
   }, [db, isReady, loadJobs]);

@@ -24,6 +24,11 @@ import {
 } from '../config/modelCatalog';
 import { fetchAndExtractText } from './htmlExtractorService';
 import { beginBackgroundTask, endBackgroundTask, getBackgroundTimeRemaining } from 'background-task';
+import {
+  saveResumptionState,
+  loadResumptionState,
+  clearResumptionState,
+} from './analysisResumptionService';
 import type { AnalysisResult, QAPair } from '../types/analysis';
 
 // ============================================================
@@ -768,6 +773,7 @@ export async function runLocalCompletion(prompt: string, maxTokens = 2000): Prom
 export async function analyzeUrlLocal(
   url: string,
   onProgress?: (currentChunk: number, totalChunks: number) => void,
+  jobId?: number,
 ): Promise<AnalysisResult> {
   // ---- セッションキャッシュチェック ----
   const cached = getCachedResult(url);
@@ -778,8 +784,6 @@ export async function analyzeUrlLocal(
 
   _activeAnalysisCount++;
 
-  // iOS にバックグラウンド実行時間を要求する。
-  // これにより、バックグラウンド中でもアプリが一時停止されず推論を継続できる。
   const bgTaskKey = await beginBackgroundTask('ReCallKit URL Analysis');
   if (bgTaskKey) {
     console.log('[localAnalysis] バックグラウンドタスク開始:', bgTaskKey,
@@ -787,78 +791,110 @@ export async function analyzeUrlLocal(
   }
 
   try {
-  // current=-1 をフェッチ中のセンチネルとして使う
-  onProgress?.(-1, 0);
-  const text = await fetchAndExtractText(url);
+    // ── フェーズ 1: チャンクとベース結果を取得（新規 or レジューム） ──
 
-  // モデル未インストール確認（フェッチ後に行うことでUIのフェッチ中表示を維持）
-  const installed = await isModelInstalled(await getActiveModelId());
-  if (!installed) {
-    throw new Error('AIモデルが未インストールです。設定 → AIモデル からインストールしてください');
-  }
+    let text: string;
+    let chunks: string[];
+    let baseResult: AnalysisResult;
+    let allQaPairs: QAPair[];
+    let resumeFrom: number; // 次に処理するチャンクのインデックス
 
-  const chunks = splitTextIntoChunks(text);
-  console.log(
-    `[localAnalysis] ${chunks.length}チャンク / ${text.length}文字 / URL: ${url}`,
-  );
+    const saved = jobId ? await loadResumptionState(url) : null;
+    const isResuming = saved != null && saved.jobId === jobId;
 
-  // ---- 第1チャンク: title / summary / category / tags + Q&A ----
-  // モデル初回ロード直後は出力が不安定なことがあるため、パース失敗時に1回リトライする
-  onProgress?.(0, chunks.length);
-  const firstPrompt = buildFirstChunkPrompt(url, chunks[0], chunks.length);
-  let baseResult: AnalysisResult;
-  try {
-    const firstRaw = await runCompletion(firstPrompt, N_PREDICT_FIRST);
-    baseResult = parseAnalysisResult(firstRaw);
-  } catch (err) {
-    console.warn('[localAnalysis] 第1チャンクパース失敗、リトライします:', err);
-    const retryRaw = await runCompletion(firstPrompt, N_PREDICT_FIRST);
-    baseResult = parseAnalysisResult(retryRaw);
-  }
+    if (isResuming) {
+      // ---- 途中から再開 ----
+      console.log(
+        `[localAnalysis] レジューム: チャンク ${saved.processedCount}/${saved.chunks.length} から再開`,
+        `Q&A ${saved.accumulatedQaPairs.length}件 引継ぎ`,
+      );
+      text = saved.text;
+      chunks = saved.chunks;
+      baseResult = normalize(saved.baseResult);
+      allQaPairs = [...saved.accumulatedQaPairs];
+      resumeFrom = saved.processedCount;
+      onProgress?.(resumeFrom, chunks.length);
 
-  let finalResult: AnalysisResult;
+    } else {
+      // ---- 最初から開始 ----
+      onProgress?.(-1, 0);
+      text = await fetchAndExtractText(url);
 
-  if (chunks.length === 1) {
-    finalResult = baseResult;
-  } else {
-    // ---- 第2チャンク以降: Q&A のみ追加生成（n_predict 削減） ----
-    const allQaPairs: QAPair[] = [...baseResult.qa_pairs];
+      const installed = await isModelInstalled(await getActiveModelId());
+      if (!installed) {
+        throw new Error('AIモデルが未インストールです。設定 → AIモデル からインストールしてください');
+      }
 
-    for (let i = 1; i < chunks.length; i++) {
+      chunks = splitTextIntoChunks(text);
+      console.log(`[localAnalysis] ${chunks.length}チャンク / ${text.length}文字 / URL: ${url}`);
+
+      // 第1チャンク処理（パース失敗時1回リトライ）
+      onProgress?.(0, chunks.length);
+      const firstPrompt = buildFirstChunkPrompt(url, chunks[0], chunks.length);
+      try {
+        baseResult = parseAnalysisResult(await runCompletion(firstPrompt, N_PREDICT_FIRST));
+      } catch (err) {
+        console.warn('[localAnalysis] 第1チャンクパース失敗、リトライします:', err);
+        baseResult = parseAnalysisResult(await runCompletion(firstPrompt, N_PREDICT_FIRST));
+      }
+      allQaPairs = [...baseResult.qa_pairs];
+      resumeFrom = 1;
+
+      // 第1チャンク完了後にレジューム状態を保存（チャンクが複数ある場合のみ）
+      if (jobId && chunks.length > 1) {
+        await saveResumptionState({
+          version: 1, url, jobId, savedAt: Date.now(), text, chunks,
+          processedCount: 1,
+          baseResult: { title: baseResult.title, summary: baseResult.summary,
+                        category: baseResult.category, tags: baseResult.tags },
+          accumulatedQaPairs: allQaPairs,
+        });
+      }
+    }
+
+    // ── フェーズ 2: 残りチャンクを処理（再開位置から継続） ──
+    for (let i = resumeFrom; i < chunks.length; i++) {
       if (allQaPairs.length >= MAX_QA_TOTAL) break;
       onProgress?.(i, chunks.length);
+
       const chunkRaw = await runCompletion(
         buildChunkPrompt(url, chunks[i], i, chunks.length),
         N_PREDICT_CONTINUATION,
       );
       allQaPairs.push(...parseChunkQaPairs(chunkRaw));
+
+      // チャンク完了後にレジューム状態を更新（最終チャンクは不要）
+      const isLastChunk = i === chunks.length - 1 || allQaPairs.length >= MAX_QA_TOTAL;
+      if (jobId && !isLastChunk) {
+        await saveResumptionState({
+          version: 1, url, jobId, savedAt: Date.now(), text, chunks,
+          processedCount: i + 1,
+          baseResult: { title: baseResult.title, summary: baseResult.summary,
+                        category: baseResult.category, tags: baseResult.tags },
+          accumulatedQaPairs: allQaPairs,
+        });
+      }
     }
 
-    finalResult = { ...baseResult, qa_pairs: allQaPairs };
-  }
+    // ── フェーズ 3: 最終結果を組み立て ──
+    let finalResult: AnalysisResult = { ...baseResult, qa_pairs: allQaPairs };
 
-  // ---- タイトルが「無題」のときはサイト名（ホスト名）でフォールバック ----
-  if (finalResult.title === '無題') {
-    try {
-      finalResult = { ...finalResult, title: new URL(url).hostname };
-    } catch { /* URL パース失敗時はそのまま */ }
-  }
+    if (finalResult.title === '無題') {
+      try { finalResult = { ...finalResult, title: new URL(url).hostname }; } catch { /* ignore */ }
+    }
+    finalResult = { ...finalResult, fetched_text: text };
 
-  // ---- フェッチしたテキストを結果に含める ----
-  finalResult = { ...finalResult, fetched_text: text };
+    // 完了 → レジューム状態を削除
+    if (jobId) await clearResumptionState(url);
 
-  // ---- セッションキャッシュに保存 ----
-  setCachedResult(url, finalResult);
-
-  return finalResult;
+    setCachedResult(url, finalResult);
+    return finalResult;
 
   } finally {
     _activeAnalysisCount = Math.max(0, _activeAnalysisCount - 1);
 
-    // バックグラウンドタスクを終了（OS にリソースを返す）
     endBackgroundTask(bgTaskKey);
 
-    // バックグラウンド中に解析が完了した場合 → ここで遅延解放する
     if (_activeAnalysisCount === 0) {
       const state = AppState.currentState;
       if ((state === 'background' || state === 'inactive') && llamaContext) {
