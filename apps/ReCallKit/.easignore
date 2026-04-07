@@ -1,14 +1,38 @@
 # EAS Build に不要なファイルを除外
 # https://expo.fyi/eas-build-archive
 
+# 依存関係（EASサーバー側でインストールされる）
+node_modules/
+
 # ローカルテスト用モデルファイル（iPhone上ではHuggingFaceから実行時ダウンロード）
-lambda/models/
+lambda/
 
-# Lambda テスト成果物
-lambda/result_*.md
+# Expo / ビルド成果物
+dist/
+.expo/
+build/
+web-build/
+*.tsbuildinfo
 
-# その他の開発用ファイル
+# テスト・開発ツール
+test-results/
 **/__tests__/
 **/*.test.ts
 **/*.spec.ts
+
+# ドキュメント・分析ファイル（ビルド不要）
+docs/
+*.md
+!README.md
+*.csv
+*.json
+!app.json
+!package.json
+!tsconfig.json
+!eas.json
+!babel.config.js
+!metro.config.js
+!eslint.config.js
+
+# Git
 .git/
