@@ -12,6 +12,7 @@
 
 import * as FileSystem from 'expo-file-system/legacy';
 import type { DownloadProgressData, DownloadPauseState } from 'expo-file-system/legacy';
+import { AppState } from 'react-native';
 import type { TokenData, LlamaContext } from 'llama.rn';
 
 import { LOCAL_AI_TIMEOUT_MS } from '../config/localAI';
@@ -258,6 +259,17 @@ let llamaContext: LlamaContext | null = null;
 let isInitializing = false;
 let loadedModelId: string | null = null;
 
+// iOSメモリ警告時にコンテキストを解放してOSによるアプリ強制終了を防ぐ
+// AppStateがbackground/inactiveになった際の解放はアプリ側で別途呼ばれる想定
+AppState.addEventListener('memoryWarning' as never, () => {
+  if (llamaContext) {
+    console.warn('[localAnalysis] メモリ警告受信 → コンテキストを解放します');
+    llamaContext.release().catch(() => {});
+    llamaContext = null;
+    loadedModelId = null;
+  }
+});
+
 async function getLlamaContext(): Promise<LlamaContext> {
   const activeModelId = await getActiveModelId();
   const model = getModelById(activeModelId);
@@ -289,13 +301,33 @@ async function getLlamaContext(): Promise<LlamaContext> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { initLlama } = require('llama.rn') as typeof import('llama.rn');
-    llamaContext = await initLlama({
-      model: modelPath(model.filename),
-      n_gpu_layers: model.nGpuLayers,
-      n_ctx: model.nCtx,
-    });
-    loadedModelId = activeModelId;
-    return llamaContext;
+
+    // GPU全乗せで試み、VRAMが足りなければCPU推論にフォールバック
+    // （遅くなるがクラッシュしない）
+    const fallbackSteps: Array<{ n_gpu_layers: number; n_ctx: number }> = [
+      { n_gpu_layers: model.nGpuLayers, n_ctx: model.nCtx },
+      { n_gpu_layers: 0,                n_ctx: model.nCtx },
+    ];
+
+    let lastError: unknown;
+    for (const params of fallbackSteps) {
+      try {
+        console.log(`[localAnalysis] initLlama: n_gpu_layers=${params.n_gpu_layers} n_ctx=${params.n_ctx}`);
+        llamaContext = await initLlama({
+          model: modelPath(model.filename),
+          n_gpu_layers: params.n_gpu_layers,
+          n_ctx: params.n_ctx,
+        });
+        loadedModelId = activeModelId;
+        return llamaContext;
+      } catch (err) {
+        console.warn(`[localAnalysis] initLlama失敗 (n_gpu_layers=${params.n_gpu_layers}):`, err);
+        lastError = err;
+        llamaContext = null;
+      }
+    }
+
+    throw lastError;
   } finally {
     isInitializing = false;
   }
