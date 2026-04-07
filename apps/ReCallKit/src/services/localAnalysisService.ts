@@ -698,6 +698,8 @@ export async function analyzeUrlLocal(
     return cached;
   }
 
+  // current=-1 をフェッチ中のセンチネルとして使う
+  onProgress?.(-1, 0);
   const text = await fetchAndExtractText(url);
 
   let context: LlamaContext;
