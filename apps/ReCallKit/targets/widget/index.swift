@@ -283,7 +283,6 @@ private extension View {
 
 // MARK: - Widget Configuration
 
-@main
 struct ReCallWidget: Widget {
     let kind: String = "ReCallWidget"
 
@@ -299,9 +298,377 @@ struct ReCallWidget: Widget {
     }
 }
 
+// ============================================================
+// MARK: - Flashcard Peek Widget
+// パッシブ復習: 次の復習カードを穴埋めヒントで常時表示
+// ============================================================
+
+// MARK: - Peek Data Models
+
+struct PeekItem {
+    let id: Int
+    let question: String
+    let hintAnswer: String
+}
+
+// MARK: - Peek Timeline Entry
+
+struct FlashcardPeekEntry: TimelineEntry {
+    let date: Date
+    let items: [PeekItem]
+    let isEmpty: Bool
+}
+
+// MARK: - Peek Design Tokens
+
+private enum PeekTokens {
+    // Light
+    static let bg = Color.white
+    static let textQ = Color(red: 0x20/255, green: 0x21/255, blue: 0x24/255)          // #202124
+    static let textA = Color(red: 0x9A/255, green: 0xA0/255, blue: 0xA6/255)          // #9AA0A6
+    static let separator = Color(red: 0xF3/255, green: 0xF4/255, blue: 0xF6/255)      // #F3F4F6
+
+    // Dark
+    static let darkBg1 = Color(red: 0x1A/255, green: 0x1A/255, blue: 0x2E/255)        // #1A1A2E
+    static let darkBg2 = Color(red: 0x16/255, green: 0x21/255, blue: 0x3E/255)        // #16213E
+    static let darkTextQ = Color.white.opacity(0.9)
+    static let darkSep = Color.white.opacity(0.08)
+    static let darkTextA = Color.white.opacity(0.4)
+
+    // Typography
+    static let qSmall: Font = .system(size: 13)
+    static let qMedium: Font = .system(size: 15, weight: .medium)
+    static let qLarge: Font = .system(size: 14, weight: .medium)
+    static let aSmall: Font = .system(size: 11)
+    static let aMedium: Font = .system(size: 13)
+    static let aLarge: Font = .system(size: 12)
+
+    // Layout
+    static let smallPad: CGFloat = 16
+    static let mediumPadH: CGFloat = 20
+    static let mediumPadV: CGFloat = 18
+    static let largePadH: CGFloat = 18
+    static let largePadV: CGFloat = 14
+    static let separatorHeight: CGFloat = 1
+    static let fadeHeight: CGFloat = 40
+}
+
+// MARK: - Peek Timeline Provider
+
+struct FlashcardPeekProvider: TimelineProvider {
+    func placeholder(in context: Context) -> FlashcardPeekEntry {
+        FlashcardPeekEntry(
+            date: Date(),
+            items: [PeekItem(id: 0, question: "質問がここに表示されます", hintAnswer: "______は______上で...")],
+            isEmpty: false
+        )
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (FlashcardPeekEntry) -> Void) {
+        completion(loadPeekEntry())
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<FlashcardPeekEntry>) -> Void) {
+        let entry = loadPeekEntry()
+        // 15分間隔で自動切替
+        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date()
+        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
+        completion(timeline)
+    }
+
+    private func loadPeekEntry() -> FlashcardPeekEntry {
+        let defaults = UserDefaults(suiteName: appGroupId)
+        guard
+            let jsonString = defaults?.string(forKey: "flashcardPeekItems"),
+            let data = jsonString.data(using: .utf8),
+            let array = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+            !array.isEmpty
+        else {
+            return FlashcardPeekEntry(date: Date(), items: [], isEmpty: true)
+        }
+
+        let items: [PeekItem] = array.compactMap { dict in
+            guard let id = dict["id"] as? Int,
+                  let question = dict["question"] as? String,
+                  let hintAnswer = dict["hintAnswer"] as? String
+            else { return nil }
+            return PeekItem(id: id, question: question, hintAnswer: hintAnswer)
+        }
+
+        return FlashcardPeekEntry(date: Date(), items: items, isEmpty: items.isEmpty)
+    }
+}
+
+// MARK: - Peek Small View (170×170pt)
+
+struct FlashcardPeekSmallView: View {
+    let entry: FlashcardPeekEntry
+    @Environment(\.colorScheme) var colorScheme
+
+    private var isDark: Bool { colorScheme == .dark }
+    private var qColor: Color { isDark ? PeekTokens.darkTextQ : PeekTokens.textQ }
+    private var aColor: Color { isDark ? PeekTokens.darkTextA : PeekTokens.textA }
+    private var sepColor: Color { isDark ? PeekTokens.darkSep : PeekTokens.separator }
+
+    var body: some View {
+        if entry.isEmpty {
+            emptyView
+        } else {
+            cardView
+        }
+    }
+
+    private var cardView: some View {
+        let item = entry.items.first!
+        return VStack(alignment: .leading, spacing: 0) {
+            Text(item.question)
+                .font(PeekTokens.qSmall)
+                .foregroundColor(qColor)
+                .lineLimit(3)
+
+            Rectangle()
+                .fill(sepColor)
+                .frame(height: PeekTokens.separatorHeight)
+                .padding(.vertical, 10)
+
+            Text(item.hintAnswer)
+                .font(PeekTokens.aSmall)
+                .foregroundColor(aColor)
+                .lineLimit(3)
+        }
+        .padding(PeekTokens.smallPad)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private var emptyView: some View {
+        VStack(spacing: 6) {
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 28))
+                .foregroundColor(.green)
+            Text("復習待ちなし")
+                .font(.system(size: 12))
+                .foregroundColor(aColor)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - Peek Medium View (364×170pt)
+
+struct FlashcardPeekMediumView: View {
+    let entry: FlashcardPeekEntry
+    @Environment(\.colorScheme) var colorScheme
+
+    private var isDark: Bool { colorScheme == .dark }
+    private var qColor: Color { isDark ? PeekTokens.darkTextQ : PeekTokens.textQ }
+    private var aColor: Color { isDark ? PeekTokens.darkTextA : PeekTokens.textA }
+    private var sepColor: Color { isDark ? PeekTokens.darkSep : PeekTokens.separator }
+
+    var body: some View {
+        if entry.isEmpty {
+            emptyView
+        } else {
+            cardView
+        }
+    }
+
+    private var cardView: some View {
+        let item = entry.items.first!
+        return VStack(alignment: .leading, spacing: 0) {
+            Text(item.question)
+                .font(PeekTokens.qMedium)
+                .foregroundColor(qColor)
+                .lineLimit(2)
+
+            Rectangle()
+                .fill(sepColor)
+                .frame(height: PeekTokens.separatorHeight)
+                .padding(.vertical, 10)
+
+            Text(item.hintAnswer)
+                .font(PeekTokens.aMedium)
+                .foregroundColor(aColor)
+                .lineLimit(3)
+        }
+        .padding(.horizontal, PeekTokens.mediumPadH)
+        .padding(.vertical, PeekTokens.mediumPadV)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private var emptyView: some View {
+        VStack(spacing: 6) {
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 32))
+                .foregroundColor(.green)
+            Text("復習待ちなし")
+                .font(.system(size: 13))
+                .foregroundColor(aColor)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - Peek Large View (364×382pt)
+
+struct FlashcardPeekLargeView: View {
+    let entry: FlashcardPeekEntry
+    @Environment(\.colorScheme) var colorScheme
+
+    private var isDark: Bool { colorScheme == .dark }
+    private var qColor: Color { isDark ? PeekTokens.darkTextQ : PeekTokens.textQ }
+    private var aColor: Color { isDark ? PeekTokens.darkTextA : PeekTokens.textA }
+    private var sepColor: Color { isDark ? PeekTokens.darkSep : PeekTokens.separator }
+    private var fadeTo: Color { isDark ? PeekTokens.darkBg1 : .white }
+
+    var body: some View {
+        if entry.isEmpty {
+            emptyView
+        } else {
+            listView
+        }
+    }
+
+    private var listView: some View {
+        ZStack(alignment: .bottom) {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(entry.items.prefix(5).enumerated()), id: \.element.id) { index, item in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.question)
+                            .font(PeekTokens.qLarge)
+                            .foregroundColor(qColor)
+                            .lineLimit(1)
+                        Text(item.hintAnswer)
+                            .font(PeekTokens.aLarge)
+                            .foregroundColor(aColor)
+                            .lineLimit(2)
+                    }
+                    .opacity(index == 4 ? 0.4 : 1.0)
+                    .padding(.horizontal, PeekTokens.largePadH)
+                    .padding(.vertical, PeekTokens.largePadV)
+
+                    if index < min(entry.items.count, 5) - 1 {
+                        Rectangle()
+                            .fill(sepColor)
+                            .frame(height: PeekTokens.separatorHeight)
+                            .padding(.horizontal, PeekTokens.largePadH)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+
+            // 下部フェードグラデーション
+            LinearGradient(
+                gradient: Gradient(colors: [.clear, fadeTo]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: PeekTokens.fadeHeight)
+            .allowsHitTesting(false)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private var emptyView: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 36))
+                .foregroundColor(.green)
+            Text("復習待ちなし")
+                .font(.system(size: 14))
+                .foregroundColor(aColor)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - Peek Entry View (ファミリー切替)
+
+struct FlashcardPeekEntryView: View {
+    var entry: FlashcardPeekProvider.Entry
+    @Environment(\.widgetFamily) var widgetFamily
+    @Environment(\.colorScheme) var colorScheme
+
+    private var isDark: Bool { colorScheme == .dark }
+
+    var body: some View {
+        Group {
+            switch widgetFamily {
+            case .systemMedium:
+                FlashcardPeekMediumView(entry: entry)
+            case .systemLarge:
+                FlashcardPeekLargeView(entry: entry)
+            default:
+                FlashcardPeekSmallView(entry: entry)
+            }
+        }
+        .widgetURL(URL(string: entry.isEmpty ? deepLinkReview : "recallkit://review?itemId=\(entry.items.first?.id ?? 0)"))
+    }
+}
+
+// MARK: - Flashcard Peek Widget Configuration
+
+struct FlashcardPeekWidget: Widget {
+    let kind: String = "FlashcardPeekWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: FlashcardPeekProvider()) { entry in
+            FlashcardPeekEntryView(entry: entry)
+                .peekWidgetBackground()
+        }
+        .configurationDisplayName("Flashcard Peek")
+        .description("次の復習カードを穴埋めヒントで常時表示")
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+        .contentMarginsDisabled()
+    }
+}
+
+/// Flashcard Peek 用背景（ダークモードはグラデーション）
+private extension View {
+    @ViewBuilder
+    func peekWidgetBackground() -> some View {
+        if #available(iOSApplicationExtension 17.0, *) {
+            self.containerBackground(for: .widget) {
+                PeekBackgroundView()
+            }
+        } else {
+            ZStack {
+                PeekBackgroundView()
+                self
+            }
+        }
+    }
+}
+
+private struct PeekBackgroundView: View {
+    @Environment(\.colorScheme) var colorScheme
+    var body: some View {
+        if colorScheme == .dark {
+            LinearGradient(
+                gradient: Gradient(colors: [PeekTokens.darkBg1, PeekTokens.darkBg2]),
+                startPoint: UnitPoint(x: 0, y: 0),
+                endPoint: UnitPoint(x: 1, y: 1)
+            )
+        } else {
+            PeekTokens.bg
+        }
+    }
+}
+
+// MARK: - Widget Bundle（既存 + Flashcard Peek）
+
+@main
+struct ReCallWidgetBundle: WidgetBundle {
+    var body: some Widget {
+        ReCallWidget()
+        FlashcardPeekWidget()
+    }
+}
+
 // MARK: - Preview（iOS 16 互換 PreviewProvider）
 
 #if DEBUG
+
+// 既存ウィジェットのプレビュー
 struct ReCallWidget_Previews: PreviewProvider {
     static var previews: some View {
         Group {
@@ -349,4 +716,44 @@ struct ReCallWidget_Previews: PreviewProvider {
         }
     }
 }
+
+// Flashcard Peek ウィジェットのプレビュー
+private let previewPeekItems: [PeekItem] = [
+    PeekItem(id: 1, question: "Server Componentsとは何ですか？", hintAnswer: "______は______上でのみレンダリング"),
+    PeekItem(id: 2, question: "空間的局所性の原則とは？", hintAnswer: "空間的に______に配置された..."),
+    PeekItem(id: 3, question: "Suspenseの役割は？", hintAnswer: "______はユーザーに最も近い..."),
+    PeekItem(id: 4, question: "useCallbackの用途は？", hintAnswer: "useCallbackは______のメモ化..."),
+    PeekItem(id: 5, question: "Flexboxの基本概念は？", hintAnswer: "親______のサイズに応じた..."),
+]
+
+struct FlashcardPeek_Previews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            FlashcardPeekEntryView(
+                entry: FlashcardPeekEntry(date: .now, items: Array(previewPeekItems.prefix(1)), isEmpty: false)
+            )
+            .previewContext(WidgetPreviewContext(family: .systemSmall))
+            .previewDisplayName("Peek Small")
+
+            FlashcardPeekEntryView(
+                entry: FlashcardPeekEntry(date: .now, items: Array(previewPeekItems.prefix(1)), isEmpty: false)
+            )
+            .previewContext(WidgetPreviewContext(family: .systemMedium))
+            .previewDisplayName("Peek Medium")
+
+            FlashcardPeekEntryView(
+                entry: FlashcardPeekEntry(date: .now, items: previewPeekItems, isEmpty: false)
+            )
+            .previewContext(WidgetPreviewContext(family: .systemLarge))
+            .previewDisplayName("Peek Large – 5件")
+
+            FlashcardPeekEntryView(
+                entry: FlashcardPeekEntry(date: .now, items: [], isEmpty: true)
+            )
+            .previewContext(WidgetPreviewContext(family: .systemSmall))
+            .previewDisplayName("Peek Small – 空")
+        }
+    }
+}
+
 #endif
