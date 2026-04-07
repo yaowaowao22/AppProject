@@ -157,24 +157,24 @@ function ds(
   };
 }
 
-// ライトテーマの共通ベース（アクセント・フィルターバッジのみ変更）
+// ライトテーマの共通ベース（Google Calendar 配色準拠）
 function lightBase(accent: string, r: number, g: number, b: number): ColorScheme {
   return {
     accent,
     background: '#FFFFFF',
-    backgroundSecondary: '#F5F5F7',
-    backgroundGrouped: '#F2F2F7',
-    label: '#000000',
-    labelSecondary: 'rgba(60,60,67,0.60)',
-    labelTertiary: 'rgba(60,60,67,0.30)',
+    backgroundSecondary: '#F8F9FA',
+    backgroundGrouped: '#F8F9FA',
+    label: '#202124',
+    labelSecondary: '#5F6368',
+    labelTertiary: '#9AA0A6',
     card: '#FFFFFF',
     cardShadowColor: '#000000',
-    separator: 'rgba(60,60,67,0.12)',
+    separator: '#DADCE0',
     navBarBackground: 'rgba(249,249,249,0.94)',
-    navBarBorder: 'rgba(60,60,67,0.12)',
+    navBarBorder: '#DADCE0',
     filterBadgeBg: `rgba(${r},${g},${b},0.12)`,
     filterBadgeText: accent,
-    hamburgerTint: '#000000',
+    hamburgerTint: '#202124',
     hamburgerPressedBg: 'rgba(142,142,147,0.12)',
     success: SystemColors.green,
     warning: SystemColors.orange,
@@ -337,16 +337,16 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
     sidebar: ls('#06796A', 6, 121, 106),
   },
 
-  // primary: #007AFF / secondary: #5AC8FA / tint: #E3F2FF
+  // primary: #1A73E8 / tint: #E8F0FE（Google Calendar ブルー）
   'light-blue': {
     id: 'light-blue',
     name: 'ブルー',
     category: 'light',
     isDark: false,
-    swatchColor: '#007AFF',
+    swatchColor: '#1A73E8',
     swatchBg: '#FFFFFF',
-    colors: lightBase('#007AFF', 0, 122, 255),
-    sidebar: ls('#007AFF', 0, 122, 255),
+    colors: lightBase('#1A73E8', 26, 115, 232),
+    sidebar: ls('#1A73E8', 26, 115, 232),
   },
 
   // ── ダーク（10） ────────────────────────────────────────────

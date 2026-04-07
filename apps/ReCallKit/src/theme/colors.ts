@@ -9,21 +9,21 @@ export const RecallAmber = {
 } as const;
 
 // Blue アクションカラー体系（3色）
-// primary   : メインアクション・CTA ボタン（iOS標準ブルー）
+// primary   : メインアクション・CTA ボタン（Google Calendar ブルー）
 // secondary : 補助強調・アイコン・インジケーター
 // tint      : 背景塗り・ハイライト・フィルターバッジ背景
 export const RecallBlue = {
-  primary:   { light: '#007AFF', dark: '#0A84FF' },
+  primary:   { light: '#1A73E8', dark: '#0A84FF' },
   secondary: { light: '#5AC8FA', dark: '#64D2FF' },
-  tint:      { light: '#E3F2FF', dark: '#1C3558' },
+  tint:      { light: '#E8F0FE', dark: '#1C3558' },
 } as const;
 
-// iOS システムカラー（React Native の useColorScheme で切り替え）
+// システムカラー（Google Calendar 準拠）
 export const SystemColors = {
-  green: '#30D158',   // ストリーク・正解
-  orange: '#FF9F0A',  // 復習遅延（警告）
-  red: '#FF3B30',     // 不正解・Again
-  blue: '#0A84FF',    // リンク・情報
+  green: '#1E8E3E',   // ストリーク・正解・成功
+  orange: '#F29900',  // 復習遅延（警告・難しい）
+  red: '#D93025',     // 不正解・Again・エラー
+  blue: '#1A73E8',    // リンク・情報・主要アクション
   indigo: '#5E5CE6',  // デッキカテゴリー等の補助強調
   purple: '#BF5AF2',  // タグ等の補助強調
   teal: '#5AC8FA',    // 進捗インジケーター補助
@@ -86,27 +86,27 @@ export const SidebarColors = {
   },
 } as const;
 
-// ライトモード
+// ライトモード（Google Calendar 配色準拠）
 export const LightColors = {
   // アクセント
   accent: RecallAmber.light,
 
   // 背景
   background: '#FFFFFF',
-  backgroundSecondary: '#F5F5F7',
-  backgroundGrouped: '#F2F2F7',
+  backgroundSecondary: '#F8F9FA',
+  backgroundGrouped: '#F8F9FA',
 
   // テキスト
-  label: '#000000',
-  labelSecondary: 'rgba(60,60,67,0.60)',
-  labelTertiary: 'rgba(60,60,67,0.30)',
+  label: '#202124',
+  labelSecondary: '#5F6368',
+  labelTertiary: '#9AA0A6',
 
   // カード
   card: '#FFFFFF',
   cardShadowColor: '#000000',
 
   // 区切り線
-  separator: 'rgba(60,60,67,0.12)',
+  separator: '#DADCE0',
 
   // ナビゲーションバー（--nav-bg / --tab-border）
   navBarBackground: 'rgba(249,249,249,0.94)',
@@ -172,3 +172,23 @@ export type ColorScheme = typeof LightColors | typeof DarkColors;
 
 /** サイドバー（ドロワー）専用カラーセットの型エイリアス */
 export type SidebarColorSet = typeof SidebarColors.light;
+
+// Google Calendar 準拠カラーパレット（モックアップ :root 変数から抽出）
+export const GoogleCalendarColors = {
+  blue:         '#1A73E8',  // --blue: 主要アクション色
+  amber:        '#E8A000',  // --accent: Amber アクセント
+  green:        '#1E8E3E',  // --green: 成功・Infrastructure
+  red:          '#D93025',  // --red: エラー・期限切れ
+  orange:       '#F29900',  // --orange: 警告・難しい
+  textPrimary:  '#202124',  // --text-1: label
+  textSecondary:'#5F6368',  // --text-2: labelSecondary
+  textTertiary: '#9AA0A6',  // --text-3: labelTertiary
+  border:       '#DADCE0',  // --border: separator
+  tint:         '#F8F9FA',  // --tint: backgroundSecondary
+  surface:      '#FFFFFF',  // --surface / --bg
+  // pill背景色
+  pillBlueBg:   '#E8F0FE',
+  pillGreenBg:  '#E6F4EA',
+  pillRedBg:    '#FCE8E6',
+  pillAmberBg:  '#FEF7E0',
+} as const;
