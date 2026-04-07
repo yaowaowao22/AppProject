@@ -23,9 +23,11 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { useDatabase } from '../../hooks/useDatabase';
 import { useTheme } from '../../theme/ThemeContext';
+import { useToast } from '../../components/ToastProvider';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { analyzeUrlPipeline } from '../../services/urlAnalysisPipeline';
+import { notifyImportCompleted, notifyImportFailed } from '../../services/notificationService';
 import { LOCAL_AI_ENABLED } from '../../config/localAI';
 import {
   subscribeDownloadState,
@@ -33,6 +35,7 @@ import {
 } from '../../services/localAnalysisService';
 import {
   listJobs,
+  getJob,
   updateJob,
   deleteJob,
   recoverStaleJobs,
@@ -203,6 +206,7 @@ function SkeletonCard({
 export function URLImportListScreen({ navigation }: Props) {
   const { db, isReady } = useDatabase();
   const { colors } = useTheme();
+  const { showToast } = useToast();
   const insets = useSafeAreaInsets();
 
   const [jobs, setJobs] = useState<UrlImportJob[]>([]);
@@ -272,12 +276,29 @@ export function URLImportListScreen({ navigation }: Props) {
     processingRef.current = true;
     executeJob(db, pending, (current, total) => {
       setActiveChunkProgress({ jobId: pending.id, current, total });
-    }).finally(() => {
+    }).finally(async () => {
       processingRef.current = false;
       setActiveChunkProgress(null);
+
+      // 完了/失敗通知（トースト + ネイティブ通知）
+      try {
+        const finished = await getJob(db, pending.id);
+        if (finished?.status === 'done' && finished.result_json) {
+          const parsed = JSON.parse(finished.result_json);
+          const qaCount = parsed.qa_pairs?.length ?? 0;
+          const title = finished.title ?? finished.url;
+          showToast(`「${title}」の取り込み完了（${qaCount}件）`, 'success');
+          notifyImportCompleted(title, qaCount);
+        } else if (finished?.status === 'failed') {
+          const msg = finished.error_msg ?? '不明なエラー';
+          showToast(`取り込み失敗: ${msg}`, 'error');
+          notifyImportFailed(finished.url, msg);
+        }
+      } catch { /* 通知失敗は処理を止めない */ }
+
       loadJobs();
     });
-  }, [jobs, db, isReady, loadJobs]);
+  }, [jobs, db, isReady, loadJobs, showToast]);
 
   // ---- アクティブなジョブがある間はポーリング ----
   useEffect(() => {
