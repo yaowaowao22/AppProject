@@ -32,6 +32,10 @@ import urllib.error
 
 import requests  # pip install requests
 
+# Windows cp932環境でも日本語を正しく出力する
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 # ============================================================
 # 設定
 # ============================================================
