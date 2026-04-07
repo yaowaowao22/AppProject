@@ -620,11 +620,12 @@ function normalize(parsed: Partial<AnalysisResult>): AnalysisResult {
 // ============================================================
 
 /**
- * 第1チャンク: title/summary/category/tags + Q&A 5〜7個
- * 継続チャンク: Q&A 5〜7個のみ
+ * n_ctx=4096、入力プロンプト ~700トークンの場合、出力上限は ~3300トークン。
+ * モデルは <end_of_turn> で自然に止まるため n_predict を大きく設定してもコストゼロ。
+ * JSON が途中で切れないよう n_ctx の実質上限に合わせる。
  */
-const N_PREDICT_FIRST        = 1280;
-const N_PREDICT_CONTINUATION = 896;
+const N_PREDICT_FIRST        = 3000;
+const N_PREDICT_CONTINUATION = 3000;
 
 /** 1URL あたりの Q&A 上限。超えたらチャンク処理を打ち切る */
 const MAX_QA_TOTAL = 50;

@@ -4,7 +4,7 @@
 // 実際の解析・保存処理は URLImportListScreen がバックグラウンドで実行する
 // ============================================================
 
-import React, { useState, useCallback, useLayoutEffect, useEffect } from 'react';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
 import {
   View,
   Text,
