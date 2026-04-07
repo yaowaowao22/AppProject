@@ -8,6 +8,7 @@ import { DrawerNavigator } from './DrawerNavigator';
 import { OnboardingScreen } from '../screens/onboarding/OnboardingScreen';
 import { SidebarFilterProvider } from '../hooks/useSidebarFilter';
 import { initShareReceiver } from '../services/shareReceiver';
+import { useNotificationSetup } from '../hooks/useNotificationSetup';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -38,6 +39,9 @@ export function RootNavigator() {
     if (!isReady || !db) return;
     return initShareReceiver(db);
   }, [isReady, db]);
+
+  // DB初期化完了後に通知セットアップ（権限・チャンネル・スケジュール）
+  useNotificationSetup(db, isReady);
 
   // DBエラー（最優先チェック）
   if (error) {

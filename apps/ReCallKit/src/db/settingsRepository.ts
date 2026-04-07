@@ -7,10 +7,11 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 // 設定キーの一覧（型安全）
 export type SettingKey =
-  | 'review_time'        // "08:00"
-  | 'daily_review_count' // "5"
-  | 'theme'              // "system" | "light" | "dark"
-  | 'onboarding_completed'; // "true" | "false"
+  | 'review_time'           // "08:00"
+  | 'daily_review_count'    // "5"
+  | 'theme'                 // "system" | "light" | "dark"
+  | 'onboarding_completed'  // "true" | "false"
+  | 'notifications_enabled'; // "true" | "false"
 
 // デフォルト値
 export const SETTING_DEFAULTS: Record<SettingKey, string> = {
@@ -18,6 +19,7 @@ export const SETTING_DEFAULTS: Record<SettingKey, string> = {
   daily_review_count: '5',
   theme: 'system',
   onboarding_completed: 'false',
+  notifications_enabled: 'false',
 };
 
 // 全設定をまとめた型
@@ -26,6 +28,7 @@ export interface AppSettings {
   daily_review_count: string;
   theme: 'system' | 'light' | 'dark';
   onboarding_completed: string;
+  notifications_enabled: string;
 }
 
 /**
@@ -46,6 +49,7 @@ export async function getAllSettings(db: SQLiteDatabase): Promise<AppSettings> {
     daily_review_count: map.daily_review_count ?? SETTING_DEFAULTS.daily_review_count,
     theme: (map.theme as 'system' | 'light' | 'dark') ?? SETTING_DEFAULTS.theme,
     onboarding_completed: map.onboarding_completed ?? SETTING_DEFAULTS.onboarding_completed,
+    notifications_enabled: map.notifications_enabled ?? SETTING_DEFAULTS.notifications_enabled,
   };
 }
 

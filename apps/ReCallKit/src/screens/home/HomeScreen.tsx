@@ -114,15 +114,24 @@ export function HomeScreen({ navigation }: Props) {
     }, [loadData])
   );
 
+  // サイドバーフィルターを dueItems に適用（overdueCount より前に宣言が必要）
+  const sidebarFilteredItemsEarly = useMemo<ReviewableItem[]>(() => {
+    if (!sidebarFilter) return dueItems;
+    if (sidebarFilter.kind === 'tag') {
+      return dueItems.filter((ri) => taggedItemIds.has(ri.item.id));
+    }
+    return dueItems;
+  }, [sidebarFilter, dueItems, taggedItemIds]);
+
   // 期限切れアイテム数（today midnight より前が due のもの）
   const overdueCount = useMemo(() => {
     const todayMidnight = new Date();
     todayMidnight.setHours(0, 0, 0, 0);
-    return sidebarFilteredItems.filter((ri) => {
+    return sidebarFilteredItemsEarly.filter((ri) => {
       const next = new Date(ri.item.review!.next_review_at.replace(' ', 'T'));
       return next < todayMidnight;
     }).length;
-  }, [sidebarFilteredItems]);
+  }, [sidebarFilteredItemsEarly]);
 
   // ウィジェット用Q&Aデータ（全アイテムからランダムに最大20件）
   const quizItems = useMemo(() => {
@@ -168,14 +177,8 @@ export function HomeScreen({ navigation }: Props) {
     );
   };
 
-  // サイドバーフィルターを dueItems に適用
-  const sidebarFilteredItems = useMemo<ReviewableItem[]>(() => {
-    if (!sidebarFilter) return dueItems;
-    if (sidebarFilter.kind === 'tag') {
-      return dueItems.filter((ri) => taggedItemIds.has(ri.item.id));
-    }
-    return dueItems;
-  }, [sidebarFilter, dueItems, taggedItemIds]);
+  // sidebarFilteredItems は overdueCount より前に宣言済み（sidebarFilteredItemsEarly として）
+  const sidebarFilteredItems = sidebarFilteredItemsEarly;
 
   if (!isReady || loading) {
     return (

@@ -37,6 +37,13 @@ export function useNotificationSetup(
           return;
         }
 
+        // 通知が有効かどうかを確認（ユーザーが明示的に ON にした場合のみスケジュール）
+        const notificationsEnabled = await getSetting(db, 'notifications_enabled');
+        if (notificationsEnabled !== 'true') {
+          console.log('[Notification] notifications_enabled=false — skipping schedule');
+          return;
+        }
+
         // DB から保存済みの通知時刻を取得
         const reviewTime = await getSetting(db, 'review_time');
         await scheduleDailyReminder(reviewTime);

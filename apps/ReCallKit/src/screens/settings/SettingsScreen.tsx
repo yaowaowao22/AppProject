@@ -10,6 +10,7 @@ import {
   FlatList,
   Alert,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,6 +23,11 @@ import { getDatabase } from '../../db/connection';
 import { getAllSettings, setSetting, type AppSettings } from '../../db/settingsRepository';
 import { deleteAllData } from '../../db/schema';
 import { exportAllDataAsJSON } from '../../services/exportService';
+import {
+  requestNotificationPermissions,
+  scheduleDailyReminder,
+  cancelDailyReminder,
+} from '../../services/notificationService';
 
 const APP_VERSION = '0.1.0';
 
@@ -83,6 +89,33 @@ export function SettingsScreen() {
     const current = parseInt(settings.daily_review_count, 10);
     const next = Math.min(50, Math.max(1, current + delta));
     await saveSetting('daily_review_count', String(next));
+  };
+
+  // ── 通知 ON/OFF トグル ───────────────────────────────────
+  const handleNotificationToggle = async (value: boolean) => {
+    if (value) {
+      // ON にする: 権限リクエスト → 許可されたらスケジュール
+      const granted = await requestNotificationPermissions();
+      if (!granted) {
+        Alert.alert(
+          '通知が許可されていません',
+          '設定アプリ → ReCallKit → 通知 から通知を許可してください。'
+        );
+        return; // 権限なしはトグルをONにしない
+      }
+      await saveSetting('notifications_enabled', 'true');
+      const db = await getDatabase();
+      const reviewTime = (await db.getFirstAsync<{ value: string }>(
+        `SELECT value FROM app_settings WHERE key = 'review_time'`
+      ))?.value ?? '08:00';
+      await scheduleDailyReminder(reviewTime);
+      console.log('[Notification] toggle ON — reminder scheduled');
+    } else {
+      // OFF にする: スケジュールキャンセル
+      await saveSetting('notifications_enabled', 'false');
+      await cancelDailyReminder();
+      console.log('[Notification] toggle OFF — reminder cancelled');
+    }
   };
 
   // ── テーマ切替 ───────────────────────────────────────────
@@ -216,6 +249,26 @@ export function SettingsScreen() {
                 <Ionicons name="add" size={18} color={colors.accent} />
               </TouchableOpacity>
             </View>
+          </View>
+
+          <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+
+          {/* 復習リマインダー通知 ON/OFF */}
+          <View style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rowLabel, { color: colors.label }]}>
+                リマインダー通知
+              </Text>
+              <Text style={[styles.rowSubLabel, { color: colors.labelSecondary }]}>
+                毎日 {settings.review_time} に通知
+              </Text>
+            </View>
+            <Switch
+              value={settings.notifications_enabled === 'true'}
+              onValueChange={handleNotificationToggle}
+              trackColor={{ false: colors.separator, true: colors.accent }}
+              thumbColor="#FFFFFF"
+            />
           </View>
         </View>
 
@@ -595,6 +648,10 @@ const styles = StyleSheet.create({
   },
   rowValue: {
     ...TypeScale.body,
+  },
+  rowSubLabel: {
+    ...TypeScale.footnote,
+    marginTop: 2,
   },
 
   // セパレーター
