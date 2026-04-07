@@ -12,7 +12,7 @@
 
 import * as FileSystem from 'expo-file-system/legacy';
 import type { DownloadProgressData, DownloadPauseState } from 'expo-file-system/legacy';
-import { initLlama, type TokenData, LlamaContext } from 'llama.rn';
+import type { TokenData, LlamaContext } from 'llama.rn';
 
 import {
   LOCAL_AI_TIMEOUT_MS,
@@ -290,6 +290,8 @@ async function getLlamaContext(): Promise<LlamaContext> {
 
   isInitializing = true;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { initLlama } = require('llama.rn') as typeof import('llama.rn');
     llamaContext = await initLlama({
       model: modelPath(model.filename),
       n_gpu_layers: model.nGpuLayers,
