@@ -4,7 +4,7 @@
 // ============================================================
 
 export const RecallAmber = {
-  light: '#C47F17',
+  light: '#E8A000',
   dark: '#F5A623',
 } as const;
 

@@ -232,10 +232,10 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
     name: 'アンバー',
     category: 'light',
     isDark: false,
-    swatchColor: '#C47F17',
+    swatchColor: '#E8A000',
     swatchBg: '#FFFFFF',
-    colors: lightBase('#C47F17', 196, 127, 23),
-    sidebar: ls('#C47F17', 196, 127, 23),
+    colors: lightBase('#E8A000', 232, 160, 0),
+    sidebar: ls('#E8A000', 232, 160, 0),
   },
 
   'light-ocean': {
