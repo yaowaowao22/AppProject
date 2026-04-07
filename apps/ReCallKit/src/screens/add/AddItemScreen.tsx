@@ -18,6 +18,7 @@ import { Spacing, Radius } from '../../theme/spacing';
 import type { LibraryStackParamList } from '../../navigation/types';
 import type { ItemType } from '../../types';
 import { fetchUrlMetadata } from '../../services/urlMetadataService';
+import { CATEGORIES } from '../../config/categories';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'AddItem'>;
 
@@ -39,6 +40,7 @@ export function AddItemScreen({ navigation }: Props) {
   const [excerpt, setExcerpt] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [saving, setSaving] = useState(false);
+  const [category, setCategory] = useState<string | null>(null);
 
   // OGP自動取得の状態
   const [fetching, setFetching] = useState(false);
@@ -139,9 +141,9 @@ export function AddItemScreen({ navigation }: Props) {
     setSaving(true);
     try {
       const result = await db.runAsync(
-        `INSERT INTO items (type, title, content, excerpt, source_url, created_at, updated_at, archived)
-         VALUES (?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), 0)`,
-        [type, title.trim(), content.trim(), excerpt.trim() || null, sourceUrl.trim() || null]
+        `INSERT INTO items (type, title, content, excerpt, source_url, category, created_at, updated_at, archived)
+         VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), 0)`,
+        [type, title.trim(), content.trim(), excerpt.trim() || null, sourceUrl.trim() || null, category]
       );
 
       // 復習スケジュールを作成（即座に復習対象にする）
@@ -282,6 +284,39 @@ export function AddItemScreen({ navigation }: Props) {
         textAlignVertical="top"
       />
 
+      {/* カテゴリ選択 */}
+      <Text style={[styles.label, { color: colors.labelSecondary }, { marginTop: Spacing.s }]}>
+        カテゴリ（省略可）
+      </Text>
+      <View style={styles.categoryRow}>
+        {CATEGORIES.map((cat) => {
+          const selected = category === cat.key;
+          return (
+            <Pressable
+              key={cat.key}
+              style={[
+                styles.categoryChip,
+                {
+                  backgroundColor: selected ? cat.color + '22' : colors.backgroundSecondary,
+                  borderColor: selected ? cat.color : colors.separator,
+                },
+              ]}
+              onPress={() => setCategory(selected ? null : cat.key)}
+            >
+              <Text style={styles.categoryIcon}>{cat.icon}</Text>
+              <Text
+                style={[
+                  styles.categoryChipText,
+                  { color: selected ? cat.color : colors.label },
+                ]}
+              >
+                {cat.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
       {/* 保存ボタン */}
       <Pressable
         style={({ pressed }) => [
@@ -342,6 +377,27 @@ const styles = StyleSheet.create({
   },
   textArea: {
     minHeight: 160,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.s,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+  categoryIcon: {
+    fontSize: 14,
+  },
+  categoryChipText: {
+    ...TypeScale.caption1,
+    fontWeight: '500',
   },
   aiAnalyzeButton: {
     borderRadius: Radius.m,

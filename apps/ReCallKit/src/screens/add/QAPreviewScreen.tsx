@@ -46,8 +46,8 @@ import { useDB } from '../../hooks/useDatabase';
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow, CardShadowStrong } from '../../theme/spacing';
-import { SystemColors } from '../../theme/colors';
 import type { LibraryStackParamList } from '../../navigation/types';
+import { getCategoryConfig } from '../../config/categories';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'QAPreview'>;
 type ViewMode = 'card' | 'list';
