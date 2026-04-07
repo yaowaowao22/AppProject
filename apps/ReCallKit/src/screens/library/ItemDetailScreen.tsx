@@ -17,12 +17,34 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useDB } from '../../hooks/useDatabase';
 import { useTheme } from '../../theme/ThemeContext';
+import { GoogleCalendarColors } from '../../theme/colors';
 import { TypeScale } from '../../theme/typography';
-import { Spacing, Radius, CardShadow } from '../../theme/spacing';
+import { Spacing, Radius } from '../../theme/spacing';
 import type { LibraryStackParamList } from '../../navigation/types';
 import type { Item, Tag, Review } from '../../types';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'ItemDetail'>;
+
+// ---- カテゴリカラーマップ ----
+const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
+  Programming: { bg: GoogleCalendarColors.pillBlueBg, text: GoogleCalendarColors.blue },
+  Design: { bg: GoogleCalendarColors.pillAmberBg, text: '#B06000' },
+  Infrastructure: { bg: GoogleCalendarColors.pillGreenBg, text: GoogleCalendarColors.green },
+};
+
+function getCategoryPill(category: string): { bg: string; text: string } {
+  return CATEGORY_COLORS[category] ?? { bg: GoogleCalendarColors.pillBlueBg, text: GoogleCalendarColors.blue };
+}
+
+// ---- 次の復習までの日数テキスト ----
+function getNextReviewText(review: Review): string {
+  const now = new Date();
+  const next = new Date(review.next_review_at);
+  const diffDays = Math.ceil((next.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays <= 0) return '今日';
+  if (diffDays === 1) return '明日';
+  return `${diffDays}日`;
+}
 
 export function ItemDetailScreen({ route }: Props) {
   const { itemId } = route.params;
@@ -81,7 +103,7 @@ export function ItemDetailScreen({ route }: Props) {
   useEffect(() => {
     if (item?.title) {
       navigation.setOptions({
-        title: editMode ? '編集' : item.title,
+        title: editMode ? '編集' : '',
         headerRight: () =>
           editMode ? (
             <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -97,8 +119,8 @@ export function ItemDetailScreen({ route }: Props) {
               </Pressable>
             </View>
           ) : (
-            <Pressable onPress={enterEdit} hitSlop={8}>
-              <Text style={{ color: colors.accent, fontSize: 17 }}>編集</Text>
+            <Pressable onPress={enterEdit} hitSlop={8} style={s.editIconBtn}>
+              <Ionicons name="create-outline" size={20} color={colors.labelSecondary} />
             </Pressable>
           ),
       });
@@ -106,7 +128,7 @@ export function ItemDetailScreen({ route }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item, editMode, saving, colors]);
 
-  // ---- 編集モード開始 ----
+  // ---- 編集モード ----
   const enterEdit = useCallback(() => {
     if (!item) return;
     setEditTitle(item.title);
@@ -117,13 +139,11 @@ export function ItemDetailScreen({ route }: Props) {
     setEditMode(true);
   }, [item, tags]);
 
-  // ---- 編集キャンセル ----
   const cancelEdit = useCallback(() => {
     setEditMode(false);
     setNewTagInput('');
   }, []);
 
-  // ---- タグ追加（編集中） ----
   const addEditTag = useCallback(() => {
     const name = newTagInput.trim();
     if (!name) return;
@@ -131,17 +151,14 @@ export function ItemDetailScreen({ route }: Props) {
       setNewTagInput('');
       return;
     }
-    // 仮IDとして負の値を使用（保存時にDB側で正式IDが付与される）
     setEditTags((prev) => [...prev, { id: -Date.now(), name, description: null }]);
     setNewTagInput('');
   }, [newTagInput, editTags]);
 
-  // ---- タグ削除（編集中） ----
   const removeEditTag = useCallback((tagId: number) => {
     setEditTags((prev) => prev.filter((t) => t.id !== tagId));
   }, []);
 
-  // ---- 保存処理 ----
   const saveEdit = useCallback(async () => {
     const title = editTitle.trim();
     const content = editContent.trim();
@@ -158,7 +175,6 @@ export function ItemDetailScreen({ route }: Props) {
     try {
       const category = editCategory.trim() || null;
 
-      // アイテム更新
       await db.runAsync(
         `UPDATE items
          SET title = ?, content = ?, category = ?, updated_at = datetime('now','localtime')
@@ -166,11 +182,9 @@ export function ItemDetailScreen({ route }: Props) {
         [title, content, category, itemId]
       );
 
-      // タグ再設定: 既存の item_tags を削除して再挿入
       await db.runAsync('DELETE FROM item_tags WHERE item_id = ?', [itemId]);
 
       for (const tag of editTags) {
-        // タグが既存かどうか確認（名前で検索）
         let tagId: number;
         const existing = await db.getFirstAsync<{ id: number }>(
           'SELECT id FROM tags WHERE name = ?',
@@ -203,13 +217,11 @@ export function ItemDetailScreen({ route }: Props) {
 
   if (loading || !item) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.backgroundGrouped }]}>
+      <View style={[s.center, { backgroundColor: colors.backgroundGrouped }]}>
         <ActivityIndicator color={colors.accent} />
       </View>
     );
   }
-
-  const cardShadow = isDark ? {} : CardShadow;
 
   // ---- 編集モードUI ----
   if (editMode) {
@@ -219,13 +231,12 @@ export function ItemDetailScreen({ route }: Props) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + Spacing.xxl }]}
+          contentContainerStyle={[s.editContainer, { paddingBottom: insets.bottom + Spacing.xxl }]}
           keyboardShouldPersistTaps="handled"
         >
-          {/* タイトル編集 */}
-          <Text style={[styles.editLabel, { color: colors.labelSecondary }]}>タイトル</Text>
+          <Text style={[s.editLabel, { color: colors.labelSecondary }]}>タイトル</Text>
           <TextInput
-            style={[styles.editInput, { color: colors.label, backgroundColor: colors.card, borderColor: colors.separator }, cardShadow]}
+            style={[s.editInput, { color: colors.label, backgroundColor: colors.card, borderColor: colors.separator }]}
             value={editTitle}
             onChangeText={setEditTitle}
             placeholder="タイトル"
@@ -233,10 +244,9 @@ export function ItemDetailScreen({ route }: Props) {
             autoCapitalize="none"
           />
 
-          {/* 内容編集 */}
-          <Text style={[styles.editLabel, { color: colors.labelSecondary }]}>内容</Text>
+          <Text style={[s.editLabel, { color: colors.labelSecondary }]}>内容</Text>
           <TextInput
-            style={[styles.editTextarea, { color: colors.label, backgroundColor: colors.card, borderColor: colors.separator }, cardShadow]}
+            style={[s.editTextarea, { color: colors.label, backgroundColor: colors.card, borderColor: colors.separator }]}
             value={editContent}
             onChangeText={setEditContent}
             placeholder="内容"
@@ -245,10 +255,9 @@ export function ItemDetailScreen({ route }: Props) {
             autoCapitalize="none"
           />
 
-          {/* カテゴリ編集 */}
-          <Text style={[styles.editLabel, { color: colors.labelSecondary }]}>カテゴリ</Text>
+          <Text style={[s.editLabel, { color: colors.labelSecondary }]}>カテゴリ</Text>
           <TextInput
-            style={[styles.editInput, { color: colors.label, backgroundColor: colors.card, borderColor: colors.separator }, cardShadow]}
+            style={[s.editInput, { color: colors.label, backgroundColor: colors.card, borderColor: colors.separator }]}
             value={editCategory}
             onChangeText={setEditCategory}
             placeholder="カテゴリ（省略可）"
@@ -256,27 +265,24 @@ export function ItemDetailScreen({ route }: Props) {
             autoCapitalize="none"
           />
 
-          {/* タグ編集 */}
-          <Text style={[styles.editLabel, { color: colors.labelSecondary }]}>タグ</Text>
-          <View style={[styles.card, { backgroundColor: colors.card, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.separator }, cardShadow]}>
-            {/* 現在のタグ一覧 */}
-            <View style={styles.editTagRow}>
+          <Text style={[s.editLabel, { color: colors.labelSecondary }]}>タグ</Text>
+          <View style={[s.editTagCard, { backgroundColor: colors.card, borderColor: colors.separator }]}>
+            <View style={s.editTagRow}>
               {editTags.map((tag) => (
                 <View
                   key={tag.id}
-                  style={[styles.editTagChip, { backgroundColor: colors.backgroundSecondary }]}
+                  style={[s.editTagChip, { backgroundColor: colors.backgroundSecondary }]}
                 >
-                  <Text style={[styles.editTagText, { color: colors.label }]}>{tag.name}</Text>
+                  <Text style={[s.editTagText, { color: colors.label }]}>{tag.name}</Text>
                   <Pressable onPress={() => removeEditTag(tag.id)} hitSlop={6}>
                     <Ionicons name="close" size={14} color={colors.labelSecondary} />
                   </Pressable>
                 </View>
               ))}
             </View>
-            {/* タグ追加入力 */}
-            <View style={[styles.tagInputRow, { borderTopColor: colors.separator }]}>
+            <View style={[s.tagInputRow, { borderTopColor: colors.separator }]}>
               <TextInput
-                style={[styles.tagInput, { color: colors.label }]}
+                style={[s.tagInput, { color: colors.label }]}
                 value={newTagInput}
                 onChangeText={setNewTagInput}
                 placeholder="タグを追加..."
@@ -300,74 +306,81 @@ export function ItemDetailScreen({ route }: Props) {
     );
   }
 
-  // ---- 表示モードUI ----
+  // ---- 表示モードUI（モックアップ準拠） ----
+  const catPill = item.category ? getCategoryPill(item.category) : null;
+
   return (
     <ScrollView
-      style={{ backgroundColor: colors.backgroundGrouped }}
-      contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + Spacing.xxl }]}
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={{ paddingBottom: insets.bottom + Spacing.xxl }}
     >
-      {/* タイトル */}
-      <Text style={[styles.title, { color: colors.label }]}>{item.title}</Text>
-
-      {/* カテゴリ */}
-      {item.category ? (
-        <View style={styles.categoryRow}>
-          <Ionicons name="folder-outline" size={14} color={colors.labelTertiary} />
-          <Text style={[styles.categoryText, { color: colors.labelSecondary }]}>{item.category}</Text>
-        </View>
-      ) : null}
-
-      {/* タグ */}
-      {tags.length > 0 && (
-        <View style={styles.tagRow}>
+      {/* ── Hero: タグピル → タイトル ── */}
+      <View style={s.hero}>
+        <View style={s.pillRow}>
+          {/* カテゴリピル */}
+          {catPill && (
+            <View style={[s.pill, { backgroundColor: catPill.bg }]}>
+              <Text style={[s.pillText, { color: catPill.text }]}>{item.category}</Text>
+            </View>
+          )}
+          {/* タグピル */}
           {tags.map((tag) => (
-            <View key={tag.id} style={[styles.tag, { backgroundColor: colors.backgroundSecondary, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.separator }]}>
-              <Text style={[styles.tagText, { color: colors.labelSecondary }]}>{tag.name}</Text>
+            <View key={tag.id} style={[s.pill, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[s.pillText, { color: colors.labelSecondary }]}>{tag.name}</Text>
             </View>
           ))}
         </View>
-      )}
-
-      {/* コンテンツ */}
-      <View style={[styles.card, { backgroundColor: colors.card, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.separator }, cardShadow]}>
-        <Text style={[styles.content, { color: colors.label }]}>{item.content}</Text>
+        <Text style={[s.detailTitle, { color: colors.label }]}>{item.title}</Text>
       </View>
 
-      {/* 復習情報 */}
+      {/* ── セパレーター ── */}
+      <View style={[s.sep, { backgroundColor: colors.separator }]} />
+
+      {/* ── Answer セクション ── */}
+      <View style={s.section}>
+        <Text style={[s.sectionTitle, { color: colors.labelTertiary }]}>ANSWER</Text>
+        <Text style={[s.detailContent, { color: colors.label }]}>{item.content}</Text>
+      </View>
+
+      {/* ── セパレーター ── */}
+      <View style={[s.sep, { backgroundColor: colors.separator }]} />
+
+      {/* ── Review Info（3ボックス） ── */}
       {review && (
-        <View style={[styles.card, { backgroundColor: colors.card, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.separator }, cardShadow]}>
-          <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>復習状態</Text>
-          <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.labelSecondary }]}>繰り返し回数</Text>
-            <Text style={[styles.infoValue, { color: colors.label }]}>{review.repetitions}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.labelSecondary }]}>次の復習</Text>
-            <Text style={[styles.infoValue, { color: colors.label }]}>{review.next_review_at}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.labelSecondary }]}>間隔</Text>
-            <Text style={[styles.infoValue, { color: colors.label }]}>{review.interval_days}日</Text>
+        <View style={s.section}>
+          <Text style={[s.sectionTitle, { color: colors.labelTertiary }]}>REVIEW INFO</Text>
+          <View style={s.reviewBoxRow}>
+            <View style={[s.reviewBox, { borderColor: colors.separator }]}>
+              <Text style={[s.reviewBoxValue, { color: colors.label }]}>{review.repetitions}</Text>
+              <Text style={[s.reviewBoxLabel, { color: colors.labelTertiary }]}>繰り返し</Text>
+            </View>
+            <View style={[s.reviewBox, { borderColor: colors.separator }]}>
+              <Text style={[s.reviewBoxValue, { color: colors.label }]}>{getNextReviewText(review)}</Text>
+              <Text style={[s.reviewBoxLabel, { color: colors.labelTertiary }]}>次の復習</Text>
+            </View>
+            <View style={[s.reviewBox, { borderColor: colors.separator }]}>
+              <Text style={[s.reviewBoxValue, { color: colors.label }]}>{review.easiness_factor.toFixed(1)}</Text>
+              <Text style={[s.reviewBoxLabel, { color: colors.labelTertiary }]}>EF</Text>
+            </View>
           </View>
         </View>
       )}
 
-      {/* メタ情報 */}
-      <View style={[styles.card, { backgroundColor: colors.card, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.separator }, cardShadow]}>
-        <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>情報</Text>
-        <View style={styles.infoRow}>
-          <Text style={[styles.infoLabel, { color: colors.labelSecondary }]}>タイプ</Text>
-          <Text style={[styles.infoValue, { color: colors.label }]}>{item.type}</Text>
+      {/* ── メタ情報（背景色つき） ── */}
+      <View style={[s.metaSection, { backgroundColor: colors.backgroundSecondary }]}>
+        <View style={s.metaRow}>
+          <Text style={[s.metaLabel, { color: colors.labelTertiary }]}>タイプ</Text>
+          <Text style={[s.metaValue, { color: colors.label }]}>{item.type === 'url' ? 'URL' : item.type === 'text' ? 'テキスト' : item.type}</Text>
         </View>
-        <View style={styles.infoRow}>
-          <Text style={[styles.infoLabel, { color: colors.labelSecondary }]}>作成日</Text>
-          <Text style={[styles.infoValue, { color: colors.label }]}>{item.created_at}</Text>
+        <View style={[s.metaRowBorder, { borderTopColor: colors.separator }]}>
+          <Text style={[s.metaLabel, { color: colors.labelTertiary }]}>作成日</Text>
+          <Text style={[s.metaValue, { color: colors.label }]}>{item.created_at.split(' ')[0]}</Text>
         </View>
         {item.source_url && (
-          <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.labelSecondary }]}>ソース</Text>
-            <Text style={[styles.infoValue, { color: colors.info }]} numberOfLines={1}>
-              {item.source_url}
+          <View style={[s.metaRowBorder, { borderTopColor: colors.separator }]}>
+            <Text style={[s.metaLabel, { color: colors.labelTertiary }]}>ソース</Text>
+            <Text style={[s.metaValue, { color: colors.accent }]} numberOfLines={1}>
+              {item.source_url.replace(/^https?:\/\//, '').substring(0, 30)}...
             </Text>
           </View>
         )}
@@ -376,69 +389,113 @@ export function ItemDetailScreen({ route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  container: {
-    padding: Spacing.m,
-    paddingBottom: Spacing.xxl,
-    gap: Spacing.m,
+
+  // ---- Hero ----
+  hero: {
+    paddingHorizontal: Spacing.m,
+    paddingTop: 24,
+    paddingBottom: Spacing.m,
   },
-  title: {
-    ...TypeScale.title2,
-  },
-  categoryRow: {
+  pillRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  categoryText: {
-    ...TypeScale.footnote,
-  },
-  tagRow: {
-    flexDirection: 'row',
-    gap: Spacing.xs,
     flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: Spacing.m,
   },
-  tag: {
-    paddingHorizontal: Spacing.s,
-    paddingVertical: 2,
-    borderRadius: Radius.full,
+  pill: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
   },
-  tagText: {
-    ...TypeScale.caption1,
+  pillText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
   },
-  card: {
-    borderRadius: Radius.m,
-    padding: Spacing.m,
-    gap: Spacing.s,
+  detailTitle: {
+    fontSize: 22,
+    fontWeight: '500' as const,
+    lineHeight: 31,
   },
-  content: {
-    ...TypeScale.bodyJA,
+
+  // ---- セパレーター ----
+  sep: {
+    height: 1,
+    marginHorizontal: Spacing.m,
+  },
+
+  // ---- セクション ----
+  section: {
+    paddingHorizontal: Spacing.m,
+    paddingVertical: Spacing.m,
   },
   sectionTitle: {
-    ...TypeScale.footnote,
+    fontSize: 11,
+    fontWeight: '500' as const,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: Spacing.xs,
+    letterSpacing: 0.8,
+    marginBottom: 10,
   },
-  infoRow: {
+  detailContent: {
+    fontSize: 15,
+    lineHeight: 26,
+  },
+
+  // ---- Review Info 3ボックス ----
+  reviewBoxRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 12,
+  },
+  reviewBox: {
+    flex: 1,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderRadius: 10,
     alignItems: 'center',
   },
-  infoLabel: {
-    ...TypeScale.subheadline,
+  reviewBoxValue: {
+    fontSize: 18,
+    fontWeight: '500' as const,
   },
-  infoValue: {
-    ...TypeScale.subheadline,
-    fontWeight: '500',
+  reviewBoxLabel: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+
+  // ---- メタセクション ----
+  metaSection: {
+    paddingHorizontal: Spacing.m,
+    paddingVertical: Spacing.m,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  metaRowBorder: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderTopWidth: 1,
+  },
+  metaLabel: {
+    fontSize: 13,
+  },
+  metaValue: {
+    fontSize: 13,
+    fontWeight: '500' as const,
   },
 
   // ---- 編集モード ----
+  editContainer: {
+    padding: Spacing.m,
+    gap: Spacing.m,
+  },
   editLabel: {
     ...TypeScale.footnote,
     textTransform: 'uppercase',
@@ -460,6 +517,12 @@ const styles = StyleSheet.create({
     ...TypeScale.bodyJA,
     minHeight: 120,
     textAlignVertical: 'top',
+  },
+  editTagCard: {
+    borderRadius: Radius.m,
+    padding: Spacing.m,
+    gap: Spacing.s,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   editTagRow: {
     flexDirection: 'row',
@@ -489,5 +552,12 @@ const styles = StyleSheet.create({
     flex: 1,
     ...TypeScale.body,
     paddingVertical: 0,
+  },
+  editIconBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
   },
 });
