@@ -16,5 +16,7 @@ Pod::Spec.new do |s|
 
   s.dependency 'ExpoModulesCore'
 
+  s.frameworks = 'BackgroundTasks'
+
   s.source_files = '**/*.{h,m,mm,swift,hpp,cpp}'
 end

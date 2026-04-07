@@ -28,6 +28,7 @@ import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { analyzeUrlPipeline } from '../../services/urlAnalysisPipeline';
 import { notifyImportCompleted, notifyImportFailed } from '../../services/notificationService';
+import { subscribeProcessingTaskFired, completeProcessingTask } from 'background-task';
 import { LOCAL_AI_ENABLED } from '../../config/localAI';
 import {
   subscribeDownloadState,
@@ -312,6 +313,44 @@ export function URLImportListScreen({ navigation }: Props) {
     const id = setInterval(loadJobs, POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, [jobs, loadJobs]);
+
+  // ---- BGProcessingTask リスナー ----
+  // iOS が BGProcessingTask を許可したとき（バックグラウンドでの解析継続）
+  useEffect(() => {
+    if (!db || !isReady) return;
+    const unsubscribe = subscribeProcessingTaskFired(async () => {
+      console.log('[URLImportList] BGProcessingTask 発火 → 未完了ジョブを再実行します');
+      const allJobs = await listJobs(db);
+      const stuckJob = allJobs.find(j => j.status === 'processing' || j.status === 'pending');
+
+      if (!stuckJob) {
+        completeProcessingTask(true);
+        return;
+      }
+
+      // pending に戻してから再実行（processlingRef をリセット）
+      await updateJob(db, stuckJob.id, { status: 'pending' });
+      processingRef.current = false;
+      await loadJobs();
+
+      // 少し待ってから executeJob を呼ぶ（loadJobs の state 更新を待つ）
+      setTimeout(async () => {
+        try {
+          await executeJob(db, { ...stuckJob, status: 'pending' }, (current, total) => {
+            setActiveChunkProgress({ jobId: stuckJob.id, current, total });
+          });
+          completeProcessingTask(true);
+        } catch {
+          completeProcessingTask(false);
+        } finally {
+          processingRef.current = false;
+          setActiveChunkProgress(null);
+          loadJobs();
+        }
+      }, 500);
+    });
+    return unsubscribe;
+  }, [db, isReady, loadJobs]);
 
   // ---- 再試行 ----
   const handleRetry = useCallback(async (job: UrlImportJob) => {

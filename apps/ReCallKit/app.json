@@ -71,7 +71,10 @@
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "static"
+            "useFrameworks": "static",
+            "infoPlist": {
+              "BGTaskSchedulerPermittedIdentifiers": ["com.massapp.recallkit.analysis"]
+            }
           }
         }
       ],

@@ -1,6 +1,7 @@
 {
   "platforms": ["ios"],
   "ios": {
-    "modules": ["BackgroundTaskModule"]
+    "modules": ["BackgroundTaskModule"],
+    "appDelegateSubscribers": ["BackgroundTaskAppDelegateSubscriber"]
   }
 }
