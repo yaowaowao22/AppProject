@@ -156,26 +156,16 @@ export function ReviewCard({
       if (exitProgress.value > 0) return;
 
       const absX = Math.abs(e.translationX);
-      const absY = Math.abs(e.translationY);
 
-      if (absX >= absY && absX > SWIPE_THRESHOLD) {
-        // 左右スワイプ: again / perfect
-        const rating: SimpleRating = e.translationX < 0 ? 'again' : 'perfect';
+      if (absX > SWIPE_THRESHOLD) {
+        // 左右スワイプ: forgot / remembered
+        const rating: SimpleRating = e.translationX < 0 ? 'forgot' : 'remembered';
         const targetX = e.translationX < 0 ? -EXIT_DISTANCE : EXIT_DISTANCE;
         exitProgress.value = withTiming(1, { duration: EXIT_DURATION });
         translateX.value = withTiming(targetX, { duration: EXIT_DURATION }, (done) => {
           if (done) runOnJS(callOnSwipeRate)(rating);
         });
         translateY.value = withTiming(0, { duration: EXIT_DURATION });
-      } else if (absY > absX && absY > SWIPE_THRESHOLD) {
-        // 上下スワイプ: good / hard
-        const rating: SimpleRating = e.translationY < 0 ? 'good' : 'hard';
-        const targetY = e.translationY < 0 ? -EXIT_DISTANCE : EXIT_DISTANCE;
-        exitProgress.value = withTiming(1, { duration: EXIT_DURATION });
-        translateX.value = withTiming(0, { duration: EXIT_DURATION });
-        translateY.value = withTiming(targetY, { duration: EXIT_DURATION }, (done) => {
-          if (done) runOnJS(callOnSwipeRate)(rating);
-        });
       } else {
         // 閾値未満: 元の位置に戻す
         translateX.value = withSpring(0);
@@ -239,28 +229,17 @@ export function ReviewCard({
                 </Text>
               </View>
 
-              {/* スワイプ4方向ヒント */}
+              {/* スワイプ2方向ヒント */}
               <View style={styles.swipeHintBlock}>
-                {/* 上: good */}
-                <View style={styles.swipeHintCenter}>
-                  <Text style={[styles.swipeArrow, { color: SystemColors.blue }]}>↑</Text>
-                  <Text style={[styles.swipeLabel, { color: SystemColors.blue }]}>良かった</Text>
-                </View>
-                {/* 左右: again / perfect */}
                 <View style={styles.swipeHintSides}>
                   <View style={styles.swipeHintSideItem}>
                     <Text style={[styles.swipeArrow, { color: SystemColors.red }]}>←</Text>
-                    <Text style={[styles.swipeLabel, { color: SystemColors.red }]}>もう一度</Text>
+                    <Text style={[styles.swipeLabel, { color: SystemColors.red }]}>覚えてない</Text>
                   </View>
                   <View style={styles.swipeHintSideItem}>
-                    <Text style={[styles.swipeLabel, { color: SystemColors.green }]}>簡単</Text>
+                    <Text style={[styles.swipeLabel, { color: SystemColors.green }]}>覚えた！</Text>
                     <Text style={[styles.swipeArrow, { color: SystemColors.green }]}>→</Text>
                   </View>
-                </View>
-                {/* 下: hard */}
-                <View style={styles.swipeHintCenter}>
-                  <Text style={[styles.swipeArrow, { color: SystemColors.orange }]}>↓</Text>
-                  <Text style={[styles.swipeLabel, { color: SystemColors.orange }]}>難しかった</Text>
                 </View>
               </View>
             </Animated.View>

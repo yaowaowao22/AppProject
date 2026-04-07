@@ -1,11 +1,12 @@
 // ============================================================
-// RatingButtons - SM-2 4段階評価ボタン
-// もう一度 / 難しかった / 良かった / 簡単
+// RatingButtons - SM-2 2段階評価ボタン
+// 覚えてない / 覚えた！
 // ============================================================
 
 import React from 'react';
 import { View, Pressable, Text, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { TypeScale } from '../theme/typography';
 import { Spacing, Radius, MinTapTarget } from '../theme/spacing';
@@ -15,44 +16,32 @@ interface RatingButtonsProps {
   onRate: (rating: SimpleRating) => void;
 }
 
-// iOS system colors (mockupStyles.RatingColors 準拠: again=red, hard=amber, good=green, perfect=blue)
 const RATINGS: {
   key: SimpleRating;
   label: string;
   sublabel: string;
   tint: string;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
 }[] = [
   {
-    key: 'again',
-    label: 'もう一度',
-    sublabel: '忘れた',
+    key: 'forgot',
+    label: '覚えてない',
+    sublabel: 'もう一度',
     tint: '#FF3B30',
+    icon: 'close-circle-outline',
   },
   {
-    key: 'hard',
-    label: '難しかった',
-    sublabel: '苦労した',
-    tint: '#FF9F0A',
-  },
-  {
-    key: 'good',
-    label: '良かった',
-    sublabel: '少し迷った',
-    tint: '#30D158',
-  },
-  {
-    key: 'perfect',
-    label: '簡単',
-    sublabel: '完璧',
-    tint: '#0A84FF',
+    key: 'remembered',
+    label: '覚えた！',
+    sublabel: '次へ進む',
+    tint: '#34C759',
+    icon: 'checkmark-circle-outline',
   },
 ];
 
 const HAPTIC_MAP: Record<SimpleRating, () => Promise<void>> = {
-  again:   () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy),
-  hard:    () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),
-  good:    () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
-  perfect: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+  forgot:     () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy),
+  remembered: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
 };
 
 export function RatingButtons({ onRate }: RatingButtonsProps) {
@@ -65,19 +54,21 @@ export function RatingButtons({ onRate }: RatingButtonsProps) {
 
   return (
     <View style={styles.container}>
-      {RATINGS.map(({ key, label, sublabel, tint }) => (
+      {RATINGS.map(({ key, label, sublabel, tint, icon }) => (
         <Pressable
           key={key}
           style={({ pressed }) => [
             styles.button,
             {
-              backgroundColor: pressed ? `${tint}33` : `${tint}26`,
+              backgroundColor: pressed ? `${tint}33` : `${tint}1A`,
+              borderColor: `${tint}40`,
             },
           ]}
           onPress={() => handlePress(key)}
           accessibilityLabel={label}
           accessibilityRole="button"
         >
+          <Ionicons name={icon} size={24} color={tint} />
           <Text style={[styles.label, { color: tint }]}>{label}</Text>
           <Text style={[styles.sublabel, { color: tint }]}>
             {sublabel}
@@ -91,22 +82,23 @@ export function RatingButtons({ onRate }: RatingButtonsProps) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    gap: Spacing.xs,
+    gap: Spacing.m,
     paddingHorizontal: Spacing.m,
   },
   button: {
     flex: 1,
     alignItems: 'center',
-    minHeight: MinTapTarget,
-    borderRadius: Radius.m,
-    paddingTop: 12,
-    paddingHorizontal: Spacing.xs,
-    paddingBottom: 10,
-    gap: 3,
+    minHeight: MinTapTarget + 16,
+    borderRadius: Radius.l,
+    paddingTop: 14,
+    paddingHorizontal: Spacing.s,
+    paddingBottom: 12,
+    gap: 4,
+    borderWidth: 1,
   },
   label: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     textAlign: 'center',
   },
   sublabel: {

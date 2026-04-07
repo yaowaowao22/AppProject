@@ -20,7 +20,7 @@ export interface ReviewSessionRecord {
   endedAt: string | null;
   cardCount: number;
   accuracy: number;
-  ratingCounts: { again: number; hard: number; good: number; perfect: number };
+  ratingCounts: Record<string, number>;
   masterySnapshot: MasterySummary;
 }
 
@@ -441,7 +441,7 @@ export async function recordSessionItem(
 export async function endReviewSession(
   db: SQLiteDatabase,
   sessionId: number,
-  ratingCounts: { again: number; hard: number; good: number; perfect: number },
+  ratingCounts: Record<string, number>,
   accuracy: number
 ): Promise<void> {
   const cardCount =

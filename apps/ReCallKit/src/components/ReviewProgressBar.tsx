@@ -9,19 +9,20 @@ import { TypeScale } from '../theme/typography';
 import { Spacing, Radius } from '../theme/spacing';
 import { SystemColors, RecallBlue } from '../theme/colors';
 
-// 評価ごとのカラー（ReviewScreen と同一定義 / iOS system colors 準拠）
-const RATING_COLORS = {
+// 評価ごとのカラー（2段階評価対応）
+const RATING_COLORS: Record<string, string> = {
+  forgot:     '#FF3B30',
+  remembered: '#34C759',
+  // 旧4段階（過去データ互換）
   again:   '#FF3B30',
   hard:    '#FF9F0A',
   good:    '#30D158',
   perfect: '#0A84FF',
-} as const;
+};
 
-const RATING_LABELS: { key: keyof typeof RATING_COLORS; symbol: string }[] = [
-  { key: 'again',   symbol: '×' },
-  { key: 'hard',    symbol: '△' },
-  { key: 'good',    symbol: '○' },
-  { key: 'perfect', symbol: '◎' },
+const RATING_LABELS: { key: string; symbol: string }[] = [
+  { key: 'forgot',     symbol: '×' },
+  { key: 'remembered', symbol: '○' },
 ];
 
 interface Props {

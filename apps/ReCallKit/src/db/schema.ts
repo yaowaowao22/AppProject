@@ -3,7 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 // ============================================================
 // スキーマバージョン管理
 // ============================================================
-const SCHEMA_VERSION = 11;
+const SCHEMA_VERSION = 12;
 
 const CREATE_TABLES_SQL = `
   -- アイテム（URL・テキスト・メモ）
@@ -269,6 +269,25 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
     `);
     await setSchemaVersion(db, 11);
   }
+  if (currentVersion < 12) {
+    // deep_dives テーブルを深掘りキュー対応に拡張
+    // 既存の deep_dives（v8）は service / prompt のみだったため列を追加
+    const addCols = [
+      ['status',       "TEXT NOT NULL DEFAULT 'done'"],      // queued / processing / done / failed
+      ['question',     'TEXT'],                              // QAの問題文
+      ['answer',       'TEXT'],                              // QAの回答文
+      ['result',       'TEXT'],                              // LLM深掘り結果
+      ['error_msg',    'TEXT'],                              // エラー時メッセージ
+      ['completed_at', 'TEXT'],                              // 完了日時
+    ] as const;
+    for (const [col, def] of addCols) {
+      try {
+        await db.execAsync(`ALTER TABLE deep_dives ADD COLUMN ${col} ${def};`);
+      } catch { /* 冪等: 既に存在する場合は無視 */ }
+    }
+    await db.execAsync(`CREATE INDEX IF NOT EXISTS idx_deep_dives_status ON deep_dives(status);`);
+    await setSchemaVersion(db, 12);
+  }
 }
 
 // ============================================================
@@ -298,8 +317,8 @@ export const DEEP_DIVES_SELECT_ALL_SQL = `
 
 /** deep_divesの1レコードを復元INSERT（重複は無視） */
 export const DEEP_DIVES_RESTORE_INSERT_SQL = `
-  INSERT OR IGNORE INTO deep_dives (id, item_id, service, prompt, created_at)
-  VALUES (?, ?, ?, ?, ?)
+  INSERT OR IGNORE INTO deep_dives (id, item_id, service, prompt, created_at, status, question, answer, result, error_msg, completed_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ` as const;
 
 export { SCHEMA_VERSION };

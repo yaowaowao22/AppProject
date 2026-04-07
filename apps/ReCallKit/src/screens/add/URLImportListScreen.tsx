@@ -327,11 +327,7 @@ export function URLImportListScreen({ navigation }: Props) {
             ) : (
               <Ionicons name={cfg.iconName} size={14} color={statusColor} />
             )}
-            <Text style={[styles.statusLabel, { color: statusColor }]}>
-              {progress
-                ? `第${progress.current + 1}チャンク / 全${progress.total}チャンク`
-                : cfg.label}
-            </Text>
+            <Text style={[styles.statusLabel, { color: statusColor }]}>{cfg.label}</Text>
           </View>
           <Text style={[styles.timeText, { color: colors.labelTertiary }]}>
             {relativeTime(item.created_at)}
@@ -351,6 +347,24 @@ export function URLImportListScreen({ navigation }: Props) {
           <Text style={[styles.urlText, { color: colors.labelTertiary }]} numberOfLines={1}>
             {item.url}
           </Text>
+        )}
+
+        {/* 解析中プログレスバー */}
+        {progress && (
+          <View style={styles.chunkProgressWrap}>
+            <View style={[styles.progressTrack, { backgroundColor: statusColor + '33' }]}>
+              <View style={[
+                styles.progressFill,
+                {
+                  backgroundColor: statusColor,
+                  width: `${Math.round(((progress.current + 1) / progress.total) * 100)}%`,
+                },
+              ]} />
+            </View>
+            <Text style={[styles.chunkLabel, { color: statusColor }]}>
+              {progress.current + 1} / {progress.total}
+            </Text>
+          </View>
         )}
 
         {/* エラー詳細（種別ヒント + 原文メッセージ） */}
@@ -643,6 +657,20 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: Radius.xs,
     width: '45%',
+  },
+
+  // ---- 解析中プログレスバー ----
+  chunkProgressWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.s,
+    marginTop: 2,
+  },
+  chunkLabel: {
+    ...TypeScale.caption2,
+    fontWeight: '600',
+    minWidth: 32,
+    textAlign: 'right',
   },
 
   // ---- インストールカード進捗バー ----

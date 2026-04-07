@@ -659,6 +659,19 @@ async function runCompletion(
 }
 
 // ============================================================
+// Public API: 汎用LLM推論（深掘り等から利用）
+// ============================================================
+
+/**
+ * ローカルLLMでテキスト補完を実行する汎用API。
+ * getLlamaContext + runCompletion をカプセル化し、外部から安全に呼べるようにする。
+ */
+export async function runLocalCompletion(prompt: string, maxTokens = 2000): Promise<string> {
+  const context = await getLlamaContext();
+  return runCompletion(context, prompt, maxTokens);
+}
+
+// ============================================================
 // Public API: URL解析（チャンク分割・複数回推論）
 // ============================================================
 
