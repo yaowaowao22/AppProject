@@ -247,7 +247,7 @@ def main():
 
     try:
         parsed = json.loads(clean)
-        print(f"✅ パース成功")
+        print("[OK] パース成功")
         print(f"  title    : {parsed.get('title')}")
         print(f"  summary  : {parsed.get('summary')}")
         print(f"  category : {parsed.get('category')}")
@@ -259,9 +259,9 @@ def main():
             print(f"  A{i:02d}: {qa_pair.get('answer')}")
             print()
     except json.JSONDecodeError as e:
-        print(f"❌ パース失敗: {e}")
-        print("  → モデルがJSONを正しく出力していない可能性あり")
-        print("  → 量子化レベルを上げる（Q4_K_M）か、プロンプトを調整してください")
+        print(f"[NG] パース失敗: {e}")
+        print("  -> モデルがJSONを正しく出力していない可能性あり")
+        print("  -> 量子化レベルを上げる（Q4_K_M）か、プロンプトを調整してください")
 
 
 if __name__ == "__main__":
