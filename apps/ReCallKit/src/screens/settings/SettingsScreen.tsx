@@ -183,6 +183,9 @@ export function SettingsScreen() {
         setUpdateStatus('ダウンロード中...');
         await Updates.fetchUpdateAsync();
         setUpdateStatus('更新を適用します（再起動）');
+        // GestureHandlerRootView マウント中に reloadAsync() を呼ぶと JSI クラッシュ。
+        // 300ms 待ってレンダリングサイクルを抜けてから reload する。
+        await new Promise<void>(resolve => setTimeout(resolve, 300));
         await Updates.reloadAsync();
       } else {
         setUpdateStatus('最新バージョンです');

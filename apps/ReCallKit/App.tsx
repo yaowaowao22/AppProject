@@ -56,9 +56,12 @@ class ErrorBoundary extends React.Component<
 export default function App() {
   return (
     <ErrorBoundary>
+      {/* OTAWatcher は GestureHandlerRootView の外に置く。
+          GestureHandlerRootView がマウント中に reloadAsync() を呼ぶと
+          JSI C++ ポインタのダングリングでクラッシュするため。 */}
+      <OTAWatcher />
       <GestureHandlerRootView style={styles.root}>
         <SafeAreaProvider>
-          <OTAWatcher />
           <DatabaseProvider>
             <ThemeProvider>
               <PointsProvider>
