@@ -35,7 +35,7 @@ Dominant layers : KOKKAKU (骨格) + MA (間)
 Müller-Brockmann の格子が構造を支え、Kenya Hara の空虚の哲学がその格子の
 あいだに呼吸を吹き込む。
 
-Recall Amber（#C47F17）は、装飾ではなく灯台だ。使いすぎず、消えもせず、
+Recall Amber（#E8A000）は、装飾ではなく灯台だ。使いすぎず、消えもせず、
 ユーザーが「次にすべきこと」を見つける一点として機能する。その周囲の白は
 沈黙であり、強調である。
 
@@ -73,9 +73,9 @@ iOS HIG のセマンティックカラー体系に準拠した、ライトモー
 
 | トークン | 値 | 用途 |
 |---|---|---|
-| `accent` | `#C47F17` | プライマリボタン・アクティブ状態・CTA |
+| `accent` | `#E8A000` | プライマリボタン・アクティブ状態・CTA |
 | `filterBadgeBg` | `rgba(196,127,23,0.12)` | フィルターバッジ背景・選択チップ背景 |
-| `filterBadgeText` | `#C47F17` | フィルターバッジテキスト |
+| `filterBadgeText` | `#E8A000` | フィルターバッジテキスト |
 
 **ルール**: Amber は「灯台」として機能する。1画面に使うアクセント要素は最大3箇所まで。多用すると緊急性・重要性の信号が失われる。
 
@@ -108,7 +108,7 @@ iOS HIG のセマンティックカラー体系に準拠した、ライトモー
 ### 2.1 プライマリボタン
 
 ```
-背景色    : accent (#C47F17)
+背景色    : accent (#E8A000)
 テキスト色 : #FFFFFF
 角丸      : Radius.m = 12pt
 高さ      : 50pt（44pt以上を確保しつつ余裕を持たせる）
@@ -125,8 +125,8 @@ iOS HIG のセマンティックカラー体系に準拠した、ライトモー
 
 ```
 背景色    : transparent
-枠線     : 1.5pt solid accent (#C47F17)
-テキスト色 : accent (#C47F17)
+枠線     : 1.5pt solid accent (#E8A000)
+テキスト色 : accent (#E8A000)
 角丸      : Radius.m = 12pt
 高さ      : 50pt
 水平パディング : Spacing.l = 24pt
@@ -211,7 +211,7 @@ hitSlop    : { top:4, right:4, bottom:4, left:4 } で44pt確保
 ```
 headerStyle.backgroundColor : colors.background (#FFFFFF)
 headerTitleStyle.color      : colors.label (#000000)
-headerTintColor             : colors.accent (#C47F17)
+headerTintColor             : colors.accent (#E8A000)
 headerShadowVisible         : false（下線は navBarBorder で代替）
 ```
 
@@ -241,7 +241,7 @@ headerShadowVisible         : false（下線は navBarBorder で代替）
 ドロワー幅        : 280pt（SidebarLayout.width）
 背景             : rgba(234,234,239,0.92)（和紙の透過感）
 アクティブ背景    : rgba(196,127,23,0.12)（Amber 12%）
-アクティブテキスト : accent (#C47F17)
+アクティブテキスト : accent (#E8A000)
 非アクティブテキスト : rgba(60,60,67,0.60)
 区切り線          : rgba(60,60,67,0.12)
 アイテム高さ      : 48pt（44pt 以上を確保）
