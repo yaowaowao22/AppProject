@@ -558,6 +558,7 @@ export function QAPreviewScreen({ route, navigation }: Props) {
     setSaving(true);
     try {
       const tagId = await upsertCategoryTag(db, catConfig.label);
+      const savedIds: number[] = [];
 
       for (const qa of targets) {
         const result = await db.runAsync(
@@ -566,6 +567,7 @@ export function QAPreviewScreen({ route, navigation }: Props) {
           ['text', qa.question, qa.answer, summary, url, catConfig.label],
         );
         const itemId = result.lastInsertRowId;
+        savedIds.push(itemId);
         await db.runAsync(
           'INSERT OR IGNORE INTO item_tags (item_id, tag_id) VALUES (?, ?)',
           [itemId, tagId],
@@ -580,7 +582,23 @@ export function QAPreviewScreen({ route, navigation }: Props) {
       Alert.alert(
         '保存完了',
         `${targets.length}件のQ&Aをライブラリに追加しました`,
-        [{ text: 'OK', onPress: () => navigation.popToTop() }],
+        [
+          {
+            text: 'ライブラリへ',
+            style: 'cancel',
+            onPress: () => navigation.popToTop(),
+          },
+          {
+            text: '今すぐ復習',
+            onPress: () => {
+              // LibraryStack → Drawer → ReviewStack の ReviewSession へクロスナビゲーション
+              (navigation.getParent() as any)?.navigate('Review', {
+                screen: 'ReviewSession',
+                params: { reviewIds: savedIds },
+              });
+            },
+          },
+        ],
       );
     } catch (err) {
       Alert.alert('エラー', '保存に失敗しました');

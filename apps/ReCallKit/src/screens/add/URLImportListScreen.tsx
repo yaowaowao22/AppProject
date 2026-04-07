@@ -112,14 +112,7 @@ const ERROR_RECOVERY: Record<ErrorType, ErrorRecoveryConfig> = {
   },
 };
 
-// ---- カテゴリタグ upsert ----
-async function upsertTag(db: import('expo-sqlite').SQLiteDatabase, name: string): Promise<number> {
-  await db.runAsync('INSERT OR IGNORE INTO tags (name) VALUES (?)', [name]);
-  const row = await db.getFirstAsync<{ id: number }>('SELECT id FROM tags WHERE name = ?', [name]);
-  return row!.id;
-}
-
-// ---- ジョブ処理本体 ----
+// ---- ジョブ処理本体（解析→result_json保存のみ。DB保存はQAPreviewScreen側で行う） ----
 async function executeJob(
   db: import('expo-sqlite').SQLiteDatabase,
   job: UrlImportJob,
@@ -147,36 +140,11 @@ async function executeJob(
       return;
     }
 
-    const catLabel = result.category?.trim() || 'その他';
-    const tagId = await upsertTag(db, catLabel);
-
-    let firstItemId: number | null = null;
-    for (const qa of result.qa_pairs) {
-      const res = await db.runAsync(
-        `INSERT INTO items
-           (type, title, content, excerpt, source_url, category, created_at, updated_at, archived)
-         VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), 0)`,
-        ['text', qa.question, qa.answer, result.summary, job.url, catLabel],
-      );
-      const itemId = res.lastInsertRowId;
-      if (!firstItemId) firstItemId = itemId;
-
-      await db.runAsync(
-        'INSERT OR IGNORE INTO item_tags (item_id, tag_id) VALUES (?, ?)',
-        [itemId, tagId],
-      );
-      await db.runAsync(
-        `INSERT INTO reviews
-           (item_id, repetitions, easiness_factor, interval_days, next_review_at, quality_history)
-         VALUES (?, 0, 2.5, 0, datetime('now','localtime'), '[]')`,
-        [itemId],
-      );
-    }
-
+    // 解析結果をJSON保存。アイテムのDB保存はQAPreviewScreenで行う
     await updateJob(db, job.id, {
       status: 'done',
       title: result.title || job.url,
-      item_id: firstItemId ?? undefined,
+      result_json: JSON.stringify(result),
     });
   } catch (err) {
     await updateJob(db, job.id, {
@@ -389,7 +357,31 @@ export function URLImportListScreen({ navigation }: Props) {
 
         {/* アクションボタン行 */}
         <View style={styles.cardActions}>
-          {item.status === 'done' && item.item_id != null && (
+          {item.status === 'done' && item.result_json != null && (
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionButton,
+                { borderColor: colors.accent, backgroundColor: colors.accent + '14', opacity: pressed ? 0.7 : 1 },
+              ]}
+              onPress={() => {
+                const result = JSON.parse(item.result_json!);
+                navigation.navigate('QAPreview', {
+                  url: item.url,
+                  title: result.title ?? item.url,
+                  summary: result.summary ?? '',
+                  qa_pairs: result.qa_pairs,
+                  category: result.category ?? 'その他',
+                });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="確認して保存"
+            >
+              <Ionicons name="checkbox-outline" size={14} color={colors.accent} />
+              <Text style={[styles.actionButtonText, { color: colors.accent }]}>確認して保存</Text>
+            </Pressable>
+          )}
+          {/* 旧フロー互換: item_idのみある場合はライブラリで見るを表示 */}
+          {item.status === 'done' && item.result_json == null && item.item_id != null && (
             <Pressable
               style={({ pressed }) => [
                 styles.actionButton,
@@ -453,8 +445,14 @@ export function URLImportListScreen({ navigation }: Props) {
         <Ionicons name="cloud-download-outline" size={48} color={colors.labelTertiary} />
         <Text style={[styles.emptyTitle, { color: colors.label }]}>取り込み履歴なし</Text>
         <Text style={[styles.emptySubtitle, { color: colors.labelSecondary }]}>
-          URL解析画面からURLを取り込むとここに表示されます
+          URLを解析して知識カードを作りましょう
         </Text>
+        <Pressable
+          style={[styles.ctaButton, { backgroundColor: colors.accent }]}
+          onPress={() => navigation.navigate('URLAnalysis', {})}
+        >
+          <Text style={styles.ctaButtonText}>URLを解析する</Text>
+        </Pressable>
       </View>
     );
   }
@@ -578,6 +576,11 @@ const styles = StyleSheet.create({
     ...TypeScale.caption1,
     lineHeight: 16,
   },
+  errorHint: {
+    ...TypeScale.caption1,
+    lineHeight: 16,
+    fontStyle: 'italic' as const,
+  },
   cardActions: {
     flexDirection: 'row',
     gap: Spacing.s,
@@ -644,5 +647,17 @@ const styles = StyleSheet.create({
     ...TypeScale.subheadline,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  ctaButton: {
+    marginTop: Spacing.s,
+    paddingHorizontal: Spacing.l,
+    paddingVertical: 10,
+    borderRadius: Radius.full,
+    alignSelf: 'center',
+  },
+  ctaButtonText: {
+    ...TypeScale.subheadline,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
   },
 });
