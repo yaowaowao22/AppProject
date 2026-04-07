@@ -1,12 +1,13 @@
 // ============================================================
-// HomeScreen - 7セクション統合ダッシュボード
-// ① フィルターバッジ
-// ② ヒーロー CTAカード（empty / due / done 状態適応 + 1タップ復習）
-// ③ StatsRow（streak / 今日完了 / 総アイテム）
-// ④ ShortcutList（2×2クイックアクション）
-// ⑤ 週間アクティビティドットグリッド
-// ⑥ CategoryMasteryBar（カテゴリ別習熟度）
-// ⑦ 最近追加（横スクロール）
+// HomeScreen - 8セクション統合ダッシュボード（モックアップ準拠）
+// [1] ヘッダー（DrawerNavigator が担当）
+// [2] DateRow: 青丸日付 + 曜日 + due件数
+// [3] 復習ヒーロー CTA（empty / due / done 3状態）
+// [4] StatsRow（日連続 / 習得済み / カード）
+// [5] 週間アクティビティ
+// [6] Recently Added（横スクロール）
+// [7] Mastery（カテゴリ別習熟度バー）
+// [8] Shortcuts（URLから / 手動）
 // ============================================================
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
@@ -198,6 +199,16 @@ export function HomeScreen({ navigation }: Props) {
     [categoryStats]
   );
 
+  // 週間サマリー
+  const weekActiveDays = useMemo(
+    () => weeklyActivity.filter((d) => d.count > 0).length,
+    [weeklyActivity]
+  );
+  const weekTotalReviewed = useMemo(
+    () => weeklyActivity.reduce((acc, d) => acc + d.count, 0),
+    [weeklyActivity]
+  );
+
   // ウィジェット同期
   const quizItems = useMemo(
     () =>
@@ -219,7 +230,6 @@ export function HomeScreen({ navigation }: Props) {
   useWidgetData(dueItems.length, streakDays, totalItems, quizItems, peekItems);
 
   // ナビゲーションハンドラー
-  // 1タップ復習: HomeStack 内の ReviewSession に直接遷移（Drawer 経由不要）
   const handleStartReview = () => navigation.navigate('ReviewSession', {});
   const handleStartExtraReview = () => navigation.navigate('ReviewSession', { forceAll: true });
 
@@ -278,11 +288,7 @@ export function HomeScreen({ navigation }: Props) {
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
-      {/* DateRow + 区切り線 */}
-      <DateRow dueCount={filteredDueItems.length} />
-      <View style={[styles.hr, { backgroundColor: colors.separator }]} />
-
-      {/* ① フィルターバッジ */}
+      {/* フィルターバッジ（モック未収録・サイドバーフィルター使用時のみ） */}
       {sidebarFilter && (
         <View style={styles.badgeRow}>
           <View style={[styles.badge, { backgroundColor: colors.accent + '22' }]}>
@@ -301,7 +307,11 @@ export function HomeScreen({ navigation }: Props) {
         </View>
       )}
 
-      {/* ② ヒーローCTAカード（3状態適応） */}
+      {/* ── [2] DateRow ────────────────────────────────── */}
+      <DateRow dueCount={filteredDueItems.length} />
+      <View style={[styles.sep, { backgroundColor: colors.separator }]} />
+
+      {/* ── [3] 復習ヒーローCTA ─────────────────────────── */}
       <View style={[styles.heroCard, { backgroundColor: colors.card }, cardShadow]}>
 
         {/* empty: アイテム未登録 */}
@@ -336,7 +346,6 @@ export function HomeScreen({ navigation }: Props) {
           <>
             {/* イラスト帯 */}
             <View style={styles.reviewIllust}>
-              {/* 装飾カード（回転） */}
               <View style={[styles.illustCard, styles.illustCardBack2]} />
               <View style={[styles.illustCard, styles.illustCardBack1]} />
               <View style={[styles.illustCard, styles.illustCardFront]} />
@@ -344,24 +353,17 @@ export function HomeScreen({ navigation }: Props) {
 
             {/* ボディ */}
             <View style={styles.reviewBody}>
-              {/* タイトル行: "今日の復習 N件" */}
               <Text style={[styles.reviewTitle, { color: colors.label }]}>
                 今日の復習{' '}
                 <Text style={styles.reviewTitleCount}>{filteredDueItems.length}件</Text>
               </Text>
-
-              {/* メタ行: 推定時間 · カテゴリ */}
               <Text style={styles.reviewMeta}>
                 推定 {estimatedMinutes}分
                 {dueCategories.length > 0 && ` · ${dueCategories.join(', ')}`}
               </Text>
-
-              {/* 期限切れ（条件付き） */}
               {overdueCount > 0 && (
                 <Text style={styles.reviewOverdue}>期限切れ {overdueCount}件</Text>
               )}
-
-              {/* CTAボタン */}
               <Pressable
                 style={({ pressed }) => [
                   styles.reviewStartBtn,
@@ -408,108 +410,91 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         )}
       </View>
+      <View style={[styles.sectionGap, { backgroundColor: colors.backgroundSecondary }]} />
 
-      {/* ③ StatsRow */}
-      <StatsRow
-        stats={[
-          { value: streakDays, label: '日連続', color: streakDays > 0 ? SystemColors.orange : undefined },
-          { value: totalMastered, label: '習得済み' },
-          { value: totalItems, label: 'カード' },
-        ]}
-      />
+      {/* ── [4] StatsRow ────────────────────────────────── */}
+      <View style={styles.statsWrap}>
+        <StatsRow
+          withCard={false}
+          stats={[
+            { value: streakDays, label: '日連続', color: streakDays > 0 ? SystemColors.orange : undefined },
+            { value: totalMastered, label: '習得済み' },
+            { value: totalItems, label: 'カード' },
+          ]}
+        />
+      </View>
+      <View style={[styles.sep, { backgroundColor: colors.separator }]} />
 
-      {/* ④ ShortcutList */}
+      {/* ── [5] 週間アクティビティ ─────────────────────── */}
       {totalItems > 0 && (
-        <>
-          <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
-            クイックアクション
-          </Text>
-          <ShortcutList onPress={handleShortcut} reviewDueCount={filteredDueItems.length} />
-        </>
-      )}
+        <View style={[styles.weeklyCard, { backgroundColor: colors.card }, cardShadow]}>
+          <Text style={styles.labelUpper}>This Week</Text>
+          <View style={styles.weeklyRow}>
+            {weeklyActivity.map((day, i) => {
+              const isToday = i === 6;
+              const dotDate = new Date(day.date + 'T00:00:00');
+              const dayLabel = ENG_DAY_LABELS[dotDate.getDay()];
 
-      {/* ⑤ 週間アクティビティ */}
-      {totalItems > 0 && (
-        <>
-          <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
-            This Week
-          </Text>
-          <View style={[styles.weeklyCard, { backgroundColor: colors.card }, cardShadow]}>
-            <View style={styles.weeklyRow}>
-              {weeklyActivity.map((day, i) => {
-                const isToday = i === 6;
-                const dotDate = new Date(day.date + 'T00:00:00');
-                const dayLabel = ENG_DAY_LABELS[dotDate.getDay()];
+              let dotState: 'strong' | 'done' | 'today-ring' | 'none';
+              if (day.count >= 5) dotState = 'strong';
+              else if (day.count >= 1) dotState = 'done';
+              else if (isToday) dotState = 'today-ring';
+              else dotState = 'none';
 
-                let dotState: 'strong' | 'done' | 'today-ring' | 'none';
-                if (day.count >= 5) dotState = 'strong';
-                else if (day.count >= 1) dotState = 'done';
-                else if (isToday) dotState = 'today-ring';
-                else dotState = 'none';
+              const dotBg =
+                dotState === 'strong' ? WEEK_BLUE
+                : dotState === 'done' ? WEEK_BLUE_LIGHT
+                : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
 
-                const dotBg =
-                  dotState === 'strong' ? WEEK_BLUE
-                  : dotState === 'done' ? WEEK_BLUE_LIGHT
-                  : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+              const showCheck = dotState === 'strong' || dotState === 'done';
+              const checkColor = dotState === 'strong' ? '#FFFFFF' : WEEK_BLUE;
 
-                const showCheck = dotState === 'strong' || dotState === 'done';
-                const checkColor = dotState === 'strong' ? '#FFFFFF' : WEEK_BLUE;
-
-                return (
-                  <View key={day.date} style={styles.dayCol}>
-                    <Text
-                      style={[
-                        styles.dayLabel,
-                        { color: isToday ? WEEK_BLUE : colors.labelTertiary },
-                        isToday && { fontWeight: '700' as const },
-                      ]}
-                    >
-                      {isToday ? 'Today' : dayLabel}
-                    </Text>
-                    <View
-                      style={[
-                        styles.dot,
-                        { backgroundColor: dotBg },
-                        dotState === 'today-ring' && {
-                          backgroundColor: 'transparent',
-                          borderWidth: 2,
-                          borderColor: WEEK_BLUE,
-                        },
-                      ]}
-                    >
-                      {showCheck && (
-                        <Ionicons name="checkmark" size={16} color={checkColor} />
-                      )}
-                    </View>
+              return (
+                <View key={day.date} style={styles.dayCol}>
+                  <Text
+                    style={[
+                      styles.dayLabel,
+                      { color: isToday ? WEEK_BLUE : colors.labelTertiary },
+                      isToday && { fontWeight: '700' as const },
+                    ]}
+                  >
+                    {isToday ? 'Today' : dayLabel}
+                  </Text>
+                  <View
+                    style={[
+                      styles.dot,
+                      { backgroundColor: dotBg },
+                      dotState === 'today-ring' && {
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        borderColor: WEEK_BLUE,
+                      },
+                    ]}
+                  >
+                    {showCheck && (
+                      <Ionicons name="checkmark" size={16} color={checkColor} />
+                    )}
                   </View>
-                );
-              })}
-            </View>
-            {/* 週サマリー行 */}
-            <View style={[styles.weekSummary, { borderTopColor: colors.separator }]}>
-              <Text style={[styles.weekSummaryText, { color: colors.labelSecondary }]}>
-                今週{' '}
-                <Text style={{ fontWeight: '700' as const }}>{weekActiveDays} / 7日</Text>
-              </Text>
-              <Text style={[styles.weekSummaryText, { color: colors.labelSecondary }]}>
-                {weekTotalReviewed}枚 復習済み
-              </Text>
-            </View>
+                </View>
+              );
+            })}
           </View>
-        </>
+          <View style={[styles.weekSummary, { borderTopColor: colors.separator }]}>
+            <Text style={[styles.weekSummaryText, { color: colors.labelSecondary }]}>
+              今週{' '}
+              <Text style={{ fontWeight: '700' as const }}>{weekActiveDays} / 7日</Text>
+            </Text>
+            <Text style={[styles.weekSummaryText, { color: colors.labelSecondary }]}>
+              {weekTotalReviewed}枚 復習済み
+            </Text>
+          </View>
+        </View>
+      )}
+      {totalItems > 0 && (
+        <View style={[styles.sectionGap, { backgroundColor: colors.backgroundSecondary }]} />
       )}
 
-      {/* ⑥ CategoryMasteryBar */}
-      {categoryStats.length > 0 && (
-        <>
-          <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
-            カテゴリ別習熟度
-          </Text>
-          <CategoryMasteryBar stats={categoryStats} onPressCategory={handlePressCategory} />
-        </>
-      )}
-
-      {/* ⑦ 最近追加 */}
+      {/* ── [6] Recently Added ──────────────────────────── */}
       {recentItems.length > 0 && (
         <>
           <Text style={styles.labelUpper}>Recently Added</Text>
@@ -532,23 +517,18 @@ export function HomeScreen({ navigation }: Props) {
                   onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}
                   accessibilityRole="button"
                 >
-                  {/* カテゴリ行: ドット + カテゴリ名 */}
                   <View style={styles.recentCatRow}>
                     <View style={[styles.recentCatDot, { backgroundColor: catColor }]} />
                     <Text style={styles.recentCatName} numberOfLines={1}>
                       {item.category ?? '未分類'}
                     </Text>
                   </View>
-
-                  {/* 質問テキスト */}
                   <Text
                     style={[styles.recentCardTitle, { color: colors.label }]}
                     numberOfLines={3}
                   >
                     {item.title}
                   </Text>
-
-                  {/* 相対時刻 */}
                   <Text style={styles.recentCardTime}>{relativeTime}</Text>
                 </Pressable>
               );
@@ -556,6 +536,23 @@ export function HomeScreen({ navigation }: Props) {
           </ScrollView>
         </>
       )}
+      {/* sep（Recently Added がある場合は marginTop:20） */}
+      <View
+        style={[
+          styles.sep,
+          { backgroundColor: colors.separator },
+          recentItems.length > 0 && { marginTop: 20 },
+        ]}
+      />
+
+      {/* ── [7] Mastery ─────────────────────────────────── */}
+      {categoryStats.length > 0 && (
+        <CategoryMasteryBar stats={categoryStats} onPressCategory={handlePressCategory} />
+      )}
+      <View style={[styles.sep, { backgroundColor: colors.separator }]} />
+
+      {/* ── [8] Shortcuts ───────────────────────────────── */}
+      <ShortcutList onPress={handleShortcut} reviewDueCount={filteredDueItems.length} />
     </ScrollView>
   );
 }
@@ -567,15 +564,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   container: {
-    padding: Spacing.m,
+    paddingTop: Spacing.m,
+    paddingHorizontal: Spacing.m,
     paddingBottom: Spacing.xxl,
-    gap: Spacing.m,
   },
 
-  // ① フィルターバッジ
+  // フィルターバッジ
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: Spacing.s,
   },
   badge: {
     flexDirection: 'row',
@@ -598,16 +596,24 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 
-  // hr 区切り線
-  hr: {
+  // ── 区切り線 ──────────────────────────────────────────
+  // sep: container の paddingHorizontal:16 があるので marginHorizontal 不要
+  // → 画面端から16pxの位置に自動的に配置される
+  sep: {
     height: 1,
-    marginHorizontal: 16,
   },
 
-  // ② ヒーローカード
+  // section-gap: full-screen 幅（container の padding を打ち消す）
+  sectionGap: {
+    height: 8,
+    marginHorizontal: -Spacing.m,
+  },
+
+  // ── [3] ヒーローカード ────────────────────────────────
   heroCard: {
     borderRadius: Radius.l,
     overflow: 'hidden',
+    marginTop: Spacing.s,
   },
   heroBody: {
     padding: Spacing.l,
@@ -760,24 +766,22 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
 
-  // セクションタイトル
-  sectionTitle: {
-    ...TypeScale.footnote,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginLeft: Spacing.xs,
-    marginBottom: -Spacing.xs,
+  // ── [4] StatsRow ラッパー ─────────────────────────────
+  statsWrap: {
+    paddingVertical: Spacing.m,
   },
 
-  // ⑤ 週間アクティビティ
+  // ── [5] 週間アクティビティ ────────────────────────────
   weeklyCard: {
     borderRadius: Radius.l,
     padding: Spacing.m,
+    marginTop: Spacing.s,
   },
   weeklyRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    marginTop: Spacing.s,
   },
   dayCol: {
     alignItems: 'center',
@@ -791,22 +795,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   dayLabel: {
     fontSize: 11,
     lineHeight: 13,
   },
-
-  // label-upper 共通スタイル
-  labelUpper: {
-    fontSize: 11,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.8,
-    color: '#9AA0A6',
-    marginLeft: Spacing.xs,
-    marginBottom: -Spacing.xs,
-  },
-
   weekSummary: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -820,7 +812,18 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 
-  // ⑦ 最近追加
+  // label-upper 共通スタイル
+  labelUpper: {
+    fontSize: 11,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.8,
+    color: '#9AA0A6',
+    marginTop: Spacing.m,
+    marginBottom: Spacing.s,
+    marginLeft: Spacing.xs,
+  },
+
+  // ── [6] Recently Added ────────────────────────────────
   recentScroll: {
     marginHorizontal: -Spacing.m,
   },
