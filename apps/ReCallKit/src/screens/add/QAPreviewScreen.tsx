@@ -452,7 +452,9 @@ export function QAPreviewScreen({ route, navigation }: Props) {
   const [showSummary, setShowSummary] = useState(false);
 
   // ── リストモード状態 ──
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
+  const [expandedIndex, setExpandedIndex] = useState<Set<number>>(
+    () => new Set(rawPairs.map((_, i) => i)),
+  );
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   // ── 編集モーダル（両モード共通） ──
@@ -514,11 +516,15 @@ export function QAPreviewScreen({ route, navigation }: Props) {
 
   const toggleExpand = useCallback((index: number) => {
     if (editingIndex === index) return;
-    setExpandedIndex((prev) => (prev === index ? null : index));
+    setExpandedIndex((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index); else next.add(index);
+      return next;
+    });
   }, [editingIndex]);
 
   const startEdit = useCallback((index: number) => {
-    setExpandedIndex(index);
+    setExpandedIndex((prev) => new Set([...prev, index]));
     setEditingIndex(index);
   }, []);
 
@@ -950,7 +956,7 @@ export function QAPreviewScreen({ route, navigation }: Props) {
 
       {/* ─── Q&Aカード一覧 ─── */}
       {editedQAs.map((qa, index) => {
-        const isExpanded = expandedIndex === index;
+        const isExpanded = expandedIndex.has(index);
         const isEditing = editingIndex === index;
         const isSelected = selected[index];
 
