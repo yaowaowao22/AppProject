@@ -23,6 +23,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../theme/ThemeContext';
 import { TypeScale } from '../theme/typography';
 import { Spacing, Radius } from '../theme/spacing';
+import { SystemColors } from '../theme/colors';
 import type { SimpleRating } from '../sm2/algorithm';
 
 interface ReviewCardProps {
@@ -242,24 +243,24 @@ export function ReviewCard({
               <View style={styles.swipeHintBlock}>
                 {/* 上: good */}
                 <View style={styles.swipeHintCenter}>
-                  <Text style={[styles.swipeArrow, { color: '#007AFF' }]}>↑</Text>
-                  <Text style={[styles.swipeLabel, { color: '#007AFF' }]}>良かった</Text>
+                  <Text style={[styles.swipeArrow, { color: SystemColors.blue }]}>↑</Text>
+                  <Text style={[styles.swipeLabel, { color: SystemColors.blue }]}>良かった</Text>
                 </View>
                 {/* 左右: again / perfect */}
                 <View style={styles.swipeHintSides}>
                   <View style={styles.swipeHintSideItem}>
-                    <Text style={[styles.swipeArrow, { color: '#FF3B30' }]}>←</Text>
-                    <Text style={[styles.swipeLabel, { color: '#FF3B30' }]}>もう一度</Text>
+                    <Text style={[styles.swipeArrow, { color: SystemColors.red }]}>←</Text>
+                    <Text style={[styles.swipeLabel, { color: SystemColors.red }]}>もう一度</Text>
                   </View>
                   <View style={styles.swipeHintSideItem}>
-                    <Text style={[styles.swipeLabel, { color: '#34C759' }]}>簡単</Text>
-                    <Text style={[styles.swipeArrow, { color: '#34C759' }]}>→</Text>
+                    <Text style={[styles.swipeLabel, { color: SystemColors.green }]}>簡単</Text>
+                    <Text style={[styles.swipeArrow, { color: SystemColors.green }]}>→</Text>
                   </View>
                 </View>
                 {/* 下: hard */}
                 <View style={styles.swipeHintCenter}>
-                  <Text style={[styles.swipeArrow, { color: '#FF9500' }]}>↓</Text>
-                  <Text style={[styles.swipeLabel, { color: '#FF9500' }]}>難しかった</Text>
+                  <Text style={[styles.swipeArrow, { color: SystemColors.orange }]}>↓</Text>
+                  <Text style={[styles.swipeLabel, { color: SystemColors.orange }]}>難しかった</Text>
                 </View>
               </View>
             </Animated.View>

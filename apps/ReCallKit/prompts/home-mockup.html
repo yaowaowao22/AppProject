@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ReCallKit — Prototype</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Noto+Sans+JP:wght@400;500&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#FFF;--text-1:#202124;--text-2:#5F6368;--text-3:#9AA0A6;
+  --accent:#E8A000;--blue:#1A73E8;--green:#1E8E3E;--red:#D93025;--orange:#F29900;
+  --border:#DADCE0;--tint:#F8F9FA;--surface:#FFF;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Google Sans','Noto Sans JP',-apple-system,sans-serif;background:var(--bg);color:var(--text-1);max-width:430px;margin:0 auto;-webkit-font-smoothing:antialiased;position:relative;height:100%}
+
+/* ── Screen System ── */
+.screen{position:absolute;inset:0;background:var(--bg);overflow-y:auto;overflow-x:hidden;display:none;flex-direction:column;-webkit-overflow-scrolling:touch}
+.screen.active{display:flex}
+.screen-content{flex:1;padding-bottom:100px}
+
+/* ── Shared Header ── */
+.hdr{display:flex;align-items:center;padding:14px 16px;gap:16px;position:sticky;top:0;background:var(--bg);z-index:50}
+.hdr-title{font-size:22px;font-weight:400;flex:1}
+.hdr-back,.hdr-menu{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;border:none;background:none}
+.hdr-back:active,.hdr-menu:active{background:var(--tint)}
+.hdr-actions{display:flex;gap:4px;align-items:center}
+
+/* ── Drawer ── */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s}
+.drawer-overlay.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;left:-280px;width:280px;height:100%;background:var(--bg);z-index:201;transition:left .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;border-right:1px solid var(--border)}
+.drawer.open{left:0}
+.drawer-header{padding:24px 20px 16px;border-bottom:1px solid var(--border)}
+.drawer-header h2{font-size:20px;font-weight:500}
+.drawer-header p{font-size:12px;color:var(--text-3);margin-top:4px}
+.drawer-nav{padding:8px 0}
+.drawer-item{display:flex;align-items:center;gap:16px;padding:12px 20px;cursor:pointer;font-size:14px;color:var(--text-2);border-radius:0 24px 24px 0;margin-right:12px;transition:background .15s}
+.drawer-item:active,.drawer-item.active{background:#E8F0FE;color:var(--blue)}
+.drawer-item.active{font-weight:500}
+.drawer-item svg{width:20px;height:20px;flex-shrink:0}
+.drawer-section{padding:8px 20px 4px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);border-top:1px solid var(--border);margin-top:8px;padding-top:16px}
+.drawer-tag{display:flex;align-items:center;gap:12px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--text-2)}
+.drawer-tag-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.drawer-tag-count{margin-left:auto;font-size:11px;color:var(--text-3)}
+
+/* ── Cards ── */
+.card-border{border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.section-gap{height:8px;background:var(--tint);flex-shrink:0}
+.sep{height:1px;background:var(--border);margin:0 16px}
+.label-upper{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3)}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500}
+.pill-blue{background:#E8F0FE;color:var(--blue)}
+.pill-green{background:#E6F4EA;color:var(--green)}
+.pill-red{background:#FCE8E6;color:var(--red)}
+.pill-amber{background:#FEF7E0;color:#B06000}
+.pill-gray{background:var(--tint);color:var(--text-2)}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 24px;border:none;border-radius:20px;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;letter-spacing:.1px}
+.btn:active{opacity:.85}
+.btn-primary{background:var(--blue);color:#FFF}
+.btn-outline{background:none;border:1px solid var(--border);color:var(--text-1)}
+.btn-danger{background:none;border:1px solid var(--red);color:var(--red)}
+.btn-block{width:100%;justify-content:center}
+.btn-lg{padding:14px 28px;font-size:15px}
+
+/* ── Inputs ── */
+.input-group{display:flex;align-items:center;gap:10px;padding:12px 16px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
+.input-group:focus-within{border-color:var(--blue)}
+.input-group input{flex:1;border:none;outline:none;font-size:15px;font-family:inherit;background:none;color:var(--text-1)}
+.input-group input::placeholder{color:var(--text-3)}
+.input-group svg{width:20px;height:20px;color:var(--text-3);flex-shrink:0}
+textarea.input-area{width:100%;border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:15px;font-family:inherit;resize:none;outline:none;background:var(--bg);color:var(--text-1);line-height:1.6}
+textarea.input-area:focus{border-color:var(--blue)}
+
+/* ── List items ── */
+.list-item{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--tint)}
+.list-item:active{background:var(--tint)}
+.list-item:last-child{border-bottom:none}
+.list-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
+.list-body{flex:1;min-width:0}
+.list-title{font-size:14px;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-sub{font-size:12px;color:var(--text-3);margin-top:2px}
+.list-chevron{color:var(--text-3)}
+
+/* ── Empty State ── */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;text-align:center}
+.empty svg{width:48px;height:48px;color:var(--text-3);margin-bottom:16px}
+.empty-title{font-size:16px;color:var(--text-2);margin-bottom:6px}
+.empty-sub{font-size:13px;color:var(--text-3);line-height:1.5}
+
+/* ── Home Specifics ── */
+.today{padding:4px 16px 20px;display:flex;align-items:center;gap:14px}
+.today-circle{width:46px;height:46px;border-radius:50%;background:var(--blue);color:#FFF;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:500}
+.today-weekday{font-size:12px;font-weight:500;color:var(--blue);text-transform:uppercase;letter-spacing:.3px}
+.today-sub{font-size:14px;color:var(--text-2);margin-top:1px}
+.review-illust{height:140px;background:linear-gradient(160deg,#FFF8E1,#FFECB3 40%,#FFE082);position:relative;overflow:hidden}
+.review-body{padding:20px 16px 24px}
+.review-title{font-size:16px;font-weight:400}.review-title strong{font-weight:500}
+.review-meta{font-size:13px;color:var(--text-2);margin:2px 0}
+.overdue{font-size:13px;color:var(--red);font-weight:500}
+.stats{display:flex;padding:0 16px 20px}
+.stat{flex:1;text-align:center;position:relative}
+.stat+.stat::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:1px;background:var(--border)}
+.stat-val{font-size:22px;font-weight:500}.stat-lbl{font-size:11px;color:var(--text-3);margin-top:2px}
+.week{padding:20px 16px}
+.week-grid{display:flex;gap:8px;margin-bottom:10px}
+.week-day{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.week-day-lbl{font-size:11px;color:var(--text-3)}.week-day-lbl.today-l{color:var(--blue);font-weight:500}
+.wdot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.wdot.done{background:#E8F0FE}.wdot.strong{background:var(--blue)}
+.wdot.today-ring{border:2px solid var(--blue)}
+.wdot svg{width:14px;height:14px}
+.week-sum{display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border);font-size:13px;color:var(--text-2)}
+.week-sum strong{font-weight:500;color:var(--text-1)}
+.recent{padding:20px 0 0 16px}
+.recent-scroll{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+.recent-scroll::-webkit-scrollbar{display:none}
+.rcard{flex-shrink:0;width:220px;padding:16px;border:1px solid var(--border);border-radius:12px;cursor:pointer}
+.rcard:last-child{margin-right:16px}
+.rcard-cat{font-size:11px;font-weight:500;color:var(--text-3);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.rcard-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.rcard-q{font-size:14px;color:var(--text-1);line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.rcard-time{font-size:11px;color:var(--text-3);margin-top:10px}
+.mastery{padding:20px 16px}
+.mastery-row{display:flex;align-items:center;padding:10px 0;gap:12px}
+.mastery-row+.mastery-row{border-top:1px solid var(--tint)}
+.mastery-name{flex:1;font-size:14px}.mastery-bar{width:80px;height:4px;background:var(--tint);border-radius:2px;overflow:hidden}
+.mastery-fill{height:100%;border-radius:2px}.mastery-pct{font-size:13px;color:var(--text-2);min-width:32px;text-align:right;font-weight:500}
+.shortcuts{padding:8px 16px 20px}
+.shortcut{display:flex;align-items:center;gap:16px;padding:14px 0;cursor:pointer;border-bottom:1px solid var(--tint)}
+.shortcut:last-child{border-bottom:none}
+.shortcut svg{width:20px;height:20px;color:var(--text-2);flex-shrink:0}
+.shortcut-text{font-size:14px}.shortcut-sub{font-size:12px;color:var(--text-3)}
+.shortcut-chev{margin-left:auto;color:var(--text-3)}
+
+/* ── Library ── */
+.lib-filters{display:flex;gap:8px;padding:8px 16px;overflow-x:auto;scrollbar-width:none}
+.lib-filters::-webkit-scrollbar{display:none}
+.filter-chip{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;border:1px solid var(--border);color:var(--text-2);cursor:pointer;white-space:nowrap;flex-shrink:0}
+.filter-chip.active{background:var(--blue);color:#FFF;border-color:var(--blue)}
+.lib-card{padding:16px;border-bottom:1px solid var(--tint)}
+.lib-card:active{background:var(--tint)}
+.lib-card-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.lib-card-title{font-size:15px;font-weight:400;color:var(--text-1);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lib-card-meta{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--text-3)}
+
+/* ── Review Session ── */
+.review-screen{background:var(--tint)}
+.progress-bar-wrap{padding:12px 16px;display:flex;align-items:center;gap:12px}
+.progress-track{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--blue);border-radius:2px;transition:width .3s}
+.progress-count{font-size:13px;color:var(--text-2);min-width:40px;text-align:right}
+.flip-container{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 16px;perspective:1200px}
+.flip-card{width:100%;max-width:360px;height:300px;position:relative;cursor:pointer;transform-style:preserve-3d;transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.flip-card.flipped{transform:rotateY(180deg)}
+.flip-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;background:var(--bg);border:1px solid var(--border);display:flex;flex-direction:column;padding:28px 24px}
+.flip-back{transform:rotateY(180deg)}
+.flip-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--text-3);margin-bottom:12px}
+.flip-text{font-size:16px;line-height:1.6;color:var(--text-1);flex:1}
+.flip-hint{text-align:center;font-size:12px;color:var(--text-3);margin-top:auto;padding-top:12px}
+.flip-sep{height:1px;background:var(--border);margin:14px 0}
+.rating-area{padding:16px;display:none;gap:8px}
+.rating-area.visible{display:flex}
+.rate-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px;border:1px solid var(--border);border-radius:12px;background:var(--bg);cursor:pointer;font-family:inherit}
+.rate-btn:active{opacity:.8}
+.rate-dot{width:6px;height:6px;border-radius:50%}
+.rate-label{font-size:12px;font-weight:500;color:var(--text-1)}
+.rate-sub{font-size:10px;color:var(--text-3)}
+.review-complete{display:none;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;flex:1}
+.review-complete.visible{display:flex}
+.complete-emoji{font-size:48px;margin-bottom:16px}
+.complete-title{font-size:20px;font-weight:500;margin-bottom:8px}
+.complete-count{font-size:14px;color:var(--text-2);margin-bottom:24px}
+.complete-stats{display:flex;gap:16px;margin-bottom:32px}
+.complete-stat{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-2)}
+
+/* ── URL Analysis ── */
+.url-screen-body{padding:24px 16px;flex:1;display:flex;flex-direction:column}
+.url-desc{font-size:13px;color:var(--text-2);line-height:1.6;margin-top:12px}
+.url-bottom{padding:16px;margin-top:auto}
+
+/* ── URL Import List ── */
+.job-card{padding:16px;border-bottom:1px solid var(--tint)}
+.job-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.job-title{font-size:14px;color:var(--text-1);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.job-url{font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.job-actions{display:flex;gap:8px;margin-top:12px}
+
+/* ── QA Preview ── */
+.qa-mode-toggle{display:flex;padding:0 16px 12px;gap:8px}
+.qa-mode-btn{padding:6px 16px;border-radius:20px;font-size:13px;border:1px solid var(--border);background:none;color:var(--text-2);cursor:pointer;font-family:inherit}
+.qa-mode-btn.active{background:var(--blue);color:#FFF;border-color:var(--blue)}
+.qa-card-view{padding:0 16px}
+.qa-item{border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.qa-q{font-size:14px;font-weight:500;color:var(--text-1);margin-bottom:8px}
+.qa-a{font-size:13px;color:var(--text-2);line-height:1.6}
+.qa-bottom{padding:16px;position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border)}
+
+/* ── Item Detail ── */
+.detail-hero{padding:24px 16px 16px}
+.detail-title{font-size:22px;font-weight:500;line-height:1.4;margin-bottom:8px}
+.detail-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.detail-section{padding:16px}
+.detail-section-title{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);margin-bottom:10px}
+.detail-content{font-size:15px;line-height:1.7;color:var(--text-1)}
+.detail-meta{padding:16px;background:var(--tint)}
+.detail-meta-row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px}
+.detail-meta-row+.detail-meta-row{border-top:1px solid var(--border)}
+.detail-meta-label{color:var(--text-3)}.detail-meta-value{color:var(--text-1);font-weight:500}
+
+/* ── Settings ── */
+.setting-group{padding:0 16px}
+.setting-group-title{padding:20px 0 8px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3)}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--tint)}
+.setting-row:last-child{border-bottom:none}
+.setting-label{font-size:14px;color:var(--text-1)}
+.setting-value{font-size:14px;color:var(--text-3)}
+.toggle{width:48px;height:28px;border-radius:14px;background:var(--border);position:relative;cursor:pointer;transition:background .2s}
+.toggle.on{background:var(--blue)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#FFF;box-shadow:0 1px 3px rgba(0,0,0,.15);transition:left .2s}
+.toggle.on::after{left:22px}
+.stepper{display:flex;align-items:center;gap:12px}
+.stepper-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-2)}
+.stepper-val{font-size:16px;font-weight:500;min-width:20px;text-align:center}
+
+/* ── Journal ── */
+.journal-date{padding:16px 16px 8px;font-size:13px;font-weight:500;color:var(--text-2);position:sticky;top:56px;background:var(--bg);z-index:5}
+.journal-entry{padding:12px 16px;border-bottom:1px solid var(--tint)}
+.journal-entry-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.journal-item-title{font-size:13px;font-weight:500;color:var(--blue)}
+.journal-time{font-size:11px;color:var(--text-3)}
+.journal-note{font-size:14px;color:var(--text-1);line-height:1.6}
+
+/* ── History ── */
+.history-stats{padding:20px 16px;display:flex;align-items:center;gap:20px}
+.streak-ring{position:relative;width:80px;height:80px;flex-shrink:0}
+.streak-ring svg{width:80px;height:80px}
+.streak-ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.streak-ring-num{font-size:20px;font-weight:500;color:var(--text-1)}
+.streak-ring-lbl{font-size:10px;color:var(--text-3)}
+.history-stat-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.history-stat-box{padding:10px;border:1px solid var(--border);border-radius:10px;text-align:center}
+.history-stat-val{font-size:18px;font-weight:500;color:var(--text-1)}
+.history-stat-lbl{font-size:11px;color:var(--text-3);margin-top:2px}
+.history-item{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--tint)}
+.history-badge{padding:2px 8px;border-radius:6px;font-size:10px;font-weight:500;align-self:flex-start;margin-top:2px;flex-shrink:0}
+.history-body{flex:1;min-width:0}
+.history-title{font-size:14px;color:var(--blue);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-time{font-size:11px;color:var(--text-3)}
+.history-preview{font-size:13px;color:var(--text-2);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ── ReviewSelect ── */
+.rsel-card{margin:0 16px 12px;border:1px solid var(--border);border-radius:12px;padding:20px;cursor:pointer}
+.rsel-card:active{background:var(--tint)}
+.rsel-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.rsel-title{font-size:16px;font-weight:500;margin-bottom:4px}
+.rsel-sub{font-size:13px;color:var(--text-2)}
+.rsel-group{margin:0 16px 8px;border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer}
+.rsel-group:active{background:var(--tint)}
+.rsel-group-bar{width:3px;height:36px;border-radius:2px;flex-shrink:0}
+.rsel-group-body{flex:1}
+.rsel-group-name{font-size:14px;font-weight:500}
+.rsel-group-desc{font-size:12px;color:var(--text-3);margin-top:2px}
+.rsel-group-count{font-size:12px;font-weight:500;color:var(--blue);background:#E8F0FE;padding:2px 8px;border-radius:10px}
+
+/* ── FAB ── */
+.fab{position:fixed;bottom:24px;right:20px;width:56px;height:56px;border-radius:16px;background:var(--bg);border:none;box-shadow:0 1px 3px rgba(0,0,0,.12),0 4px 12px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10}
+.fab:active{box-shadow:0 1px 2px rgba(0,0,0,.15),0 2px 6px rgba(0,0,0,.1)}
+
+/* ── Animations ── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fade{animation:fadeIn .3s ease-out both}
+.d1{animation-delay:.03s}.d2{animation-delay:.06s}.d3{animation-delay:.09s}.d4{animation-delay:.12s}.d5{animation-delay:.15s}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════ DRAWER ════════════════════════ -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <h2>ReCallKit</h2>
+    <p>124 cards · 31% mastered</p>
+  </div>
+  <div class="drawer-nav">
+    <div class="drawer-item active" onclick="nav('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" rx="2" width="18" height="18"/><line x1="3" y1="10" x2="21" y2="10"/></svg>今日</div>
+    <div class="drawer-item" onclick="nav('library')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>ライブラリ</div>
+    <div class="drawer-item" onclick="nav('reviewSelect')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>復習</div>
+    <div class="drawer-item" onclick="nav('journal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>ジャーナル</div>
+    <div class="drawer-item" onclick="nav('history')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>学習履歴</div>
+    <div class="drawer-item" onclick="nav('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>設定</div>
+  </div>
+  <div class="drawer-section">Tags</div>
+  <div class="drawer-tag"><span class="drawer-tag-dot" style="background:#1A73E8"></span>Programming<span class="drawer-tag-count">52</span></div>
+  <div class="drawer-tag"><span class="drawer-tag-dot" style="background:#E8A000"></span>Design<span class="drawer-tag-count">38</span></div>
+  <div class="drawer-tag"><span class="drawer-tag-dot" style="background:#1E8E3E"></span>Infrastructure<span class="drawer-tag-count">34</span></div>
+  <div class="drawer-section">Collections</div>
+  <div class="drawer-tag"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>React Deep Dive<span class="drawer-tag-count">12</span></div>
+  <div class="drawer-tag"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>AWS Certification<span class="drawer-tag-count">8</span></div>
+</div>
+
+<!-- ════════════════════════ HOME ════════════════════════ -->
+<div class="screen active" data-screen="home">
+  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">ReCallKit</div></div>
+  <div class="screen-content">
+    <div class="today"><div class="today-circle">7</div><div><div class="today-weekday">Mon</div><div class="today-sub">8件の復習が待っています</div></div></div>
+    <div style="height:1px;background:var(--border);margin:0 16px"></div>
+    <div class="review-illust">
+      <svg viewBox="0 0 430 140" fill="none"><rect x="80" y="42" width="40" height="52" rx="6" fill="white" opacity=".9" transform="rotate(-8 80 42)"/><rect x="84" y="52" width="24" height="3" rx="1.5" fill="#1A73E8" opacity=".4" transform="rotate(-8 84 52)"/><rect x="110" y="38" width="40" height="52" rx="6" fill="white" transform="rotate(2 110 38)"/><rect x="116" y="48" width="24" height="3" rx="1.5" fill="#E8A000" opacity=".6" transform="rotate(2 116 48)"/><rect x="140" y="44" width="40" height="52" rx="6" fill="white" opacity=".85" transform="rotate(10 140 44)"/><rect x="148" y="54" width="24" height="3" rx="1.5" fill="#1E8E3E" opacity=".5" transform="rotate(10 148 54)"/><circle cx="300" cy="58" r="14" fill="#FFB74D" opacity=".7"/><rect x="288" y="74" width="24" height="32" rx="8" fill="#64B5F6" opacity=".6"/><circle cx="200" cy="30" r="2" fill="#E8A000" opacity=".4"/><circle cx="240" cy="50" r="1.5" fill="#1A73E8" opacity=".3"/><circle cx="350" cy="40" r="2.5" fill="#1E8E3E" opacity=".3"/></svg>
+    </div>
+    <div class="review-body">
+      <div class="review-title">今日の復習 <strong>8件</strong></div>
+      <div class="review-meta">推定 4分 · Programming, Design</div>
+      <div class="overdue">期限切れ 3件</div>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="nav('reviewSession')"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>復習を始める</button>
+    </div>
+    <div class="section-gap"></div>
+    <div class="stats"><div class="stat"><div class="stat-val">12</div><div class="stat-lbl">日連続</div></div><div class="stat"><div class="stat-val">38</div><div class="stat-lbl">習得済み</div></div><div class="stat"><div class="stat-val">124</div><div class="stat-lbl">カード</div></div></div>
+    <div class="sep"></div>
+    <div class="week">
+      <div class="label-upper" style="margin-bottom:14px">This Week</div>
+      <div class="week-grid">
+        <div class="week-day"><div class="week-day-lbl">Mon</div><div class="wdot strong"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+        <div class="week-day"><div class="week-day-lbl">Tue</div><div class="wdot done"><svg viewBox="0 0 24 24" fill="none" stroke="#1A73E8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+        <div class="week-day"><div class="week-day-lbl">Wed</div><div class="wdot strong"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+        <div class="week-day"><div class="week-day-lbl">Thu</div><div class="wdot"></div></div>
+        <div class="week-day"><div class="week-day-lbl">Fri</div><div class="wdot done"><svg viewBox="0 0 24 24" fill="none" stroke="#1A73E8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+        <div class="week-day"><div class="week-day-lbl">Sat</div><div class="wdot strong"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+        <div class="week-day"><div class="week-day-lbl today-l">Today</div><div class="wdot today-ring"></div></div>
+      </div>
+      <div class="week-sum"><span>今週 <strong>5 / 7日</strong></span><span>42枚 復習済み</span></div>
+    </div>
+    <div class="section-gap"></div>
+    <div class="recent">
+      <div class="label-upper" style="margin-bottom:14px">Recently Added</div>
+      <div class="recent-scroll">
+        <div class="rcard" onclick="nav('itemDetail')"><div class="rcard-cat"><span class="rcard-dot" style="background:#1A73E8"></span>Programming</div><div class="rcard-q">React Server Componentsがクライアントコンポーネントと異なる点は？</div><div class="rcard-time">2時間前</div></div>
+        <div class="rcard" onclick="nav('itemDetail')"><div class="rcard-cat"><span class="rcard-dot" style="background:#E8A000"></span>Design</div><div class="rcard-q">ゲシュタルトの法則における「近接の法則」とは何か？</div><div class="rcard-time">昨日</div></div>
+        <div class="rcard" onclick="nav('itemDetail')"><div class="rcard-cat"><span class="rcard-dot" style="background:#1E8E3E"></span>Infrastructure</div><div class="rcard-q">CDNのエッジキャッシュとオリジンサーバーの役割の違いは？</div><div class="rcard-time">3日前</div></div>
+      </div>
+    </div>
+    <div class="sep" style="margin-top:20px"></div>
+    <div class="mastery">
+      <div class="label-upper" style="margin-bottom:16px">Mastery</div>
+      <div class="mastery-row"><div class="mastery-name">Programming</div><div class="mastery-bar"><div class="mastery-fill" style="width:68%;background:#1A73E8"></div></div><div class="mastery-pct">68%</div></div>
+      <div class="mastery-row"><div class="mastery-name">Design</div><div class="mastery-bar"><div class="mastery-fill" style="width:45%;background:#E8A000"></div></div><div class="mastery-pct">45%</div></div>
+      <div class="mastery-row"><div class="mastery-name">Infrastructure</div><div class="mastery-bar"><div class="mastery-fill" style="width:82%;background:#1E8E3E"></div></div><div class="mastery-pct">82%</div></div>
+    </div>
+    <div class="sep"></div>
+    <div class="shortcuts">
+      <div class="shortcut" onclick="nav('urlAnalysis')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><div><div class="shortcut-text">URLから学習カードを作成</div><div class="shortcut-sub">AIがQ&Aを自動生成します</div></div><svg class="shortcut-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="shortcut"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><div><div class="shortcut-text">手動でカードを作成</div></div><svg class="shortcut-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════ LIBRARY ════════════════════════ -->
+<div class="screen" data-screen="library">
+  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">ライブラリ</div><div class="hdr-actions"><button class="hdr-back" onclick="nav('urlAnalysis')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div></div>
+  <div class="screen-content">
+    <div style="padding:0 16px 12px"><div class="input-group"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="検索..."></div></div>
+    <div class="lib-filters"><span class="filter-chip active">すべて</span><span class="filter-chip">Programming</span><span class="filter-chip">Design</span><span class="filter-chip">Infrastructure</span><span class="filter-chip">新規</span><span class="filter-chip">期限切れ</span></div>
+    <div id="libraryList"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════ URL ANALYSIS ════════════════════════ -->
+<div class="screen" data-screen="urlAnalysis">
+  <div class="hdr"><button class="hdr-back" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button><div class="hdr-title">URL解析</div></div>
+  <div class="url-screen-body">
+    <div class="label-upper" style="margin-bottom:10px">解析するURL</div>
+    <div class="input-group"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><input type="url" placeholder="https://..." id="urlInput" oninput="updateUrlBtn()"></div>
+    <div class="url-desc">スタートするとバックグラウンドで解析が始まります。取り込み一覧で進捗を確認できます。</div>
+    <div style="margin-top:20px;padding:16px;border:1px solid var(--border);border-radius:12px">
+      <div style="font-size:13px;color:var(--text-2);margin-bottom:4px">本日の残り回数</div>
+      <div style="display:flex;align-items:center;gap:8px"><div style="font-size:20px;font-weight:500">2 / 3</div><div style="font-size:12px;color:var(--text-3)">広告視聴で追加可能</div></div>
+    </div>
+  </div>
+  <div class="url-bottom"><button class="btn btn-primary btn-block btn-lg" id="urlStartBtn" onclick="nav('urlImportList')" disabled>スタート</button></div>
+</div>
+
+<!-- ════════════════════════ URL IMPORT LIST ════════════════════════ -->
+<div class="screen" data-screen="urlImportList">
+  <div class="hdr"><button class="hdr-back" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button><div class="hdr-title">取り込み一覧</div></div>
+  <div class="screen-content">
+    <div class="job-card"><div class="job-header"><span class="pill pill-green">完了</span><span style="font-size:11px;color:var(--text-3)">2分前</span></div><div class="job-title">React Server Components: A Deep Dive</div><div class="job-url">https://react.dev/blog/rsc-deep-dive</div><div class="job-actions"><button class="btn btn-outline" style="font-size:12px;padding:6px 14px" onclick="nav('qaPreview')">プレビュー</button><button class="btn btn-primary" style="font-size:12px;padding:6px 14px" onclick="nav('library')">ライブラリで見る</button></div></div>
+    <div class="job-card"><div class="job-header"><span class="pill pill-blue">解析中...</span><span style="font-size:11px;color:var(--text-3)">1分前</span></div><div class="job-title" style="color:var(--text-2)">https://web.dev/articles/css-container-queries</div><div style="margin-top:10px"><div style="height:3px;background:var(--tint);border-radius:2px;overflow:hidden"><div style="width:65%;height:100%;background:var(--blue);border-radius:2px;animation:progress 2s ease-in-out infinite"></div></div></div></div>
+    <div class="job-card"><div class="job-header"><span class="pill pill-red">失敗</span><span style="font-size:11px;color:var(--text-3)">5分前</span></div><div class="job-title">AWS Lambda Best Practices</div><div class="job-url">https://docs.aws.amazon.com/lambda/best-practices</div><div style="font-size:12px;color:var(--red);margin-top:6px">タイムアウト: サーバーに接続できませんでした</div><div class="job-actions"><button class="btn btn-danger" style="font-size:12px;padding:6px 14px">再試行</button></div></div>
+    <div class="job-card"><div class="job-header"><span class="pill pill-gray">待機中</span><span style="font-size:11px;color:var(--text-3)">6分前</span></div><div class="job-title" style="color:var(--text-2)">https://developer.mozilla.org/en-US/docs/Web/API/View_Transition</div></div>
+  </div>
+</div>
+
+<!-- ════════════════════════ QA PREVIEW ════════════════════════ -->
+<div class="screen" data-screen="qaPreview">
+  <div class="hdr"><button class="hdr-back" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button><div class="hdr-title">プレビュー</div><div class="hdr-actions"><span style="font-size:13px;color:var(--text-3)">5件</span></div></div>
+  <div class="screen-content">
+    <div class="qa-mode-toggle"><button class="qa-mode-btn active">リスト</button><button class="qa-mode-btn">カード</button></div>
+    <div class="qa-card-view" id="qaList"></div>
+  </div>
+  <div class="qa-bottom"><button class="btn btn-primary btn-block btn-lg" onclick="nav('library')">すべて保存 (5件)</button></div>
+</div>
+
+<!-- ════════════════════════ REVIEW SELECT ════════════════════════ -->
+<div class="screen" data-screen="reviewSelect">
+  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">復習</div></div>
+  <div class="screen-content" style="padding-top:8px">
+    <div class="rsel-card" onclick="nav('reviewSession')">
+      <div class="rsel-icon" style="background:#E8F0FE"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1A73E8" stroke-width="1.5"><rect x="3" y="4" rx="2" width="18" height="18"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg></div>
+      <div class="rsel-title">今日の復習</div>
+      <div class="rsel-sub">8件が待機中 · 推定 4分</div>
+    </div>
+    <div class="label-upper" style="padding:16px 16px 12px">Groups</div>
+    <div class="rsel-group" onclick="nav('reviewSession')"><div class="rsel-group-bar" style="background:#1A73E8"></div><div class="rsel-group-body"><div class="rsel-group-name">React Deep Dive</div><div class="rsel-group-desc">コアコンセプトの復習</div></div><span class="rsel-group-count">12</span></div>
+    <div class="rsel-group" onclick="nav('reviewSession')"><div class="rsel-group-bar" style="background:#1E8E3E"></div><div class="rsel-group-body"><div class="rsel-group-name">AWS Certification</div><div class="rsel-group-desc">SAA試験準備</div></div><span class="rsel-group-count">8</span></div>
+  </div>
+</div>
+
+<!-- ════════════════════════ REVIEW SESSION ════════════════════════ -->
+<div class="screen review-screen" data-screen="reviewSession">
+  <div class="hdr" style="background:var(--tint)"><button class="hdr-back" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="hdr-title" style="font-size:16px;text-align:center">復習セッション</div><div style="width:40px"></div></div>
+  <div class="progress-bar-wrap"><div class="progress-track"><div class="progress-fill" id="reviewProgress" style="width:12.5%"></div></div><div class="progress-count" id="reviewCount">1 / 8</div></div>
+  <div class="flip-container" id="flipContainer">
+    <div class="flip-card" id="flipCard" onclick="flipCard()">
+      <div class="flip-face">
+        <div class="flip-label">Question</div>
+        <div class="flip-text" id="flipQ">React Server Componentsがクライアントコンポーネントと異なる点は？</div>
+        <div class="flip-hint">タップしてめくる</div>
+      </div>
+      <div class="flip-face flip-back">
+        <div class="flip-label">Question</div>
+        <div class="flip-text" style="font-size:13px;color:var(--text-2);flex:none" id="flipQBack">React Server Componentsがクライアントコンポーネントと異なる点は？</div>
+        <div class="flip-sep"></div>
+        <div class="flip-label">Answer</div>
+        <div class="flip-text" id="flipA" style="font-size:14px">RSCはサーバー上でのみレンダリングされ、クライアントにJavaScriptバンドルが送信されない。データフェッチをコンポーネント内で直接行え、バンドルサイズを削減できる。</div>
+      </div>
+    </div>
+  </div>
+  <div class="rating-area" id="ratingArea">
+    <button class="rate-btn" onclick="rateCard('again')"><div class="rate-dot" style="background:#D93025"></div><div class="rate-label">もう一度</div><div class="rate-sub">忘れた</div></button>
+    <button class="rate-btn" onclick="rateCard('hard')"><div class="rate-dot" style="background:#F29900"></div><div class="rate-label">難しい</div><div class="rate-sub">苦労した</div></button>
+    <button class="rate-btn" onclick="rateCard('good')"><div class="rate-dot" style="background:#1A73E8"></div><div class="rate-label">良い</div><div class="rate-sub">少し迷った</div></button>
+    <button class="rate-btn" onclick="rateCard('perfect')"><div class="rate-dot" style="background:#1E8E3E"></div><div class="rate-label">簡単</div><div class="rate-sub">完璧</div></button>
+  </div>
+  <div class="review-complete" id="reviewComplete">
+    <div class="complete-emoji">&#127881;</div>
+    <div class="complete-title">復習完了！</div>
+    <div class="complete-count">8件の復習を完了しました</div>
+    <div class="complete-stats">
+      <div class="complete-stat"><span class="rate-dot" style="background:#1E8E3E"></span>簡単 3</div>
+      <div class="complete-stat"><span class="rate-dot" style="background:#1A73E8"></span>良い 3</div>
+      <div class="complete-stat"><span class="rate-dot" style="background:#F29900"></span>難しい 1</div>
+      <div class="complete-stat"><span class="rate-dot" style="background:#D93025"></span>もう一度 1</div>
+    </div>
+    <button class="btn btn-primary btn-lg" onclick="nav('home')">ホームに戻る</button>
+  </div>
+</div>
+
+<!-- ════════════════════════ ITEM DETAIL ════════════════════════ -->
+<div class="screen" data-screen="itemDetail">
+  <div class="hdr"><button class="hdr-back" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button><div class="hdr-title"></div><div class="hdr-actions"><button class="hdr-back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="1.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></div></div>
+  <div class="screen-content">
+    <div class="detail-hero">
+      <div class="detail-tags"><span class="pill pill-blue">Programming</span><span class="pill pill-gray">React</span></div>
+      <div class="detail-title">React Server Componentsがクライアントコンポーネントと異なる点は？</div>
+    </div>
+    <div class="sep"></div>
+    <div class="detail-section">
+      <div class="detail-section-title">Answer</div>
+      <div class="detail-content">RSCはサーバー上でのみレンダリングされ、クライアントにJavaScriptバンドルが送信されない。データフェッチをコンポーネント内で直接行え、バンドルサイズを削減できる。<br><br>クライアントコンポーネントとは異なり、useState や useEffect などのReact Hooksは使用できないが、async/await を直接使用してデータベースやAPIにアクセスできる。</div>
+    </div>
+    <div class="sep"></div>
+    <div class="detail-section">
+      <div class="detail-section-title">Review Info</div>
+      <div style="display:flex;gap:12px">
+        <div style="flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;text-align:center"><div style="font-size:18px;font-weight:500">5</div><div style="font-size:11px;color:var(--text-3)">繰り返し</div></div>
+        <div style="flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;text-align:center"><div style="font-size:18px;font-weight:500">3日</div><div style="font-size:11px;color:var(--text-3)">次の復習</div></div>
+        <div style="flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;text-align:center"><div style="font-size:18px;font-weight:500">2.6</div><div style="font-size:11px;color:var(--text-3)">EF</div></div>
+      </div>
+    </div>
+    <div class="detail-meta">
+      <div class="detail-meta-row"><span class="detail-meta-label">タイプ</span><span class="detail-meta-value">URL</span></div>
+      <div class="detail-meta-row"><span class="detail-meta-label">作成日</span><span class="detail-meta-value">2026-04-07</span></div>
+      <div class="detail-meta-row"><span class="detail-meta-label">ソース</span><span class="detail-meta-value" style="color:var(--blue);font-size:12px">react.dev/blog/rsc...</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════ SETTINGS ════════════════════════ -->
+<div class="screen" data-screen="settings">
+  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">設定</div></div>
+  <div class="screen-content">
+    <div class="setting-group">
+      <div class="setting-group-title">AI設定</div>
+      <div class="setting-row"><span class="setting-label">AIモデル</span><span style="display:flex;align-items:center;gap:6px"><span class="setting-value">Gemma 4</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></span></div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-group-title">復習設定</div>
+      <div class="setting-row"><span class="setting-label">復習リマインド時刻</span><span class="setting-value">9:00</span></div>
+      <div class="setting-row"><span class="setting-label">1日の復習件数</span><div class="stepper"><button class="stepper-btn">−</button><span class="stepper-val">20</span><button class="stepper-btn">+</button></div></div>
+      <div class="setting-row"><span class="setting-label">リマインダー通知</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-group-title">外観</div>
+      <div class="setting-row"><span class="setting-label">テーマ</span><span style="display:flex;align-items:center;gap:6px"><span class="setting-value">Light Amber</span><span style="width:16px;height:16px;border-radius:50%;background:#E8A000"></span></span></div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-group-title">データ</div>
+      <div class="setting-row"><button class="btn btn-outline" style="font-size:13px;padding:8px 16px">データをエクスポート</button></div>
+      <div class="setting-row"><button class="btn btn-danger" style="font-size:13px;padding:8px 16px">全データを削除</button></div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-group-title">アプリ情報</div>
+      <div class="setting-row"><span class="setting-label">バージョン</span><span class="setting-value">v0.2.0</span></div>
+      <div class="setting-row"><span class="setting-label">チャンネル</span><span class="setting-value">production</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════ JOURNAL ════════════════════════ -->
+<div class="screen" data-screen="journal">
+  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">ジャーナル</div></div>
+  <div class="screen-content">
+    <div class="journal-date">今日</div>
+    <div class="journal-entry"><div class="journal-entry-header"><span class="journal-item-title">RSCのデータフェッチ</span><span class="journal-time">14:30</span></div><div class="journal-note">Server Componentsではasync/awaitでDBに直接アクセスできるのが新鮮。useEffectからの脱却が見える。</div></div>
+    <div class="journal-entry"><div class="journal-entry-header"><span class="journal-item-title">ゲシュタルトの法則</span><span class="journal-time">10:15</span></div><div class="journal-note">近接の法則はUIグルーピングの基本。スペーシングが情報階層を作るという点でCSS Gridのgapと直結する。</div></div>
+    <div class="journal-date">昨日</div>
+    <div class="journal-entry"><div class="journal-entry-header"><span class="journal-item-title">CDNエッジキャッシュ</span><span class="journal-time">22:40</span></div><div class="journal-note">CloudFrontのBehavior設定でオリジンへのリクエスト頻度が劇的に変わる。Cache-Controlヘッダーとの組み合わせが重要。</div></div>
+    <div class="journal-date">今週</div>
+    <div class="journal-entry"><div class="journal-entry-header"><span class="journal-item-title">TypeScript Discriminated Unions</span><span class="journal-time">4月3日</span></div><div class="journal-note">タグ付きユニオンでswitch文の網羅性チェックが効くのがTypeScriptの強み。exhaustive checkパターンをプロジェクトに導入した。</div></div>
+  </div>
+</div>
+
+<!-- ════════════════════════ HISTORY ════════════════════════ -->
+<div class="screen" data-screen="history">
+  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">学習履歴</div></div>
+  <div class="screen-content">
+    <div class="history-stats">
+      <div class="streak-ring">
+        <svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" fill="none" stroke="#F3F4F6" stroke-width="6"/><circle cx="40" cy="40" r="34" fill="none" stroke="#1A73E8" stroke-width="6" stroke-linecap="round" stroke-dasharray="213.6" stroke-dashoffset="60" transform="rotate(-90 40 40)"/></svg>
+        <div class="streak-ring-center"><div class="streak-ring-num">12</div><div class="streak-ring-lbl">日連続</div></div>
+      </div>
+      <div class="history-stat-grid">
+        <div class="history-stat-box"><div class="history-stat-val">8</div><div class="history-stat-lbl">今日完了</div></div>
+        <div class="history-stat-box"><div class="history-stat-val">124</div><div class="history-stat-lbl">総カード</div></div>
+        <div class="history-stat-box"><div class="history-stat-val">38</div><div class="history-stat-lbl">習得済み</div></div>
+        <div class="history-stat-box"><div class="history-stat-val">87%</div><div class="history-stat-lbl">正答率</div></div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="label-upper" style="padding:16px 16px 8px">Recent Reviews</div>
+    <div class="history-item"><span class="history-badge pill-blue">URL</span><div class="history-body"><div class="history-title">React Server Componentsの特徴</div><div class="history-time">3分前</div><div class="history-preview">RSCはサーバー上でのみレンダリングされ、クライアントにJSバンドルが送信されない。</div></div></div>
+    <div class="history-item"><span class="history-badge pill-blue">URL</span><div class="history-body"><div class="history-title">ゲシュタルトの法則：近接の法則</div><div class="history-time">5分前</div><div class="history-preview">近くに配置された要素はグループとして認識される傾向がある。</div></div></div>
+    <div class="history-item"><span class="history-badge pill-amber">テキスト</span><div class="history-body"><div class="history-title">CDNエッジキャッシュの役割</div><div class="history-time">10分前</div><div class="history-preview">ユーザーに最も近いエッジロケーションでコンテンツを配信し、レイテンシを削減する。</div></div></div>
+    <div class="history-item"><span class="history-badge pill-blue">URL</span><div class="history-body"><div class="history-title">TypeScript Genericsの型推論</div><div class="history-time">昨日</div><div class="history-preview">関数の引数から型パラメータを自動推論することで、明示的な型指定を省略できる。</div></div></div>
+  </div>
+</div>
+
+<!-- ════════════════════════ FAB ════════════════════════ -->
+<button class="fab" id="fab" onclick="nav('urlAnalysis')">
+  <svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="#1A73E8" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="#E8A000" stroke-width="2" stroke-linecap="round"/></svg>
+</button>
+
+<!-- ════════════════════════ JS ════════════════════════ -->
+<script>
+// ── Mock Data ──
+const ITEMS = [
+  {id:1,title:'React Server Componentsがクライアントコンポーネントと異なる点は？',content:'RSCはサーバー上でのみレンダリングされ、クライアントにJavaScriptバンドルが送信されない。データフェッチをコンポーネント内で直接行え、バンドルサイズを削減できる。',category:'Programming',tags:['React'],time:'2時間前'},
+  {id:2,title:'ゲシュタルトの法則における「近接の法則」とは何か？',content:'空間的に近くに配置された要素は、一つのグループとして知覚される傾向がある。UIデザインではスペーシングとグルーピングに直結する。',category:'Design',tags:['UX'],time:'昨日'},
+  {id:3,title:'CDNのエッジキャッシュとオリジンサーバーの役割の違いは？',content:'エッジキャッシュはユーザーに最も近いロケーションでコンテンツを配信しレイテンシを削減する。オリジンサーバーは元データの管理と生成を担う。',category:'Infrastructure',tags:['AWS','CDN'],time:'3日前'},
+  {id:4,title:'useCallbackとuseMemoの使い分けは？',content:'useCallbackは関数のメモ化、useMemoは計算結果のメモ化。どちらも依存配列が変わらない限り前回の値を返す。',category:'Programming',tags:['React','Hooks'],time:'3日前'},
+  {id:5,title:'CSSのcontainer queriesの利点は？',content:'親コンテナのサイズに応じたスタイル変更が可能。メディアクエリと異なり、コンポーネント単位のレスポンシブ対応ができる。',category:'Design',tags:['CSS'],time:'4日前'},
+  {id:6,title:'IAMポリシーの評価ロジックの優先順位は？',content:'明示的なDenyが常に優先。次にOrganizations SCP、リソースベースポリシー、アイデンティティベースポリシーの順で評価される。',category:'Infrastructure',tags:['AWS','IAM'],time:'5日前'},
+  {id:7,title:'TypeScript discriminated unionの使い方は？',content:'共通のリテラル型プロパティ（タグ）を持つオブジェクト型のユニオン。switch文でタグを検査することで型の絞り込みが可能。',category:'Programming',tags:['TypeScript'],time:'1週間前'},
+  {id:8,title:'アクセシビリティにおけるARIA属性の基本原則は？',content:'第1原則：ネイティブHTML要素で済む場合はARIAを使わない。第2原則：ネイティブのセマンティクスを変更しない。',category:'Design',tags:['Accessibility'],time:'1週間前'},
+];
+
+const QA_PAIRS = [
+  {q:'RSCとClient Componentsの主な違いは？',a:'RSCはサーバーでのみレンダリングされ、JSバンドルに含まれない。useState等のHooksは使用不可だが、async/awaitで直接データアクセスが可能。'},
+  {q:'RSCを使うメリットは？',a:'バンドルサイズの削減、データフェッチの簡素化、サーバーリソースへの直接アクセス。'},
+  {q:'"use client" ディレクティブの役割は？',a:'ファイルがClient Componentであることを明示する境界マーカー。この下のコンポーネントツリーではHooksやブラウザAPIが使用可能になる。'},
+  {q:'RSCでデータフェッチするパターンは？',a:'コンポーネント関数をasyncにし、直接await fetch()やDB呼び出しを記述する。useEffect不要。'},
+  {q:'Server ActionsとRSCの関係は？',a:'Server ActionsはRSCから呼び出せるサーバーサイド関数。フォーム送信やデータ変更をクライアントJSなしで実現する。'},
+];
+
+const CAT_COLORS = {Programming:'#1A73E8',Design:'#E8A000',Infrastructure:'#1E8E3E'};
+
+// ── Navigation ──
+const history = ['home'];
+let currentScreen = 'home';
+
+function nav(name) {
+  if (name === currentScreen) return;
+  history.push(name);
+  showScreen(name);
+}
+function goBack() {
+  if (history.length > 1) { history.pop(); showScreen(history[history.length-1]); }
+}
+function showScreen(name) {
+  currentScreen = name;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.querySelector(`[data-screen="${name}"]`);
+  if (el) { el.classList.add('active'); el.scrollTop = 0; }
+  // Update drawer active state
+  document.querySelectorAll('.drawer-item').forEach(d => d.classList.remove('active'));
+  const map = {home:0,library:1,reviewSelect:2,journal:3,history:4,settings:5};
+  if (map[name] !== undefined) document.querySelectorAll('.drawer-item')[map[name]]?.classList.add('active');
+  // FAB visibility
+  const fab = document.getElementById('fab');
+  const hideFab = ['reviewSession','urlAnalysis','urlImportList','qaPreview','itemDetail'];
+  fab.style.display = hideFab.includes(name) ? 'none' : 'flex';
+  closeDrawer();
+  // Reset review if entering session
+  if (name === 'reviewSession') resetReview();
+}
+
+// ── Drawer ──
+function openDrawer() { document.getElementById('drawer').classList.add('open'); document.getElementById('drawerOverlay').classList.add('open'); }
+function closeDrawer() { document.getElementById('drawer').classList.remove('open'); document.getElementById('drawerOverlay').classList.remove('open'); }
+
+// ── Library List ──
+function renderLibrary() {
+  const el = document.getElementById('libraryList');
+  el.innerHTML = ITEMS.map(item => `
+    <div class="lib-card" onclick="nav('itemDetail')">
+      <div class="lib-card-title">${item.title}</div>
+      <div class="lib-card-meta">
+        <span class="rcard-dot" style="background:${CAT_COLORS[item.category]||'#9AA0A6'}"></span>
+        <span>${item.category}</span>
+        <span style="color:var(--border)">·</span>
+        <span>${item.time}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── QA Preview List ──
+function renderQA() {
+  const el = document.getElementById('qaList');
+  el.innerHTML = QA_PAIRS.map((qa,i) => `
+    <div class="qa-item">
+      <div class="qa-q">${i+1}. ${qa.q}</div>
+      <div class="qa-a">${qa.a}</div>
+    </div>
+  `).join('');
+}
+
+// ── URL Input ──
+function updateUrlBtn() {
+  const v = document.getElementById('urlInput').value;
+  document.getElementById('urlStartBtn').disabled = !v.startsWith('http');
+}
+
+// ── Review Session ──
+let reviewIdx = 0;
+let isFlipped = false;
+
+function resetReview() {
+  reviewIdx = 0; isFlipped = false;
+  document.getElementById('flipCard').classList.remove('flipped');
+  document.getElementById('ratingArea').classList.remove('visible');
+  document.getElementById('reviewComplete').classList.remove('visible');
+  document.getElementById('flipContainer').style.display = 'flex';
+  document.querySelector('.progress-bar-wrap').style.display = 'flex';
+  updateReviewCard();
+}
+function updateReviewCard() {
+  const item = ITEMS[reviewIdx % ITEMS.length];
+  document.getElementById('flipQ').textContent = item.title;
+  document.getElementById('flipQBack').textContent = item.title;
+  document.getElementById('flipA').textContent = item.content;
+  document.getElementById('reviewProgress').style.width = ((reviewIdx+1)/8*100)+'%';
+  document.getElementById('reviewCount').textContent = (reviewIdx+1)+' / 8';
+}
+function flipCard() {
+  if (isFlipped) return;
+  isFlipped = true;
+  document.getElementById('flipCard').classList.add('flipped');
+  document.getElementById('ratingArea').classList.add('visible');
+}
+function rateCard(rating) {
+  reviewIdx++;
+  if (reviewIdx >= 8) {
+    document.getElementById('flipContainer').style.display = 'none';
+    document.getElementById('ratingArea').classList.remove('visible');
+    document.querySelector('.progress-bar-wrap').style.display = 'none';
+    document.getElementById('reviewComplete').classList.add('visible');
+    return;
+  }
+  isFlipped = false;
+  document.getElementById('flipCard').classList.remove('flipped');
+  document.getElementById('ratingArea').classList.remove('visible');
+  setTimeout(updateReviewCard, 100);
+}
+
+// ── Init ──
+renderLibrary();
+renderQA();
+</script>
+
+<style>
+@keyframes progress{0%{transform:translateX(-100%)}50%{transform:translateX(0)}100%{transform:translateX(100%)}}
+</style>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "@baseproject/prompt-verifier",
+  "version": "1.0.0",
+  "description": "CLAUDE.mdのプロンプト効果を複数ドメインで定量検証するツール",
+  "private": true,
+  "type": "module",
+  "bin": { "prompt-verifier": "src/runner.js" },
+  "scripts": {
+    "mock":    "node src/runner.js --mock",
+    "compare": "node src/runner.js --compare",
+    "paste":   "node src/runner.js --paste",
+    "domains": "node src/runner.js --list-domains"
+  }
+}

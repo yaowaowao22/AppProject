@@ -7,6 +7,7 @@ import Animated, { useAnimatedStyle, withSpring, useSharedValue } from 'react-na
 import { useTheme } from '../theme/ThemeContext';
 import { TypeScale } from '../theme/typography';
 import { Spacing, Radius } from '../theme/spacing';
+import { SystemColors, RecallBlue } from '../theme/colors';
 
 // 評価ごとのカラー（ReviewScreen と同一定義 / iOS system colors 準拠）
 const RATING_COLORS = {

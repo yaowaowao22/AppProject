@@ -1,0 +1,15 @@
+{
+  "name": "@baseproject/test-essence-md",
+  "version": "1.0.0",
+  "description": "essence.mdのシステムプロンプト効果を定量検証するテストハーネス",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node src/runner.js",
+    "test:dry": "node src/runner.js --dry-run",
+    "report": "node src/runner.js --report-only"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0"
+  }
+}
