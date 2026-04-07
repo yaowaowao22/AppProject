@@ -31,7 +31,7 @@ import {
   scheduleDailyReminder,
   cancelDailyReminder,
 } from '../../services/notificationService';
-import { releaseModel } from '../../services/localAnalysisService';
+import { requestOtaReload } from '../../utils/otaReload';
 
 const APP_VERSION = '0.2.0';
 
@@ -184,10 +184,9 @@ export function SettingsScreen() {
         setUpdateStatus('ダウンロード中...');
         await Updates.fetchUpdateAsync();
         setUpdateStatus('更新を適用します（再起動）');
-        // llama.rn の JSI C++ コンテキストを解放してから reload する。
-        // 解放せずに reloadAsync() を呼ぶとダングリングポインタでクラッシュする。
-        await releaseModel();
-        await Updates.reloadAsync();
+        // reloadAsync() を直接呼ぶと JSI クラッシュ。
+        // App.tsx の安全なアンマウント→解放→reload フローに委譲する。
+        requestOtaReload();
       } else {
         setUpdateStatus('最新バージョンです');
       }

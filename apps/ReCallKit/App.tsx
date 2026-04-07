@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { DeviceEventEmitter, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Updates from 'expo-updates';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -9,20 +9,29 @@ import { ThemeProvider } from './src/theme/ThemeContext';
 import { TaskProvider } from './src/context/TaskContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { releaseModel } from './src/services/localAnalysisService';
+import { OTA_RELOAD_EVENT } from './src/utils/otaReload';
 
-// OTAWatcher: バックグラウンドDL完了(isUpdatePending)を検知して即時適用。
-// ① llama.rn の JSI C++ コンテキストを releaseModel() で解放してからreload。
-//   解放せずにreloadAsync()を呼ぶとJSI C++ダングリングポインタでクラッシュする。
-// ② GestureHandlerRootView の外に配置して reanimated/gesture-handler のJSIを回避。
+// ============================================================
+// OTA reload 安全実行の仕組み
+//
+// reloadAsync() をネイティブコンポーネント(GestureHandlerRootView,
+// reanimated, react-native-screens 等)がマウント中に呼ぶと
+// JSI C++ ポインタがダングリングしてクラッシュする。
+//
+// 解決策:
+//   1. requestOtaReload() を呼ぶ（OTAWatcher / SettingsScreen どちらからでも）
+//   2. DeviceEventEmitter 経由で App に伝わる
+//   3. App が unmounting=true にして GestureHandlerRootView をアンマウント
+//   4. アンマウント完了後(useEffect)に releaseModel() → reloadAsync()
+// ============================================================
+
+// OTAWatcher: isUpdatePending を検知したら requestOtaReload() を発火するだけ
 function OTAWatcher() {
   const { isUpdatePending } = Updates.useUpdates();
   useEffect(() => {
     if (__DEV__ || !isUpdatePending) return;
-    (async () => {
-      console.log('[OTA] update pending — releasing llama context then reloading');
-      await releaseModel();
-      await Updates.reloadAsync();
-    })().catch(console.error);
+    console.log('[OTA] update pending — requesting safe reload');
+    requestOtaReload();
   }, [isUpdatePending]);
   return null;
 }
@@ -59,11 +68,37 @@ class ErrorBoundary extends React.Component<
 }
 
 export default function App() {
+  // unmounting=true になると GestureHandlerRootView ごとアンマウントし、
+  // 全 JSI C++ オブジェクトが解放された後に reloadAsync() を呼ぶ
+  const [unmounting, setUnmounting] = useState(false);
+
+  // OTA_RELOAD_EVENT を受け取ったらアンマウント開始（requestOtaReload() から発火）
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener(OTA_RELOAD_EVENT, () => {
+      console.log('[OTA] unmounting native tree before reload');
+      setUnmounting(true);
+    });
+    return () => sub.remove();
+  }, []);
+
+  // アンマウント後に llama 解放 → reloadAsync
+  useEffect(() => {
+    if (!unmounting) return;
+    (async () => {
+      console.log('[OTA] releasing llama context...');
+      await releaseModel();
+      console.log('[OTA] calling reloadAsync...');
+      await Updates.reloadAsync();
+    })().catch(console.error);
+  }, [unmounting]);
+
+  if (unmounting) {
+    // 全ネイティブコンポーネントをアンマウント済みの状態で reloadAsync を待つ
+    return <View style={styles.root} />;
+  }
+
   return (
     <ErrorBoundary>
-      {/* OTAWatcher は GestureHandlerRootView の外に置く。
-          GestureHandlerRootView がマウント中に reloadAsync() を呼ぶと
-          JSI C++ ポインタのダングリングでクラッシュするため。 */}
       <OTAWatcher />
       <GestureHandlerRootView style={styles.root}>
         <SafeAreaProvider>
