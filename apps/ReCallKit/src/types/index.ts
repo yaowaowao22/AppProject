@@ -82,3 +82,16 @@ export interface PointEvent {
 
 // Bedrock URL解析結果
 export type { QAPair, AnalysisResult } from './analysis';
+
+// AI深掘り
+export interface DeepDive {
+  id: number;
+  item_id: number;
+  question: string;
+  answer: string;
+  status: 'queued' | 'processing' | 'done' | 'failed';
+  result: string | null;
+  error_msg: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
