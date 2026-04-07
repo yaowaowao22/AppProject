@@ -100,7 +100,9 @@ export type SettingsStackParamList = {
 
 // ---- Task Stack ----
 export type TaskStackParamList = {
-  TaskList: undefined;
+  URLImportList: undefined;
+  URLAnalysis: { initialUrl?: string };
+  ItemDetail: { itemId: number };
   QAPreview: QAPreviewParams;
 };
 

@@ -1,9 +1,11 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
-import { TaskScreen } from '../../screens/tasks/TaskScreen';
+import { URLImportListScreen } from '../../screens/add/URLImportListScreen';
+import { URLAnalysisScreen } from '../../screens/add/URLAnalysisScreen';
+import { ItemDetailScreen } from '../../screens/library/ItemDetailScreen';
 import { QAPreviewScreen } from '../../screens/add/QAPreviewScreen';
-import { makeNavigatorOptions, makeLargeTitleOptions } from '../sharedScreenOptions';
+import { makeNavigatorOptions, makeLargeTitleOptions, makeModalCancelOptions } from '../sharedScreenOptions';
 import type { TaskStackParamList } from '../types';
 
 const Stack = createNativeStackNavigator<TaskStackParamList>();
@@ -19,12 +21,23 @@ export function TaskStack() {
       }}
     >
       <Stack.Screen
-        name="TaskList"
-        component={TaskScreen}
+        name="URLImportList"
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        component={URLImportListScreen as React.ComponentType<any>}
         options={{
-          title: 'タスク',
+          title: '取り込み一覧',
           ...makeLargeTitleOptions(colors),
         }}
+      />
+      <Stack.Screen
+        name="URLAnalysis"
+        component={URLAnalysisScreen}
+        options={({ navigation: nav }) => makeModalCancelOptions('URL解析', colors, nav)}
+      />
+      <Stack.Screen
+        name="ItemDetail"
+        component={ItemDetailScreen}
+        options={{ title: '' }}
       />
       <Stack.Screen
         name="QAPreview"

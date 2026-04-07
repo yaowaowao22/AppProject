@@ -23,9 +23,16 @@ import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { useTask } from '../../context/TaskContext';
 import type { AnalysisTask } from '../../context/TaskContext';
 import type { DrawerNavigationProp } from '@react-navigation/drawer';
-import type { TaskStackParamList, DrawerParamList } from '../../navigation/types';
+import type { DrawerParamList, QAPreviewParams } from '../../navigation/types';
 
-type Props = NativeStackScreenProps<TaskStackParamList, 'TaskList'>;
+// TaskScreenは現在どのStackにも登録されていない（TaskStackの初期画面はURLImportListScreenに変更済み）
+// 将来再利用する場合のために型を自己完結させておく
+type TaskScreenParamList = {
+  TaskList: undefined;
+  QAPreview: QAPreviewParams;
+};
+
+type Props = NativeStackScreenProps<TaskScreenParamList, 'TaskList'>;
 
 export function TaskScreen({ navigation }: Props) {
   const { colors } = useTheme();
