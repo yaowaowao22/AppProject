@@ -26,6 +26,8 @@ import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { analyzeUrlPipeline } from '../../services/urlAnalysisPipeline';
+import { LOCAL_AI_ENABLED } from '../../config/localAI';
+import { isModelDownloaded, downloadModel } from '../../services/localAnalysisService';
 import { getRemainingCount, consumeOne } from '../../utils/analysisLimit';
 import {
   listJobs,
@@ -173,6 +175,25 @@ export function URLImportListScreen({ navigation }: Props) {
   const processingRef = useRef(false);
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
+  // ---- モデルダウンロード状態 ----
+  const [modelReady, setModelReady] = useState(!LOCAL_AI_ENABLED);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!LOCAL_AI_ENABLED) return;
+    (async () => {
+      const downloaded = await isModelDownloaded();
+      if (downloaded) { setModelReady(true); return; }
+      try {
+        await downloadModel((p) => setDownloadProgress(p));
+        setModelReady(true);
+      } catch (err) {
+        setDownloadError(err instanceof Error ? err.message : 'ダウンロードに失敗しました');
+      }
+    })();
+  }, []);
+
   // loading 中のみシマーアニメーションを動かす
   useEffect(() => {
     if (!loading) return;
@@ -199,7 +220,7 @@ export function URLImportListScreen({ navigation }: Props) {
 
   // ---- pending ジョブを1件ずつ処理 ----
   useEffect(() => {
-    if (!db || !isReady || processingRef.current) return;
+    if (!db || !isReady || processingRef.current || !modelReady) return;
     const pending = jobs.find(j => j.status === 'pending');
     if (!pending) return;
 
@@ -309,6 +330,49 @@ export function URLImportListScreen({ navigation }: Props) {
       </View>
     );
   }, [colors, navigation, handleRetry]);
+
+  // ---- モデルダウンロード UI ----
+  if (LOCAL_AI_ENABLED && !modelReady) {
+    const pct = Math.round(downloadProgress * 100);
+    const mb  = Math.round(downloadProgress * 2355); // ~2.3GB
+    return (
+      <View style={[styles.center, { backgroundColor: colors.backgroundGrouped }]}>
+        <View style={[styles.downloadCard, { backgroundColor: colors.card }]}>
+          <Ionicons name="hardware-chip-outline" size={40} color={colors.accent} />
+          <Text style={[styles.downloadTitle, { color: colors.label }]}>
+            AIモデルを準備中
+          </Text>
+          <Text style={[styles.downloadSub, { color: colors.labelSecondary }]}>
+            初回のみ約2.3GBをダウンロードします{'\n'}Wi-Fi接続を推奨します
+          </Text>
+
+          {downloadError ? (
+            <Text style={[styles.downloadErrorText, { color: colors.error }]}>
+              {downloadError}
+            </Text>
+          ) : (
+            <>
+              {/* プログレスバー */}
+              <View style={[styles.progressTrack, { backgroundColor: colors.labelTertiary + '33' }]}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { backgroundColor: colors.accent, width: `${pct}%` },
+                  ]}
+                />
+              </View>
+              <Text style={[styles.downloadPercent, { color: colors.labelSecondary }]}>
+                {pct}% — {mb} MB / 2,355 MB
+              </Text>
+              {pct === 0 && (
+                <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: Spacing.s }} />
+              )}
+            </>
+          )}
+        </View>
+      </View>
+    );
+  }
 
   // ---- スケルトンローディング ----
   if (loading) {
@@ -454,6 +518,43 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: Radius.xs,
     width: '45%',
+  },
+
+  // ---- ダウンロード ----
+  downloadCard: {
+    width: '100%',
+    borderRadius: Radius.l,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    gap: Spacing.m,
+  },
+  downloadTitle: {
+    ...TypeScale.headline,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  downloadSub: {
+    ...TypeScale.subheadline,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  progressTrack: {
+    width: '100%',
+    height: 8,
+    borderRadius: Radius.full,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: Radius.full,
+  },
+  downloadPercent: {
+    ...TypeScale.caption1,
+  },
+  downloadErrorText: {
+    ...TypeScale.caption1,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 
   // ---- 空状態 ----
