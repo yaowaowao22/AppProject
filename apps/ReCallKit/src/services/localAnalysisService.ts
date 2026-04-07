@@ -10,8 +10,9 @@
 //   アクティブモデルは localai/active_model.json に永続化
 // ============================================================
 
-import * as FileSystem from 'expo-file-system';
-import { initLlama, LlamaContext } from 'llama.rn';
+import * as FileSystem from 'expo-file-system/legacy';
+import type { DownloadProgressData, DownloadPauseState } from 'expo-file-system/legacy';
+import { initLlama, type TokenData, LlamaContext } from 'llama.rn';
 
 import {
   LOCAL_AI_TIMEOUT_MS,
@@ -190,7 +191,7 @@ export async function installModel(modelId: string): Promise<void> {
 
   const destPath = modelPath(model.filename);
 
-  const onProgress = (dp: { totalBytesWritten: number; totalBytesExpectedToWrite: number }) => {
+  const onProgress = (dp: DownloadProgressData) => {
     const bytesWrittenMB = Math.round(dp.totalBytesWritten / 1_000_000);
     const total = dp.totalBytesExpectedToWrite > 0
       ? dp.totalBytesExpectedToWrite
@@ -212,7 +213,7 @@ export async function installModel(modelId: string): Promise<void> {
   if (resumeInfo.exists) {
     try {
       const raw = await FileSystem.readAsStringAsync(RESUME_DATA_PATH);
-      const saved = JSON.parse(raw) as { url: string; fileUri: string; options: Record<string, unknown>; resumeData?: string };
+      const saved = JSON.parse(raw) as DownloadPauseState;
       if (saved.url === model.url) {
         activeDownload = FileSystem.createDownloadResumable(
           saved.url, saved.fileUri, saved.options ?? {}, onProgress, saved.resumeData,
@@ -411,13 +412,16 @@ export async function analyzeUrlLocal(url: string): Promise<AnalysisResult> {
 
   const prompt = buildPrompt(url, text);
   let aborted = false;
-  const timeoutId = setTimeout(() => { aborted = true; }, LOCAL_AI_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => {
+    aborted = true;
+    context.stopCompletion().catch(() => {});
+  }, LOCAL_AI_TIMEOUT_MS);
 
   let resultText: string;
   try {
     const completion = await context.completion(
       { prompt, n_predict: 2048, temperature: 0, stop: ['<end_of_turn>', '<eos>', '</s>'] },
-      (_token: string) => !aborted,
+      (_data: TokenData) => {},
     );
     if (aborted) throw new Error('AI解析がタイムアウトしました（3分）');
     resultText = completion.text;

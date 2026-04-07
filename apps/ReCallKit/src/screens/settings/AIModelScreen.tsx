@@ -88,15 +88,12 @@ export function AIModelScreen() {
     try {
       await installModel(modelId);
     } catch (err) {
-      // setDownloadState でエラーが表示されていない場合（ダウンロード開始前の失敗）に Alert で表示
-      const errMsg = err instanceof Error ? err.message : 'インストールに失敗しました';
-      setDownloadState((prev) => {
-        // すでにerror状態なら上書きしない
-        if (prev?.error) return prev;
-        // ダウンロード開始前に失敗した場合のみ Alert を表示
+      // downloadState.error が既にセットされていれば UI 上で表示済み → 何もしない
+      // セットされていない場合のみ Alert で表示
+      if (!downloadState?.error) {
+        const errMsg = err instanceof Error ? err.message : 'インストールに失敗しました';
         Alert.alert('インストールエラー', errMsg);
-        return null;
-      });
+      }
     }
   }, [downloadState]);
 
