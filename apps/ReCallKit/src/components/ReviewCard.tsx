@@ -302,10 +302,15 @@ const styles = StyleSheet.create({
   },
   titleText: {
     ...TypeScale.title2,
+    lineHeight: 33,
     marginTop: Spacing.xs,
+    textAlign: 'center',
   },
   titleSmall: {
-    ...TypeScale.headline,
+    fontSize: 20,
+    fontWeight: '600' as const,
+    lineHeight: 28,
+    letterSpacing: 0.38,
     marginTop: Spacing.xs,
   },
   divider: {

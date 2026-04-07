@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   },
   card: {
     height: CARD_HEIGHT,
-    borderRadius: Radius.l,
+    borderRadius: Radius.m,
     padding: Spacing.l,
     justifyContent: 'space-between',
   },
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
   clozeScroll: { flex: 1 },
   clozeText: {
     ...TypeScale.bodyJA,
-    lineHeight: 26,
+    lineHeight: 31,
   },
   blank: {
     fontWeight: '700',
