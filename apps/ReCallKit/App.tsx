@@ -8,16 +8,21 @@ import { PointsProvider } from './src/context/PointsContext';
 import { ThemeProvider } from './src/theme/ThemeContext';
 import { TaskProvider } from './src/context/TaskContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { releaseModel } from './src/services/localAnalysisService';
 
-// OTA 更新の適用戦略（2層）:
-// Layer 1: app.json の fallbackToCacheTimeout: 3000 → 起動時に最大3秒待ち即適用（要ネイティブリビルド）
-// Layer 2: OTAWatcher → バックグラウンドDL完了を検知して即時 reloadAsync()（JS配信可能）
+// OTAWatcher: バックグラウンドDL完了(isUpdatePending)を検知して即時適用。
+// ① llama.rn の JSI C++ コンテキストを releaseModel() で解放してからreload。
+//   解放せずにreloadAsync()を呼ぶとJSI C++ダングリングポインタでクラッシュする。
+// ② GestureHandlerRootView の外に配置して reanimated/gesture-handler のJSIを回避。
 function OTAWatcher() {
   const { isUpdatePending } = Updates.useUpdates();
   useEffect(() => {
     if (__DEV__ || !isUpdatePending) return;
-    console.log('[OTA] update pending — reloading to apply');
-    Updates.reloadAsync().catch(console.error);
+    (async () => {
+      console.log('[OTA] update pending — releasing llama context then reloading');
+      await releaseModel();
+      await Updates.reloadAsync();
+    })().catch(console.error);
   }, [isUpdatePending]);
   return null;
 }

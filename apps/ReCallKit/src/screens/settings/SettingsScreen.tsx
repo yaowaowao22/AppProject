@@ -31,6 +31,7 @@ import {
   scheduleDailyReminder,
   cancelDailyReminder,
 } from '../../services/notificationService';
+import { releaseModel } from '../../services/localAnalysisService';
 
 const APP_VERSION = '0.2.0';
 
@@ -183,9 +184,9 @@ export function SettingsScreen() {
         setUpdateStatus('ダウンロード中...');
         await Updates.fetchUpdateAsync();
         setUpdateStatus('更新を適用します（再起動）');
-        // GestureHandlerRootView マウント中に reloadAsync() を呼ぶと JSI クラッシュ。
-        // 300ms 待ってレンダリングサイクルを抜けてから reload する。
-        await new Promise<void>(resolve => setTimeout(resolve, 300));
+        // llama.rn の JSI C++ コンテキストを解放してから reload する。
+        // 解放せずに reloadAsync() を呼ぶとダングリングポインタでクラッシュする。
+        await releaseModel();
         await Updates.reloadAsync();
       } else {
         setUpdateStatus('最新バージョンです');
