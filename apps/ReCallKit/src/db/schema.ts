@@ -3,7 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 // ============================================================
 // スキーマバージョン管理
 // ============================================================
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
 
 const CREATE_TABLES_SQL = `
   -- アイテム（URL・テキスト・メモ）
@@ -200,6 +200,23 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
     `);
     await setSchemaVersion(db, 7);
   }
+
+  if (currentVersion < 8) {
+    // AIディープダイブ履歴テーブル
+    // service: 'ChatGPT' | 'Gemini' | 'Claude'
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS deep_dives (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        item_id     INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+        service     TEXT    NOT NULL,
+        prompt      TEXT    NOT NULL,
+        created_at  TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_deep_dives_item    ON deep_dives(item_id);
+      CREATE INDEX IF NOT EXISTS idx_deep_dives_created ON deep_dives(created_at);
+    `);
+    await setSchemaVersion(db, 8);
+  }
 }
 
 // ============================================================
@@ -208,6 +225,7 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
 // ============================================================
 export async function deleteAllData(db: SQLiteDatabase): Promise<void> {
   await db.execAsync(`
+    DELETE FROM deep_dives;
     DELETE FROM items;
     DELETE FROM tags;
     DELETE FROM collections;
@@ -215,5 +233,21 @@ export async function deleteAllData(db: SQLiteDatabase): Promise<void> {
     DELETE FROM point_events;
   `);
 }
+
+// ============================================================
+// restore用クエリ
+// バックアップからdeep_divesレコードを復元する際に使用する
+// ============================================================
+
+/** deep_divesテーブルの全レコードを取得（エクスポート用） */
+export const DEEP_DIVES_SELECT_ALL_SQL = `
+  SELECT * FROM deep_dives ORDER BY created_at ASC
+` as const;
+
+/** deep_divesの1レコードを復元INSERT（重複は無視） */
+export const DEEP_DIVES_RESTORE_INSERT_SQL = `
+  INSERT OR IGNORE INTO deep_dives (id, item_id, service, prompt, created_at)
+  VALUES (?, ?, ?, ?, ?)
+` as const;
 
 export { SCHEMA_VERSION };
