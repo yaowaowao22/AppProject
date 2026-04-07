@@ -26,8 +26,8 @@ const GRADIENT_ID = 'streakGradient';
 
 export function StreakRing({
   days,
-  size = 88,
-  strokeWidth = 7,
+  size = 80,
+  strokeWidth = 6,
   showLabel = false,
 }: StreakRingProps) {
   const { colors, isDark } = useTheme();
@@ -95,7 +95,7 @@ export function StreakRing({
 
       {/* 中央テキスト */}
       <View style={[styles.center, { width: size, height: size }]}>
-        <Text style={[styles.days, { color: days > 0 ? ringColor : colors.labelTertiary }]}>
+        <Text style={[styles.days, { color: days > 0 ? colors.label : colors.labelTertiary }]}>
           {days}
         </Text>
       </View>
