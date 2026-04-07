@@ -7,7 +7,6 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { analyzeUrlPipeline } from '../services/urlAnalysisPipeline';
-import { getRemainingCount, consumeOne } from '../utils/analysisLimit';
 
 export interface AnalysisTask {
   id: string;
@@ -55,7 +54,6 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const result = await analyzeUrlPipeline(url);
-      await consumeOne();
       setTasks(prev =>
         prev.map(t =>
           t.id === taskId
@@ -92,14 +90,6 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const addTask = useCallback(
     async (url: string): Promise<{ success: boolean; error?: string }> => {
-      const remaining = await getRemainingCount();
-      if (remaining <= 0) {
-        return {
-          success: false,
-          error: '本日の無料解析回数（3回）を使い切りました。明日またお試しください',
-        };
-      }
-
       const id = generateId();
       const task: AnalysisTask = {
         id,

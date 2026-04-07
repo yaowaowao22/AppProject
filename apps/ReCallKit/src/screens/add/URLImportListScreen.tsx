@@ -31,7 +31,6 @@ import {
   subscribeDownloadState,
   type ModelDownloadState,
 } from '../../services/localAnalysisService';
-import { getRemainingCount, consumeOne } from '../../utils/analysisLimit';
 import {
   listJobs,
   updateJob,
@@ -54,11 +53,10 @@ const STATUS_CONFIG = {
 };
 
 // ---- エラー種別 ----
-type ErrorType = 'limit_exceeded' | 'no_qa' | 'config' | 'network' | 'general';
+type ErrorType = 'no_qa' | 'config' | 'network' | 'general';
 
 function classifyError(msg: string | null): ErrorType {
   if (!msg) return 'general';
-  if (msg.includes('無料解析回数') || msg.includes('使い切り')) return 'limit_exceeded';
   if (msg.includes('Q&Aを生成')) return 'no_qa';
   if (msg.includes('AWS設定') || msg.includes('設定が未完了') || msg.includes('未完了')) return 'config';
   if (
@@ -82,12 +80,6 @@ interface ErrorRecoveryConfig {
 }
 
 const ERROR_RECOVERY: Record<ErrorType, ErrorRecoveryConfig> = {
-  limit_exceeded: {
-    hint: '無料解析枠（3回/日）を消費しました。翌日リセットされます。',
-    actions: [
-      { label: '削除', icon: 'trash-outline', action: 'delete', secondary: true },
-    ],
-  },
   no_qa: {
     hint: 'このURLからQ&Aを抽出できませんでした。別のURLをお試しください。',
     actions: [
@@ -124,17 +116,7 @@ async function executeJob(
   await updateJob(db, job.id, { status: 'processing' });
 
   try {
-    const remaining = await getRemainingCount();
-    if (remaining <= 0) {
-      await updateJob(db, job.id, {
-        status: 'failed',
-        error_msg: '本日の無料解析回数（3回）を使い切りました',
-      });
-      return;
-    }
-
     const result = await analyzeUrlPipeline(job.url, onChunkProgress);
-    await consumeOne();
 
     if (result.qa_pairs.length === 0) {
       await updateJob(db, job.id, {

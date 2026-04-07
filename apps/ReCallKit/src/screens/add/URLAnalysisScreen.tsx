@@ -24,7 +24,6 @@ import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { createJob } from '../../db/urlJobRepository';
-import { getRemainingCount } from '../../utils/analysisLimit';
 import type { LibraryStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'URLAnalysis'>;
@@ -39,11 +38,6 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
   const [url, setUrl] = useState(route.params?.initialUrl ?? '');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [remaining, setRemaining] = useState<number | null>(null);
-
-  useEffect(() => {
-    getRemainingCount().then((n) => setRemaining(n));
-  }, []);
 
   const isValidUrl = URL_PATTERN.test(url.trim());
 
@@ -147,21 +141,6 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
           <Text style={[styles.description, { color: colors.labelTertiary }]}>
             スタートすると取り込み一覧画面へ移動し、バックグラウンドで解析が始まります。
           </Text>
-        )}
-
-        {/* 本日の残り回数カード */}
-        {remaining !== null && (
-          <View style={[styles.limitCard, { backgroundColor: colors.card, borderColor: colors.separator }]}>
-            <Text style={[styles.limitLabel, { color: colors.labelSecondary }]}>本日の残り回数</Text>
-            <View style={styles.limitRow}>
-              <Text style={[styles.limitCount, { color: colors.label }]}>
-                {Math.min(remaining, 3)} / 3
-              </Text>
-              <Text style={[styles.limitHint, { color: colors.labelTertiary }]}>
-                広告視聴で追加可能
-              </Text>
-            </View>
-          </View>
         )}
 
         {/* エラー */}
@@ -298,30 +277,6 @@ const styles = StyleSheet.create({
     flex: 1,
     ...TypeScale.subheadline,
     lineHeight: 20,
-  },
-
-  // 残り回数カード
-  limitCard: {
-    borderRadius: Radius.m,
-    borderWidth: 1,
-    padding: Spacing.m,
-    marginTop: Spacing.xs,
-  },
-  limitLabel: {
-    ...TypeScale.footnote,
-    marginBottom: 4,
-  },
-  limitRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.s,
-  },
-  limitCount: {
-    fontSize: 20,
-    fontWeight: '500',
-  },
-  limitHint: {
-    ...TypeScale.caption1,
   },
 
   // スタートボタン
