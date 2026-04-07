@@ -40,8 +40,8 @@ import {
 } from '../../db/queries';
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
-import { Spacing, Radius, CardShadow } from '../../theme/spacing';
-import { SystemColors } from '../../theme/colors';
+import { Spacing, Radius } from '../../theme/spacing';
+import { SystemColors, GoogleCalendarColors } from '../../theme/colors';
 import { useSidebarFilter } from '../../hooks/useSidebarFilter';
 import { useWidgetData } from '../../hooks/useWidgetData';
 import { generateHint } from '../../utils/generateHint';
@@ -63,8 +63,8 @@ interface RecentItem {
 }
 
 const ENG_DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const WEEK_BLUE = '#1A73E8';
-const WEEK_BLUE_LIGHT = '#E8F0FE';
+const WEEK_BLUE = GoogleCalendarColors.blue;
+const WEEK_BLUE_LIGHT = GoogleCalendarColors.pillBlueBg;
 
 const RECENT_CATEGORY_COLORS: Record<string, string> = {
   Programming: '#1A73E8',
@@ -73,8 +73,8 @@ const RECENT_CATEGORY_COLORS: Record<string, string> = {
 };
 
 function getRecentCategoryColor(category: string | null): string {
-  if (!category) return '#9AA0A6';
-  return RECENT_CATEGORY_COLORS[category] ?? '#9AA0A6';
+  if (!category) return GoogleCalendarColors.textTertiary;
+  return RECENT_CATEGORY_COLORS[category] ?? GoogleCalendarColors.textTertiary;
 }
 
 function getRelativeTime(createdAt: string): string {
@@ -270,13 +270,11 @@ export function HomeScreen({ navigation }: Props) {
 
   if (!isReady || loading) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.backgroundGrouped }]}>
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
         <ActivityIndicator color={colors.accent} />
       </View>
     );
   }
-
-  const cardShadow = isDark ? {} : CardShadow;
 
   // ヒーロー表示状態
   const heroState: 'empty' | 'due' | 'done' =
@@ -284,7 +282,7 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <ScrollView
-      style={{ backgroundColor: colors.backgroundGrouped }}
+      style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
@@ -427,7 +425,7 @@ export function HomeScreen({ navigation }: Props) {
 
       {/* ── [5] 週間アクティビティ ─────────────────────── */}
       {totalItems > 0 && (
-        <View style={[styles.weeklyCard, { backgroundColor: colors.card }, cardShadow]}>
+        <View style={styles.weeklyCard}>
           <Text style={styles.labelUpper}>This Week</Text>
           <View style={styles.weeklyRow}>
             {weeklyActivity.map((day, i) => {
@@ -615,7 +613,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginTop: Spacing.s,
     borderWidth: 1,
-    borderColor: '#DADCE0',
+    borderColor: GoogleCalendarColors.border,
   },
   heroBody: {
     padding: Spacing.l,
@@ -673,16 +671,16 @@ const styles = StyleSheet.create({
   reviewMeta: {
     fontSize: 13,
     lineHeight: 18,
-    color: '#5F6368',
+    color: GoogleCalendarColors.textSecondary,
   },
   reviewOverdue: {
     fontSize: 13,
     lineHeight: 18,
-    color: '#D93025',
+    color: GoogleCalendarColors.red,
     fontWeight: '500' as const,
   },
   reviewStartBtn: {
-    backgroundColor: '#1A73E8',
+    backgroundColor: GoogleCalendarColors.blue,
     borderRadius: 20,
     paddingVertical: 10,
     paddingHorizontal: 24,
@@ -771,20 +769,20 @@ const styles = StyleSheet.create({
 
   // ── [4] StatsRow ラッパー ─────────────────────────────
   statsWrap: {
-    paddingVertical: Spacing.m,
+    paddingBottom: 20,
   },
 
   // ── [5] 週間アクティビティ ────────────────────────────
   weeklyCard: {
-    borderRadius: Radius.l,
-    padding: Spacing.m,
-    marginTop: Spacing.s,
+    backgroundColor: 'transparent',
+    paddingVertical: 20,
+    paddingHorizontal: 0,
   },
   weeklyRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginTop: Spacing.s,
+    gap: 8,
   },
   dayCol: {
     alignItems: 'center',
@@ -811,8 +809,8 @@ const styles = StyleSheet.create({
     marginTop: Spacing.m,
   },
   weekSummaryText: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
   },
 
   // label-upper 共通スタイル
@@ -820,9 +818,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.8,
-    color: '#9AA0A6',
+    color: GoogleCalendarColors.textTertiary,
     marginTop: Spacing.m,
-    marginBottom: Spacing.s,
+    marginBottom: 14,
     marginLeft: Spacing.xs,
   },
 
@@ -839,7 +837,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#DADCE0',
+    borderColor: GoogleCalendarColors.border,
     gap: Spacing.s,
   },
   recentCatRow: {
@@ -854,7 +852,7 @@ const styles = StyleSheet.create({
   },
   recentCatName: {
     fontSize: 11,
-    color: '#9AA0A6',
+    color: GoogleCalendarColors.textTertiary,
     lineHeight: 15,
   },
   recentCardTitle: {
@@ -863,7 +861,7 @@ const styles = StyleSheet.create({
   },
   recentCardTime: {
     fontSize: 11,
-    color: '#9AA0A6',
+    color: GoogleCalendarColors.textTertiary,
     marginTop: 10,
   },
 });
