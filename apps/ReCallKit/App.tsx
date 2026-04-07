@@ -6,6 +6,7 @@ import { DatabaseProvider } from './src/hooks/useDatabase';
 import { PointsProvider } from './src/context/PointsContext';
 import { ThemeProvider } from './src/theme/ThemeContext';
 import { TaskProvider } from './src/context/TaskContext';
+import { ToastProvider } from './src/components/ToastProvider';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 // ============================================================
@@ -66,7 +67,9 @@ export default function App() {
             <ThemeProvider>
               <PointsProvider>
                 <TaskProvider>
-                  <RootNavigator />
+                  <ToastProvider>
+                    <RootNavigator />
+                  </ToastProvider>
                 </TaskProvider>
               </PointsProvider>
             </ThemeProvider>
