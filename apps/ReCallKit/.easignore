@@ -1,0 +1,14 @@
+# EAS Build に不要なファイルを除外
+# https://expo.fyi/eas-build-archive
+
+# ローカルテスト用モデルファイル（iPhone上ではHuggingFaceから実行時ダウンロード）
+lambda/models/
+
+# Lambda テスト成果物
+lambda/result_*.md
+
+# その他の開発用ファイル
+**/__tests__/
+**/*.test.ts
+**/*.spec.ts
+.git/
