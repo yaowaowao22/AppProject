@@ -29,7 +29,7 @@ import {
   cancelDailyReminder,
 } from '../../services/notificationService';
 
-const APP_VERSION = '0.1.0';
+const APP_VERSION = '0.2.0';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
