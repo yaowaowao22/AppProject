@@ -1,13 +1,12 @@
 // ============================================================
-// HomeScreen - 8セクション統合ダッシュボード（モックアップ準拠）
+// HomeScreen - 7セクション統合ダッシュボード
 // [1] ヘッダー（DrawerNavigator が担当）
 // [2] DateRow: 青丸日付 + 曜日 + due件数
-// [3] 復習ヒーロー CTA（empty / due / done 3状態）
+// [3] 週間アクティビティ（This Week）
 // [4] StatsRow（日連続 / 習得済み / カード）
-// [5] 週間アクティビティ
-// [6] Recently Added（横スクロール）
-// [7] Mastery（カテゴリ別習熟度バー）
-// [8] Shortcuts（URLから / 手動）
+// [5] Recently Added（横スクロール）
+// [6] Mastery（カテゴリ別習熟度バー）
+// [7] Shortcuts（URLから / 手動）
 // ============================================================
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
@@ -49,7 +48,6 @@ import { StatsRow } from '../../components/StatsRow';
 import { CategoryMasteryBar } from '../../components/CategoryMasteryBar';
 import { ShortcutList, type ShortcutAction } from '../../components/ShortcutList';
 import { DateRow } from '../../components/DateRow';
-import { ReviewCTACard } from '../../components/ReviewCTACard';
 import type { HomeStackParamList, DrawerParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'HomeMain'>;
@@ -171,29 +169,6 @@ export function HomeScreen({ navigation }: Props) {
     return dueItems;
   }, [sidebarFilter, dueItems, taggedItemIds]);
 
-  // 期限切れ件数（today midnight 以前）
-  const overdueCount = useMemo(() => {
-    const todayMidnight = new Date();
-    todayMidnight.setHours(0, 0, 0, 0);
-    return filteredDueItems.filter((ri) => {
-      const next = new Date(ri.item.review!.next_review_at.replace(' ', 'T'));
-      return next < todayMidnight;
-    }).length;
-  }, [filteredDueItems]);
-
-  // due状態ヒーロー用: カテゴリ一覧・推定時間
-  const dueCategories = useMemo(() => {
-    const cats = filteredDueItems
-      .map((ri) => ri.item.category)
-      .filter((c): c is string => c != null && c !== '');
-    return [...new Set(cats)].slice(0, 3);
-  }, [filteredDueItems]);
-
-  const estimatedMinutes = useMemo(
-    () => Math.max(1, Math.round(filteredDueItems.length * 0.5)),
-    [filteredDueItems.length]
-  );
-
   // 習得済みカード総数（categoryStats の合計）
   const totalMastered = useMemo(
     () => categoryStats.reduce((acc, s) => acc + s.masteredCount, 0),
@@ -232,7 +207,6 @@ export function HomeScreen({ navigation }: Props) {
 
   // ナビゲーションハンドラー
   const handleStartReview = () => navigation.navigate('ReviewSession', {});
-  const handleStartExtraReview = () => navigation.navigate('ReviewSession', { forceAll: true });
 
   const handleOpenURLAnalysis = () => {
     navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate(
@@ -306,35 +280,7 @@ export function HomeScreen({ navigation }: Props) {
       <DateRow dueCount={filteredDueItems.length} />
       <View style={[styles.sep, { backgroundColor: colors.separator }]} />
 
-      {/* ── [3] 復習ヒーローCTA ─────────────────────────── */}
-      <ReviewCTACard
-        dueCount={filteredDueItems.length}
-        overdueCount={overdueCount}
-        todayCompleted={todayCompleted}
-        streakDays={streakDays}
-        totalItems={totalItems}
-        estimatedMinutes={estimatedMinutes}
-        categories={dueCategories}
-        onStart={handleStartReview}
-        onStartExtra={handleStartExtraReview}
-        onStartURLAdd={handleOpenURLAnalysis}
-      />
-      <View style={[styles.sectionGap, { backgroundColor: colors.backgroundSecondary }]} />
-
-      {/* ── [4] StatsRow ────────────────────────────────── */}
-      <View style={styles.statsWrap}>
-        <StatsRow
-          withCard={false}
-          stats={[
-            { value: streakDays, label: '日連続', color: streakDays > 0 ? SystemColors.orange : undefined },
-            { value: totalMastered, label: '習得済み' },
-            { value: totalItems, label: 'カード' },
-          ]}
-        />
-      </View>
-      <View style={[styles.sep, { backgroundColor: colors.separator }]} />
-
-      {/* ── [5] 週間アクティビティ ─────────────────────── */}
+      {/* ── [3] 週間アクティビティ（This Week） ────────── */}
       {totalItems > 0 && (
         <View style={styles.weeklyCard}>
           <Text style={[styles.labelUpper, { color: colors.labelTertiary }]}>This Week</Text>
@@ -402,6 +348,19 @@ export function HomeScreen({ navigation }: Props) {
       {totalItems > 0 && (
         <View style={[styles.sectionGap, { backgroundColor: colors.backgroundSecondary }]} />
       )}
+
+      {/* ── [4] StatsRow ────────────────────────────────── */}
+      <View style={styles.statsWrap}>
+        <StatsRow
+          withCard={false}
+          stats={[
+            { value: streakDays, label: '日連続', color: streakDays > 0 ? SystemColors.orange : undefined },
+            { value: totalMastered, label: '習得済み' },
+            { value: totalItems, label: 'カード' },
+          ]}
+        />
+      </View>
+      <View style={[styles.sep, { backgroundColor: colors.separator }]} />
 
       {/* ── [6] Recently Added ──────────────────────────── */}
       {recentItems.length > 0 && (
