@@ -35,6 +35,11 @@ interface CollectionWithCount {
   count: number;
 }
 
+// タグドット色パレット（モックアップ準拠: blue, amber, green, red, indigo, purple, orange）
+const TAG_DOT_PALETTE = [
+  '#1A73E8', '#E8A000', '#1E8E3E', '#D93025', '#5E5CE6', '#BF5AF2', '#F29900',
+];
+
 async function triggerSelectionHaptic() {
   if (Platform.OS === 'web') return;
   try { await Haptics.selectionAsync(); } catch {}
@@ -240,15 +245,21 @@ export function DrawerContent({ navigation, state: drawerState }: DrawerContentC
         {
           paddingTop: insets.top + 12,
           paddingBottom: SidebarLayout.headerPaddingBottom,
-          height: insets.top + 64,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: sc.separator,
         },
       ]}>
-        <Text
-          style={[styles.title, { color: sc.textPrimary }]}
-          accessibilityRole="header"
-        >
-          ReCallKit
-        </Text>
+        <View style={styles.headerTextGroup}>
+          <Text
+            style={[styles.title, { color: sc.textPrimary }]}
+            accessibilityRole="header"
+          >
+            ReCallKit
+          </Text>
+          <Text style={[styles.headerSubtitle, { color: sc.textTertiary }]}>
+            {totalCards} cards · {masterRate}% mastered
+          </Text>
+        </View>
         <Pressable
           style={({ pressed }) => [
             styles.closeBtn,
@@ -307,8 +318,9 @@ export function DrawerContent({ navigation, state: drawerState }: DrawerContentC
         {/* ---- Tags（24pt gap） ---- */}
         <View style={[styles.section, styles.sectionGap]}>
           <SectionHeading label="Tags" color={sc.sectionHeader} />
-          {tags.map((tag) => {
+          {tags.map((tag, index) => {
             const tagId = `tag-${tag.id}`;
+            const dotColor = TAG_DOT_PALETTE[index % TAG_DOT_PALETTE.length];
             return (
               <NavItem
                 key={tagId}
@@ -317,7 +329,7 @@ export function DrawerContent({ navigation, state: drawerState }: DrawerContentC
                 sc={sc}
               >
                 <View style={styles.iconSlot}>
-                  <TagDot isActive={activeFilterId === tagId} sc={sc} />
+                  <TagDot color={dotColor} />
                 </View>
                 <ItemLabel label={tag.name} isActive={activeFilterId === tagId} sc={sc} />
                 <CountBadge count={tag.count} isActive={activeFilterId === tagId} sc={sc} />
@@ -468,14 +480,12 @@ function CountBadge({ count, isActive, sc }: { count: number; isActive: boolean;
   );
 }
 
-function TagDot({ isActive, sc }: { isActive: boolean; sc: SidebarColorSet }) {
+function TagDot({ color }: { color: string }) {
   return (
     <View
       style={[
         styles.tagDot,
-        isActive
-          ? { backgroundColor: sc.activeTint, borderColor: sc.activeTint }
-          : { backgroundColor: 'transparent', borderColor: sc.textTertiary },
+        { backgroundColor: color, borderColor: color },
       ]}
     />
   );
@@ -498,10 +508,16 @@ const styles = StyleSheet.create({
     paddingLeft: SidebarLayout.itemPaddingLeft,
     paddingRight: Spacing.m,
   },
+  headerTextGroup: {
+    flex: 1,
+  },
   title: {
-    fontSize: 17,
-    fontWeight: '600',
-    letterSpacing: -0.2,
+    fontSize: 20,
+    fontWeight: '500',
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    marginTop: 4,
   },
   closeBtn: {
     width: SidebarLayout.closeBtnSize,

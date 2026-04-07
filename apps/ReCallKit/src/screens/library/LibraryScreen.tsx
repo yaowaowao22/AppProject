@@ -16,7 +16,14 @@ import {
   Alert,
   Linking,
   Platform,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
+
+// Android で LayoutAnimation を有効化
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import * as Clipboard from 'expo-clipboard';
 import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated';
@@ -182,6 +189,9 @@ export function LibraryScreen({ navigation }: Props) {
   // ---- 選択削除モード状態 ----
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+  // ---- 展開状態 ----
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   // ---- Swipeable refs ----
   const swipeableRefs = useRef<Map<number, import('react-native-gesture-handler/ReanimatedSwipeable').SwipeableMethods>>(new Map());
