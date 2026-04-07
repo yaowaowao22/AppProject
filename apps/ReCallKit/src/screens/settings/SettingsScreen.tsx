@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Updates from 'expo-updates';
 import { useTheme } from '../../theme/ThemeContext';
-import { type ThemePreference, THEMES, THEME_CATEGORIES } from '../../theme/themes';
+import { type ThemePreference } from '../../theme/themes';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { useNavigation } from '@react-navigation/native';
@@ -47,7 +47,6 @@ export function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [showThemePicker, setShowThemePicker] = useState(false);
   const [tempHour, setTempHour] = useState(8);
   const [tempMinute, setTempMinute] = useState(0);
   const [exporting, setExporting] = useState(false);
@@ -138,7 +137,6 @@ export function SettingsScreen() {
   // ── テーマ切替 ───────────────────────────────────────────
   const handleTheme = async (pref: ThemePreference) => {
     await setThemePreference(pref);
-    setShowThemePicker(false);
   };
 
   // ── 全データ削除 ─────────────────────────────────────────
@@ -222,11 +220,6 @@ export function SettingsScreen() {
       setExporting(false);
     }
   };
-
-  // ── 現在のテーマ名を表示用に解決 ─────────────────────────
-  const currentThemeName = themePreference === 'system'
-    ? 'システム設定に従う'
-    : (THEMES[themePreference]?.name ?? themePreference);
 
   // ── ローディング ─────────────────────────────────────────
   if (!settings) {
@@ -350,19 +343,29 @@ export function SettingsScreen() {
           外観
         </Text>
         <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <TouchableOpacity
-            style={styles.row}
-            onPress={() => setShowThemePicker(true)}
-            activeOpacity={0.6}
-          >
+          <View style={styles.row}>
             <Text style={[styles.rowLabel, { color: colors.label }]}>テーマ</Text>
-            <View style={styles.rowRight}>
-              <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
-                {currentThemeName}
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.labelTertiary} />
+            <View style={[styles.themeSegment, { borderColor: colors.separator, backgroundColor: colors.backgroundGrouped }]}>
+              {(['system', 'light', 'dark'] as const).map((pref) => {
+                const isActive = themePreference === pref;
+                const label = pref === 'system' ? 'システム' : pref === 'light' ? 'ライト' : 'ダーク';
+                return (
+                  <Pressable
+                    key={pref}
+                    style={[
+                      styles.themeSegmentItem,
+                      isActive && { backgroundColor: colors.card },
+                    ]}
+                    onPress={() => handleTheme(pref)}
+                  >
+                    <Text style={[styles.themeSegmentText, { color: isActive ? colors.label : colors.labelTertiary, fontWeight: isActive ? '600' : '400' }]}>
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
-          </TouchableOpacity>
+          </View>
         </View>
 
         {/* ── データ ───────────────────────────────────────── */}
