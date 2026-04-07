@@ -110,8 +110,8 @@ export interface ThemeEntry {
 
 function ls(accent: string, r: number, g: number, b: number): SidebarColorSet {
   return {
-    background: 'rgba(242,242,247,0.95)',
-    backgroundSolid: '#F2F2F7',
+    background: 'rgba(234,234,239,0.92)',
+    backgroundSolid: '#EAEAEF',
     overlay: 'rgba(0,0,0,0.30)',
     activeBackground: `rgba(${r},${g},${b},0.12)`,
     activeTint: accent,

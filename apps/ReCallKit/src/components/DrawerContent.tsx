@@ -292,7 +292,7 @@ export function DrawerContent({ navigation, state: drawerState }: DrawerContentC
                   <Ionicons
                     name={isActive ? item.iconFilled : item.iconOutline}
                     size={SidebarLayout.iconSize}
-                    color={isActive ? sc.activeTint : sc.inactiveTint}
+                    color={isActive ? sc.activeTint : sc.textTertiary}
                   />
                 </View>
                 <ItemLabel label={item.label} isActive={isActive} sc={sc} />
@@ -343,7 +343,7 @@ export function DrawerContent({ navigation, state: drawerState }: DrawerContentC
                     <Ionicons
                       name="folder-outline"
                       size={SidebarLayout.iconSize}
-                      color={activeFilterId === colId ? sc.activeTint : sc.inactiveTint}
+                      color={activeFilterId === colId ? sc.activeTint : sc.textTertiary}
                     />
                   </View>
                   <ItemLabel label={col.name} isActive={activeFilterId === colId} sc={sc} />
@@ -385,7 +385,7 @@ export function DrawerContent({ navigation, state: drawerState }: DrawerContentC
           <Ionicons
             name="settings-outline"
             size={SidebarLayout.iconSize}
-            color={sc.inactiveTint}
+            color={sc.textTertiary}
           />
           <Text style={[styles.footerSettingsLabel, { color: sc.inactiveTint }]}>
             設定
