@@ -185,12 +185,12 @@ export function LibraryScreen({ navigation }: Props) {
   const deleteSelected = useCallback(async () => {
     const count = selectedIds.size;
     Alert.alert(
-      '削除確認',
-      `選択した${count}件を削除しますか？`,
+      'ゴミ箱へ移動',
+      `選択した${count}件をゴミ箱へ移動しますか？`,
       [
         { text: 'キャンセル', style: 'cancel' },
         {
-          text: '削除',
+          text: 'ゴミ箱へ移動',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -499,18 +499,18 @@ export function LibraryScreen({ navigation }: Props) {
       {/* FAB群（選択モード中は非表示） */}
       {!selectionMode && (
         <>
-          {/* URL取り込み一覧ボタン */}
+          {/* ゴミ箱ボタン */}
           <Pressable
             style={[
               styles.fab,
               styles.fabSecondary,
               { backgroundColor: colors.backgroundSecondary, bottom: insets.bottom + Spacing.l + 128, borderColor: colors.separator, shadowColor: colors.cardShadowColor },
             ]}
-            onPress={() => navigation.navigate('URLImportList')}
+            onPress={() => navigation.navigate('Trash')}
             accessibilityRole="button"
-            accessibilityLabel="URL取り込み一覧"
+            accessibilityLabel="ゴミ箱"
           >
-            <Ionicons name="cloud-download-outline" size={22} color={colors.accent} />
+            <Ionicons name="trash-outline" size={22} color={colors.labelSecondary} />
           </Pressable>
 
           {/* グループ作成ボタン */}

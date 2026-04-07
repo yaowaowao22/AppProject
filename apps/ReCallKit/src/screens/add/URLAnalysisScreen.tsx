@@ -64,8 +64,8 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
       return;
     }
 
-    // URLImportList へ遷移（解析はそちらでバックグラウンド実行）
-    navigation.replace('URLImportList');
+    // ジョブ登録完了後は前の画面へ戻る
+    navigation.goBack();
   }, [url, isValidUrl, db, isReady, navigation]);
 
   const handleClear = useCallback(() => {

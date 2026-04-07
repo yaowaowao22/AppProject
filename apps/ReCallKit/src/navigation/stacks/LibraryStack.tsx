@@ -7,7 +7,7 @@ import { ReviewGroupCreateScreen } from '../../screens/library/ReviewGroupCreate
 import { AddItemScreen } from '../../screens/add/AddItemScreen';
 import { QAPreviewScreen } from '../../screens/add/QAPreviewScreen';
 import { URLAnalysisScreen } from '../../screens/add/URLAnalysisScreen';
-import { URLImportListScreen } from '../../screens/add/URLImportListScreen';
+import { TrashScreen } from '../../screens/library/TrashScreen';
 import { makeNavigatorOptions, makeLargeTitleOptions, makeModalCancelOptions } from '../sharedScreenOptions';
 import type { LibraryStackParamList } from '../types';
 
@@ -52,9 +52,9 @@ export function LibraryStack() {
         options={({ navigation: nav }) => makeModalCancelOptions('URL解析', colors, nav)}
       />
       <Stack.Screen
-        name="URLImportList"
-        component={URLImportListScreen}
-        options={{ title: 'URL取り込み一覧' }}
+        name="Trash"
+        component={TrashScreen}
+        options={{ title: 'ゴミ箱' }}
       />
       <Stack.Screen
         name="QAPreview"
