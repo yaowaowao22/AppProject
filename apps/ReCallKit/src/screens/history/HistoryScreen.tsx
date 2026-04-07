@@ -1,9 +1,10 @@
 // ============================================================
 // HistoryScreen - 学習履歴
 // StreakRing・統計カード・マスタリー分布・復習セッション別履歴（展開/折りたたみ）
+// セッションデータは review_sessions / review_session_items テーブルから取得
 // ============================================================
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   ScrollView,
   View,
@@ -23,13 +24,14 @@ import {
   getStreakDays,
   getTodayCompletedCount,
   getTotalItemCount,
-  getRecentlyReviewedItems,
   getAccuracyRate,
-  type ReviewableItem,
+  getReviewSessions,
+  getSessionItems,
+  type ReviewSessionRecord,
+  type ReviewSessionItemRecord,
 } from '../../db/reviewRepository';
 import {
   getMasterySummary,
-  toMasteryLevel,
   type MasterySummary,
   type MasteryLevel,
 } from '../../db/queries';
@@ -64,71 +66,18 @@ const TYPE_META: Record<string, { label: string; color: string; bg: string }> = 
   screenshot: { label: '画像',     color: SystemColors.purple, bg: SystemColors.purple + '1F' },
 };
 
-// セッション型: 近い時間帯に復習されたアイテム群
-interface ReviewSession {
-  id: string;
-  startTime: Date;
-  items: ReviewableItem[];
-  mastery: MasterySummary;
-}
+// 評価ラベル
+const QUALITY_LABEL: Record<number, { label: string; color: string }> = {
+  5: { label: '簡単',       color: SystemColors.blue   },
+  4: { label: '良かった',   color: SystemColors.green  },
+  3: { label: '良かった',   color: SystemColors.green  },
+  2: { label: '難しかった', color: SystemColors.orange },
+  1: { label: 'もう一度',   color: '#FF3B30'            },
+  0: { label: 'もう一度',   color: '#FF3B30'            },
+};
 
-/** 30分以内の復習を同一セッションとしてクラスタリング */
-const SESSION_GAP_MS = 30 * 60 * 1000;
-
-function groupIntoSessions(items: ReviewableItem[]): ReviewSession[] {
-  if (items.length === 0) return [];
-
-  const sorted = [...items].sort((a, b) => {
-    const aT = a.item.review?.last_reviewed_at ?? '';
-    const bT = b.item.review?.last_reviewed_at ?? '';
-    return aT > bT ? -1 : aT < bT ? 1 : 0;
-  });
-
-  const sessions: ReviewSession[] = [];
-  let currentItems: ReviewableItem[] = [sorted[0]];
-  let currentTime = new Date(
-    (sorted[0].item.review?.last_reviewed_at ?? '').replace(' ', 'T')
-  );
-
-  for (let i = 1; i < sorted.length; i++) {
-    const ri = sorted[i];
-    const t = new Date(
-      (ri.item.review?.last_reviewed_at ?? '').replace(' ', 'T')
-    );
-    if (currentTime.getTime() - t.getTime() <= SESSION_GAP_MS) {
-      currentItems.push(ri);
-    } else {
-      sessions.push(buildSession(currentItems, sessions.length));
-      currentItems = [ri];
-    }
-    currentTime = t;
-  }
-  sessions.push(buildSession(currentItems, sessions.length));
-
-  return sessions;
-}
-
-function buildSession(items: ReviewableItem[], idx: number): ReviewSession {
-  const mastery: MasterySummary = { new: 0, learning: 0, advanced: 0, master: 0, total: items.length };
-  for (const ri of items) {
-    const r = ri.item.review;
-    if (r) {
-      mastery[toMasteryLevel({ repetitions: r.repetitions, easiness_factor: r.easiness_factor })]++;
-    } else {
-      mastery.new++;
-    }
-  }
-
-  const times = items
-    .map((ri) => ri.item.review?.last_reviewed_at)
-    .filter((t): t is string => !!t)
-    .map((t) => new Date(t.replace(' ', 'T')).getTime());
-  const startTime = new Date(times.length > 0 ? Math.min(...times) : Date.now());
-
-  return { id: `${startTime.getTime()}-${idx}`, startTime, items, mastery };
-}
-
-function formatSessionTime(date: Date): string {
+function formatSessionTime(dateStr: string): string {
+  const date = new Date(dateStr.replace(' ', 'T'));
   const now = new Date();
   const todayStr = now.toDateString();
   const yesterdayDate = new Date(now);
@@ -153,32 +102,34 @@ export function HistoryScreen() {
   const [streakDays, setStreakDays] = useState(0);
   const [todayCompleted, setTodayCompleted] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
-  const [recentlyReviewed, setRecentlyReviewed] = useState<ReviewableItem[]>([]);
   const [masterySummary, setMasterySummary] = useState<MasterySummary | null>(null);
   const [masteredCount, setMasteredCount] = useState(0);
   const [accuracyRate, setAccuracyRate] = useState(0);
+  const [sessions, setSessions] = useState<ReviewSessionRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  // 展開済みセッションID → そのアイテム一覧
+  const [expandedItems, setExpandedItems] = useState<Record<number, ReviewSessionItemRecord[]>>({});
 
   const loadData = useCallback(async () => {
     if (!db || !isReady) return;
     setLoading(true);
     try {
-      const [streak, completed, total, recent, mastery, accuracy] = await Promise.all([
+      const [streak, completed, total, mastery, accuracy, sessionList] = await Promise.all([
         getStreakDays(db),
         getTodayCompletedCount(db),
         getTotalItemCount(db),
-        getRecentlyReviewedItems(db, 50),
         getMasterySummary(db),
         getAccuracyRate(db),
+        getReviewSessions(db, 30),
       ]);
       setStreakDays(streak);
       setTodayCompleted(completed);
       setTotalItems(total);
-      setRecentlyReviewed(recent);
       setMasterySummary(mastery);
       setMasteredCount((mastery.advanced ?? 0) + (mastery.master ?? 0));
       setAccuracyRate(accuracy);
+      setSessions(sessionList);
     } catch (err) {
       console.error('[HistoryScreen] loadData error:', err);
     } finally {
@@ -186,23 +137,24 @@ export function HistoryScreen() {
     }
   }, [db, isReady]);
 
-  const sessions = useMemo(
-    () => groupIntoSessions(recentlyReviewed),
-    [recentlyReviewed]
-  );
-
-  const toggleExpand = useCallback((id: string) => {
+  const toggleExpand = useCallback(async (session: ReviewSessionRecord) => {
+    const id = session.id;
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }, []);
+
+    if (expandedItems[id]) {
+      // 折りたたむ
+      setExpandedItems((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    } else {
+      // 展開: アイテムを遅延ロード
+      if (!db) return;
+      const items = await getSessionItems(db, id);
+      setExpandedItems((prev) => ({ ...prev, [id]: items }));
+    }
+  }, [db, expandedItems]);
 
   useFocusEffect(
     useCallback(() => {
@@ -268,8 +220,10 @@ export function HistoryScreen() {
             </Text>
           </View>
           {sessions.map((session) => {
-            const total = session.mastery.total || 1;
-            const isExpanded = expandedIds.has(session.id);
+            const mastery = session.masterySnapshot;
+            const total = mastery.total || 1;
+            const items = expandedItems[session.id];
+            const isExpanded = !!items;
             return (
               <View
                 key={session.id}
@@ -278,7 +232,7 @@ export function HistoryScreen() {
                 {/* ――― セッションヘッダー（タップで展開） ――― */}
                 <Pressable
                   style={styles.sessionHeader}
-                  onPress={() => toggleExpand(session.id)}
+                  onPress={() => toggleExpand(session)}
                 >
                   <View style={styles.sessionHeaderTop}>
                     <Ionicons
@@ -288,68 +242,67 @@ export function HistoryScreen() {
                     />
                     <Ionicons name="time-outline" size={15} color={colors.labelSecondary} />
                     <Text style={[styles.sessionTime, { color: colors.label }]}>
-                      {formatSessionTime(session.startTime)}
+                      {formatSessionTime(session.startedAt)}
                     </Text>
                     <Text style={[styles.sessionCount, { color: colors.labelTertiary }]}>
-                      {session.mastery.total}枚
+                      {session.cardCount}枚
+                    </Text>
+                    <Text style={[styles.sessionAccuracy, { color: session.accuracy >= 60 ? SystemColors.green : SystemColors.orange }]}>
+                      {session.accuracy}%
                     </Text>
                   </View>
 
                   {/* スタック型マスタリー分布バー */}
-                  <View style={[styles.stackedBarTrack, { backgroundColor: colors.separator }]}>
-                    {MASTERY_META.map(({ key, color }) => {
-                      const count = session.mastery[key];
-                      if (count === 0) return null;
-                      const pct = (count / total) * 100;
-                      return (
-                        <View
-                          key={key}
-                          style={[
-                            styles.stackedBarSegment,
-                            // @ts-ignore - RN accepts percentage string for width
-                            { width: `${pct}%`, backgroundColor: color },
-                          ]}
-                        />
-                      );
-                    })}
-                  </View>
+                  {mastery.total > 0 && (
+                    <View style={[styles.stackedBarTrack, { backgroundColor: colors.separator }]}>
+                      {MASTERY_META.map(({ key, color }) => {
+                        const count = mastery[key] ?? 0;
+                        if (count === 0) return null;
+                        const pct = (count / total) * 100;
+                        return (
+                          <View
+                            key={key}
+                            style={[
+                              styles.stackedBarSegment,
+                              // @ts-ignore - RN accepts percentage string for width
+                              { width: `${pct}%`, backgroundColor: color },
+                            ]}
+                          />
+                        );
+                      })}
+                    </View>
+                  )}
 
                   {/* マスタリー凡例 */}
-                  <View style={styles.sessionLegend}>
-                    {MASTERY_META.map(({ key, label, color }) => {
-                      const count = session.mastery[key];
-                      if (count === 0) return null;
-                      return (
-                        <View key={key} style={styles.legendItem}>
-                          <View style={[styles.legendDot, { backgroundColor: color }]} />
-                          <Text style={[styles.legendText, { color: colors.labelSecondary }]}>
-                            {label} {count}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
+                  {mastery.total > 0 && (
+                    <View style={styles.sessionLegend}>
+                      {MASTERY_META.map(({ key, label, color }) => {
+                        const count = mastery[key] ?? 0;
+                        if (count === 0) return null;
+                        return (
+                          <View key={key} style={styles.legendItem}>
+                            <View style={[styles.legendDot, { backgroundColor: color }]} />
+                            <Text style={[styles.legendText, { color: colors.labelSecondary }]}>
+                              {label} {count}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
                 </Pressable>
 
                 {/* ――― 展開時: アイテム詳細リスト ――― */}
                 {isExpanded && (
                   <View style={[styles.expandedList, { borderTopColor: colors.separator }]}>
-                    {session.items.map((ri) => {
-                      const meta = TYPE_META[ri.item.type] ?? TYPE_META.text;
-                      const level = ri.item.review
-                        ? toMasteryLevel({
-                            repetitions: ri.item.review.repetitions,
-                            easiness_factor: ri.item.review.easiness_factor,
-                          })
-                        : 'new';
-                      const masteryInfo = MASTERY_META.find((m) => m.key === level);
+                    {items.map((ri) => {
+                      const meta = TYPE_META[ri.type] ?? TYPE_META.text;
+                      const masteryInfo = MASTERY_META.find((m) => m.key === ri.masteryLevel);
+                      const ratingInfo = QUALITY_LABEL[ri.quality] ?? QUALITY_LABEL[0];
                       return (
                         <View
-                          key={ri.reviewId}
-                          style={[
-                            styles.historyItem,
-                            { borderBottomColor: colors.separator },
-                          ]}
+                          key={ri.id}
+                          style={[styles.historyItem, { borderBottomColor: colors.separator }]}
                         >
                           <View style={[styles.typeBadge, { backgroundColor: meta.bg }]}>
                             <Text style={[styles.typeBadgeText, { color: meta.color }]}>
@@ -361,29 +314,31 @@ export function HistoryScreen() {
                               style={[styles.historyTitle, { color: colors.label }]}
                               numberOfLines={1}
                             >
-                              {ri.item.title}
+                              {ri.title}
                             </Text>
-                            {ri.item.content ? (
+                            {ri.content ? (
                               <Text
                                 style={[styles.historyPreview, { color: colors.labelSecondary }]}
                                 numberOfLines={2}
                               >
-                                {ri.item.content}
+                                {ri.content}
                               </Text>
                             ) : null}
                           </View>
-                          {masteryInfo && (
-                            <View
-                              style={[
-                                styles.masteryBadge,
-                                { backgroundColor: masteryInfo.color + '1F' },
-                              ]}
-                            >
-                              <Text style={[styles.masteryBadgeText, { color: masteryInfo.color }]}>
-                                {masteryInfo.label}
+                          <View style={styles.itemBadges}>
+                            {masteryInfo && (
+                              <View style={[styles.badgePill, { backgroundColor: masteryInfo.color + '1F' }]}>
+                                <Text style={[styles.badgePillText, { color: masteryInfo.color }]}>
+                                  {masteryInfo.label}
+                                </Text>
+                              </View>
+                            )}
+                            <View style={[styles.badgePill, { backgroundColor: ratingInfo.color + '1F' }]}>
+                              <Text style={[styles.badgePillText, { color: ratingInfo.color }]}>
+                                {ratingInfo.label}
                               </Text>
                             </View>
-                          )}
+                          </View>
                         </View>
                       );
                     })}
@@ -497,6 +452,11 @@ const styles = StyleSheet.create({
   sessionCount: {
     ...TypeScale.caption1,
   },
+  sessionAccuracy: {
+    ...TypeScale.caption1,
+    fontWeight: '600' as const,
+    marginLeft: 4,
+  },
 
   // ――― スタック型マスタリーバー ―――
   stackedBarTrack: {
@@ -568,13 +528,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  masteryBadge: {
+  itemBadges: {
+    flexShrink: 0,
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  badgePill: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: Radius.full,
-    flexShrink: 0,
   },
-  masteryBadgeText: {
+  badgePillText: {
     fontSize: 10,
     fontWeight: '600' as const,
   },
