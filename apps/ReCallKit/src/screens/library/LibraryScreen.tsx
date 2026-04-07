@@ -374,12 +374,19 @@ export function LibraryScreen({ navigation }: Props) {
     }
   }, [selectionMode, selectedIds.size, colors, navigation, exitSelectionMode]);
 
+  // ---- 展開トグル ----
+  const toggleExpand = useCallback((itemId: number) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedId((prev) => (prev === itemId ? null : itemId));
+  }, []);
+
   // ---- カードレンダラー ----
   const renderItem = ({ item }: { item: ItemWithMeta }) => {
     const rs = getReviewStatus(item);
     const iconName = TYPE_ICONS[item.type] ?? 'document-outline';
     const typeLabel = TYPE_LABELS[item.type] ?? item.type;
     const isSelected = selectedIds.has(item.id);
+    const isExpanded = expandedId === item.id;
 
     const card = (
       <Pressable
@@ -388,17 +395,17 @@ export function LibraryScreen({ navigation }: Props) {
           {
             backgroundColor: colors.card,
             borderWidth: StyleSheet.hairlineWidth,
-            borderColor: colors.separator,
+            borderColor: isExpanded ? colors.accent : colors.separator,
           },
           cardShadow,
-          pressed && { opacity: 0.85 },
+          pressed && !isExpanded && { opacity: 0.85 },
           isSelected && { borderWidth: 2, borderColor: colors.accent },
         ]}
         onPress={() => {
           if (selectionMode) {
             toggleItemSelection(item.id);
           } else {
-            navigation.navigate('ItemDetail', { itemId: item.id });
+            toggleExpand(item.id);
           }
         }}
         onLongPress={() => {
@@ -421,7 +428,7 @@ export function LibraryScreen({ navigation }: Props) {
           </View>
         )}
 
-        {/* メタ行: タイプアイコン + ラベル + 復習バッジ */}
+        {/* メタ行: タイプアイコン + ラベル + 復習バッジ + シェブロン */}
         <View style={styles.cardMeta}>
           <Ionicons name={iconName} size={13} color={colors.labelTertiary} />
           <Text style={[styles.cardMetaType, { color: colors.labelTertiary }]}>
@@ -455,56 +462,151 @@ export function LibraryScreen({ navigation }: Props) {
               </Text>
             </View>
           )}
+          {!selectionMode && (
+            <Ionicons
+              name={isExpanded ? 'chevron-up' : 'chevron-down'}
+              size={16}
+              color={colors.labelTertiary}
+            />
+          )}
         </View>
 
         {/* タイトル */}
-        <Text style={[styles.cardTitle, { color: colors.label }]} numberOfLines={2}>
+        <Text style={[styles.cardTitle, { color: colors.label }]} numberOfLines={isExpanded ? undefined : 2}>
           {item.title}
         </Text>
 
-        {/* 答え / エクサープト */}
+        {/* 答え / エクサープト（折りたたみ時は2行プレビュー） */}
         {(item.content || item.excerpt) ? (
           <Text
             style={[styles.cardExcerpt, { color: colors.labelSecondary }]}
-            numberOfLines={2}
+            numberOfLines={isExpanded ? undefined : 2}
           >
             {item.content || item.excerpt}
           </Text>
         ) : null}
 
-        {/* フッター: AI深堀ボタン + タグ + 日付 */}
-        <View style={styles.cardFooter}>
-          {!selectionMode && (
-            <Pressable
-              onPress={() => handleDeepDive(item)}
-              hitSlop={8}
-              style={styles.deepDiveBtn}
-              accessibilityLabel="AIで深掘り"
-            >
-              <Ionicons name="sparkles-outline" size={14} color={colors.accent} />
-            </Pressable>
-          )}
-          <View style={styles.tagRow}>
-            {item.tags.slice(0, 3).map((tag) => (
-              <View
-                key={tag.id}
-                style={[styles.tag, { backgroundColor: colors.backgroundSecondary, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.separator }]}
+        {/* ---- 展開セクション ---- */}
+        {isExpanded && (
+          <View style={styles.expandedSection}>
+            {/* セパレーター */}
+            <View style={[styles.expandedSeparator, { backgroundColor: colors.separator }]} />
+
+            {/* ソースURL */}
+            {item.source_url ? (
+              <Pressable
+                style={styles.expandedRow}
+                onPress={() => Linking.openURL(item.source_url!)}
+                hitSlop={4}
               >
-                <Text style={[styles.tagText, { color: colors.labelSecondary }]}>
-                  #{tag.name}
+                <Ionicons name="link-outline" size={14} color={colors.accent} />
+                <Text style={[styles.expandedUrl, { color: colors.accent }]} numberOfLines={1}>
+                  {item.source_url}
                 </Text>
+              </Pressable>
+            ) : null}
+
+            {/* 全タグ表示 */}
+            {item.tags.length > 0 && (
+              <View style={styles.expandedTagRow}>
+                {item.tags.map((tag) => (
+                  <View
+                    key={tag.id}
+                    style={[styles.tag, { backgroundColor: colors.backgroundSecondary, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.separator }]}
+                  >
+                    <Text style={[styles.tagText, { color: colors.labelSecondary }]}>
+                      #{tag.name}
+                    </Text>
+                  </View>
+                ))}
               </View>
-            ))}
-            {item.tags.length > 3 && (
-              <Text style={[styles.tagMore, { color: colors.labelTertiary }]}>
-                +{item.tags.length - 3}
-              </Text>
             )}
+
+            {/* 復習情報 */}
+            {item.review && (
+              <View style={[styles.expandedInfoCard, { backgroundColor: colors.backgroundSecondary }]}>
+                <Text style={[styles.expandedInfoTitle, { color: colors.labelSecondary }]}>復習状態</Text>
+                <View style={styles.expandedInfoGrid}>
+                  <View style={styles.expandedInfoItem}>
+                    <Text style={[styles.expandedInfoValue, { color: colors.label }]}>{item.review.repetitions}</Text>
+                    <Text style={[styles.expandedInfoLabel, { color: colors.labelTertiary }]}>回数</Text>
+                  </View>
+                  <View style={styles.expandedInfoItem}>
+                    <Text style={[styles.expandedInfoValue, { color: colors.label }]}>{item.review.interval_days}日</Text>
+                    <Text style={[styles.expandedInfoLabel, { color: colors.labelTertiary }]}>間隔</Text>
+                  </View>
+                  <View style={styles.expandedInfoItem}>
+                    <Text style={[styles.expandedInfoValue, { color: colors.label }]}>
+                      {rs ? rs.text : formatDate(item.review.next_review_at)}
+                    </Text>
+                    <Text style={[styles.expandedInfoLabel, { color: colors.labelTertiary }]}>次回</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* メタ情報 + アクションボタン */}
+            <View style={styles.expandedActions}>
+              <Text style={[styles.cardDate, { color: colors.labelTertiary }]}>
+                {formatDate(item.created_at)}
+              </Text>
+              <View style={styles.expandedBtnRow}>
+                <Pressable
+                  onPress={() => handleDeepDive(item)}
+                  hitSlop={8}
+                  style={[styles.expandedBtn, { backgroundColor: colors.backgroundSecondary }]}
+                >
+                  <Ionicons name="sparkles-outline" size={14} color={colors.accent} />
+                  <Text style={[styles.expandedBtnText, { color: colors.accent }]}>AI深掘り</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}
+                  hitSlop={8}
+                  style={[styles.expandedBtn, { backgroundColor: colors.accent }]}
+                >
+                  <Ionicons name="create-outline" size={14} color="#FFFFFF" />
+                  <Text style={[styles.expandedBtnText, { color: '#FFFFFF' }]}>詳細・編集</Text>
+                </Pressable>
+              </View>
+            </View>
           </View>
-          <Text style={[styles.cardDate, { color: colors.labelTertiary }]}>
-            {formatDate(item.created_at)}
-          </Text>
-        </View>
+        )}
+
+        {/* フッター: AI深堀ボタン + タグ + 日付（折りたたみ時のみ） */}
+        {!isExpanded && (
+          <View style={styles.cardFooter}>
+            {!selectionMode && (
+              <Pressable
+                onPress={() => handleDeepDive(item)}
+                hitSlop={8}
+                style={styles.deepDiveBtn}
+                accessibilityLabel="AIで深掘り"
+              >
+                <Ionicons name="sparkles-outline" size={14} color={colors.accent} />
+              </Pressable>
+            )}
+            <View style={styles.tagRow}>
+              {item.tags.slice(0, 3).map((tag) => (
+                <View
+                  key={tag.id}
+                  style={[styles.tag, { backgroundColor: colors.backgroundSecondary, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.separator }]}
+                >
+                  <Text style={[styles.tagText, { color: colors.labelSecondary }]}>
+                    #{tag.name}
+                  </Text>
+                </View>
+              ))}
+              {item.tags.length > 3 && (
+                <Text style={[styles.tagMore, { color: colors.labelTertiary }]}>
+                  +{item.tags.length - 3}
+                </Text>
+              )}
+            </View>
+            <Text style={[styles.cardDate, { color: colors.labelTertiary }]}>
+              {formatDate(item.created_at)}
+            </Text>
+          </View>
+        )}
       </Pressable>
     );
 
@@ -947,6 +1049,74 @@ const styles = StyleSheet.create({
   cardDate: {
     ...TypeScale.caption1,
     flexShrink: 0,
+  },
+
+  // ---- 展開セクション ----
+  expandedSection: {
+    gap: Spacing.s,
+  },
+  expandedSeparator: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 2,
+  },
+  expandedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  expandedUrl: {
+    ...TypeScale.caption1,
+    flex: 1,
+  },
+  expandedTagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+  },
+  expandedInfoCard: {
+    borderRadius: Radius.s,
+    padding: Spacing.s,
+    gap: Spacing.xs,
+  },
+  expandedInfoTitle: {
+    ...TypeScale.caption1,
+    fontWeight: '600' as const,
+  },
+  expandedInfoGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  expandedInfoItem: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  expandedInfoValue: {
+    ...TypeScale.subheadline,
+    fontWeight: '600' as const,
+  },
+  expandedInfoLabel: {
+    ...TypeScale.caption1,
+  },
+  expandedActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  expandedBtnRow: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+  },
+  expandedBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.m,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+  },
+  expandedBtnText: {
+    ...TypeScale.caption1,
+    fontWeight: '600' as const,
   },
 
   // ---- スワイプアクション ----

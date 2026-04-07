@@ -13,7 +13,7 @@ export function makeNavigatorOptions(colors: ColorScheme): NativeStackNavigation
     headerStyle: { backgroundColor: colors.navBarBackground },
     headerTintColor: colors.labelSecondary,
     headerTitleStyle: { color: colors.label },
-    headerShadowVisible: false,
+    headerShadowVisible: true,
   };
 }
 
