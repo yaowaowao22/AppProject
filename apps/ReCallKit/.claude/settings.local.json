@@ -9,7 +9,8 @@
       "Bash(git:*)",
       "Bash(find C:/Users/ytata/AppProject/baseProject/apps/ReCallKit -name *.swift -o -name *.tsx -o -name *.ts)",
       "Bash(find C:/Users/ytata/AppProject/baseProject/apps/ReCallKit -maxdepth 3 -name .env* -o -name *.lambda* -o -name serverless*)",
-      "Bash(grep -r \"PORT\\\\|port\" C:/Users/ytata/AppProject/baseProject/apps/ReCallKit/package.json C:/Users/ytata/AppProject/baseProject/server/*/package.json)"
+      "Bash(grep -r \"PORT\\\\|port\" C:/Users/ytata/AppProject/baseProject/apps/ReCallKit/package.json C:/Users/ytata/AppProject/baseProject/server/*/package.json)",
+      "WebSearch"
     ]
   }
 }
