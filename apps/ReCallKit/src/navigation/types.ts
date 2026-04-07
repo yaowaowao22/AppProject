@@ -55,7 +55,7 @@ export type LibraryStackParamList = {
   ItemDetail: { itemId: number };
   AddItem: { clipboardText?: string };
   URLAnalysis: { initialUrl?: string };
-  URLImportList: undefined;
+  Trash: undefined;
   QAPreview: QAPreviewParams;
   ReviewGroupCreate: undefined;
 };
