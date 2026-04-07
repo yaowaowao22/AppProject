@@ -252,6 +252,7 @@ export function HomeScreen({ navigation }: Props) {
   }
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
     <ScrollView
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.container}
@@ -422,6 +423,20 @@ export function HomeScreen({ navigation }: Props) {
       {/* ── [8] Shortcuts ───────────────────────────────── */}
       <ShortcutList onPress={handleShortcut} reviewDueCount={filteredDueItems.length} />
     </ScrollView>
+
+    {/* ── FAB: URLから学習カード作成 ──────────────────── */}
+    <Pressable
+      onPress={handleOpenURLAnalysis}
+      style={({ pressed }) => [
+        styles.fab,
+        { backgroundColor: colors.accent, opacity: pressed ? 0.8 : 1 },
+      ]}
+      accessibilityLabel="URLから学習カードを作成"
+      accessibilityRole="button"
+    >
+      <Ionicons name="add" size={28} color="#FFFFFF" />
+    </Pressable>
+    </View>
   );
 }
 
@@ -434,7 +449,7 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: Spacing.m,
     paddingHorizontal: Spacing.m,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: Spacing.xxl + 80,
   },
 
   // フィルターバッジ
@@ -569,5 +584,24 @@ const styles = StyleSheet.create({
   recentCardTime: {
     fontSize: 11,
     marginTop: 10,
+  },
+
+  // ── FAB ──────────────────────────────────────────────
+  fab: {
+    position: 'absolute',
+    bottom: 32,
+    alignSelf: 'center',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // iOS shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    // Android shadow
+    elevation: 6,
   },
 });
