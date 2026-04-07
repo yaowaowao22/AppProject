@@ -259,27 +259,36 @@ let llamaContext: LlamaContext | null = null;
 let isInitializing = false;
 let loadedModelId: string | null = null;
 
-// バックグラウンド移行時にコンテキストを解放してOSによる強制終了を防ぐ
-// Gemma 4 等の大型モデルは数GBを占有するため、バックグラウンド中に保持すると
-// iOS のメモリ制限に引っかかりアプリが即座に強制終了される
+/** 解析実行中カウンター（>0 のときはバックグラウンド移行でも解放しない） */
+let _activeAnalysisCount = 0;
+
+function _releaseContext(): void {
+  if (!llamaContext) return;
+  const ctx = llamaContext;
+  llamaContext = null;
+  loadedModelId = null;
+  ctx.release().catch(() => {});
+}
+
+// バックグラウンド移行時にコンテキストを解放してOSによる強制終了を防ぐ。
+// ただし解析実行中は解放を保留し、解析完了の finally で解放する。
 AppState.addEventListener('change', (nextAppState) => {
-  if ((nextAppState === 'background' || nextAppState === 'inactive') && llamaContext) {
+  if (nextAppState !== 'background' && nextAppState !== 'inactive') return;
+  if (_activeAnalysisCount > 0) {
+    console.log('[localAnalysis] バックグラウンド移行 → 解析中のため解放を保留します');
+    return;
+  }
+  if (llamaContext) {
     console.warn('[localAnalysis] バックグラウンド移行 → コンテキストを解放します');
-    const ctx = llamaContext;
-    llamaContext = null;   // 先にnullにして新規リクエストを即ブロック
-    loadedModelId = null;
-    ctx.release().catch(() => {});
+    _releaseContext();
   }
 });
 
-// iOSメモリ警告時の追加フォールバック（バックグラウンド解放が間に合わなかった場合）
+// iOSメモリ警告時の追加フォールバック（解析中でも強制解放 — アプリ生存を優先）
 AppState.addEventListener('memoryWarning' as never, () => {
   if (llamaContext) {
-    console.warn('[localAnalysis] メモリ警告受信 → コンテキストを解放します');
-    const ctx = llamaContext;
-    llamaContext = null;
-    loadedModelId = null;
-    ctx.release().catch(() => {});
+    console.warn('[localAnalysis] メモリ警告受信 → コンテキストを強制解放します（解析中断）');
+    _releaseContext();
   }
 });
 
@@ -766,6 +775,9 @@ export async function analyzeUrlLocal(
     return cached;
   }
 
+  _activeAnalysisCount++;
+
+  try {
   // current=-1 をフェッチ中のセンチネルとして使う
   onProgress?.(-1, 0);
   const text = await fetchAndExtractText(url);
@@ -830,4 +842,17 @@ export async function analyzeUrlLocal(
   setCachedResult(url, finalResult);
 
   return finalResult;
+
+  } finally {
+    _activeAnalysisCount = Math.max(0, _activeAnalysisCount - 1);
+
+    // バックグラウンド中に解析が完了した場合 → ここで遅延解放する
+    if (_activeAnalysisCount === 0) {
+      const state = AppState.currentState;
+      if ((state === 'background' || state === 'inactive') && llamaContext) {
+        console.warn('[localAnalysis] 解析完了 → バックグラウンド中のためコンテキストを解放します');
+        _releaseContext();
+      }
+    }
+  }
 }
