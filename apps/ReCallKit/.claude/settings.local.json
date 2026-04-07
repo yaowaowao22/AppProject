@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(node C:/Users/ytata/iosApp/claude-parallel-manager/scripts/save-essence.mjs)"
+    ]
+  }
+}
