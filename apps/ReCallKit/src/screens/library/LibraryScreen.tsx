@@ -3,7 +3,7 @@
 // タグ/カテゴリチップフィルター + 日付グループ + 複数選択削除
 // ============================================================
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,8 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -50,10 +52,10 @@ const TYPE_LABELS: Record<string, string> = {
   screenshot: '画像',
 };
 
-// ---- 日付グループ化 ----------------------------------------
-type DateSection = { title: string; data: ItemWithMeta[] };
+// ---- グループ化 ----------------------------------------
+type Section = { title: string; data: ItemWithMeta[] };
 
-function groupByDate(items: ItemWithMeta[]): DateSection[] {
+function groupByDate(items: ItemWithMeta[]): Section[] {
   const now = new Date();
   const groups = new Map<string, ItemWithMeta[]>();
 
@@ -77,6 +79,24 @@ function groupByDate(items: ItemWithMeta[]): DateSection[] {
   return ORDER
     .filter((k) => groups.has(k))
     .map((title) => ({ title, data: groups.get(title)! }));
+}
+
+function groupByCategory(items: ItemWithMeta[]): Section[] {
+  const groups = new Map<string, ItemWithMeta[]>();
+
+  for (const item of items) {
+    const key = item.category ?? '未分類';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(item);
+  }
+
+  const sorted = Array.from(groups.keys()).sort((a, b) => {
+    if (a === '未分類') return 1;
+    if (b === '未分類') return -1;
+    return a.localeCompare(b, 'ja');
+  });
+
+  return sorted.map((title) => ({ title, data: groups.get(title)! }));
 }
 
 // ---- 日付フォーマット ----------------------------------------
@@ -106,6 +126,31 @@ function getReviewStatus(item: ItemWithMeta): { text: string; isOverdue: boolean
   return { text: `${diffDays}日後`, isOverdue: false };
 }
 
+// ---- スワイプアクション定数 ----------------------------------
+const SWIPE_ACTION_WIDTH = 88;
+
+// ---- スワイプ削除アクション（右側に出現） --------------------
+function SwipeTrashAction({
+  drag,
+  onPress,
+}: {
+  drag: SharedValue<number>;
+  onPress: () => void;
+}) {
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: drag.value + SWIPE_ACTION_WIDTH }],
+  }));
+
+  return (
+    <Animated.View style={[styles.swipeActionWrapper, animStyle]}>
+      <Pressable style={styles.swipeActionBtn} onPress={onPress} hitSlop={4}>
+        <Ionicons name="trash-outline" size={22} color="#FFFFFF" />
+        <Text style={styles.swipeActionText}>削除</Text>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 // ---- メインコンポーネント ------------------------------------
 export function LibraryScreen({ navigation }: Props) {
   const { colors, isDark } = useTheme();
@@ -117,6 +162,9 @@ export function LibraryScreen({ navigation }: Props) {
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
+  // ---- グループモード ----
+  const [groupMode, setGroupMode] = useState<'date' | 'category'>('date');
+
   // ---- 選択削除モード状態 ----
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -126,7 +174,10 @@ export function LibraryScreen({ navigation }: Props) {
   const { tags } = useTags();
   const { categories } = useCategories();
 
-  const sections = useMemo(() => groupByDate(items), [items]);
+  const sections = useMemo(
+    () => (groupMode === 'category' ? groupByCategory(items) : groupByDate(items)),
+    [items, groupMode]
+  );
   const cardShadow = isDark ? {} : CardShadow;
 
   // ---- チップ用カラー ----
@@ -212,6 +263,23 @@ export function LibraryScreen({ navigation }: Props) {
     );
   }, [selectedIds, db, exitSelectionMode, refresh]);
 
+  // ---- スワイプでゴミ箱に移動 ----
+  const handleArchiveItem = useCallback(async (id: number) => {
+    if (Platform.OS !== 'web') {
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } catch {}
+    }
+    try {
+      await db.runAsync(
+        `UPDATE items SET archived = 1, updated_at = datetime('now','localtime') WHERE id = ?`,
+        [id]
+      );
+      refresh();
+    } catch (err) {
+      console.error('[LibraryScreen] archive error:', err);
+      Alert.alert('エラー', 'ゴミ箱への移動に失敗しました');
+    }
+  }, [db, refresh]);
+
   // ---- ヘッダーボタン動的設定 ----
   useEffect(() => {
     if (selectionMode) {
@@ -246,7 +314,7 @@ export function LibraryScreen({ navigation }: Props) {
     const typeLabel = TYPE_LABELS[item.type] ?? item.type;
     const isSelected = selectedIds.has(item.id);
 
-    return (
+    const card = (
       <Pressable
         style={({ pressed }) => [
           styles.card,
