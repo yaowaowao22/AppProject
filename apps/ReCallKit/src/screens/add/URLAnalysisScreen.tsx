@@ -4,7 +4,7 @@
 // 実際の解析・保存処理は URLImportListScreen がバックグラウンドで実行する
 // ============================================================
 
-import React, { useState, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useLayoutEffect, useEffect } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { createJob } from '../../db/urlJobRepository';
+import { getRemainingCount } from '../../utils/analysisLimit';
 import type { LibraryStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'URLAnalysis'>;
@@ -38,6 +39,11 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
   const [url, setUrl] = useState(route.params?.initialUrl ?? '');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [remaining, setRemaining] = useState<number | null>(null);
+
+  useEffect(() => {
+    getRemainingCount().then((n) => setRemaining(n));
+  }, []);
 
   const isValidUrl = URL_PATTERN.test(url.trim());
 

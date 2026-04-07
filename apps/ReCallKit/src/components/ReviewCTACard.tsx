@@ -1,14 +1,15 @@
 // ============================================================
 // ReviewCTACard - 今日の復習 CTA カード
-// due件数・overdue件数・完了状態に応じてUIを切り替える
-// イラスト帯 + ボディ のフラットデザイン（モック準拠）
+// empty / due / done 3状態（モックアップ準拠）
 // ============================================================
 
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
+import { TypeScale } from '../theme/typography';
 import { Spacing, Radius } from '../theme/spacing';
+import { GoogleCalendarColors } from '../theme/colors';
 
 interface ReviewCTACardProps {
   /** 今日の復習対象件数 */
@@ -17,6 +18,8 @@ interface ReviewCTACardProps {
   overdueCount: number;
   /** 今日すでに復習した件数 */
   todayCompleted: number;
+  /** 連続学習日数 */
+  streakDays: number;
   /** 総アイテム数（0 のとき「アイテム未登録」状態） */
   totalItems: number;
   /** 推定復習時間（分）*/
@@ -25,27 +28,65 @@ interface ReviewCTACardProps {
   categories?: string[];
   /** 「復習を始める」押下 */
   onStart: () => void;
-  /** 「追加学習を始める」押下（全完了時に表示） */
+  /** 「追加学習を始める」押下（全完了時） */
   onStartExtra: () => void;
+  /** 「URLから追加」押下（empty時） */
+  onStartURLAdd: () => void;
 }
 
 export function ReviewCTACard({
   dueCount,
   overdueCount,
   todayCompleted,
+  streakDays,
   totalItems,
   estimatedMinutes,
   categories,
   onStart,
   onStartExtra,
+  onStartURLAdd,
 }: ReviewCTACardProps) {
   const { colors } = useTheme();
-  const isOverdue = overdueCount > 0;
+
+  const heroState: 'empty' | 'due' | 'done' =
+    totalItems === 0 ? 'empty' : dueCount > 0 ? 'due' : 'done';
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card }]}>
-      {dueCount > 0 ? (
-        /* ── 復習あり ── */
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: colors.card, borderColor: colors.separator },
+      ]}
+    >
+      {/* ── empty: アイテム未登録 ── */}
+      {heroState === 'empty' && (
+        <View style={styles.heroBody}>
+          <View style={[styles.heroIconCircle, { backgroundColor: colors.accent + '1A' }]}>
+            <Ionicons name="sparkles-outline" size={28} color={colors.accent} />
+          </View>
+          <View style={styles.heroTexts}>
+            <Text style={[styles.heroTitle, { color: colors.label }]}>ようこそ！</Text>
+            <Text style={[styles.heroSub, { color: colors.labelSecondary }]}>
+              URLを追加して最初のフラッシュカードを作りましょう
+            </Text>
+          </View>
+          <Pressable
+            style={({ pressed }) => [
+              styles.heroCTA,
+              { backgroundColor: pressed ? colors.accent + 'CC' : colors.accent },
+            ]}
+            onPress={onStartURLAdd}
+            accessibilityRole="button"
+            accessibilityLabel="URLから学習カードを追加"
+          >
+            <Ionicons name="link-outline" size={18} color="#FFFFFF" />
+            <Text style={styles.heroCTAText}>URLから追加</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {/* ── due: 復習あり ── */}
+      {heroState === 'due' && (
         <>
           {/* イラスト帯 */}
           <View style={styles.reviewIllust}>
@@ -67,7 +108,7 @@ export function ReviewCTACard({
                 {categories && categories.length > 0 ? categories.join(', ') : ''}
               </Text>
             )}
-            {isOverdue && (
+            {overdueCount > 0 && (
               <Text style={styles.overdueText}>期限切れ {overdueCount}件</Text>
             )}
             <Pressable
@@ -84,40 +125,32 @@ export function ReviewCTACard({
             </Pressable>
           </View>
         </>
-      ) : totalItems === 0 ? (
-        /* ── アイテム未登録 ── */
-        <View style={styles.emptyRow}>
-          <Text style={[styles.emptyText, { color: colors.labelSecondary }]}>
-            アイテムを追加して復習を始めましょう
-          </Text>
-        </View>
-      ) : (
-        /* ── 全完了 ── */
-        <View style={styles.doneBody}>
-          <View style={styles.completionRow}>
-            <View style={[styles.completionIcon, { backgroundColor: colors.success + '1F' }]}>
-              <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+      )}
+
+      {/* ── done: 本日分完了 ── */}
+      {heroState === 'done' && (
+        <View style={styles.heroBody}>
+          <View style={styles.doneRow}>
+            <View style={[styles.doneIconWrap, { backgroundColor: colors.success + '1F' }]}>
+              <Ionicons name="checkmark-circle" size={32} color={colors.success} />
             </View>
-            <View style={styles.completionText}>
-              <Text style={[styles.allDoneText, { color: colors.success }]}>本日分完了</Text>
-              <Text style={[styles.completedCountLabel, { color: colors.labelSecondary }]}>
-                今日 {todayCompleted} 件復習しました
+            <View style={styles.doneTexts}>
+              <Text style={[styles.doneTitle, { color: colors.success }]}>本日分完了！</Text>
+              <Text style={[styles.doneSub, { color: colors.labelSecondary }]}>
+                今日 {todayCompleted} 件復習・{streakDays}日連続
               </Text>
             </View>
           </View>
-          <Text style={[styles.extraHint, { color: colors.labelSecondary }]}>
-            追加学習しますか？
-          </Text>
           <Pressable
             style={({ pressed }) => [
-              styles.extraButton,
+              styles.extraBtn,
               { borderColor: colors.accent, opacity: pressed ? 0.7 : 1 },
             ]}
             onPress={onStartExtra}
             accessibilityRole="button"
             accessibilityLabel="追加学習を始める"
           >
-            <Text style={[styles.extraButtonText, { color: colors.accent }]}>
+            <Text style={[styles.extraBtnText, { color: colors.accent }]}>
               追加学習を始める
             </Text>
           </Pressable>
@@ -131,14 +164,51 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 12,
     overflow: 'hidden',
+    marginTop: Spacing.s,
     borderWidth: 1,
-    borderColor: '#DADCE0',
   },
 
-  // ── イラスト帯 ──
+  // ── empty 状態 ──
+  heroBody: {
+    padding: Spacing.l,
+    gap: Spacing.m,
+  },
+  heroIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+  },
+  heroTexts: {
+    gap: Spacing.xs,
+  },
+  heroTitle: {
+    ...TypeScale.title3,
+    fontWeight: '700' as const,
+  },
+  heroSub: {
+    ...TypeScale.subheadline,
+  },
+  heroCTA: {
+    borderRadius: Radius.m,
+    paddingVertical: Spacing.m,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+  },
+  heroCTAText: {
+    ...TypeScale.headline,
+    color: '#FFFFFF',
+    fontWeight: '600' as const,
+  },
+
+  // ── due: イラスト帯 ──
   reviewIllust: {
     height: 140,
-    backgroundColor: '#FFF8E1',
+    backgroundColor: '#FFECB3',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -167,7 +237,7 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '-2deg' }],
   },
 
-  // ── ボディ ──
+  // ── due: ボディ ──
   reviewBody: {
     paddingHorizontal: 16,
     paddingTop: 20,
@@ -187,16 +257,16 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: 13,
     lineHeight: 18,
-    color: '#5F6368',
+    color: GoogleCalendarColors.textSecondary,
   },
   overdueText: {
     fontSize: 13,
     lineHeight: 18,
-    color: '#D93025',
+    color: GoogleCalendarColors.red,
     fontWeight: '500' as const,
   },
   startButton: {
-    backgroundColor: '#1A73E8',
+    backgroundColor: GoogleCalendarColors.blue,
     borderRadius: 20,
     paddingVertical: 10,
     paddingHorizontal: 24,
@@ -213,57 +283,39 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // ── アイテム未登録 ──
-  emptyRow: {
-    padding: Spacing.l,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-  },
-
-  // ── 全完了 ──
-  doneBody: {
-    padding: Spacing.l,
-    gap: Spacing.m,
-  },
-  completionRow: {
+  // ── done 状態 ──
+  doneRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.m,
   },
-  completionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  doneIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  completionText: {
+  doneTexts: {
     flex: 1,
     gap: 2,
   },
-  allDoneText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
+  doneTitle: {
+    ...TypeScale.title3,
+    fontWeight: '700' as const,
   },
-  completedCountLabel: {
-    fontSize: 13,
+  doneSub: {
+    ...TypeScale.subheadline,
   },
-  extraHint: {
-    fontSize: 15,
-  },
-  extraButton: {
+  extraBtn: {
     borderRadius: Radius.m,
     paddingVertical: Spacing.m,
     alignItems: 'center',
     borderWidth: 1,
     backgroundColor: 'transparent',
   },
-  extraButtonText: {
-    fontSize: 15,
+  extraBtnText: {
+    ...TypeScale.headline,
     fontWeight: '600' as const,
   },
 });

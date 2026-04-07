@@ -48,7 +48,7 @@ export function StatsRow({ stats, withCard = false }: StatsRowProps) {
               {stat.value}
             </Text>
             <Text
-              style={[styles.label, { color: colors.labelSecondary }]}
+              style={[styles.label, { color: colors.labelTertiary }]}
               numberOfLines={1}
             >
               {stat.label}
@@ -82,7 +82,6 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
     paddingBottom: 20,
   },
   cell: {

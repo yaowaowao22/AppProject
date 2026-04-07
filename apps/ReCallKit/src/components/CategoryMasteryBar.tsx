@@ -32,7 +32,7 @@ export function CategoryMasteryBar({ stats, onPressCategory }: Props) {
   return (
     <View style={styles.container}>
       {/* ラベル */}
-      <Text style={styles.labelUpper}>Mastery</Text>
+      <Text style={[styles.labelUpper, { color: colors.labelTertiary }]}>Mastery</Text>
 
       {stats.map((stat, index) => {
         const ratio = stat.itemCount > 0 ? stat.masteredCount / stat.itemCount : 0;
@@ -45,7 +45,7 @@ export function CategoryMasteryBar({ stats, onPressCategory }: Props) {
             key={stat.category}
             style={({ pressed }) => [
               styles.row,
-              !isFirst && { borderTopWidth: 1, borderTopColor: '#F8F9FA' },
+              !isFirst && { borderTopWidth: 1, borderTopColor: colors.backgroundSecondary },
               pressed && onPressCategory ? { opacity: 0.7 } : undefined,
             ]}
             onPress={onPressCategory ? () => onPressCategory(stat.category) : undefined}
@@ -58,7 +58,7 @@ export function CategoryMasteryBar({ stats, onPressCategory }: Props) {
             </Text>
 
             {/* プログレスバー */}
-            <View style={[styles.track, { backgroundColor: '#F8F9FA' }]}>
+            <View style={[styles.track, { backgroundColor: colors.backgroundSecondary }]}>
               <View
                 style={[
                   styles.fill,
@@ -83,7 +83,6 @@ export function CategoryMasteryBar({ stats, onPressCategory }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: Spacing.m,
     paddingTop: 20,
     paddingBottom: 20,
   },
@@ -92,7 +91,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    color: '#9AA0A6',
     marginBottom: 16,
   },
   row: {
