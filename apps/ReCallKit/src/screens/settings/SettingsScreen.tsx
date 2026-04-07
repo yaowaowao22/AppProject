@@ -242,6 +242,10 @@ export function SettingsScreen() {
 
   return (
     <>
+      {/* ★ OTA確認バナー — このバナーが見えたらOTAが適用されています ★ */}
+      <View style={styles.otaBanner}>
+        <Text style={styles.otaBannerText}>★ OTA v3 適用済み ★</Text>
+      </View>
       <ScrollView
         style={[styles.scroll, { backgroundColor: colors.backgroundGrouped }]}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xxl }]}
@@ -737,6 +741,17 @@ const PICKER_ITEM_HEIGHT = 44;
 // スタイル
 // ============================================================
 const styles = StyleSheet.create({
+  otaBanner: {
+    backgroundColor: '#e74c3c',
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  otaBannerText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
   loading: {
     flex: 1,
     alignItems: 'center',
