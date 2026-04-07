@@ -589,11 +589,14 @@ function normalize(parsed: Partial<AnalysisResult>): AnalysisResult {
 // ============================================================
 
 /**
- * 第1チャンク: title/summary/category/tags + Q&A の全JSON → 余裕を持たせる
- * 継続チャンク: Q&Aのみ → 1536 で十分（約30〜40ペア分）
+ * 第1チャンク: title/summary/category/tags + Q&A 5〜7個
+ * 継続チャンク: Q&A 5〜7個のみ
  */
-const N_PREDICT_FIRST        = 2048;
-const N_PREDICT_CONTINUATION = 1536;
+const N_PREDICT_FIRST        = 1024;
+const N_PREDICT_CONTINUATION = 768;
+
+/** 1URL あたりの Q&A 上限。超えたらチャンク処理を打ち切る */
+const MAX_QA_TOTAL = 50;
 
 async function runCompletion(
   context: LlamaContext,
@@ -685,6 +688,7 @@ export async function analyzeUrlLocal(
     const allQaPairs: QAPair[] = [...baseResult.qa_pairs];
 
     for (let i = 1; i < chunks.length; i++) {
+      if (allQaPairs.length >= MAX_QA_TOTAL) break;
       onProgress?.(i, chunks.length);
       const chunkRaw = await runCompletion(
         context,
