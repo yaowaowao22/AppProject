@@ -151,10 +151,16 @@ async function executeJob(
       result_json: JSON.stringify(result),
     });
   } catch (err) {
-    await updateJob(db, job.id, {
-      status: 'failed',
-      error_msg: err instanceof Error ? err.message : '解析に失敗しました',
-    });
+    let error_msg = '解析中にエラーが発生しました';
+    if (err instanceof Error) {
+      error_msg = err.message;
+    } else if (typeof err === 'string' && err.length > 0) {
+      error_msg = err;
+    } else if (err != null) {
+      // llama.rn 等のネイティブモジュールが非Errorオブジェクトをthrowするケース
+      try { error_msg = JSON.stringify(err); } catch { /* ignore */ }
+    }
+    await updateJob(db, job.id, { status: 'failed', error_msg });
   }
 }
 
