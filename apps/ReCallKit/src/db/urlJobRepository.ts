@@ -64,3 +64,8 @@ export async function getJob(db: SQLiteDatabase, id: number): Promise<UrlImportJ
     [id],
   );
 }
+
+/** ジョブを削除 */
+export async function deleteJob(db: SQLiteDatabase, id: number): Promise<void> {
+  await db.runAsync('DELETE FROM url_import_jobs WHERE id = ?', [id]);
+}

@@ -12,6 +12,7 @@ import {
   Pressable,
   StyleSheet,
   Keyboard,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +37,7 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
 
   const [url, setUrl] = useState(route.params?.initialUrl ?? '');
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isValidUrl = URL_PATTERN.test(url.trim());
 
@@ -52,21 +54,23 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
   }, [navigation, handleBack, colors.accent]);
 
   const handleStart = useCallback(async () => {
-    if (!isValidUrl || !db || !isReady) return;
+    if (!isValidUrl || !db || !isReady || isSubmitting) return;
 
     Keyboard.dismiss();
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+    setIsSubmitting(true);
+    setError(null);
+
     try {
       await createJob(db, url.trim());
+      // 登録完了後は取り込み一覧へ遷移して進捗を確認できるようにする
+      navigation.replace('URLImportList');
     } catch {
       setError('ジョブの登録に失敗しました。もう一度お試しください');
-      return;
+      setIsSubmitting(false);
     }
-
-    // ジョブ登録完了後は前の画面へ戻る
-    navigation.goBack();
-  }, [url, isValidUrl, db, isReady, navigation]);
+  }, [url, isValidUrl, db, isReady, isSubmitting, navigation]);
 
   const handleClear = useCallback(() => {
     setUrl('');
@@ -125,10 +129,19 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
           )}
         </View>
 
-        {/* 説明テキスト */}
-        <Text style={[styles.description, { color: colors.labelTertiary }]}>
-          スタートするとバックグラウンドで解析が始まります。取り込み一覧で進捗を確認できます。
-        </Text>
+        {/* 説明テキスト / 進捗フェーズ */}
+        {isSubmitting ? (
+          <View style={[styles.phaseRow, { backgroundColor: colors.card, borderColor: colors.accent + '33' }]}>
+            <ActivityIndicator size="small" color={colors.accent} />
+            <Text style={[styles.phaseText, { color: colors.accent }]}>
+              解析キューに登録中...
+            </Text>
+          </View>
+        ) : (
+          <Text style={[styles.description, { color: colors.labelTertiary }]}>
+            スタートすると取り込み一覧画面へ移動し、バックグラウンドで解析が始まります。
+          </Text>
+        )}
 
         {/* エラー */}
         {error && (
@@ -153,7 +166,7 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
         style={({ pressed }) => [
           styles.startButton,
           {
-            backgroundColor: isValidUrl
+            backgroundColor: isValidUrl && !isSubmitting
               ? pressed
                 ? colors.accent + 'CC'
                 : colors.accent
@@ -161,27 +174,31 @@ export function URLAnalysisScreen({ route, navigation }: Props) {
             marginHorizontal: Spacing.m,
             marginBottom: Math.max(insets.bottom, Spacing.m),
           },
-          !isValidUrl && styles.buttonDisabled,
+          (!isValidUrl || isSubmitting) && styles.buttonDisabled,
         ]}
         onPress={handleStart}
-        disabled={!isValidUrl}
+        disabled={!isValidUrl || isSubmitting}
         accessibilityRole="button"
-        accessibilityLabel="スタート"
-        accessibilityState={{ disabled: !isValidUrl }}
+        accessibilityLabel={isSubmitting ? '登録中' : 'スタート'}
+        accessibilityState={{ disabled: !isValidUrl || isSubmitting }}
       >
         <View style={styles.startButtonInner}>
-          <Ionicons
-            name="play-circle-outline"
-            size={20}
-            color={isValidUrl ? '#FFFFFF' : colors.labelTertiary}
-          />
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color={colors.labelTertiary} />
+          ) : (
+            <Ionicons
+              name="play-circle-outline"
+              size={20}
+              color={isValidUrl ? '#FFFFFF' : colors.labelTertiary}
+            />
+          )}
           <Text
             style={[
               styles.startButtonText,
-              { color: isValidUrl ? '#FFFFFF' : colors.labelTertiary },
+              { color: isValidUrl && !isSubmitting ? '#FFFFFF' : colors.labelTertiary },
             ]}
           >
-            スタート
+            {isSubmitting ? '登録中...' : 'スタート'}
           </Text>
         </View>
       </Pressable>
@@ -231,6 +248,19 @@ const styles = StyleSheet.create({
   description: {
     ...TypeScale.footnote,
     lineHeight: 18,
+  },
+  phaseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.s,
+    borderRadius: Radius.m,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: Spacing.m,
+    paddingVertical: Spacing.s,
+  },
+  phaseText: {
+    ...TypeScale.footnote,
+    fontWeight: '500',
   },
 
   // エラー

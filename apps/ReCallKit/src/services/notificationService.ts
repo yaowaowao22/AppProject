@@ -1,10 +1,22 @@
 // ============================================================
 // ReCallKit notificationService
 // ローカル復習リマインダーの権限取得・スケジュール・キャンセル
+// + URL取り込み完了/失敗/復習完了のテンプレート分岐通知
 // ============================================================
 
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+
+// フォアグラウンド時の通知表示ハンドラー
+// shouldShowAlert: false → フォアグラウンドでは通知バナーを非表示
+// （アプリ内トーストが代替する。バックグラウンド時のみネイティブ通知を表示）
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: false,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
 
 // Android 通知チャンネル ID
 const ANDROID_CHANNEL_ID = 'review-reminder';
@@ -87,4 +99,64 @@ export async function isDailyReminderScheduled(): Promise<boolean> {
   const found = scheduled.some((n) => n.identifier === REMINDER_IDENTIFIER);
   console.log(`[Notification] scheduled reminders: ${scheduled.length}, found: ${found}`);
   return found;
+}
+
+// ============================================================
+// テンプレート分岐通知
+// trigger: null = 即時送信
+// ⚠️ フォアグラウンド時は setNotificationHandler により非表示
+//    → バックグラウンド移行後に残る場合のみネイティブ通知として表示
+//    → アプリ内ではトーストで通知（URLImportListScreen / ReviewScreen 側で呼ぶ）
+// ============================================================
+
+/** URL取り込み完了通知 */
+export async function notifyImportCompleted(title: string, qaCount: number): Promise<void> {
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '取り込み完了 ✓',
+        body: `「${title}」から ${qaCount} 件のQ&Aを追加しました`,
+        sound: true,
+      },
+      trigger: null,
+    });
+    console.log(`[Notification] import completed: "${title}" (${qaCount} pairs)`);
+  } catch (e) {
+    console.warn('[Notification] notifyImportCompleted failed:', e);
+  }
+}
+
+/** URL取り込み失敗通知 */
+export async function notifyImportFailed(url: string, reason: string): Promise<void> {
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '取り込み失敗',
+        body: reason,
+        sound: false,
+      },
+      trigger: null,
+    });
+    console.log(`[Notification] import failed: ${url} — ${reason}`);
+  } catch (e) {
+    console.warn('[Notification] notifyImportFailed failed:', e);
+  }
+}
+
+/** 復習セッション完了通知 */
+export async function notifyReviewCompleted(count: number, accuracy: number): Promise<void> {
+  try {
+    const praise = accuracy >= 80 ? '素晴らしい！' : accuracy >= 60 ? 'よくできました' : 'お疲れ様！';
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '復習完了',
+        body: `${count} 件完了・正答率 ${accuracy}% — ${praise}`,
+        sound: true,
+      },
+      trigger: null,
+    });
+    console.log(`[Notification] review completed: ${count} items, accuracy ${accuracy}%`);
+  } catch (e) {
+    console.warn('[Notification] notifyReviewCompleted failed:', e);
+  }
 }

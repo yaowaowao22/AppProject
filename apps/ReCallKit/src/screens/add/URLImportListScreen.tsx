@@ -35,6 +35,7 @@ import { getRemainingCount, consumeOne } from '../../utils/analysisLimit';
 import {
   listJobs,
   updateJob,
+  deleteJob,
   type UrlImportJob,
 } from '../../db/urlJobRepository';
 import type { LibraryStackParamList } from '../../navigation/types';
@@ -50,6 +51,65 @@ const STATUS_CONFIG = {
   processing: { label: '解析中...',  iconName: 'sync-outline'         as const, colorKey: 'accent'        },
   done:       { label: '完了',      iconName: 'checkmark-circle'     as const, colorKey: 'success'       },
   failed:     { label: '失敗',      iconName: 'alert-circle-outline' as const, colorKey: 'error'         },
+};
+
+// ---- エラー種別 ----
+type ErrorType = 'limit_exceeded' | 'no_qa' | 'config' | 'network' | 'general';
+
+function classifyError(msg: string | null): ErrorType {
+  if (!msg) return 'general';
+  if (msg.includes('無料解析回数') || msg.includes('使い切り')) return 'limit_exceeded';
+  if (msg.includes('Q&Aを生成')) return 'no_qa';
+  if (msg.includes('AWS設定') || msg.includes('設定が未完了') || msg.includes('未完了')) return 'config';
+  if (
+    msg.toLowerCase().includes('network') ||
+    msg.includes('fetch') ||
+    msg.includes('timeout') ||
+    msg.includes('接続') ||
+    msg.includes('タイムアウト')
+  ) return 'network';
+  return 'general';
+}
+
+type RecoveryAction = 'retry' | 'delete' | 'change_url' | 'open_settings';
+
+interface ErrorRecoveryConfig {
+  hint: string;
+  actions: Array<{ label: string; icon: string; action: RecoveryAction; secondary?: boolean }>;
+}
+
+const ERROR_RECOVERY: Record<ErrorType, ErrorRecoveryConfig> = {
+  limit_exceeded: {
+    hint: '無料解析枠（3回/日）を消費しました。翌日リセットされます。',
+    actions: [
+      { label: '削除', icon: 'trash-outline', action: 'delete', secondary: true },
+    ],
+  },
+  no_qa: {
+    hint: 'このURLからQ&Aを抽出できませんでした。別のURLをお試しください。',
+    actions: [
+      { label: 'URLを変更して試す', icon: 'link-outline', action: 'change_url' },
+      { label: '削除', icon: 'trash-outline', action: 'delete', secondary: true },
+    ],
+  },
+  config: {
+    hint: 'AWS設定が未完了です。設定画面で接続情報を確認してください。',
+    actions: [
+      { label: '設定を開く', icon: 'settings-outline', action: 'open_settings' },
+    ],
+  },
+  network: {
+    hint: 'ネットワーク接続を確認してから再試行してください。',
+    actions: [
+      { label: '再試行', icon: 'refresh-outline', action: 'retry' },
+    ],
+  },
+  general: {
+    hint: '',
+    actions: [
+      { label: '再試行', icon: 'refresh-outline', action: 'retry' },
+    ],
+  },
 };
 
 // ---- カテゴリタグ upsert ----
@@ -240,6 +300,31 @@ export function URLImportListScreen({ navigation }: Props) {
     await loadJobs();
   }, [db, loadJobs]);
 
+  // ---- 削除 ----
+  const handleDelete = useCallback(async (job: UrlImportJob) => {
+    if (!db) return;
+    await deleteJob(db, job.id);
+    await loadJobs();
+  }, [db, loadJobs]);
+
+  // ---- エラー種別アクション実行 ----
+  const handleRecoveryAction = useCallback((job: UrlImportJob, action: RecoveryAction) => {
+    switch (action) {
+      case 'retry':
+        handleRetry(job);
+        break;
+      case 'delete':
+        handleDelete(job);
+        break;
+      case 'change_url':
+        navigation.navigate('URLAnalysis', { initialUrl: job.url });
+        break;
+      case 'open_settings':
+        navigation.getParent()?.navigate('Settings');
+        break;
+    }
+  }, [handleRetry, handleDelete, navigation]);
+
   // ---- ジョブカードのレンダリング ----
   const renderJob = useCallback(({ item }: { item: UrlImportJob }) => {
     const cfg = STATUS_CONFIG[item.status];
@@ -283,12 +368,24 @@ export function URLImportListScreen({ navigation }: Props) {
           </Text>
         )}
 
-        {/* エラー詳細 */}
-        {item.status === 'failed' && item.error_msg && (
-          <Text style={[styles.errorText, { color: colors.error }]} numberOfLines={2}>
-            {item.error_msg}
-          </Text>
-        )}
+        {/* エラー詳細（種別ヒント + 原文メッセージ） */}
+        {item.status === 'failed' && (() => {
+          const errType = classifyError(item.error_msg);
+          const recovery = ERROR_RECOVERY[errType];
+          return (
+            <>
+              {recovery.hint ? (
+                <Text style={[styles.errorHint, { color: colors.error + 'CC' }]}>
+                  {recovery.hint}
+                </Text>
+              ) : item.error_msg ? (
+                <Text style={[styles.errorText, { color: colors.error }]} numberOfLines={2}>
+                  {item.error_msg}
+                </Text>
+              ) : null}
+            </>
+          );
+        })()}
 
         {/* アクションボタン行 */}
         <View style={styles.cardActions}>
@@ -306,24 +403,32 @@ export function URLImportListScreen({ navigation }: Props) {
               <Text style={[styles.actionButtonText, { color: colors.accent }]}>ライブラリで見る</Text>
             </Pressable>
           )}
-          {item.status === 'failed' && (
-            <Pressable
-              style={({ pressed }) => [
-                styles.actionButton,
-                { borderColor: colors.error, backgroundColor: colors.error + '14', opacity: pressed ? 0.7 : 1 },
-              ]}
-              onPress={() => handleRetry(item)}
-              accessibilityRole="button"
-              accessibilityLabel="再試行"
-            >
-              <Ionicons name="refresh-outline" size={14} color={colors.error} />
-              <Text style={[styles.actionButtonText, { color: colors.error }]}>再試行</Text>
-            </Pressable>
-          )}
+          {item.status === 'failed' && (() => {
+            const errType = classifyError(item.error_msg);
+            const { actions } = ERROR_RECOVERY[errType];
+            return actions.map(({ label, icon, action, secondary }) => {
+              const btnColor = secondary ? colors.labelSecondary : colors.error;
+              return (
+                <Pressable
+                  key={action}
+                  style={({ pressed }) => [
+                    styles.actionButton,
+                    { borderColor: btnColor, backgroundColor: btnColor + '14', opacity: pressed ? 0.7 : 1 },
+                  ]}
+                  onPress={() => handleRecoveryAction(item, action)}
+                  accessibilityRole="button"
+                  accessibilityLabel={label}
+                >
+                  <Ionicons name={icon as any} size={14} color={btnColor} />
+                  <Text style={[styles.actionButtonText, { color: btnColor }]}>{label}</Text>
+                </Pressable>
+              );
+            });
+          })()}
         </View>
       </View>
     );
-  }, [colors, navigation, handleRetry]);
+  }, [colors, navigation, handleRetry, handleRecoveryAction]);
 
   // ---- スケルトンローディング ----
   if (loading) {
