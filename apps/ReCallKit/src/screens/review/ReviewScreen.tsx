@@ -17,6 +17,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withSequence,
+  withDelay,
 } from 'react-native-reanimated';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../../hooks/useDatabase';
@@ -77,6 +78,11 @@ export function ReviewScreen({ navigation, route }: Props) {
   const flashAnimatedStyle = useAnimatedStyle(() => ({
     opacity: flashOpacity.value,
   }));
+
+  // 完了サマリー: バーアニメーション進捗 (0→1)
+  const summaryBarProgress = useSharedValue(0);
+  const summaryEntranceY = useSharedValue(24);
+  const summaryEntranceOpacity = useSharedValue(0);
 
   useEffect(() => {
     if (!db || !isReady) return;
@@ -153,11 +159,34 @@ export function ReviewScreen({ navigation, route }: Props) {
     const completedCount = items.length;
     const maxCount = Math.max(...Object.values(ratingCounts), 1);
 
+    // 正答率: good + perfect / total
+    const correctCount = (ratingCounts.good ?? 0) + (ratingCounts.perfect ?? 0);
+    const accuracy = completedCount > 0 ? Math.round((correctCount / completedCount) * 100) : 0;
+    const againCount = ratingCounts.again ?? 0;
+
+    // 成績バッジ
+    const performanceConfig =
+      accuracy >= 80 ? { emoji: '🏆', msg: '素晴らしい！' }
+      : accuracy >= 60 ? { emoji: '✨', msg: 'よくできました' }
+      : accuracy >= 40 ? { emoji: '👍', msg: 'もう少し！' }
+      : { emoji: '💪', msg: '練習あるのみ！' };
+
+    // 入場アニメーション（初回レンダ時）
+    summaryEntranceY.value = withTiming(0, { duration: 400 });
+    summaryEntranceOpacity.value = withTiming(1, { duration: 350 });
+    summaryBarProgress.value = withDelay(200, withTiming(1, { duration: 600 }));
+
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const entranceStyle = useAnimatedStyle(() => ({
+      transform: [{ translateY: summaryEntranceY.value }],
+      opacity: summaryEntranceOpacity.value,
+    }));
+
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.completeContainer}>
+        <Animated.View style={[styles.completeContainer, entranceStyle]}>
           <Text style={styles.completeEmoji}>
-            {completedCount > 0 ? '🎉' : '📚'}
+            {completedCount > 0 ? performanceConfig.emoji : '📚'}
           </Text>
           <Text style={[styles.completeTitle, { color: colors.label }]}>
             {completedCount > 0 ? '復習完了！' : '今日の復習はありません'}
@@ -168,21 +197,36 @@ export function ReviewScreen({ navigation, route }: Props) {
                 {completedCount}件の復習を完了しました
               </Text>
 
+              {/* 正答率バッジ */}
+              <View style={[styles.accuracyBadge, { backgroundColor: colors.card }]}>
+                <Text style={[styles.accuracyValue, { color: accuracy >= 60 ? '#34C759' : '#FF9500' }]}>
+                  {accuracy}%
+                </Text>
+                <Text style={[styles.accuracyLabel, { color: colors.labelSecondary }]}>
+                  {performanceConfig.msg}（正答率）
+                </Text>
+              </View>
+
               {/* 評価内訳 */}
               <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
                 {SUMMARY_ITEMS.map(({ key, label }) => {
                   const count = ratingCounts[key] ?? 0;
-                  const barWidth = count > 0 ? (count / maxCount) * 100 : 0;
+                  const targetWidth = count > 0 ? (count / maxCount) * 100 : 0;
+                  // eslint-disable-next-line react-hooks/rules-of-hooks
+                  const barAnimStyle = useAnimatedStyle(() => ({
+                    width: `${summaryBarProgress.value * targetWidth}%`,
+                  }));
                   return (
                     <View key={key} style={styles.summaryRow}>
                       <Text style={[styles.summaryLabel, { color: colors.labelSecondary }]}>
                         {label}
                       </Text>
                       <View style={[styles.summaryTrack, { backgroundColor: colors.backgroundSecondary }]}>
-                        <View
+                        <Animated.View
                           style={[
                             styles.summaryBar,
-                            { backgroundColor: RATING_COLORS[key], width: `${barWidth}%` },
+                            { backgroundColor: RATING_COLORS[key] },
+                            barAnimStyle,
                           ]}
                         />
                       </View>
@@ -193,6 +237,15 @@ export function ReviewScreen({ navigation, route }: Props) {
                   );
                 })}
               </View>
+
+              {/* もう一度あるカードの告知 */}
+              {againCount > 0 && (
+                <View style={[styles.againCallout, { backgroundColor: '#FF3B3015' }]}>
+                  <Text style={[styles.againCalloutText, { color: '#FF3B30' }]}>
+                    「もう一度」が {againCount} 枚 — 明日また挑戦しよう
+                  </Text>
+                </View>
+              )}
             </>
           )}
           <Pressable
@@ -202,7 +255,7 @@ export function ReviewScreen({ navigation, route }: Props) {
           >
             <Text style={styles.doneButtonText}>閉じる</Text>
           </Pressable>
-        </View>
+        </Animated.View>
       </View>
     );
   }
@@ -215,8 +268,12 @@ export function ReviewScreen({ navigation, route }: Props) {
         pointerEvents="none"
       />
 
-      {/* プログレスセクション（バー + カウンター） */}
-      <ReviewProgressBar currentIndex={currentIndex} total={items.length} />
+      {/* プログレスセクション（バー + カウンター + 評価ミニドット） */}
+      <ReviewProgressBar
+        currentIndex={currentIndex}
+        total={items.length}
+        ratingCounts={ratingCounts}
+      />
 
       {/* カードエリア */}
       <View style={styles.cardArea}>
@@ -313,6 +370,37 @@ const styles = StyleSheet.create({
   doneButtonText: {
     ...TypeScale.headline,
     color: '#FFFFFF',
+  },
+
+  // 正答率バッジ
+  accuracyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.s,
+    borderRadius: Radius.l,
+    paddingHorizontal: Spacing.l,
+    paddingVertical: Spacing.m,
+    width: '100%',
+  },
+  accuracyValue: {
+    ...TypeScale.title2,
+    fontWeight: '700',
+  },
+  accuracyLabel: {
+    ...TypeScale.footnote,
+    flex: 1,
+  },
+
+  // もう一度カード告知
+  againCallout: {
+    width: '100%',
+    borderRadius: Radius.m,
+    paddingHorizontal: Spacing.m,
+    paddingVertical: Spacing.s,
+  },
+  againCalloutText: {
+    ...TypeScale.footnote,
+    textAlign: 'center',
   },
 
   // 評価内訳カード

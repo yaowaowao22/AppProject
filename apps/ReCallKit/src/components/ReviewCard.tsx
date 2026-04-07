@@ -233,9 +233,34 @@ export function ReviewCard({
                 <Text style={[styles.sectionLabel, { color: colors.labelTertiary }]}>
                   ANSWER
                 </Text>
-                <Text style={[styles.contentText, { color: colors.label }]} numberOfLines={9}>
+                <Text style={[styles.contentText, { color: colors.label }]} numberOfLines={7}>
                   {content}
                 </Text>
+              </View>
+
+              {/* スワイプ4方向ヒント */}
+              <View style={styles.swipeHintBlock}>
+                {/* 上: good */}
+                <View style={styles.swipeHintCenter}>
+                  <Text style={[styles.swipeArrow, { color: '#007AFF' }]}>↑</Text>
+                  <Text style={[styles.swipeLabel, { color: '#007AFF' }]}>良かった</Text>
+                </View>
+                {/* 左右: again / perfect */}
+                <View style={styles.swipeHintSides}>
+                  <View style={styles.swipeHintSideItem}>
+                    <Text style={[styles.swipeArrow, { color: '#FF3B30' }]}>←</Text>
+                    <Text style={[styles.swipeLabel, { color: '#FF3B30' }]}>もう一度</Text>
+                  </View>
+                  <View style={styles.swipeHintSideItem}>
+                    <Text style={[styles.swipeLabel, { color: '#34C759' }]}>簡単</Text>
+                    <Text style={[styles.swipeArrow, { color: '#34C759' }]}>→</Text>
+                  </View>
+                </View>
+                {/* 下: hard */}
+                <View style={styles.swipeHintCenter}>
+                  <Text style={[styles.swipeArrow, { color: '#FF9500' }]}>↓</Text>
+                  <Text style={[styles.swipeLabel, { color: '#FF9500' }]}>難しかった</Text>
+                </View>
               </View>
             </Animated.View>
           </Animated.View>
@@ -302,5 +327,37 @@ const styles = StyleSheet.create({
   flipHint: {
     ...TypeScale.footnote,
     marginLeft: Spacing.xs,
+  },
+
+  // スワイプヒント（裏面フッター）
+  swipeHintBlock: {
+    gap: 2,
+    paddingTop: Spacing.xs,
+    opacity: 0.65,
+  },
+  swipeHintCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  swipeHintSides: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xs,
+  },
+  swipeHintSideItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  swipeArrow: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  swipeLabel: {
+    ...TypeScale.caption1,
+    fontWeight: '500',
   },
 });
