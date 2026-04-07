@@ -79,7 +79,7 @@ async function processLoop(db: SQLiteDatabase): Promise<void> {
       notifyListeners();
 
       const prompt = buildDeepDivePrompt(job.question, job.answer);
-      const result = await runLocalCompletion(prompt, 3000);
+      const result = await runLocalCompletion(prompt, 800);
 
       await updateDeepDiveStatus(db, job.id, 'done', result);
       notifyListeners();
@@ -94,33 +94,17 @@ async function processLoop(db: SQLiteDatabase): Promise<void> {
 
 function buildDeepDivePrompt(question: string, answer: string): string {
   return `<start_of_turn>user
-以下の学習カード（Q&A）について、より深く理解できるよう詳細に解説してください。
+学習カードの補足説明を日本語500字以内で書いてください。余計な挨拶・前置き・見出しは不要です。
 
-【問題】
-${question}
+Q: ${question}
+A: ${answer}
 
-【回答】
-${answer}
+▼ 以下の要点のみ簡潔に説明してください:
+・なぜそうなるのか（根拠・原理）
+・具体例またはたとえ話（1つだけ）
+・間違えやすいポイント（あれば）
 
----
-以下の構成で日本語で解説してください（合計1500〜2000字程度）:
-
-## 背景・なぜそうなるのか
-この概念・事実が成り立つ根拠や原理を丁寧に説明してください。
-
-## 関連する重要な概念
-この知識を正しく理解するために必要な周辺知識・前提知識を説明してください。
-
-## 具体例・応用
-現実世界での具体例、コード例、たとえ話などを使って理解を深めてください。
-
-## よくある誤解・注意点
-学習者がはまりやすい誤解や、間違えやすいポイントを挙げてください。
-
-## まとめ
-要点を3〜5行でまとめてください。
-
-各セクションは必ず書いてください。<end_of_turn>
+500字を超えないこと。箇条書き禁止。文章で書くこと。<end_of_turn>
 <start_of_turn>model
 `;
 }
