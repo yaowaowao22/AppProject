@@ -362,7 +362,7 @@ export async function downloadModel(): Promise<void> {
 // ============================================================
 
 /** チャンクあたりの文字数。プロンプト指示 + テキスト + 出力が 4096 トークン内に収まるよう設定 */
-const CHUNK_SIZE = 3_500;
+const CHUNK_SIZE = 2_000;
 
 /**
  * 自然な区切りが見つからないときのフォールバック重複文字数。
@@ -600,8 +600,8 @@ function normalize(parsed: Partial<AnalysisResult>): AnalysisResult {
  * 第1チャンク: title/summary/category/tags + Q&A の全JSON → 余裕を持たせる
  * 継続チャンク: Q&Aのみ → 1536 で十分（約30〜40ペア分）
  */
-const N_PREDICT_FIRST        = 4096;
-const N_PREDICT_CONTINUATION = 3072;
+const N_PREDICT_FIRST        = 2048;
+const N_PREDICT_CONTINUATION = 1536;
 
 async function runCompletion(
   context: LlamaContext,

@@ -27,7 +27,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     url: 'https://huggingface.co/unsloth/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf',
     filename: 'Llama-3.2-1B-Q4_K_M.gguf',
     nGpuLayers: 99,
-    nCtx: 8192,
+    nCtx: 4096,
   },
   {
     id: 'qwen25-1b5-q4km',
@@ -39,7 +39,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     url: 'https://huggingface.co/bartowski/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf',
     filename: 'Qwen2.5-1.5B-Q4_K_M.gguf',
     nGpuLayers: 99,
-    nCtx: 8192,
+    nCtx: 4096,
   },
   {
     id: 'gemma4-iq2m',
@@ -51,7 +51,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     url: 'https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-UD-IQ2_M.gguf',
     filename: 'gemma-4-E2B-UD-IQ2_M.gguf',
     nGpuLayers: 99,
-    nCtx: 8192,
+    nCtx: 4096,
   },
   {
     id: 'gemma4-q3ks',
@@ -63,7 +63,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     url: 'https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q3_K_S.gguf',
     filename: 'gemma-4-E2B-Q3_K_S.gguf',
     nGpuLayers: 99,
-    nCtx: 8192,
+    nCtx: 4096,
   },
   {
     id: 'gemma4-q4km',
@@ -75,7 +75,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     url: 'https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q4_K_M.gguf',
     filename: 'gemma-4-E2B-Q4_K_M.gguf',
     nGpuLayers: 99,
-    nCtx: 8192,
+    nCtx: 4096,
   },
 ];
 
