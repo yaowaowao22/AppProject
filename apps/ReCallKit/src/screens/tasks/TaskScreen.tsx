@@ -22,7 +22,8 @@ import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { useTask } from '../../context/TaskContext';
 import type { AnalysisTask } from '../../context/TaskContext';
-import type { TaskStackParamList } from '../../navigation/types';
+import type { DrawerNavigationProp } from '@react-navigation/drawer';
+import type { TaskStackParamList, DrawerParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<TaskStackParamList, 'TaskList'>;
 
@@ -148,6 +149,17 @@ export function TaskScreen({ navigation }: Props) {
             <Text style={[styles.emptySubtitle, { color: colors.labelSecondary }]}>
               URLを解析するとここに表示されます
             </Text>
+            <Pressable
+              style={[styles.ctaButton, { backgroundColor: colors.accent }]}
+              onPress={() =>
+                navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate(
+                  'Library',
+                  { screen: 'URLAnalysis', params: {} }
+                )
+              }
+            >
+              <Text style={styles.ctaButtonText}>URLを解析する</Text>
+            </Pressable>
           </View>
         }
       />
@@ -252,5 +264,17 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     ...TypeScale.subheadline,
     textAlign: 'center',
+  },
+  ctaButton: {
+    marginTop: Spacing.s,
+    paddingHorizontal: Spacing.l,
+    paddingVertical: 10,
+    borderRadius: Radius.full,
+    alignSelf: 'center',
+  },
+  ctaButtonText: {
+    ...TypeScale.subheadline,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
   },
 });

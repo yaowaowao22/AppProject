@@ -13,7 +13,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { DrawerNavigationProp } from '@react-navigation/drawer';
 import { useDatabase } from '../../hooks/useDatabase';
 import {
   getStreakDays,
@@ -32,6 +33,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { SystemColors } from '../../theme/colors';
+import type { DrawerParamList } from '../../navigation/types';
 
 // ソートキー
 type SortKey = 'recent' | 'next' | 'title';
@@ -64,6 +66,7 @@ function formatRelativeTime(dateStr: string): string {
 export function HistoryScreen() {
   const { db, isReady } = useDatabase();
   const { colors, isDark } = useTheme();
+  const drawerNav = useNavigation<DrawerNavigationProp<DrawerParamList>>();
 
   const [streakDays, setStreakDays] = useState(0);
   const [todayCompleted, setTodayCompleted] = useState(0);
@@ -266,6 +269,12 @@ export function HistoryScreen() {
           <Text style={[styles.emptyText, { color: colors.labelSecondary }]}>
             まだ復習履歴がありません
           </Text>
+          <Pressable
+            style={[styles.ctaButton, { backgroundColor: colors.accent }]}
+            onPress={() => drawerNav.navigate('Review')}
+          >
+            <Text style={styles.ctaButtonText}>今すぐ復習する</Text>
+          </Pressable>
         </View>
       )}
     </ScrollView>
@@ -420,5 +429,17 @@ const styles = StyleSheet.create({
   emptyText: {
     ...TypeScale.subheadline,
     textAlign: 'center',
+  },
+  ctaButton: {
+    marginTop: Spacing.s,
+    paddingHorizontal: Spacing.l,
+    paddingVertical: 10,
+    borderRadius: Radius.full,
+    alignSelf: 'center',
+  },
+  ctaButtonText: {
+    ...TypeScale.subheadline,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
   },
 });

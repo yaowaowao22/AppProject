@@ -25,7 +25,8 @@ import {
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
-import type { ReviewStackParamList } from '../../navigation/types';
+import type { DrawerNavigationProp } from '@react-navigation/drawer';
+import type { ReviewStackParamList, DrawerParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewSelect'>;
 
@@ -177,6 +178,17 @@ export function ReviewSelectScreen({ navigation }: Props) {
           <Text style={[styles.emptyGroupsText, { color: colors.labelSecondary }]}>
             ライブラリでグループを作成すると{'\n'}絞り込んで復習できます
           </Text>
+          <Pressable
+            style={[styles.ctaButton, { backgroundColor: colors.accent }]}
+            onPress={() =>
+              navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate(
+                'Library',
+                { screen: 'ReviewGroupCreate' } as any
+              )
+            }
+          >
+            <Text style={styles.ctaButtonText}>グループを作成する</Text>
+          </Pressable>
         </View>
       )}
     </ScrollView>
@@ -309,5 +321,17 @@ const styles = StyleSheet.create({
     ...TypeScale.caption1,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  ctaButton: {
+    marginTop: Spacing.xs,
+    paddingHorizontal: Spacing.l,
+    paddingVertical: 10,
+    borderRadius: Radius.full,
+    alignSelf: 'center',
+  },
+  ctaButtonText: {
+    ...TypeScale.subheadline,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
   },
 });

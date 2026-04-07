@@ -25,11 +25,12 @@ import {
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
-import type { JournalStackParamList } from '../../navigation/types';
+import type { DrawerNavigationProp } from '@react-navigation/drawer';
+import type { JournalStackParamList, DrawerParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<JournalStackParamList, 'JournalMain'>;
 
-export function JournalScreen({ navigation: _navigation }: Props) {
+export function JournalScreen({ navigation }: Props) {
   const { db, isReady } = useDatabase();
   const { colors, isDark } = useTheme();
 
@@ -93,6 +94,14 @@ export function JournalScreen({ navigation: _navigation }: Props) {
         <Text style={[styles.emptySubtitle, { color: colors.labelSecondary }]}>
           アイテムの詳細画面からメモを追加できます
         </Text>
+        <Pressable
+          style={[styles.ctaButton, { backgroundColor: colors.accent }]}
+          onPress={() =>
+            navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate('Library')
+          }
+        >
+          <Text style={styles.ctaButtonText}>ライブラリを見る</Text>
+        </Pressable>
       </View>
     );
   }
@@ -179,6 +188,18 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     ...TypeScale.subheadline,
     textAlign: 'center',
+  },
+  ctaButton: {
+    marginTop: Spacing.s,
+    paddingHorizontal: Spacing.l,
+    paddingVertical: 10,
+    borderRadius: Radius.full,
+    alignSelf: 'center',
+  },
+  ctaButtonText: {
+    ...TypeScale.subheadline,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
   },
 
   // リスト

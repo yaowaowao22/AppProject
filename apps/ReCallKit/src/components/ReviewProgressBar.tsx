@@ -49,7 +49,7 @@ export function ReviewProgressBar({ currentIndex, total, ratingCounts }: Props) 
 
   // 評価済みの合計件数
   const ratedTotal = ratingCounts
-    ? Object.values(ratingCounts).reduce((s, v) => s + (v ?? 0), 0)
+    ? Object.values(ratingCounts).reduce<number>((s, v) => s + (v ?? 0), 0)
     : 0;
   const showDots = !!ratingCounts && ratedTotal > 0;
 

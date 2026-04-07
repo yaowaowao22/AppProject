@@ -29,8 +29,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
 import { useKnowledgeMap } from '../../hooks/useKnowledgeMap';
 import { Spacing, Radius } from '../../theme/spacing';
+import { TypeScale } from '../../theme/typography';
 import { SystemColors, RecallAmber } from '../../theme/colors';
-import type { MapStackParamList } from '../../navigation/types';
+import type { DrawerNavigationProp } from '@react-navigation/drawer';
+import type { MapStackParamList, DrawerParamList } from '../../navigation/types';
 import type { ItemWithMeta, Tag } from '../../types';
 
 type Props = NativeStackScreenProps<MapStackParamList, 'KnowledgeMap'>;
@@ -485,9 +487,21 @@ export function KnowledgeMapScreen({ navigation }: Props) {
 
         {showEmpty && (
           <View style={styles.center}>
+            <Ionicons name="map-outline" size={48} color={colors.labelTertiary} />
             <Text style={[styles.emptyText, { color: colors.labelSecondary }]}>
               アイテムを追加すると{'\n'}知識マップが表示されます
             </Text>
+            <Pressable
+              style={[styles.ctaButton, { backgroundColor: colors.accent }]}
+              onPress={() =>
+                navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate(
+                  'Library',
+                  { screen: 'URLAnalysis', params: {} }
+                )
+              }
+            >
+              <Text style={styles.ctaButtonText}>アイテムを追加する</Text>
+            </Pressable>
           </View>
         )}
 
@@ -792,6 +806,18 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
   },
   emptyText: { fontSize: 15, textAlign: 'center', lineHeight: 24 },
+  ctaButton: {
+    marginTop: Spacing.s,
+    paddingHorizontal: Spacing.l,
+    paddingVertical: 10,
+    borderRadius: Radius.full,
+    alignSelf: 'center',
+  },
+  ctaButtonText: {
+    ...TypeScale.subheadline,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
+  },
 
   zoomControls: {
     position: 'absolute',

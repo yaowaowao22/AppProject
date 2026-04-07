@@ -370,4 +370,15 @@ const styles = StyleSheet.create({
     ...TypeScale.caption1,
     textAlign: 'center',
   },
+  ctaButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 99,
+    marginTop: 4,
+  },
+  ctaButtonText: {
+    ...TypeScale.subheadline,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
+  },
 });
