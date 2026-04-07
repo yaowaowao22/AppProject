@@ -1,0 +1,18 @@
+# Gemma 4 E2B Q3_K_S Modelfile
+# 使い方:
+#   1. HuggingFaceからGGUFをダウンロード:
+#      pip install huggingface_hub
+#      huggingface-cli download unsloth/gemma-4-E2B-it-GGUF \
+#          gemma-4-E2B-it-Q3_K_S.gguf \
+#          --local-dir ./models
+#
+#   2. このModelfileのパスを修正してOllamaに登録:
+#      ollama create gemma4-q3ks -f ./Modelfile_Q3KS
+#
+#   3. テスト実行:
+#      python test_gemma_local.py --model gemma4-q3ks
+
+FROM ./models/gemma-4-E2B-it-Q3_K_S.gguf
+
+PARAMETER temperature 0
+PARAMETER num_ctx 8192
