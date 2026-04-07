@@ -44,7 +44,7 @@ export async function getDueItems(db: SQLiteDatabase): Promise<ReviewableItem[]>
   const rows = await db.getAllAsync<DueRow>(`
     SELECT
       i.id, i.type, i.title, i.content, i.source_url, i.excerpt, i.category,
-      i.created_at, i.updated_at, i.archived,
+      i.created_at, i.updated_at, i.archived, i.flagged,
       r.id as review_id, r.repetitions, r.easiness_factor,
       r.interval_days, r.next_review_at, r.last_reviewed_at, r.quality_history
     FROM items i
@@ -250,7 +250,7 @@ export async function getAllReviewableItems(db: SQLiteDatabase): Promise<Reviewa
   const rows = await db.getAllAsync<DueRow>(`
     SELECT
       i.id, i.type, i.title, i.content, i.source_url, i.excerpt, i.category,
-      i.created_at, i.updated_at, i.archived,
+      i.created_at, i.updated_at, i.archived, i.flagged,
       r.id as review_id, r.repetitions, r.easiness_factor,
       r.interval_days, r.next_review_at, r.last_reviewed_at, r.quality_history
     FROM items i

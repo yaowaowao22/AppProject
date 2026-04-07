@@ -55,7 +55,7 @@ export function ItemDetailScreen({ route }: Props) {
       setItem(row ?? null);
 
       const tagRows = await db.getAllAsync<Tag>(
-        `SELECT t.id, t.name FROM tags t
+        `SELECT t.id, t.name, t.description FROM tags t
          JOIN item_tags it ON it.tag_id = t.id
          WHERE it.item_id = ?`,
         [itemId]

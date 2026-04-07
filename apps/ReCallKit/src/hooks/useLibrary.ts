@@ -229,7 +229,7 @@ export function useTags() {
     setIsLoading(true);
     try {
       const rows = await db.getAllAsync<TagWithCount>(
-        `SELECT t.id, t.name, COUNT(DISTINCT it.item_id) AS count
+        `SELECT t.id, t.name, t.description, COUNT(DISTINCT it.item_id) AS count
          FROM tags t
          LEFT JOIN item_tags it ON it.tag_id = t.id
          LEFT JOIN items i ON i.id = it.item_id AND i.archived = 0

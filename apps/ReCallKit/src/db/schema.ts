@@ -220,9 +220,12 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
 
   if (currentVersion < 9) {
     // tagsテーブルにdescription列を追加（AIが生成する説明文）
-    await db.execAsync(`
-      ALTER TABLE tags ADD COLUMN description TEXT;
-    `);
+    // ALTER TABLE ADD COLUMN は列が既に存在すると失敗するため try-catch で冪等にする
+    try {
+      await db.execAsync(`ALTER TABLE tags ADD COLUMN description TEXT;`);
+    } catch {
+      // 列が既に存在する場合（マイグレーション途中で再起動したケース）は無視
+    }
     await setSchemaVersion(db, 9);
   }
 }
