@@ -141,9 +141,6 @@ export function ReviewSelectScreen({ navigation }: Props) {
               {/* 左アクセントバー */}
               <View style={[styles.groupAccent, { backgroundColor: colors.accent }]} />
 
-              <View style={[styles.groupIcon, { backgroundColor: colors.accent + '18' }]}>
-                <Ionicons name="layers" size={20} color={colors.accent} />
-              </View>
               <View style={styles.groupInfo}>
                 <Text style={[styles.groupName, { color: colors.label }]} numberOfLines={1}>
                   {group.name}
@@ -274,13 +271,6 @@ const styles = StyleSheet.create({
     width: 3,
     borderTopLeftRadius: Radius.m,
     borderBottomLeftRadius: Radius.m,
-  },
-  groupIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.s,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   groupInfo: {
     flex: 1,
