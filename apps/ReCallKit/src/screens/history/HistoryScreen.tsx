@@ -1,6 +1,6 @@
 // ============================================================
 // HistoryScreen - 学習履歴
-// StreakRing・統計カード・マスタリー分布・最近の復習履歴リスト（ソート付き）
+// StreakRing・統計カード・マスタリー分布・復習セッション別履歴
 // ============================================================
 
 import React, { useState, useCallback, useMemo } from 'react';
@@ -26,7 +26,9 @@ import {
 } from '../../db/reviewRepository';
 import {
   getMasterySummary,
+  toMasteryLevel,
   type MasterySummary,
+  type MasteryLevel,
 } from '../../db/queries';
 import { StreakRing } from '../../components/StreakRing';
 import { MasteryDistribution } from '../../components/MasteryDistribution';
@@ -36,32 +38,102 @@ import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { SystemColors } from '../../theme/colors';
 import type { DrawerParamList } from '../../navigation/types';
 
-// ソートキー
-type SortKey = 'recent' | 'next' | 'title';
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'recent', label: '最新順' },
-  { key: 'next',   label: '次回順' },
-  { key: 'title',  label: 'タイトル' },
+// マスタリーレベルのメタ情報（色・ラベル）
+const MASTERY_META: { key: MasteryLevel; label: string; color: string }[] = [
+  { key: 'master',   label: 'マスター', color: SystemColors.green  },
+  { key: 'advanced', label: '上級',     color: SystemColors.blue   },
+  { key: 'learning', label: '学習中',   color: SystemColors.orange },
+  { key: 'new',      label: '未学習',   color: '#9E9EA7'            },
 ];
 
-// アイテムタイプのラベルと色
-const TYPE_META: Record<string, { label: string; color: string; bg: string }> = {
-  url:        { label: 'URL',      color: SystemColors.blue,   bg: SystemColors.blue   + '1F' },
-  text:       { label: 'テキスト', color: SystemColors.green,  bg: SystemColors.green  + '1F' },
-  screenshot: { label: '画像',     color: SystemColors.purple, bg: SystemColors.purple + '1F' },
-};
+// セッション型: 近い時間帯に復習されたアイテム群
+interface ReviewSession {
+  /** セッション開始時刻（最も早い last_reviewed_at） */
+  startTime: Date;
+  /** セッション内のアイテム一覧 */
+  items: ReviewableItem[];
+  /** マスタリー分布 */
+  mastery: { new: number; learning: number; advanced: number; master: number; total: number };
+}
 
-// 相対時刻を日本語で返す
-function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr.replace(' ', 'T'));
-  const diffMs = Date.now() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-  if (diffMins < 60) return `${diffMins}分前`;
-  if (diffHours < 24) return `${diffHours}時間前`;
-  if (diffDays === 1) return '昨日';
-  return `${diffDays}日前`;
+/** 30分以内の復習を同一セッションとしてクラスタリング */
+const SESSION_GAP_MS = 30 * 60 * 1000;
+
+/**
+ * ReviewableItem[] を復習セッション単位にグループ化
+ * last_reviewed_at 降順ソート済みを前提
+ */
+function groupIntoSessions(items: ReviewableItem[]): ReviewSession[] {
+  if (items.length === 0) return [];
+
+  // last_reviewed_at 降順ソート
+  const sorted = [...items].sort((a, b) => {
+    const aT = a.item.review?.last_reviewed_at ?? '';
+    const bT = b.item.review?.last_reviewed_at ?? '';
+    return aT > bT ? -1 : aT < bT ? 1 : 0;
+  });
+
+  const sessions: ReviewSession[] = [];
+  let currentItems: ReviewableItem[] = [sorted[0]];
+  let currentTime = new Date(
+    (sorted[0].item.review?.last_reviewed_at ?? '').replace(' ', 'T')
+  );
+
+  for (let i = 1; i < sorted.length; i++) {
+    const ri = sorted[i];
+    const t = new Date(
+      (ri.item.review?.last_reviewed_at ?? '').replace(' ', 'T')
+    );
+    // 前のアイテムとの差が30分以内なら同一セッション
+    if (currentTime.getTime() - t.getTime() <= SESSION_GAP_MS) {
+      currentItems.push(ri);
+    } else {
+      sessions.push(buildSession(currentItems));
+      currentItems = [ri];
+    }
+    currentTime = t;
+  }
+  sessions.push(buildSession(currentItems));
+
+  return sessions;
+}
+
+/** セッション内のマスタリー分布を算出 */
+function buildSession(items: ReviewableItem[]): ReviewSession {
+  const mastery = { new: 0, learning: 0, advanced: 0, master: 0, total: items.length };
+  for (const ri of items) {
+    const r = ri.item.review;
+    if (r) {
+      mastery[toMasteryLevel({ repetitions: r.repetitions, easiness_factor: r.easiness_factor })]++;
+    } else {
+      mastery.new++;
+    }
+  }
+  // セッション開始時刻 = 最も早い last_reviewed_at
+  const times = items
+    .map((ri) => ri.item.review?.last_reviewed_at)
+    .filter((t): t is string => !!t)
+    .map((t) => new Date(t.replace(' ', 'T')).getTime());
+  const startTime = new Date(times.length > 0 ? Math.min(...times) : Date.now());
+
+  return { startTime, items, mastery };
+}
+
+/** セッション時刻を「今日 14:30」「昨日 9:15」「4/5 14:30」形式で表示 */
+function formatSessionTime(date: Date): string {
+  const now = new Date();
+  const todayStr = now.toDateString();
+  const yesterdayDate = new Date(now);
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterdayStr = yesterdayDate.toDateString();
+
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  const time = `${hh}:${mm}`;
+
+  if (date.toDateString() === todayStr) return `今日 ${time}`;
+  if (date.toDateString() === yesterdayStr) return `昨日 ${time}`;
+  return `${date.getMonth() + 1}/${date.getDate()} ${time}`;
 }
 
 export function HistoryScreen() {
@@ -76,7 +148,6 @@ export function HistoryScreen() {
   const [masterySummary, setMasterySummary] = useState<MasterySummary | null>(null);
   const [masteredCount, setMasteredCount] = useState(0);
   const [accuracyRate, setAccuracyRate] = useState(0);
-  const [sortKey, setSortKey] = useState<SortKey>('recent');
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
@@ -105,27 +176,11 @@ export function HistoryScreen() {
     }
   }, [db, isReady]);
 
-  // ソート済みリスト（クライアントサイドソート）
-  const sortedReviewed = useMemo(() => {
-    const list = [...recentlyReviewed];
-    switch (sortKey) {
-      case 'next':
-        return list.sort((a, b) => {
-          const aTime = a.item.review?.next_review_at ?? '';
-          const bTime = b.item.review?.next_review_at ?? '';
-          return aTime < bTime ? -1 : aTime > bTime ? 1 : 0;
-        });
-      case 'title':
-        return list.sort((a, b) => a.item.title.localeCompare(b.item.title, 'ja'));
-      case 'recent':
-      default:
-        return list.sort((a, b) => {
-          const aTime = a.item.review?.last_reviewed_at ?? '';
-          const bTime = b.item.review?.last_reviewed_at ?? '';
-          return aTime > bTime ? -1 : aTime < bTime ? 1 : 0;
-        });
-    }
-  }, [recentlyReviewed, sortKey]);
+  // セッション単位にグループ化（新しい順）
+  const sessions = useMemo(
+    () => groupIntoSessions(recentlyReviewed),
+    [recentlyReviewed]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -182,74 +237,67 @@ export function HistoryScreen() {
         </View>
       )}
 
-      {/* ――― 最近の復習履歴 ――― */}
-      {sortedReviewed.length > 0 ? (
+      {/* ――― 復習セッション別履歴 ――― */}
+      {sessions.length > 0 ? (
         <>
-          {/* セクションタイトル + ソートチップ */}
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
               復習履歴
             </Text>
-            <View style={styles.sortRow}>
-              {SORT_OPTIONS.map((opt) => (
-                <Pressable
-                  key={opt.key}
-                  onPress={() => setSortKey(opt.key)}
-                  style={[
-                    styles.sortChip,
-                    {
-                      backgroundColor:
-                        sortKey === opt.key ? colors.accent + '1F' : colors.backgroundGrouped,
-                      borderColor:
-                        sortKey === opt.key ? colors.accent : colors.separator,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.sortChipText,
-                      { color: sortKey === opt.key ? colors.accent : colors.labelSecondary },
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
           </View>
-          {sortedReviewed.map((ri) => {
-            const meta = TYPE_META[ri.item.type] ?? TYPE_META.text;
-            const relTime = ri.item.review?.last_reviewed_at
-              ? formatRelativeTime(ri.item.review.last_reviewed_at)
-              : '';
+          {sessions.map((session, idx) => {
+            const total = session.mastery.total || 1;
             return (
               <View
-                key={ri.reviewId}
-                style={[styles.historyItem, { borderBottomColor: colors.separator, backgroundColor: colors.card }]}
+                key={session.startTime.getTime() + '-' + idx}
+                style={[styles.sessionCard, { backgroundColor: colors.card }, cardShadow]}
               >
-                <View style={[styles.typeBadge, { backgroundColor: meta.bg }]}>
-                  <Text style={[styles.typeBadgeText, { color: meta.color }]}>{meta.label}</Text>
-                </View>
-                <View style={styles.historyBody}>
-                  <Text
-                    style={[styles.historyTitle, { color: colors.accent }]}
-                    numberOfLines={1}
-                  >
-                    {ri.item.title}
+                {/* ヘッダー: 時刻 + カード数 */}
+                <View style={styles.sessionHeader}>
+                  <View style={styles.sessionTimeRow}>
+                    <Ionicons name="time-outline" size={16} color={colors.labelSecondary} />
+                    <Text style={[styles.sessionTime, { color: colors.label }]}>
+                      {formatSessionTime(session.startTime)}
+                    </Text>
+                  </View>
+                  <Text style={[styles.sessionCount, { color: colors.labelTertiary }]}>
+                    {session.mastery.total}カード
                   </Text>
-                  {relTime ? (
-                    <Text style={[styles.historyTime, { color: colors.labelTertiary }]}>
-                      {relTime}
-                    </Text>
-                  ) : null}
-                  {ri.item.content ? (
-                    <Text
-                      style={[styles.historyPreview, { color: colors.labelSecondary }]}
-                      numberOfLines={2}
-                    >
-                      {ri.item.content}
-                    </Text>
-                  ) : null}
+                </View>
+
+                {/* スタック型マスタリー分布バー */}
+                <View style={[styles.stackedBarTrack, { backgroundColor: colors.separator }]}>
+                  {MASTERY_META.map(({ key, color }) => {
+                    const count = session.mastery[key];
+                    if (count === 0) return null;
+                    const pct = (count / total) * 100;
+                    return (
+                      <View
+                        key={key}
+                        style={[
+                          styles.stackedBarSegment,
+                          // @ts-ignore - RN accepts percentage string for width
+                          { width: `${pct}%`, backgroundColor: color },
+                        ]}
+                      />
+                    );
+                  })}
+                </View>
+
+                {/* マスタリー凡例 */}
+                <View style={styles.sessionLegend}>
+                  {MASTERY_META.map(({ key, label, color }) => {
+                    const count = session.mastery[key];
+                    if (count === 0) return null;
+                    return (
+                      <View key={key} style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: color }]} />
+                        <Text style={[styles.legendText, { color: colors.labelSecondary }]}>
+                          {label} {count}
+                        </Text>
+                      </View>
+                    );
+                  })}
                 </View>
               </View>
             );
@@ -327,11 +375,8 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
 
-  // ――― セクションタイトル + ソート ―――
+  // ――― セクションタイトル ―――
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     marginLeft: Spacing.xs,
   },
   sectionTitle: {
@@ -339,59 +384,60 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  sortRow: {
+
+  // ――― セッションカード ―――
+  sessionCard: {
+    borderRadius: Radius.l,
+    padding: Spacing.m,
+    gap: Spacing.s,
+  },
+  sessionHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sessionTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.xs,
   },
-  sortChip: {
-    paddingHorizontal: Spacing.s,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-    borderWidth: StyleSheet.hairlineWidth,
+  sessionTime: {
+    ...TypeScale.subheadline,
+    fontWeight: '600' as const,
   },
-  sortChipText: {
-    ...TypeScale.caption2,
-    fontWeight: '500' as const,
+  sessionCount: {
+    ...TypeScale.caption1,
   },
 
-  // ――― 履歴リストアイテム ―――
-  historyItem: {
+  // ――― スタック型マスタリー分布バー ―――
+  stackedBarTrack: {
+    height: 8,
+    borderRadius: Radius.full,
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
   },
-  typeBadge: {
-    paddingHorizontal: Spacing.s,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radius.xs,
-    minWidth: 44,
+  stackedBarSegment: {
+    height: '100%',
+  },
+
+  // ――― 凡例 ―――
+  sessionLegend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.s,
+  },
+  legendItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
-    flexShrink: 0,
+    gap: 4,
   },
-  typeBadgeText: {
-    fontSize: 10,
-    fontWeight: '500' as const,
-    lineHeight: 14,
+  legendDot: {
+    width: 6,
+    height: 6,
+    borderRadius: Radius.full,
   },
-  historyBody: {
-    flex: 1,
-    minWidth: 0,
-  },
-  historyTitle: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-    marginBottom: 2,
-  },
-  historyTime: {
-    fontSize: 11,
-  },
-  historyPreview: {
-    fontSize: 13,
-    marginTop: 4,
+  legendText: {
+    ...TypeScale.caption2,
   },
 
   // ――― 空状態 ―――

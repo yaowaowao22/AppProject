@@ -31,7 +31,7 @@ interface MasteryRow {
   easiness_factor: number;
 }
 
-function toMasteryLevel(row: MasteryRow): MasteryLevel {
+export function toMasteryLevel(row: MasteryRow): MasteryLevel {
   const { repetitions, easiness_factor } = row;
   if (repetitions === 0) return 'new';
   if (repetitions >= 5 && easiness_factor >= 2.5) return 'master';
