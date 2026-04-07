@@ -61,7 +61,9 @@ interface RecentItem {
   created_at: string;
 }
 
-const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+const ENG_DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEK_BLUE = '#1A73E8';
+const WEEK_BLUE_LIGHT = '#E8F0FE';
 
 const RECENT_CATEGORY_COLORS: Record<string, string> = {
   Programming: '#1A73E8',
@@ -188,6 +190,12 @@ export function HomeScreen({ navigation }: Props) {
   const estimatedMinutes = useMemo(
     () => Math.max(1, Math.round(filteredDueItems.length * 0.5)),
     [filteredDueItems.length]
+  );
+
+  // 習得済みカード総数（categoryStats の合計）
+  const totalMastered = useMemo(
+    () => categoryStats.reduce((acc, s) => acc + s.masteredCount, 0),
+    [categoryStats]
   );
 
   // ウィジェット同期
@@ -404,17 +412,9 @@ export function HomeScreen({ navigation }: Props) {
       {/* ③ StatsRow */}
       <StatsRow
         stats={[
-          {
-            value: streakDays,
-            label: '連続日数',
-            color: streakDays > 0 ? SystemColors.orange : undefined,
-          },
-          {
-            value: todayCompleted,
-            label: '今日完了',
-            color: todayCompleted > 0 ? SystemColors.green : undefined,
-          },
-          { value: totalItems, label: '総アイテム' },
+          { value: streakDays, label: '日連続', color: streakDays > 0 ? SystemColors.orange : undefined },
+          { value: totalMastered, label: '習得済み' },
+          { value: totalItems, label: 'カード' },
         ]}
       />
 
@@ -432,49 +432,68 @@ export function HomeScreen({ navigation }: Props) {
       {totalItems > 0 && (
         <>
           <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
-            今週のアクティビティ
+            This Week
           </Text>
           <View style={[styles.weeklyCard, { backgroundColor: colors.card }, cardShadow]}>
             <View style={styles.weeklyRow}>
               {weeklyActivity.map((day, i) => {
                 const isToday = i === 6;
                 const dotDate = new Date(day.date + 'T00:00:00');
-                const dayLabel = DAY_LABELS[dotDate.getDay()];
-                const intensity =
-                  day.count === 0 ? 0 : day.count <= 2 ? 1 : day.count <= 5 ? 2 : 3;
+                const dayLabel = ENG_DAY_LABELS[dotDate.getDay()];
+
+                let dotState: 'strong' | 'done' | 'today-ring' | 'none';
+                if (day.count >= 5) dotState = 'strong';
+                else if (day.count >= 1) dotState = 'done';
+                else if (isToday) dotState = 'today-ring';
+                else dotState = 'none';
+
                 const dotBg =
-                  intensity === 0
-                    ? isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
-                    : intensity === 1 ? colors.accent + '55'
-                    : intensity === 2 ? colors.accent + 'AA'
-                    : colors.accent;
+                  dotState === 'strong' ? WEEK_BLUE
+                  : dotState === 'done' ? WEEK_BLUE_LIGHT
+                  : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
+                const showCheck = dotState === 'strong' || dotState === 'done';
+                const checkColor = dotState === 'strong' ? '#FFFFFF' : WEEK_BLUE;
+
                 return (
                   <View key={day.date} style={styles.dayCol}>
+                    <Text
+                      style={[
+                        styles.dayLabel,
+                        { color: isToday ? WEEK_BLUE : colors.labelTertiary },
+                        isToday && { fontWeight: '700' as const },
+                      ]}
+                    >
+                      {isToday ? 'Today' : dayLabel}
+                    </Text>
                     <View
                       style={[
                         styles.dot,
                         { backgroundColor: dotBg },
-                        isToday && { borderWidth: 2, borderColor: colors.accent },
+                        dotState === 'today-ring' && {
+                          backgroundColor: 'transparent',
+                          borderWidth: 2,
+                          borderColor: WEEK_BLUE,
+                        },
                       ]}
                     >
-                      {day.count > 0 && (
-                        <Text style={styles.dotCount}>
-                          {day.count > 9 ? '9+' : String(day.count)}
-                        </Text>
+                      {showCheck && (
+                        <Ionicons name="checkmark" size={16} color={checkColor} />
                       )}
                     </View>
-                    <Text
-                      style={[
-                        styles.dayLabel,
-                        { color: isToday ? colors.accent : colors.labelTertiary },
-                        isToday && { fontWeight: '700' as const },
-                      ]}
-                    >
-                      {dayLabel}
-                    </Text>
                   </View>
                 );
               })}
+            </View>
+            {/* 週サマリー行 */}
+            <View style={[styles.weekSummary, { borderTopColor: colors.separator }]}>
+              <Text style={[styles.weekSummaryText, { color: colors.labelSecondary }]}>
+                今週{' '}
+                <Text style={{ fontWeight: '700' as const }}>{weekActiveDays} / 7日</Text>
+              </Text>
+              <Text style={[styles.weekSummaryText, { color: colors.labelSecondary }]}>
+                {weekTotalReviewed}枚 復習済み
+              </Text>
             </View>
           </View>
         </>
@@ -745,7 +764,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...TypeScale.footnote,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
     marginLeft: Spacing.xs,
     marginBottom: -Spacing.xs,
   },
@@ -772,12 +791,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dotCount: {
-    fontSize: 11,
-    fontWeight: '700' as const,
-    color: '#FFFFFF',
-    lineHeight: 13,
-  },
+
   dayLabel: {
     fontSize: 11,
     lineHeight: 13,
@@ -791,6 +805,19 @@ const styles = StyleSheet.create({
     color: '#9AA0A6',
     marginLeft: Spacing.xs,
     marginBottom: -Spacing.xs,
+  },
+
+  weekSummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    paddingTop: 12,
+    marginTop: Spacing.m,
+  },
+  weekSummaryText: {
+    fontSize: 12,
+    lineHeight: 16,
   },
 
   // ⑦ 最近追加

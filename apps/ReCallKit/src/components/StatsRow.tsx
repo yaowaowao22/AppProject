@@ -91,12 +91,14 @@ const styles = StyleSheet.create({
   },
   value: {
     ...TypeScale.title2,
-    fontWeight: '700' as const,
+    fontWeight: '500' as const,
     letterSpacing: -0.5,
   },
   label: {
-    ...TypeScale.caption1,
+    fontSize: 11,
+    lineHeight: 13,
     textAlign: 'center',
+    marginTop: 2,
   },
   divider: {
     width: 1,

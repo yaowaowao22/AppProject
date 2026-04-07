@@ -1,63 +1,47 @@
 // ============================================================
 // DateRow - 日付行コンポーネント
-// 今日の曜日・日付を表示する軽量ヘッダー行
+// 青丸（日付数字）+ 曜日ラベル + due件数サブテキスト
 // ============================================================
 
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
-import { TypeScale } from '../theme/typography';
-import { Spacing } from '../theme/spacing';
 
-const WEEKDAYS_JA = ['日', '月', '火', '水', '木', '金', '土'] as const;
-const MONTHS_JA = [
-  '1月', '2月', '3月', '4月', '5月', '6月',
-  '7月', '8月', '9月', '10月', '11月', '12月',
-] as const;
+const BLUE = '#1A73E8';
+const SUBTITLE_COLOR = '#5F6368';
+
+const WEEKDAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
 interface DateRowProps {
   /** 表示する日付。省略時は今日 */
   date?: Date;
-  /** 右側に表示する補足テキスト */
-  subtitle?: string;
+  /** 今日の復習件数 */
+  dueCount: number;
 }
 
-export function DateRow({ date, subtitle }: DateRowProps) {
-  const { colors } = useTheme();
-
-  const { weekday, month, day, isToday } = useMemo(() => {
+export function DateRow({ date, dueCount }: DateRowProps) {
+  const { weekday, day } = useMemo(() => {
     const d = date ?? new Date();
-    const today = new Date();
-    const isSameDay =
-      d.getFullYear() === today.getFullYear() &&
-      d.getMonth() === today.getMonth() &&
-      d.getDate() === today.getDate();
     return {
-      weekday: WEEKDAYS_JA[d.getDay()],
-      month: MONTHS_JA[d.getMonth()],
+      weekday: WEEKDAYS_EN[d.getDay()],
       day: d.getDate(),
-      isToday: isSameDay,
     };
   }, [date]);
 
-  const sub = subtitle ?? (isToday ? '今日' : undefined);
+  const subtitle =
+    dueCount > 0 ? `${dueCount}件の復習が待っています` : '今日';
 
   return (
     <View style={styles.row} accessibilityRole="text">
-      {/* 日付グループ: "4月 7日 (火)" */}
-      <View style={styles.dateGroup}>
-        <Text style={[styles.monthDay, { color: colors.label }]}>
-          {month} {day}日
-        </Text>
-        <View style={[styles.weekdayPill, { backgroundColor: colors.accent + '1A' }]}>
-          <Text style={[styles.weekday, { color: colors.accent }]}>{weekday}</Text>
-        </View>
+      {/* 青丸 + 日付数字 */}
+      <View style={styles.circle}>
+        <Text style={styles.dayNumber}>{day}</Text>
       </View>
 
-      {/* 補足テキスト */}
-      {sub != null && (
-        <Text style={[styles.subtitle, { color: colors.labelTertiary }]}>{sub}</Text>
-      )}
+      {/* 曜日 + サブテキスト */}
+      <View style={styles.textGroup}>
+        <Text style={styles.weekday}>{weekday.toUpperCase()}</Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
+      </View>
     </View>
   );
 }
@@ -66,28 +50,38 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.xs,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    gap: 12,
   },
-  dateGroup: {
-    flexDirection: 'row',
+  circle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: BLUE,
     alignItems: 'center',
-    gap: Spacing.s,
+    justifyContent: 'center',
+    flexShrink: 0,
   },
-  monthDay: {
-    ...TypeScale.title3,
-    fontWeight: '700' as const,
+  dayNumber: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '500' as const,
+    lineHeight: 24,
   },
-  weekdayPill: {
-    paddingHorizontal: Spacing.s,
-    paddingVertical: 2,
-    borderRadius: 6,
+  textGroup: {
+    gap: 2,
   },
   weekday: {
-    ...TypeScale.footnote,
+    color: BLUE,
+    fontSize: 12,
     fontWeight: '600' as const,
+    lineHeight: 16,
+    letterSpacing: 0.3,
   },
   subtitle: {
-    ...TypeScale.footnote,
+    color: SUBTITLE_COLOR,
+    fontSize: 14,
+    lineHeight: 18,
   },
 });
