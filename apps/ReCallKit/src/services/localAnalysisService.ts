@@ -326,48 +326,99 @@ export async function downloadModel(): Promise<void> {
 }
 
 // ============================================================
+// テキスト分割（nCtx=4096 対応）
+// ============================================================
+
+/** チャンクあたりの文字数。プロンプト指示 + テキスト + 出力が 4096 トークン内に収まるよう設定 */
+const CHUNK_SIZE = 3_500;
+/** 前後チャンクの重複文字数（文脈の連続性を確保） */
+const CHUNK_OVERLAP = 150;
+
+function splitTextIntoChunks(text: string): string[] {
+  if (text.length <= CHUNK_SIZE) return [text];
+
+  const chunks: string[] = [];
+  let pos = 0;
+  while (pos < text.length) {
+    const end = Math.min(pos + CHUNK_SIZE, text.length);
+    chunks.push(text.slice(pos, end));
+    if (end === text.length) break;
+    pos = end - CHUNK_OVERLAP;
+  }
+  return chunks;
+}
+
+// ============================================================
 // プロンプト生成（Gemma 4 ChatML フォーマット）
 // ============================================================
 
-function buildPrompt(url: string, text: string): string {
-  const truncated =
-    text.length > LOCAL_AI_MAX_TEXT_LENGTH
-      ? `${text.slice(0, 6000)}\n...[中略]...\n${text.slice(-6000)}`
-      : text;
-
+/** 第1チャンク: title / summary / category / tags + Q&A を生成 */
+function buildFirstChunkPrompt(url: string, text: string, totalChunks: number): string {
+  const chunkNote = totalChunks > 1 ? `（第1部 / 全${totalChunks}部）` : '';
   return `<start_of_turn>user
-以下はWebページの本文テキストです。
+以下はWebページの本文テキスト${chunkNote}です。
 このページの内容を分析し、学習カード用のデータをJSON形式で生成してください。
 
 【出力形式】
 JSONオブジェクトのみを出力してください（説明文・マークダウン不要）:
 {
   "title": "ページタイトル（30文字以内）",
-  "summary": "1〜2行の要約（内容を端的に説明）",
+  "summary": "2〜3行の要約（主要ポイントを網羅）",
   "qa_pairs": [
     {"question": "問い（?で終わる）", "answer": "答え（3文以内）"}
   ],
   "category": "技術 or ビジネス or 科学 or 語学 or 一般教養 or その他",
   "tags": [
-    {"name": "具体的なタグ名（10文字以内）", "description": "このタグが何を意味するか1文で説明"}
+    {"name": "タグ名（10文字以内）", "description": "このタグが何を意味するか1文で説明"}
   ]
 }
+
+【Q&Aペアの要件】
+- このセクションに登場する全ての概念・数値・固有名詞・手順・定義・比較・因果関係それぞれにQ&Aを作成すること
+- 同じ事実から「定義」「理由」「方法」「効果」「比較」「数値」など視点を変えた問いを複数生成すること
+- 短いセクション: 20〜30個、中程度: 30〜50個、長いセクション: 50〜80個
+- 1問1答で簡潔に（Aは3文以内）
+- 日本語で生成すること
+- 「何が」「なぜ」「どのように」「いつ」「どの程度」「誰が」の5W1Hを網羅すること
+- 基礎的な確認問題から応用・批判的思考を要する問いまでバランスよく含めること
 
 【タグの要件】
 - 2〜5個のタグを生成すること
 - ページの主要トピック・技術・概念を具体的に表すキーワード
-- categoryよりも詳細・具体的な内容（例: "React Hooks", "機械学習", "英文法"）
 - 各タグに1文（30文字以内）の説明を付けること
 
+URL: ${url}
+本文:
+${text}
+<end_of_turn>
+<start_of_turn>model
+`;
+}
+
+/** 第2チャンク以降: Q&Aペアのみを追加生成 */
+function buildChunkPrompt(url: string, text: string, chunkIndex: number, totalChunks: number): string {
+  return `<start_of_turn>user
+以下はWebページの本文テキスト（第${chunkIndex + 1}部 / 全${totalChunks}部）の続きです。
+このセクションの内容から学習カード用のQ&AペアをJSONで生成してください。
+
+【出力形式】
+JSONオブジェクトのみ（説明文・マークダウン不要）:
+{
+  "qa_pairs": [
+    {"question": "問い（?で終わる）", "answer": "答え（3文以内）"}
+  ]
+}
+
 【Q&Aペアの要件】
-- 短い記事: 10〜15個、中程度の記事: 15〜25個、長い記事: 25〜40個
-- ページの全セクション・全トピックを網羅すること
+- このセクションに登場する全ての概念・数値・固有名詞・手順・定義・比較・因果関係それぞれにQ&Aを作成すること
+- 同じ事実から「定義」「理由」「方法」「効果」「比較」「数値」など視点を変えた問いを複数生成すること
+- 可能な限り多く生成すること（このセクションで20〜50個を目標）
 - 1問1答で簡潔に（Aは3文以内）
 - 日本語で生成すること
 
 URL: ${url}
 本文:
-${truncated}
+${text}
 <end_of_turn>
 <start_of_turn>model
 `;
@@ -392,6 +443,23 @@ function parseAnalysisResult(raw: string): AnalysisResult {
   throw new Error('AIの出力をJSONとして解析できませんでした。再試行してください');
 }
 
+/** チャンクの Q&A のみパース。失敗時は空配列を返して処理を継続する */
+function parseChunkQaPairs(raw: string): QAPair[] {
+  let text = raw.trim();
+  if (text.startsWith('```')) {
+    const lines = text.split('\n');
+    const endIdx = lines.findLastIndex((l) => l.trim() === '```');
+    text = lines.slice(1, endIdx > 0 ? endIdx : undefined).join('\n').trim();
+  }
+  const tryParse = (s: string): QAPair[] | null => {
+    try {
+      const parsed = JSON.parse(s) as { qa_pairs?: QAPair[] };
+      return Array.isArray(parsed.qa_pairs) ? parsed.qa_pairs : null;
+    } catch { return null; }
+  };
+  return tryParse(text) ?? tryParse(/\{[\s\S]*\}/.exec(text)?.[0] ?? '') ?? [];
+}
+
 function normalize(parsed: Partial<AnalysisResult>): AnalysisResult {
   return {
     title: parsed.title ?? '無題',
@@ -403,10 +471,43 @@ function normalize(parsed: Partial<AnalysisResult>): AnalysisResult {
 }
 
 // ============================================================
-// Public API: URL解析
+// LLM推論ヘルパー（タイムアウト付き）
 // ============================================================
 
-export async function analyzeUrlLocal(url: string): Promise<AnalysisResult> {
+async function runCompletion(context: LlamaContext, prompt: string): Promise<string> {
+  let aborted = false;
+  const timeoutId = setTimeout(() => {
+    aborted = true;
+    context.stopCompletion().catch(() => {});
+  }, LOCAL_AI_TIMEOUT_MS);
+
+  try {
+    const completion = await context.completion(
+      { prompt, n_predict: 2048, temperature: 0, stop: ['<end_of_turn>', '<eos>', '</s>'] },
+      (_data: TokenData) => {},
+    );
+    if (aborted) throw new Error('AI解析がタイムアウトしました（3分）');
+    return completion.text;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// ============================================================
+// Public API: URL解析（チャンク分割・複数回推論）
+// ============================================================
+
+/**
+ * URLのテキストを CHUNK_SIZE ごとに分割し、チャンクごとに推論を実行して Q&A を蓄積する。
+ *
+ * @param onProgress 進捗コールバック（省略可）
+ *   - currentChunk: 処理中チャンク番号（0始まり）
+ *   - totalChunks:  全チャンク数
+ */
+export async function analyzeUrlLocal(
+  url: string,
+  onProgress?: (currentChunk: number, totalChunks: number) => void,
+): Promise<AnalysisResult> {
   const text = await fetchAndExtractText(url);
 
   let context: LlamaContext;
@@ -419,24 +520,26 @@ export async function analyzeUrlLocal(url: string): Promise<AnalysisResult> {
     throw err;
   }
 
-  const prompt = buildPrompt(url, text);
-  let aborted = false;
-  const timeoutId = setTimeout(() => {
-    aborted = true;
-    context.stopCompletion().catch(() => {});
-  }, LOCAL_AI_TIMEOUT_MS);
+  const chunks = splitTextIntoChunks(text);
 
-  let resultText: string;
-  try {
-    const completion = await context.completion(
-      { prompt, n_predict: 2048, temperature: 0, stop: ['<end_of_turn>', '<eos>', '</s>'] },
-      (_data: TokenData) => {},
+  // ---- 第1チャンク: title / summary / category / tags + Q&A ----
+  onProgress?.(0, chunks.length);
+  const firstRaw = await runCompletion(context, buildFirstChunkPrompt(url, chunks[0], chunks.length));
+  const baseResult = parseAnalysisResult(firstRaw);
+
+  if (chunks.length === 1) return baseResult;
+
+  // ---- 第2チャンク以降: Q&A のみ追加生成 ----
+  const allQaPairs: QAPair[] = [...baseResult.qa_pairs];
+
+  for (let i = 1; i < chunks.length; i++) {
+    onProgress?.(i, chunks.length);
+    const chunkRaw = await runCompletion(
+      context,
+      buildChunkPrompt(url, chunks[i], i, chunks.length),
     );
-    if (aborted) throw new Error('AI解析がタイムアウトしました（3分）');
-    resultText = completion.text;
-  } finally {
-    clearTimeout(timeoutId);
+    allQaPairs.push(...parseChunkQaPairs(chunkRaw));
   }
 
-  return parseAnalysisResult(resultText);
+  return { ...baseResult, qa_pairs: allQaPairs };
 }
