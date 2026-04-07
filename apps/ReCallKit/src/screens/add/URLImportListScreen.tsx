@@ -64,13 +64,12 @@ function classifyError(msg: string | null): ErrorType {
   if (
     msg.toLowerCase().includes('network') ||
     msg.includes('fetch') ||
-    msg.includes('timeout') ||
     msg.includes('接続') ||
-    msg.includes('タイムアウト') ||
     msg.includes('ブロック') ||
     msg.includes('HTTP 403') ||
     msg.includes('HTTP 429') ||
-    msg.includes('HTTP 5')
+    msg.includes('HTTP 5') ||
+    msg.includes('ページの読み込みがタイムアウト')
   ) return 'network';
   return 'general';
 }
@@ -365,7 +364,7 @@ export function URLImportListScreen({ navigation }: Props) {
                   {recovery.hint}
                 </Text>
               ) : item.error_msg ? (
-                <Text style={[styles.errorText, { color: colors.error }]} numberOfLines={2}>
+                <Text style={[styles.errorText, { color: colors.error }]}>
                   {item.error_msg}
                 </Text>
               ) : null}

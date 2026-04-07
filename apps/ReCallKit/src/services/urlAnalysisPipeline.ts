@@ -24,33 +24,20 @@ export async function analyzeUrlPipeline(
   url: string,
   onProgress?: (currentChunk: number, totalChunks: number) => void,
 ): Promise<PipelineResult> {
-  try {
-    let result: AnalysisResult;
+  let result: AnalysisResult;
 
-    if (LOCAL_AI_ENABLED) {
-      console.log('[urlAnalysisPipeline] ローカルAI（llama.rn + Gemma 4）モードで解析:', url);
-      result = await analyzeUrlLocal(url, onProgress);
-    } else {
-      if (!isAwsConfigured()) {
-        throw new Error(
-          'AWS設定が未完了です。Cognito Identity Pool IDとLambda Function URLを設定してください',
-        );
-      }
-      console.log('[urlAnalysisPipeline] Bedrock（Lambda）モードで解析:', url);
-      result = await analyzeUrl(url);
+  if (LOCAL_AI_ENABLED) {
+    console.log('[urlAnalysisPipeline] ローカルAI（llama.rn + Gemma 4）モードで解析:', url);
+    result = await analyzeUrlLocal(url, onProgress);
+  } else {
+    if (!isAwsConfigured()) {
+      throw new Error(
+        'AWS設定が未完了です。Cognito Identity Pool IDとLambda Function URLを設定してください',
+      );
     }
-
-    return { ...result, sourceUrl: url };
-  } catch (err) {
-    console.error('[urlAnalysisPipeline] 解析エラー:', err);
-    const message = err instanceof Error ? err.message : 'AI解析に失敗しました';
-    return {
-      title: '',
-      summary: message,
-      qa_pairs: [],
-      category: '',
-      tags: [],
-      sourceUrl: url,
-    };
+    console.log('[urlAnalysisPipeline] Bedrock（Lambda）モードで解析:', url);
+    result = await analyzeUrl(url);
   }
+
+  return { ...result, sourceUrl: url };
 }
