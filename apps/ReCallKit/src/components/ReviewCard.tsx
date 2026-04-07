@@ -183,14 +183,33 @@ export function ReviewCard({
     if (onSwipeRate) onSwipeRate(rating);
   };
 
+  // スワイプ閾値通過ハプティクス
+  const triggerThresholdHaptic = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+  // 閾値通過済みフラグ（UIスレッド）
+  const crossedThreshold = useSharedValue(0); // 0=未通過, 1=通過済み
+
   const panGesture = Gesture.Pan()
     .enabled(isFlipped)
     .activeOffsetX([-15, 15])
     .activeOffsetY([-15, 15])
+    .onStart(() => {
+      crossedThreshold.value = 0;
+    })
     .onUpdate((e) => {
       if (exitProgress.value > 0) return;
       translateX.value = e.translationX;
       translateY.value = e.translationY;
+      // 閾値通過時にハプティクス（1回のみ）
+      const absX = Math.abs(e.translationX);
+      if (absX >= SWIPE_THRESHOLD && crossedThreshold.value === 0) {
+        crossedThreshold.value = 1;
+        runOnJS(triggerThresholdHaptic)();
+      } else if (absX < SWIPE_THRESHOLD * 0.7 && crossedThreshold.value === 1) {
+        // 閾値以下に戻ったらリセット（再度通過で再トリガー）
+        crossedThreshold.value = 0;
+      }
     })
     .onEnd((e) => {
       if (exitProgress.value > 0) return;

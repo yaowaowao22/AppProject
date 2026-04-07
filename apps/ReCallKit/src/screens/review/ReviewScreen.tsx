@@ -80,6 +80,20 @@ export function ReviewScreen({ navigation, route }: Props) {
     opacity: flashOpacity.value,
   }));
 
+  // 評価ボタン / ヒントテキストの opacity (Reanimated制御 → DOM変更なし)
+  const ratingButtonsOpacity = useSharedValue(0);
+  const ratingHintOpacity = useSharedValue(1);
+  useEffect(() => {
+    ratingButtonsOpacity.value = withTiming(isCardFlipped ? 1 : 0, { duration: 200 });
+    ratingHintOpacity.value = withTiming(isCardFlipped ? 0 : 1, { duration: 150 });
+  }, [isCardFlipped]);
+  const ratingButtonsAnimStyle = useAnimatedStyle(() => ({
+    opacity: ratingButtonsOpacity.value,
+  }));
+  const ratingHintAnimStyle = useAnimatedStyle(() => ({
+    opacity: ratingHintOpacity.value,
+  }));
+
   // 完了サマリー: バーアニメーション進捗 (0→1)
   const summaryBarProgress = useSharedValue(0);
   const summaryEntranceY = useSharedValue(24);
@@ -311,9 +325,9 @@ export function ReviewScreen({ navigation, route }: Props) {
         />
       </View>
 
-      {/* 評価エリア（常にレンダリングし、opacity+pointerEventsで制御） */}
-      <View style={styles.ratingArea} pointerEvents={isCardFlipped ? 'auto' : 'none'}>
-        <View style={{ opacity: isCardFlipped ? 1 : 0 }}>
+      {/* 評価エリア（常にレンダリング、Reanimatedでopacity制御しDOM変更ゼロ） */}
+      <View style={styles.ratingArea}>
+        <Animated.View style={ratingButtonsAnimStyle} pointerEvents={isCardFlipped ? 'auto' : 'none'}>
           <View style={{ gap: Spacing.s }}>
             <RatingButtons onRate={handleRate} />
             <DeepDiveButton
@@ -326,16 +340,14 @@ export function ReviewScreen({ navigation, route }: Props) {
               answer={currentItem.item.content}
             />
           </View>
-        </View>
-        {!isCardFlipped && (
-          <View style={StyleSheet.absoluteFill}>
-            <View style={{ flex: 1, justifyContent: 'center' }}>
-              <Text style={[styles.ratingHint, { color: colors.labelTertiary }]}>
-                カードをめくって自己評価してください
-              </Text>
-            </View>
+        </Animated.View>
+        <Animated.View style={[StyleSheet.absoluteFill, ratingHintAnimStyle]} pointerEvents="none">
+          <View style={{ flex: 1, justifyContent: 'center' }}>
+            <Text style={[styles.ratingHint, { color: colors.labelTertiary }]}>
+              カードをめくって自己評価してください
+            </Text>
           </View>
-        )}
+        </Animated.View>
       </View>
     </View>
   );
