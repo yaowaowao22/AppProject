@@ -98,7 +98,7 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
       info: SystemColors.blue,
     },
     sidebar: {
-      backgroundSolid: '#EAEAEF',
+      backgroundSolid: '#FFFFFF',
       overlay: 'rgba(0,0,0,0.30)',
       activeBackground: '#E8F0FE',
       activeTint: '#1A73E8',
