@@ -1,9 +1,9 @@
 // ============================================================
 // HistoryScreen - 学習履歴
-// StreakRing・統計カード・最近の復習履歴リスト
+// StreakRing・統計カード・マスタリー分布・最近の復習履歴リスト（ソート付き）
 // ============================================================
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   ScrollView,
   View,
@@ -22,11 +22,24 @@ import {
   getRecentlyReviewedItems,
   type ReviewableItem,
 } from '../../db/reviewRepository';
+import {
+  getMasterySummary,
+  type MasterySummary,
+} from '../../db/queries';
 import { StreakRing } from '../../components/StreakRing';
+import { MasteryDistribution } from '../../components/MasteryDistribution';
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { SystemColors } from '../../theme/colors';
+
+// ソートキー
+type SortKey = 'recent' | 'next' | 'title';
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'recent', label: '最新順' },
+  { key: 'next',   label: '次回順' },
+  { key: 'title',  label: 'タイトル' },
+];
 
 // アイテムタイプのラベルと色
 const TYPE_META: Record<string, { label: string; color: string; bg: string }> = {
@@ -56,28 +69,54 @@ export function HistoryScreen() {
   const [todayCompleted, setTodayCompleted] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [recentlyReviewed, setRecentlyReviewed] = useState<ReviewableItem[]>([]);
+  const [masterySummary, setMasterySummary] = useState<MasterySummary | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>('recent');
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     if (!db || !isReady) return;
     setLoading(true);
     try {
-      const [streak, completed, total, recent] = await Promise.all([
+      const [streak, completed, total, recent, mastery] = await Promise.all([
         getStreakDays(db),
         getTodayCompletedCount(db),
         getTotalItemCount(db),
-        getRecentlyReviewedItems(db, 20),
+        getRecentlyReviewedItems(db, 30),
+        getMasterySummary(db),
       ]);
       setStreakDays(streak);
       setTodayCompleted(completed);
       setTotalItems(total);
       setRecentlyReviewed(recent);
+      setMasterySummary(mastery);
     } catch (err) {
       console.error('[HistoryScreen] loadData error:', err);
     } finally {
       setLoading(false);
     }
   }, [db, isReady]);
+
+  // ソート済みリスト（クライアントサイドソート）
+  const sortedReviewed = useMemo(() => {
+    const list = [...recentlyReviewed];
+    switch (sortKey) {
+      case 'next':
+        return list.sort((a, b) => {
+          const aTime = a.item.review?.next_review_at ?? '';
+          const bTime = b.item.review?.next_review_at ?? '';
+          return aTime < bTime ? -1 : aTime > bTime ? 1 : 0;
+        });
+      case 'title':
+        return list.sort((a, b) => a.item.title.localeCompare(b.item.title, 'ja'));
+      case 'recent':
+      default:
+        return list.sort((a, b) => {
+          const aTime = a.item.review?.last_reviewed_at ?? '';
+          const bTime = b.item.review?.last_reviewed_at ?? '';
+          return aTime > bTime ? -1 : aTime < bTime ? 1 : 0;
+        });
+    }
+  }, [recentlyReviewed, sortKey]);
 
   useFocusEffect(
     useCallback(() => {
@@ -136,13 +175,52 @@ export function HistoryScreen() {
         </View>
       </View>
 
-      {/* ――― 最近の復習履歴 ――― */}
-      {recentlyReviewed.length > 0 ? (
-        <>
-          <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
-            最近の復習履歴
+      {/* ――― マスタリー分布カード ――― */}
+      {masterySummary && masterySummary.total > 0 && (
+        <View style={[styles.masteryCard, { backgroundColor: colors.card }, cardShadow]}>
+          <Text style={[styles.masteryCardTitle, { color: colors.label }]}>
+            マスタリー分布
           </Text>
-          {recentlyReviewed.map((ri) => {
+          <MasteryDistribution summary={masterySummary} />
+        </View>
+      )}
+
+      {/* ――― 最近の復習履歴 ――― */}
+      {sortedReviewed.length > 0 ? (
+        <>
+          {/* セクションタイトル + ソートチップ */}
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
+              復習履歴
+            </Text>
+            <View style={styles.sortRow}>
+              {SORT_OPTIONS.map((opt) => (
+                <Pressable
+                  key={opt.key}
+                  onPress={() => setSortKey(opt.key)}
+                  style={[
+                    styles.sortChip,
+                    {
+                      backgroundColor:
+                        sortKey === opt.key ? colors.accent + '1F' : colors.backgroundGrouped,
+                      borderColor:
+                        sortKey === opt.key ? colors.accent : colors.separator,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.sortChipText,
+                      { color: sortKey === opt.key ? colors.accent : colors.labelSecondary },
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          {sortedReviewed.map((ri) => {
             const meta = TYPE_META[ri.item.type] ?? TYPE_META.text;
             const relTime = ri.item.review?.last_reviewed_at
               ? formatRelativeTime(ri.item.review.last_reviewed_at)
@@ -251,13 +329,42 @@ const styles = StyleSheet.create({
     ...TypeScale.caption2,
   },
 
-  // ――― セクションタイトル ―――
+  // ――― マスタリー分布カード ―――
+  masteryCard: {
+    borderRadius: Radius.l,
+    padding: Spacing.l,
+    gap: Spacing.m,
+  },
+  masteryCardTitle: {
+    ...TypeScale.headline,
+    fontWeight: '600' as const,
+  },
+
+  // ――― セクションタイトル + ソート ―――
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginLeft: Spacing.xs,
+  },
   sectionTitle: {
     ...TypeScale.footnote,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginLeft: Spacing.xs,
-    marginBottom: -Spacing.xs,
+  },
+  sortRow: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+  },
+  sortChip: {
+    paddingHorizontal: Spacing.s,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  sortChipText: {
+    ...TypeScale.caption2,
+    fontWeight: '500' as const,
   },
 
   // ――― 最近の復習カード ―――
