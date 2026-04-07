@@ -3,7 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 // ============================================================
 // スキーマバージョン管理
 // ============================================================
-const SCHEMA_VERSION = 8;
+const SCHEMA_VERSION = 9;
 
 const CREATE_TABLES_SQL = `
   -- アイテム（URL・テキスト・メモ）
@@ -216,6 +216,14 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_deep_dives_created ON deep_dives(created_at);
     `);
     await setSchemaVersion(db, 8);
+  }
+
+  if (currentVersion < 9) {
+    // tagsテーブルにdescription列を追加（AIが生成する説明文）
+    await db.execAsync(`
+      ALTER TABLE tags ADD COLUMN description TEXT;
+    `);
+    await setSchemaVersion(db, 9);
   }
 }
 

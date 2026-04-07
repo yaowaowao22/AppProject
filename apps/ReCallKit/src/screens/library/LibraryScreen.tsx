@@ -14,8 +14,10 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Linking,
   Platform,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -126,6 +128,18 @@ function getReviewStatus(item: ItemWithMeta): { text: string; isOverdue: boolean
   return { text: `${diffDays}日後`, isOverdue: false };
 }
 
+// ---- AI深掘りサービス定義 ----------------------------------
+interface AIService {
+  label: string;
+  scheme: string;
+  webUrl: string;
+}
+const AI_SERVICES: AIService[] = [
+  { label: 'ChatGPT', scheme: 'chatgpt://',       webUrl: 'https://chatgpt.com/' },
+  { label: 'Gemini',  scheme: 'googlegemini://',  webUrl: 'https://gemini.google.com/app' },
+  { label: 'Claude',  scheme: 'claude://',         webUrl: 'https://claude.ai/new' },
+];
+
 // ---- スワイプアクション定数 ----------------------------------
 const SWIPE_ACTION_WIDTH = 88;
 
@@ -168,6 +182,9 @@ export function LibraryScreen({ navigation }: Props) {
   // ---- 選択削除モード状態 ----
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+  // ---- Swipeable refs ----
+  const swipeableRefs = useRef<Map<number, import('react-native-gesture-handler/ReanimatedSwipeable').SwipeableMethods>>(new Map());
 
   const filter = useMemoFilter(search, 'all', selectedTagIds, 'all', 'all', selectedCategory);
   const { items, isLoading, refresh } = useItems(filter);
@@ -262,6 +279,46 @@ export function LibraryScreen({ navigation }: Props) {
       ]
     );
   }, [selectedIds, db, exitSelectionMode, refresh]);
+
+  // ---- AI深堀: DBログ（裏タスク・fire-and-forget） ----
+  const logDeepDive = useCallback(async (itemId: number, service: string, prompt: string) => {
+    try {
+      await db.runAsync(
+        `INSERT INTO deep_dives (item_id, service, prompt, created_at) VALUES (?, ?, ?, datetime('now','localtime'))`,
+        [itemId, service, prompt]
+      );
+    } catch (err) {
+      console.warn('[LibraryScreen] logDeepDive error:', err);
+    }
+  }, [db]);
+
+  // ---- AI深堀: プロンプト生成 → クリップボード → AIアプリ起動 ----
+  const handleDeepDive = useCallback((item: ItemWithMeta) => {
+    const prompt = `以下の学習内容について、より深く理解するために詳しく解説してください。\n\n【タイトル】\n${item.title}\n\n【内容】\n${item.content || item.excerpt || ''}`;
+
+    Alert.alert(
+      'AIで深掘り',
+      'どのAIで深掘りしますか？',
+      [
+        ...AI_SERVICES.map((svc) => ({
+          text: svc.label,
+          onPress: async () => {
+            try {
+              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              await Clipboard.setStringAsync(prompt);
+              const canOpen = await Linking.canOpenURL(svc.scheme);
+              await Linking.openURL(canOpen ? svc.scheme : svc.webUrl);
+              // 裏タスク: DBに記録（await しない）
+              logDeepDive(item.id, svc.label, prompt);
+            } catch (err) {
+              console.warn('[handleDeepDive] open error:', err);
+            }
+          },
+        })),
+        { text: 'キャンセル', style: 'cancel' },
+      ]
+    );
+  }, [logDeepDive]);
 
   // ---- スワイプでゴミ箱に移動 ----
   const handleArchiveItem = useCallback(async (id: number) => {
@@ -401,8 +458,18 @@ export function LibraryScreen({ navigation }: Props) {
           </Text>
         ) : null}
 
-        {/* フッター: タグチップ + 日付 */}
+        {/* フッター: AI深堀ボタン + タグ + 日付 */}
         <View style={styles.cardFooter}>
+          {!selectionMode && (
+            <Pressable
+              onPress={() => handleDeepDive(item)}
+              hitSlop={8}
+              style={styles.deepDiveBtn}
+              accessibilityLabel="AIで深掘り"
+            >
+              <Ionicons name="sparkles-outline" size={14} color={colors.accent} />
+            </Pressable>
+          )}
           <View style={styles.tagRow}>
             {item.tags.slice(0, 3).map((tag) => (
               <View
@@ -426,10 +493,33 @@ export function LibraryScreen({ navigation }: Props) {
         </View>
       </Pressable>
     );
+
+    return (
+      <ReanimatedSwipeable
+        ref={(ref) => {
+          if (ref) swipeableRefs.current.set(item.id, ref);
+          else swipeableRefs.current.delete(item.id);
+        }}
+        friction={2}
+        rightThreshold={SWIPE_ACTION_WIDTH * 0.4}
+        renderRightActions={(_, drag) => (
+          <SwipeTrashAction
+            drag={drag}
+            onPress={() => {
+              swipeableRefs.current.get(item.id)?.close();
+              handleArchiveItem(item.id);
+            }}
+          />
+        )}
+        enabled={!selectionMode}
+      >
+        {card}
+      </ReanimatedSwipeable>
+    );
   };
 
   // ---- セクションヘッダー ----
-  const renderSectionHeader = ({ section }: { section: DateSection }) => (
+  const renderSectionHeader = ({ section }: { section: Section }) => (
     <View style={styles.sectionHeader}>
       <Text style={[styles.sectionHeaderText, { color: colors.labelSecondary }]}>
         {section.title}
@@ -572,27 +662,13 @@ export function LibraryScreen({ navigation }: Props) {
             style={[
               styles.fab,
               styles.fabSecondary,
-              { backgroundColor: colors.backgroundSecondary, bottom: insets.bottom + Spacing.l + 128, borderColor: colors.separator, shadowColor: colors.cardShadowColor },
+              { backgroundColor: colors.backgroundSecondary, bottom: insets.bottom + Spacing.l + 64, borderColor: colors.separator, shadowColor: colors.cardShadowColor },
             ]}
             onPress={() => navigation.navigate('Trash')}
             accessibilityRole="button"
             accessibilityLabel="ゴミ箱"
           >
             <Ionicons name="trash-outline" size={22} color={colors.labelSecondary} />
-          </Pressable>
-
-          {/* グループ作成ボタン */}
-          <Pressable
-            style={[
-              styles.fab,
-              styles.fabSecondary,
-              { backgroundColor: colors.backgroundSecondary, bottom: insets.bottom + Spacing.l + 64, borderColor: colors.separator, shadowColor: colors.cardShadowColor },
-            ]}
-            onPress={() => navigation.navigate('ReviewGroupCreate')}
-            accessibilityRole="button"
-            accessibilityLabel="グループを作成"
-          >
-            <Ionicons name="layers-outline" size={22} color={colors.accent} />
           </Pressable>
 
           {/* アイテム追加 FAB */}
