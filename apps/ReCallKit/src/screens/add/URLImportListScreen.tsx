@@ -15,7 +15,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   Animated,
-  AppState,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,7 +27,10 @@ import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { analyzeUrlPipeline } from '../../services/urlAnalysisPipeline';
 import { LOCAL_AI_ENABLED } from '../../config/localAI';
-import { isModelDownloaded, downloadModel, pauseDownload } from '../../services/localAnalysisService';
+import {
+  subscribeDownloadState,
+  type ModelDownloadState,
+} from '../../services/localAnalysisService';
 import { getRemainingCount, consumeOne } from '../../utils/analysisLimit';
 import {
   listJobs,
@@ -176,62 +178,15 @@ export function URLImportListScreen({ navigation }: Props) {
   const processingRef = useRef(false);
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
-  // ---- モデルダウンロード状態 ----
-  const [modelReady, setModelReady] = useState(!LOCAL_AI_ENABLED);
-  const [downloadProgress, setDownloadProgress] = useState(0);
-  const [downloadedMB, setDownloadedMB] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const [downloadError, setDownloadError] = useState<string | null>(null);
-  const downloadingRef = useRef(false);
+  // ---- モデルダウンロード状態（グローバル購読） ----
+  const [modelDownload, setModelDownload] = useState<ModelDownloadState | null>(null);
+  const modelReady = !LOCAL_AI_ENABLED || !modelDownload;
 
-  const startDownload = useCallback(async () => {
-    if (downloadingRef.current) return;
-    downloadingRef.current = true;
-    setIsPaused(false);
-    setDownloadError(null);
-    try {
-      await downloadModel((p, mb) => {
-        setDownloadProgress(p);
-        setDownloadedMB(mb);
-      });
-      setModelReady(true);
-    } catch (err) {
-      // バックグラウンド移行による中断は無視（再開は AppState で管理）
-      if (downloadingRef.current) {
-        setDownloadError(err instanceof Error ? err.message : 'ダウンロードに失敗しました');
-      }
-    } finally {
-      downloadingRef.current = false;
-    }
+  useEffect(() => {
+    if (!LOCAL_AI_ENABLED) return;
+    const unsub = subscribeDownloadState(setModelDownload);
+    return unsub;
   }, []);
-
-  // モデル未ダウンロードならダウンロード開始
-  useEffect(() => {
-    if (!LOCAL_AI_ENABLED) return;
-    (async () => {
-      const downloaded = await isModelDownloaded();
-      if (downloaded) { setModelReady(true); return; }
-      await startDownload();
-    })();
-  }, [startDownload]);
-
-  // AppState 監視: バックグラウンド → 一時停止、フォアグラウンド復帰 → 再開
-  useEffect(() => {
-    if (!LOCAL_AI_ENABLED) return;
-    const sub = AppState.addEventListener('change', async (state) => {
-      if (state === 'background' || state === 'inactive') {
-        if (downloadingRef.current) {
-          setIsPaused(true);
-          downloadingRef.current = false;
-          await pauseDownload();
-        }
-      } else if (state === 'active' && isPaused) {
-        setIsPaused(false);
-        await startDownload();
-      }
-    });
-    return () => sub.remove();
-  }, [isPaused, startDownload]);
 
   // loading 中のみシマーアニメーションを動かす
   useEffect(() => {
@@ -370,53 +325,6 @@ export function URLImportListScreen({ navigation }: Props) {
     );
   }, [colors, navigation, handleRetry]);
 
-  // ---- モデルダウンロード UI ----
-  if (LOCAL_AI_ENABLED && !modelReady) {
-    const pct = Math.round(downloadProgress * 100);
-    const isDownloading = downloadedMB > 0 || downloadProgress > 0;
-    return (
-      <View style={[styles.center, { backgroundColor: colors.backgroundGrouped }]}>
-        <View style={[styles.downloadCard, { backgroundColor: colors.card }]}>
-          <Ionicons name="hardware-chip-outline" size={40} color={colors.accent} />
-          <Text style={[styles.downloadTitle, { color: colors.label }]}>
-            AIモデルを準備中
-          </Text>
-          <Text style={[styles.downloadSub, { color: colors.labelSecondary }]}>
-            初回のみ約2.3GBをダウンロードします{'\n'}Wi-Fi接続を推奨します
-          </Text>
-
-          {downloadError ? (
-            <Text style={[styles.downloadErrorText, { color: colors.error }]}>
-              {downloadError}
-            </Text>
-          ) : (
-            <>
-              {/* プログレスバー */}
-              <View style={[styles.progressTrack, { backgroundColor: colors.labelTertiary + '33' }]}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    { backgroundColor: isPaused ? colors.labelTertiary : colors.accent, width: pct > 0 ? `${pct}%` : '2%' },
-                  ]}
-                />
-              </View>
-              <Text style={[styles.downloadPercent, { color: colors.labelSecondary }]}>
-                {isPaused
-                  ? `一時停止中 — ${downloadedMB} MB / 約2,355 MB（アプリを開いたまま再開します）`
-                  : isDownloading
-                    ? `${downloadedMB} MB ダウンロード済み / 約2,355 MB`
-                    : 'ダウンロードを開始しています...'}
-              </Text>
-              {!isPaused && (
-                <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: Spacing.s }} />
-              )}
-            </>
-          )}
-        </View>
-      </View>
-    );
-  }
-
   // ---- スケルトンローディング ----
   if (loading) {
     const skeletonBg = colors.labelTertiary;
@@ -446,6 +354,52 @@ export function URLImportListScreen({ navigation }: Props) {
     );
   }
 
+  // ---- モデルダウンロードカード（タスク一覧の先頭に表示） ----
+  const renderModelCard = () => {
+    if (!LOCAL_AI_ENABLED || !modelDownload) return null;
+    const pct = Math.round(modelDownload.progress * 100);
+    const isPaused = modelDownload.isPaused;
+    const statusColor = modelDownload.error
+      ? colors.error
+      : isPaused ? colors.labelTertiary : colors.accent;
+
+    return (
+      <View style={[styles.card, { backgroundColor: colors.card }, CardShadow]}>
+        <View style={styles.cardHeader}>
+          <View style={[styles.statusBadge, { backgroundColor: statusColor + '22' }]}>
+            {!isPaused && !modelDownload.error
+              ? <ActivityIndicator size="small" color={statusColor} style={styles.spinner} />
+              : <Ionicons name={modelDownload.error ? 'alert-circle-outline' : 'pause-circle-outline'} size={14} color={statusColor} />
+            }
+            <Text style={[styles.statusLabel, { color: statusColor }]}>
+              {modelDownload.error ? 'エラー' : isPaused ? '一時停止' : 'インストール中'}
+            </Text>
+          </View>
+          <Text style={[styles.timeText, { color: colors.labelTertiary }]}>AIモデル</Text>
+        </View>
+
+        <Text style={[styles.titleText, { color: colors.label }]}>
+          {modelDownload.modelName}
+        </Text>
+
+        {modelDownload.error ? (
+          <Text style={[styles.errorText, { color: colors.error }]}>{modelDownload.error}</Text>
+        ) : (
+          <>
+            <View style={[styles.progressTrack, { backgroundColor: colors.labelTertiary + '33' }]}>
+              <View style={[styles.progressFill, { backgroundColor: statusColor, width: pct > 0 ? `${pct}%` : '2%' }]} />
+            </View>
+            <Text style={[styles.urlText, { color: colors.labelTertiary }]}>
+              {isPaused
+                ? `一時停止中 — ${modelDownload.bytesWrittenMB} / ${modelDownload.totalMB} MB`
+                : `${modelDownload.bytesWrittenMB} / ${modelDownload.totalMB} MB`}
+            </Text>
+          </>
+        )}
+      </View>
+    );
+  };
+
   return (
     <FlatList
       style={{ backgroundColor: colors.backgroundGrouped }}
@@ -453,6 +407,7 @@ export function URLImportListScreen({ navigation }: Props) {
         styles.list,
         { paddingBottom: Math.max(insets.bottom, Spacing.xl) },
       ]}
+      ListHeaderComponent={renderModelCard}
       data={jobs}
       keyExtractor={(item) => String(item.id)}
       renderItem={renderJob}
@@ -563,41 +518,16 @@ const styles = StyleSheet.create({
     width: '45%',
   },
 
-  // ---- ダウンロード ----
-  downloadCard: {
-    width: '100%',
-    borderRadius: Radius.l,
-    padding: Spacing.xl,
-    alignItems: 'center',
-    gap: Spacing.m,
-  },
-  downloadTitle: {
-    ...TypeScale.headline,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  downloadSub: {
-    ...TypeScale.subheadline,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
+  // ---- インストールカード進捗バー ----
   progressTrack: {
-    width: '100%',
-    height: 8,
+    height: 5,
     borderRadius: Radius.full,
     overflow: 'hidden',
+    marginTop: 2,
   },
   progressFill: {
     height: '100%',
     borderRadius: Radius.full,
-  },
-  downloadPercent: {
-    ...TypeScale.caption1,
-  },
-  downloadErrorText: {
-    ...TypeScale.caption1,
-    textAlign: 'center',
-    lineHeight: 18,
   },
 
   // ---- 空状態 ----

@@ -81,6 +81,7 @@ export type JournalStackParamList = {
 // ---- Settings Stack ----
 export type SettingsStackParamList = {
   SettingsMain: undefined;
+  AIModel: undefined;
 };
 
 // ---- Task Stack ----

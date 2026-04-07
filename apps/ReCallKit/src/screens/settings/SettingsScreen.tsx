@@ -19,6 +19,9 @@ import { useTheme } from '../../theme/ThemeContext';
 import { type ThemePreference, THEMES, THEME_CATEGORIES } from '../../theme/themes';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { SettingsStackParamList } from '../../navigation/types';
 import { getDatabase } from '../../db/connection';
 import { getAllSettings, setSetting, type AppSettings } from '../../db/settingsRepository';
 import { deleteAllData } from '../../db/schema';
@@ -39,6 +42,7 @@ const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 // ============================================================
 export function SettingsScreen() {
   const { colors, themePreference, setThemePreference } = useTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
   const insets = useSafeAreaInsets();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -227,6 +231,26 @@ export function SettingsScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xxl }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* ── AI設定 ───────────────────────────────────────── */}
+        <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
+          AI設定
+        </Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => navigation.navigate('AIModel')}
+            activeOpacity={0.6}
+          >
+            <Text style={[styles.rowLabel, { color: colors.label }]}>AIモデル</Text>
+            <View style={styles.rowRight}>
+              <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
+                モデルを選択・インストール
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.labelTertiary} />
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* ── 復習設定 ─────────────────────────────────────── */}
         <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
           復習設定

@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
 import { SettingsScreen } from '../../screens/settings/SettingsScreen';
+import { AIModelScreen } from '../../screens/settings/AIModelScreen';
 import { makeNavigatorOptions, makeLargeTitleOptions } from '../sharedScreenOptions';
 import type { SettingsStackParamList } from '../types';
 
@@ -20,10 +21,12 @@ export function SettingsStack() {
       <Stack.Screen
         name="SettingsMain"
         component={SettingsScreen}
-        options={{
-          title: '設定',
-          ...makeLargeTitleOptions(colors),
-        }}
+        options={{ title: '設定', ...makeLargeTitleOptions(colors) }}
+      />
+      <Stack.Screen
+        name="AIModel"
+        component={AIModelScreen}
+        options={{ title: 'AIモデル' }}
       />
     </Stack.Navigator>
   );
