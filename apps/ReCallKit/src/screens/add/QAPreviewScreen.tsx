@@ -640,7 +640,7 @@ export function QAPreviewScreen({ route, navigation }: Props) {
         >
           {/* 集計ヘッダー */}
           <View
-            style={[styles.summaryHeader, { backgroundColor: colors.card }, CardShadow]}
+            style={[styles.summaryHeader, { backgroundColor: colors.card, borderColor: colors.separator }, CardShadow]}
           >
             <View style={[styles.summaryIconWrap, { backgroundColor: SystemColors.green + '1A' }]}>
               <Ionicons name="checkmark-circle" size={44} color={SystemColors.green} />
@@ -683,7 +683,7 @@ export function QAPreviewScreen({ route, navigation }: Props) {
               {excludedIndices.map((origIdx) => (
                 <View
                   key={origIdx}
-                  style={[styles.summaryExcludedCard, { backgroundColor: colors.card }, CardShadow]}
+                  style={[styles.summaryExcludedCard, { backgroundColor: colors.card, borderColor: colors.separator }, CardShadow]}
                 >
                   <View style={styles.summaryExcludedBody}>
                     <View style={[styles.summaryExcludedBadge, { backgroundColor: SystemColors.red + '15' }]}>
@@ -728,7 +728,7 @@ export function QAPreviewScreen({ route, navigation }: Props) {
       <View style={styles.cardModeContainer}>
         {/* ソース情報（コンパクト） */}
         <View
-          style={[styles.sourceCardCompact, { backgroundColor: colors.card }, CardShadow]}
+          style={[styles.sourceCardCompact, { backgroundColor: colors.card, borderColor: colors.separator }, CardShadow]}
         >
           <View style={[styles.categoryChip, { backgroundColor: catConfig.color + '1A' }]}>
             <Text style={styles.categoryIcon}>{catConfig.icon}</Text>
@@ -868,7 +868,7 @@ export function QAPreviewScreen({ route, navigation }: Props) {
       keyboardShouldPersistTaps="handled"
     >
       {/* ─── ソース情報カード ─── */}
-      <View style={[styles.sourceCard, { backgroundColor: colors.card }, CardShadow]}>
+      <View style={[styles.sourceCard, { backgroundColor: colors.card, borderColor: colors.separator }, CardShadow]}>
         <View style={styles.categoryRow}>
           <View style={[styles.categoryChip, { backgroundColor: catConfig.color + '1A' }]}>
             <Text style={styles.categoryIcon}>{catConfig.icon}</Text>
@@ -943,7 +943,7 @@ export function QAPreviewScreen({ route, navigation }: Props) {
             key={index}
             style={[
               styles.qaCard,
-              { backgroundColor: colors.card },
+              { backgroundColor: colors.card, borderColor: colors.separator },
               !isSelected && styles.qaCardDeselected,
               CardShadow,
             ]}
@@ -1175,6 +1175,7 @@ const styles = StyleSheet.create({
   // ── ソースカード（リストモード） ──
   sourceCard: {
     borderRadius: Radius.m,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: Spacing.m,
     gap: Spacing.s,
     marginBottom: Spacing.xs,
@@ -1230,6 +1231,7 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.m,
     marginTop: Spacing.s,
     borderRadius: Radius.m,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.m,
     paddingVertical: Spacing.s,
   },
@@ -1284,7 +1286,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.s,
     paddingVertical: 3,
     borderRadius: Radius.full,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
   },
   selectAllText: {
     ...TypeScale.caption1,
@@ -1294,6 +1296,7 @@ const styles = StyleSheet.create({
   // ── Q&Aカード（リストモード） ──
   qaCard: {
     borderRadius: Radius.m,
+    borderWidth: 1,
     padding: Spacing.m,
     gap: Spacing.s,
   },
@@ -1323,7 +1326,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.s,
     paddingVertical: 4,
     borderRadius: Radius.full,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
   },
   editButtonText: {
     ...TypeScale.caption2,
@@ -1372,7 +1375,7 @@ const styles = StyleSheet.create({
     gap: Spacing.s,
     paddingHorizontal: Spacing.m,
     paddingTop: Spacing.m,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 1,
   },
   cancelButton: {
     flex: 1,
@@ -1380,7 +1383,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.m,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
   },
   cancelButtonText: {
     ...TypeScale.headline,
@@ -1571,6 +1574,7 @@ const styles = StyleSheet.create({
   // ── 集計確認画面 ──
   summaryHeader: {
     borderRadius: Radius.l,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: Spacing.l,
     alignItems: 'center',
     gap: Spacing.s,
@@ -1599,7 +1603,7 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
     paddingVertical: Spacing.s,
     borderRadius: Radius.m,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     marginTop: Spacing.s,
   },
   reviewAgainText: {
@@ -1617,6 +1621,7 @@ const styles = StyleSheet.create({
   },
   summaryExcludedCard: {
     borderRadius: Radius.m,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: Spacing.m,
     flexDirection: 'row',
     alignItems: 'center',

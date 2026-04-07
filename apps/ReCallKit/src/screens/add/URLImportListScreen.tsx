@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
 
   // ---- インストールカード進捗バー ----
   progressTrack: {
-    height: 5,
+    height: 4,
     borderRadius: Radius.full,
     overflow: 'hidden',
     marginTop: 2,
