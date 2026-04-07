@@ -39,19 +39,13 @@ export interface ColorScheme {
 
 // SidebarColorSet — サイドバー（ドロワー）専用カラー
 export interface SidebarColorSet {
-  background: string;
   backgroundSolid: string;
   overlay: string;
   activeBackground: string;
   activeTint: string;
   inactiveTint: string;
-  badgeBackground: string;
-  badgeText: string;
   sectionHeader: string;
   separator: string;
-  footerTint: string;
-  tagBackground: string;
-  tagText: string;
   textPrimary: string;
   textTertiary: string;
   pressedBackground: string;
@@ -104,19 +98,13 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
       info: SystemColors.blue,
     },
     sidebar: {
-      background: 'rgba(234,234,239,0.92)',
       backgroundSolid: '#EAEAEF',
       overlay: 'rgba(0,0,0,0.30)',
       activeBackground: 'rgba(232,160,0,0.12)',
       activeTint: '#E8A000',
       inactiveTint: 'rgba(60,60,67,0.60)',
-      badgeBackground: '#E8A000',
-      badgeText: '#FFFFFF',
       sectionHeader: 'rgba(60,60,67,0.30)',
       separator: 'rgba(60,60,67,0.12)',
-      footerTint: 'rgba(60,60,67,0.60)',
-      tagBackground: 'rgba(60,60,67,0.08)',
-      tagText: 'rgba(60,60,67,0.80)',
       textPrimary: '#000000',
       textTertiary: 'rgba(60,60,67,0.30)',
       pressedBackground: 'rgba(142,142,147,0.12)',
@@ -152,19 +140,13 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
       info: SystemColors.blue,
     },
     sidebar: {
-      background: 'rgba(22,22,24,0.92)',
       backgroundSolid: '#161618',
       overlay: 'rgba(0,0,0,0.50)',
       activeBackground: 'rgba(245,166,35,0.15)',
       activeTint: '#F5A623',
       inactiveTint: 'rgba(235,235,245,0.60)',
-      badgeBackground: '#F5A623',
-      badgeText: '#000000',
       sectionHeader: 'rgba(235,235,245,0.30)',
       separator: 'rgba(84,84,88,0.65)',
-      footerTint: 'rgba(235,235,245,0.50)',
-      tagBackground: 'rgba(235,235,245,0.10)',
-      tagText: 'rgba(235,235,245,0.75)',
       textPrimary: '#FFFFFF',
       textTertiary: 'rgba(235,235,245,0.30)',
       pressedBackground: 'rgba(142,142,147,0.24)',
