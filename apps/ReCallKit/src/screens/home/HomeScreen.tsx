@@ -114,6 +114,16 @@ export function HomeScreen({ navigation }: Props) {
     }, [loadData])
   );
 
+  // 期限切れアイテム数（today midnight より前が due のもの）
+  const overdueCount = useMemo(() => {
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+    return sidebarFilteredItems.filter((ri) => {
+      const next = new Date(ri.item.review!.next_review_at.replace(' ', 'T'));
+      return next < todayMidnight;
+    }).length;
+  }, [sidebarFilteredItems]);
+
   // ウィジェット用Q&Aデータ（全アイテムからランダムに最大20件）
   const quizItems = useMemo(() => {
     const source = allItems.length > 0 ? allItems : recentlyReviewed;
@@ -229,22 +239,45 @@ export function HomeScreen({ navigation }: Props) {
                 件
               </Text>
             </View>
+            {overdueCount > 0 && sidebarFilteredItems.length > 0 && (
+              <View style={[styles.overdueBadge, { backgroundColor: SystemColors.orange + '22' }]}>
+                <Ionicons name="time-outline" size={12} color={SystemColors.orange} />
+                <Text style={[styles.overdueBadgeText, { color: SystemColors.orange }]}>
+                  うち {overdueCount} 件が期限切れ
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
         {/* スタートボタン or 完了/空状態メッセージ */}
         {sidebarFilteredItems.length > 0 ? (
-          <Pressable
-            style={({ pressed }) => [
-              styles.startButton,
-              { backgroundColor: pressed ? colors.accent + 'CC' : colors.accent },
-            ]}
-            onPress={handleStartReview}
-            accessibilityRole="button"
-            accessibilityLabel="復習を始める"
-          >
-            <Text style={styles.startButtonText}>復習を始める</Text>
-          </Pressable>
+          <View style={styles.startButtonSection}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.startButton,
+                overdueCount > 0
+                  ? { backgroundColor: pressed ? SystemColors.orange + 'CC' : SystemColors.orange }
+                  : { backgroundColor: pressed ? colors.accent + 'CC' : colors.accent },
+              ]}
+              onPress={handleStartReview}
+              accessibilityRole="button"
+              accessibilityLabel="復習を始める"
+            >
+              <Ionicons
+                name="play-circle-outline"
+                size={20}
+                color="#FFFFFF"
+                style={styles.startButtonIcon}
+              />
+              <Text style={styles.startButtonText}>復習を始める</Text>
+            </Pressable>
+            {overdueCount > 0 && (
+              <Text style={[styles.startButtonHint, { color: SystemColors.orange }]}>
+                期限切れが {overdueCount} 件あります。早めに復習しましょう
+              </Text>
+            )}
+          </View>
         ) : totalItems === 0 ? (
           <View style={styles.allDoneRow}>
             <Text style={[styles.allDoneText, { color: colors.labelSecondary }]}>
@@ -253,9 +286,16 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         ) : (
           <View style={styles.extraLearningSection}>
-            <View style={styles.allDoneRow}>
-              <Text style={[styles.allDoneIcon, { color: colors.success }]}>✓</Text>
-              <Text style={[styles.allDoneText, { color: colors.success }]}>本日分完了</Text>
+            <View style={styles.completionRow}>
+              <View style={[styles.completionIcon, { backgroundColor: colors.success + '1F' }]}>
+                <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+              </View>
+              <View style={styles.completionText}>
+                <Text style={[styles.allDoneText, { color: colors.success }]}>本日分完了</Text>
+                <Text style={[styles.completedCountLabel, { color: colors.labelSecondary }]}>
+                  今日 {todayCompleted} 件復習しました
+                </Text>
+              </View>
             </View>
             <Text style={[styles.extraLearningHint, { color: colors.labelSecondary }]}>
               追加学習しますか？
@@ -490,14 +530,60 @@ const styles = StyleSheet.create({
     ...TypeScale.title3,
     paddingBottom: Spacing.s,
   },
+  overdueBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    borderRadius: Radius.xs,
+    paddingHorizontal: Spacing.s,
+    paddingVertical: 3,
+  },
+  overdueBadgeText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    lineHeight: 14,
+  },
+  startButtonSection: {
+    gap: Spacing.xs,
+  },
   startButton: {
     borderRadius: Radius.m,
     paddingVertical: Spacing.m,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+  },
+  startButtonIcon: {
+    marginRight: 2,
   },
   startButtonText: {
     ...TypeScale.headline,
     color: '#FFFFFF',
+  },
+  startButtonHint: {
+    ...TypeScale.caption1,
+    textAlign: 'center',
+  },
+  completionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.m,
+  },
+  completionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  completionText: {
+    flex: 1,
+    gap: 2,
+  },
+  completedCountLabel: {
+    ...TypeScale.caption1,
   },
   allDoneRow: {
     flexDirection: 'row',
