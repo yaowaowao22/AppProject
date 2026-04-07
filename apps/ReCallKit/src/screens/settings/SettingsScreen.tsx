@@ -31,7 +31,7 @@ import {
   scheduleDailyReminder,
   cancelDailyReminder,
 } from '../../services/notificationService';
-import { requestOtaReload } from '../../utils/otaReload';
+import { releaseModel } from '../../services/localAnalysisService';
 
 const APP_VERSION = '0.2.0';
 
@@ -184,9 +184,12 @@ export function SettingsScreen() {
         setUpdateStatus('ダウンロード中...');
         await Updates.fetchUpdateAsync();
         setUpdateStatus('更新を適用します（再起動）');
-        // reloadAsync() を直接呼ぶと JSI クラッシュ。
-        // App.tsx の安全なアンマウント→解放→reload フローに委譲する。
-        requestOtaReload();
+        // llama.rn JSI C++ コンテキストを解放してから reload する。
+        // 500ms 待機で GestureHandlerRootView 等のネイティブ側が
+        // 安定した状態になってから reloadAsync() を呼ぶ。
+        await releaseModel();
+        await new Promise<void>(r => setTimeout(r, 500));
+        await Updates.reloadAsync();
       } else {
         setUpdateStatus('最新バージョンです');
       }
