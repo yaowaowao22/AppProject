@@ -86,7 +86,7 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
       card: '#FFFFFF',
       cardShadowColor: '#000000',
       separator: '#DADCE0',
-      navBarBackground: 'rgba(249,249,249,0.94)',
+      navBarBackground: '#FFFFFF',
       navBarBorder: '#DADCE0',
       filterBadgeBg: '#E8F0FE',
       filterBadgeText: '#1A73E8',
