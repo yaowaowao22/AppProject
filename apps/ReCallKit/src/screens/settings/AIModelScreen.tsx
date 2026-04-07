@@ -45,18 +45,11 @@ export function AIModelScreen() {
 
   // インストール状態を再読み込み
   const refreshStatus = useCallback(async () => {
-    const [active, ...rest] = await Promise.all([
-      getActiveModelId(),
-      ...MODEL_CATALOG.map(async (m) => ({
-        id: m.id,
-        installed: await isModelInstalled(m.id),
-      })),
-    ]);
-    setActiveModelIdState(active as string);
+    const activeId = await getActiveModelId();
+    const statuses = await Promise.all(MODEL_CATALOG.map((m) => isModelInstalled(m.id)));
+    setActiveModelIdState(activeId);
     const map: Record<string, boolean> = {};
-    (rest as { id: string; installed: boolean }[]).forEach((r) => {
-      map[r.id] = r.installed;
-    });
+    MODEL_CATALOG.forEach((m, i) => { map[m.id] = statuses[i]; });
     setInstalledMap(map);
   }, []);
 
@@ -94,8 +87,16 @@ export function AIModelScreen() {
     }
     try {
       await installModel(modelId);
-    } catch {
-      // エラーはdownloadState.errorで表示済み
+    } catch (err) {
+      // setDownloadState でエラーが表示されていない場合（ダウンロード開始前の失敗）に Alert で表示
+      const errMsg = err instanceof Error ? err.message : 'インストールに失敗しました';
+      setDownloadState((prev) => {
+        // すでにerror状態なら上書きしない
+        if (prev?.error) return prev;
+        // ダウンロード開始前に失敗した場合のみ Alert を表示
+        Alert.alert('インストールエラー', errMsg);
+        return null;
+      });
     }
   }, [downloadState]);
 

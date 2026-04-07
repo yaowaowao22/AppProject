@@ -168,21 +168,29 @@ export async function installModel(modelId: string): Promise<void> {
   const model = getModelById(modelId);
   if (!model) throw new Error(`モデル ${modelId} が見つかりません`);
 
-  await FileSystem.makeDirectoryAsync(MODEL_DIR, { intermediates: true });
-  const destPath = modelPath(model.filename);
   const totalMB = Math.round(model.sizeBytesEstimate / 1_000_000);
 
+  // UI更新を先に行い、以降の失敗は必ずerrorとして表示できるようにする
   setDownloadState({
     modelId,
     modelName: model.name,
-    progress: _downloadState?.modelId === modelId ? _downloadState.progress : 0,
-    bytesWrittenMB: _downloadState?.modelId === modelId ? _downloadState.bytesWrittenMB : 0,
+    progress: _downloadState?.modelId === modelId ? (_downloadState.progress ?? 0) : 0,
+    bytesWrittenMB: _downloadState?.modelId === modelId ? (_downloadState.bytesWrittenMB ?? 0) : 0,
     totalMB,
     isPaused: false,
     error: null,
   });
 
-  const onProgress = (dp: FileSystem.DownloadProgressData) => {
+  try {
+    await FileSystem.makeDirectoryAsync(MODEL_DIR, { intermediates: true });
+  } catch (err) {
+    setDownloadState({ ...(_downloadState ?? { modelId, modelName: model.name, progress: 0, bytesWrittenMB: 0, totalMB, isPaused: false }), error: 'ディレクトリ作成に失敗しました' });
+    throw err;
+  }
+
+  const destPath = modelPath(model.filename);
+
+  const onProgress = (dp: { totalBytesWritten: number; totalBytesExpectedToWrite: number }) => {
     const bytesWrittenMB = Math.round(dp.totalBytesWritten / 1_000_000);
     const total = dp.totalBytesExpectedToWrite > 0
       ? dp.totalBytesExpectedToWrite
@@ -204,7 +212,7 @@ export async function installModel(modelId: string): Promise<void> {
   if (resumeInfo.exists) {
     try {
       const raw = await FileSystem.readAsStringAsync(RESUME_DATA_PATH);
-      const saved = JSON.parse(raw) as FileSystem.DownloadPauseState;
+      const saved = JSON.parse(raw) as { url: string; fileUri: string; options: Record<string, unknown>; resumeData?: string };
       if (saved.url === model.url) {
         activeDownload = FileSystem.createDownloadResumable(
           saved.url, saved.fileUri, saved.options ?? {}, onProgress, saved.resumeData,
