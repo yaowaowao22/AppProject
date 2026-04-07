@@ -130,41 +130,52 @@ export function JournalScreen({ navigation }: Props) {
           <View
             style={[
               styles.card,
-              { backgroundColor: colors.card },
+              {
+                backgroundColor: colors.card,
+                borderLeftColor: colors.accent,
+                ...(isDark && {
+                  borderRightWidth: StyleSheet.hairlineWidth,
+                  borderTopWidth: StyleSheet.hairlineWidth,
+                  borderBottomWidth: StyleSheet.hairlineWidth,
+                  borderRightColor: colors.separator,
+                  borderTopColor: colors.separator,
+                  borderBottomColor: colors.separator,
+                }),
+              },
               cardShadow,
               !isLast && styles.cardGap,
             ]}
           >
-            {/* カードヘッダー: アイテムタイトル + 時刻 */}
-            <View style={styles.cardHeader}>
-              <Text
-                style={[styles.itemTitle, { color: colors.accent }]}
-                numberOfLines={1}
-              >
-                {item.itemTitle}
-              </Text>
-              <View style={styles.cardHeaderRight}>
-                <Text style={[styles.timeLabel, { color: colors.labelTertiary }]}>
-                  {item.timeLabel}
-                </Text>
-                <Pressable
-                  onPress={() => handleDelete(item)}
-                  hitSlop={8}
-                  accessibilityLabel="メモを削除"
-                >
-                  <Ionicons
-                    name="trash-outline"
-                    size={20}
-                    color={colors.labelTertiary}
-                  />
-                </Pressable>
-              </View>
-            </View>
+            {/* アイテムタイトル */}
+            <Text
+              style={[styles.itemTitle, { color: colors.accent }]}
+              numberOfLines={1}
+            >
+              {item.itemTitle}
+            </Text>
 
             {/* ノート本文 */}
             <Text style={[styles.noteText, { color: colors.label }]}>
               {item.note}
             </Text>
+
+            {/* フッター: 時刻 + 削除ボタン */}
+            <View style={styles.cardFooter}>
+              <Text style={[styles.timeLabel, { color: colors.labelTertiary }]}>
+                {item.timeLabel}
+              </Text>
+              <Pressable
+                onPress={() => handleDelete(item)}
+                hitSlop={8}
+                accessibilityLabel="メモを削除"
+              >
+                <Ionicons
+                  name="trash-outline"
+                  size={18}
+                  color={colors.labelTertiary}
+                />
+              </Pressable>
+            </View>
           </View>
         );
       }}
@@ -219,10 +230,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // カード
+  // カード（左アクセントボーダー + 右丸角）
   card: {
     marginHorizontal: Spacing.m,
-    borderRadius: Radius.m,
+    borderTopRightRadius: Radius.m,
+    borderBottomRightRadius: Radius.m,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+    borderLeftWidth: 3,
     padding: Spacing.m,
     gap: Spacing.s,
   },
@@ -230,28 +245,23 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.s,
   },
 
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.s,
-  },
   itemTitle: {
     ...TypeScale.footnote,
     fontWeight: '600',
-    flex: 1,
   },
-  cardHeaderRight: {
+  noteText: {
+    fontSize: 16,
+    lineHeight: 27,
+    fontWeight: '400',
+  },
+  cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.s,
-    flexShrink: 0,
+    justifyContent: 'space-between',
+    marginTop: 2,
   },
   timeLabel: {
     ...TypeScale.caption1,
-  },
-
-  noteText: {
-    ...TypeScale.bodyJA,
   },
 
   sectionFooter: {
