@@ -1,6 +1,7 @@
 // ============================================================
 // KnowledgeMapScreen — カテゴリグループ表示
 // ・カテゴリごとにノードをクラスター配置
+// ・ピンチでズーム / 1本指でパン
 // ・タップで詳細カード表示
 // ・タグ ID に基づくカラーパレットで色分け
 // ============================================================
@@ -21,7 +22,7 @@ import {
   Pressable,
   ScrollView,
 } from 'react-native';
-import { Svg, Circle, Line, Text as SvgText } from 'react-native-svg';
+import { Svg, Circle, Line, Text as SvgText, Rect } from 'react-native-svg';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -63,21 +64,22 @@ const CAT_BG = [
 ] as const;
 
 const CAT_STROKE = [
-  'rgba(99,102,241,0.30)',
-  'rgba(168,85,247,0.30)',
-  'rgba(20,184,166,0.30)',
-  'rgba(59,130,246,0.30)',
-  'rgba(34,197,94,0.30)',
-  'rgba(249,115,22,0.30)',
-  'rgba(234,179,8,0.30)',
-  'rgba(239,68,68,0.30)',
-  'rgba(236,72,153,0.30)',
-  'rgba(0,199,190,0.30)',
+  'rgba(99,102,241,0.35)',
+  'rgba(168,85,247,0.35)',
+  'rgba(20,184,166,0.35)',
+  'rgba(59,130,246,0.35)',
+  'rgba(34,197,94,0.35)',
+  'rgba(249,115,22,0.35)',
+  'rgba(234,179,8,0.35)',
+  'rgba(239,68,68,0.35)',
+  'rgba(236,72,153,0.35)',
+  'rgba(0,199,190,0.35)',
 ] as const;
 
-const NODE_R = 22;
-const LABEL_CHARS = 10;
-const CAT_LABEL_CHARS = 12;
+const NODE_R = 24;
+const LABEL_CHARS = 12;
+const CAT_LABEL_CHARS = 14;
+const GRAPH_PADDING = 24;
 
 function tagColor(tagId: number): string {
   return TAG_COLORS[Math.abs(tagId) % TAG_COLORS.length];
@@ -120,13 +122,14 @@ interface CategoryGroup {
   colorIdx: number;
 }
 
+type VB = { x: number; y: number; w: number; h: number };
+
 // ── カテゴリグループレイアウト構築 ────────────────────────────
 function buildGroupedLayout(
   items: ItemWithMeta[],
   w: number,
   h: number,
 ): { nodes: GNode[]; edges: GEdge[]; groups: CategoryGroup[] } {
-  // カテゴリ別にグループ化（null は「未分類」へ）
   const catMap = new Map<string, ItemWithMeta[]>();
   for (const item of items) {
     const key = item.category ?? '未分類';
@@ -137,16 +140,17 @@ function buildGroupedLayout(
   const cats = [...catMap.keys()];
   const n = cats.length;
 
-  // グリッド列数を決定
   const cols =
     n <= 1 ? 1 : n <= 2 ? 2 : n <= 4 ? 2 : n <= 6 ? 3 : Math.ceil(Math.sqrt(n));
   const rows = Math.ceil(n / cols);
 
-  const cellW = w / cols;
-  const cellH = h / rows;
+  const usableW = w - GRAPH_PADDING * 2;
+  const usableH = h - GRAPH_PADDING * 2;
+  const cellW = usableW / cols;
+  const cellH = usableH / rows;
 
-  // ラベルスペース（上部 24px）を除いた使用可能半径
-  const maxBgR = Math.min(cellW, cellH) / 2 - 28;
+  // ラベルピル分の余白を考慮した最大背景円半径
+  const maxBgR = Math.min(cellW, cellH) / 2 - 20;
 
   const groups: CategoryGroup[] = [];
   const nodes: GNode[] = [];
@@ -154,27 +158,30 @@ function buildGroupedLayout(
   cats.forEach((cat, idx) => {
     const col = idx % cols;
     const row = Math.floor(idx / cols);
-    // セル中心（ラベルスペース分、下にオフセット）
-    const cx = cellW * col + cellW / 2;
-    const cy = cellH * row + cellH / 2 + 12;
+    const cx = GRAPH_PADDING + cellW * col + cellW / 2;
+    const cy = GRAPH_PADDING + cellH * row + cellH / 2 + 10;
 
     const catItems = catMap.get(cat)!;
+    const count = catItems.length;
 
-    // アイテム配置円の半径（1件の場合は中心に配置）
-    const itemR =
-      catItems.length <= 1
+    // count個のノードが重ならない最小配置円半径（弦長 ≥ 2*NODE_R+gap）
+    const itemR_min =
+      count <= 1
         ? 0
-        : Math.min(maxBgR - NODE_R - 12, NODE_R * 1.4 + catItems.length * NODE_R * 0.55);
+        : (NODE_R * 2 + 10) / (2 * Math.sin(Math.PI / count));
 
-    const bgR = Math.max(NODE_R + 20, Math.min(maxBgR, itemR + NODE_R + 16));
+    const itemR =
+      count <= 1
+        ? 0
+        : Math.min(maxBgR - NODE_R - 10, Math.max(itemR_min, NODE_R * 1.8));
+
+    const bgR = Math.max(NODE_R + 28, Math.min(maxBgR, itemR + NODE_R + 20));
 
     groups.push({ category: cat, cx, cy, bgR, colorIdx: idx });
 
     catItems.forEach((item, i) => {
       const angle =
-        catItems.length === 1
-          ? 0
-          : (2 * Math.PI * i) / catItems.length - Math.PI / 2;
+        count === 1 ? 0 : (2 * Math.PI * i) / count - Math.PI / 2;
       nodes.push({
         id: item.id,
         title: item.title,
@@ -230,20 +237,28 @@ export function KnowledgeMapScreen({ navigation }: Props) {
   const { items, isLoading, refresh } = useKnowledgeMap();
 
   const [graphSize, setGraphSize] = useState({ w: 0, h: 0 });
+  const graphSizeRef = useRef({ w: 0, h: 0 });
+
   const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  // ── viewBox（ズーム・パン）────────────────────────────────────
+  const [viewBox, setViewBox] = useState<VB>({ x: 0, y: 0, w: 0, h: 0 });
+  const viewBoxRef = useRef<VB>({ x: 0, y: 0, w: 0, h: 0 });
+  const setVB = useCallback((vb: VB) => {
+    viewBoxRef.current = vb;
+    setViewBox(vb);
+  }, []);
 
   // カードアニメーション
   const cardTranslateY = useRef(new Animated.Value(200)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
 
-  // フォーカス時にデータ更新
   useFocusEffect(
     useCallback(() => {
       refresh();
     }, [refresh]),
   );
 
-  // グループレイアウトを useMemo で計算
   const { nodes, edges, groups } = useMemo(() => {
     if (!items.length || !graphSize.w || !graphSize.h) {
       return { nodes: [], edges: [], groups: [] };
@@ -251,13 +266,11 @@ export function KnowledgeMapScreen({ navigation }: Props) {
     return buildGroupedLayout(items, graphSize.w, graphSize.h);
   }, [items, graphSize.w, graphSize.h]);
 
-  // PanResponder から最新 nodes を参照するための ref
   const nodesRef = useRef<GNode[]>([]);
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
 
-  // カードアニメーション
   useEffect(() => {
     const toY = selectedId !== null ? 0 : 200;
     const toOp = selectedId !== null ? 1 : 0;
@@ -277,25 +290,101 @@ export function KnowledgeMapScreen({ navigation }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
-  // PanResponder（タップのみ・ドラッグなし）
+  // ── パン・ズーム PanResponder ──────────────────────────────────
+  // 1本指パンの基点（ピンチ→1本指切替時もジャンプしない）
+  const singleStartRef = useRef({ lx: 0, ly: 0 });
+  const singleVBAtStart = useRef<VB>({ x: 0, y: 0, w: 0, h: 0 });
+  const lastDistRef = useRef(0);
+
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: (evt) => {
-        const { locationX, locationY } = evt.nativeEvent;
-        const hit = nodesRef.current.some(
-          (n) => Math.hypot(n.x - locationX, n.y - locationY) <= NODE_R + 8,
-        );
-        if (!hit) setSelectedId(null);
-        return hit;
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt) => {
+        singleStartRef.current = {
+          lx: evt.nativeEvent.locationX,
+          ly: evt.nativeEvent.locationY,
+        };
+        singleVBAtStart.current = { ...viewBoxRef.current };
+        lastDistRef.current = 0;
       },
-      onPanResponderRelease: (evt, gs) => {
-        if (Math.abs(gs.dx) < 8 && Math.abs(gs.dy) < 8) {
-          const { locationX, locationY } = evt.nativeEvent;
-          const hit = nodesRef.current.find(
-            (n) => Math.hypot(n.x - locationX, n.y - locationY) <= NODE_R + 8,
-          );
-          if (hit) setSelectedId(hit.id);
+      onPanResponderMove: (evt) => {
+        const touches = evt.nativeEvent.touches;
+        const { w: gw, h: gh } = graphSizeRef.current;
+        if (!gw || !gh) return;
+
+        if (touches.length >= 2) {
+          // ── ピンチズーム ──────────────────────────────────────
+          const t0 = touches[0];
+          const t1 = touches[1];
+          const dist = Math.hypot(t0.pageX - t1.pageX, t0.pageY - t1.pageY);
+
+          if (lastDistRef.current > 0) {
+            const scaleChange = lastDistRef.current / dist; // ピンチアウトで dist 増加 → viewBox縮小
+            const vb = viewBoxRef.current;
+            // ピンチ中点（view相対座標）
+            const mx = ((t0.locationX ?? 0) + (t1.locationX ?? 0)) / 2;
+            const my = ((t0.locationY ?? 0) + (t1.locationY ?? 0)) / 2;
+            // 中点に対応するグラフ座標
+            const graphMidX = vb.x + mx * vb.w / gw;
+            const graphMidY = vb.y + my * vb.h / gh;
+
+            const newW = Math.max(gw * 0.2, Math.min(gw * 6, vb.w * scaleChange));
+            const newH = Math.max(gh * 0.2, Math.min(gh * 6, vb.h * scaleChange));
+
+            setVB({
+              x: graphMidX - mx * newW / gw,
+              y: graphMidY - my * newH / gh,
+              w: newW,
+              h: newH,
+            });
+          }
+          lastDistRef.current = dist;
+        } else if (touches.length === 1) {
+          // ── 1本指パン ────────────────────────────────────────
+          if (lastDistRef.current > 0) {
+            // ピンチ→1本指: 基点をリセットしてジャンプを防ぐ
+            lastDistRef.current = 0;
+            singleStartRef.current = {
+              lx: touches[0].locationX,
+              ly: touches[0].locationY,
+            };
+            singleVBAtStart.current = { ...viewBoxRef.current };
+          }
+          const dx = touches[0].locationX - singleStartRef.current.lx;
+          const dy = touches[0].locationY - singleStartRef.current.ly;
+          const vb = singleVBAtStart.current;
+          setVB({
+            x: vb.x - dx * vb.w / gw,
+            y: vb.y - dy * vb.h / gh,
+            w: vb.w,
+            h: vb.h,
+          });
         }
+      },
+      onPanResponderRelease: (evt) => {
+        lastDistRef.current = 0;
+        const { locationX, locationY } = evt.nativeEvent;
+        // タップ判定: 開始位置から 10px 未満の移動
+        const moved = Math.hypot(
+          locationX - singleStartRef.current.lx,
+          locationY - singleStartRef.current.ly,
+        );
+        if (moved < 10) {
+          const vb = viewBoxRef.current;
+          const { w: gw, h: gh } = graphSizeRef.current;
+          if (!gw || !gh) return;
+          // screen → graph 座標変換
+          const svgX = vb.x + locationX * vb.w / gw;
+          const svgY = vb.y + locationY * vb.h / gh;
+          const hit = nodesRef.current.find(
+            (n) => Math.hypot(n.x - svgX, n.y - svgY) <= NODE_R + 8,
+          );
+          setSelectedId(hit ? hit.id : null);
+        }
+      },
+      onPanResponderTerminate: () => {
+        lastDistRef.current = 0;
       },
     }),
   ).current;
@@ -303,15 +392,52 @@ export function KnowledgeMapScreen({ navigation }: Props) {
   const handleLayout = useCallback(
     (e: { nativeEvent: { layout: { width: number; height: number } } }) => {
       const { width, height } = e.nativeEvent.layout;
-      setGraphSize((prev) => {
-        if (prev.w === width && prev.h === height) return prev;
-        return { w: width, h: height };
-      });
+      if (
+        graphSizeRef.current.w === width &&
+        graphSizeRef.current.h === height
+      ) return;
+      graphSizeRef.current = { w: width, h: height };
+      setGraphSize({ w: width, h: height });
+      const vb = { x: 0, y: 0, w: width, h: height };
+      viewBoxRef.current = vb;
+      setViewBox(vb);
     },
     [],
   );
 
-  // タグ凡例（重複排除・id順）
+  // ── ズームボタン ──────────────────────────────────────────────
+  const zoomIn = useCallback(() => {
+    const vb = viewBoxRef.current;
+    const f = 0.65;
+    const newW = Math.max(graphSizeRef.current.w * 0.2, vb.w * f);
+    const newH = Math.max(graphSizeRef.current.h * 0.2, vb.h * f);
+    setVB({
+      x: vb.x + (vb.w - newW) / 2,
+      y: vb.y + (vb.h - newH) / 2,
+      w: newW,
+      h: newH,
+    });
+  }, [setVB]);
+
+  const zoomOut = useCallback(() => {
+    const vb = viewBoxRef.current;
+    const f = 1.55;
+    const newW = Math.min(graphSizeRef.current.w * 6, vb.w * f);
+    const newH = Math.min(graphSizeRef.current.h * 6, vb.h * f);
+    setVB({
+      x: vb.x + (vb.w - newW) / 2,
+      y: vb.y + (vb.h - newH) / 2,
+      w: newW,
+      h: newH,
+    });
+  }, [setVB]);
+
+  const resetZoom = useCallback(() => {
+    const { w, h } = graphSizeRef.current;
+    setVB({ x: 0, y: 0, w, h });
+  }, [setVB]);
+
+  // ── タグ凡例 ─────────────────────────────────────────────────
   const allTags = useMemo(() => {
     const map = new Map<number, Tag>();
     for (const item of items) {
@@ -329,12 +455,18 @@ export function KnowledgeMapScreen({ navigation }: Props) {
 
   const nodeById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
 
-  const edgeColor = isDark ? 'rgba(235,235,245,0.12)' : 'rgba(0,0,0,0.08)';
-  const labelColor = isDark ? 'rgba(235,235,245,0.80)' : 'rgba(60,60,67,0.80)';
-  const catLabelColor = isDark ? 'rgba(235,235,245,0.65)' : 'rgba(60,60,67,0.65)';
+  const edgeColor = isDark ? 'rgba(235,235,245,0.15)' : 'rgba(0,0,0,0.10)';
+  const labelColor = isDark ? 'rgba(235,235,245,0.88)' : 'rgba(30,30,35,0.88)';
+  const catLabelColor = isDark ? 'rgba(235,235,245,0.80)' : 'rgba(30,30,35,0.80)';
+  const catLabelBg = isDark ? 'rgba(18,18,22,0.65)' : 'rgba(255,255,255,0.82)';
 
   const showLoading = isLoading;
   const showEmpty = !isLoading && items.length === 0;
+
+  const vbStr =
+    viewBox.w > 0
+      ? `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`
+      : undefined;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -359,30 +491,49 @@ export function KnowledgeMapScreen({ navigation }: Props) {
           </View>
         )}
 
-        {!showLoading && !showEmpty && graphSize.w > 0 && (
-          <Svg width={graphSize.w} height={graphSize.h}>
+        {!showLoading && !showEmpty && graphSize.w > 0 && vbStr && (
+          <Svg width={graphSize.w} height={graphSize.h} viewBox={vbStr}>
+
             {/* カテゴリグループ背景 */}
             {groups.map((g) => {
               const labelText =
                 g.category.length > CAT_LABEL_CHARS
                   ? g.category.slice(0, CAT_LABEL_CHARS) + '…'
                   : g.category;
+              // ラベル背景ピルのサイズ（1文字あたり約7.5px + 余白）
+              const pillW = Math.min(
+                labelText.length * 7.5 + 18,
+                g.bgR * 1.9,
+              );
+              const pillH = 19;
+              const pillY = g.cy - g.bgR + 5;
               return (
                 <React.Fragment key={g.category}>
+                  {/* グループ背景円 */}
                   <Circle
                     cx={g.cx}
                     cy={g.cy}
                     r={g.bgR}
                     fill={catBg(g.colorIdx)}
                     stroke={catStroke(g.colorIdx)}
-                    strokeWidth={1}
+                    strokeWidth={1.5}
                   />
+                  {/* カテゴリラベル背景ピル */}
+                  <Rect
+                    x={g.cx - pillW / 2}
+                    y={pillY}
+                    width={pillW}
+                    height={pillH}
+                    rx={pillH / 2}
+                    fill={catLabelBg}
+                  />
+                  {/* カテゴリラベル */}
                   <SvgText
                     x={g.cx}
-                    y={g.cy - g.bgR + 15}
+                    y={pillY + pillH * 0.72}
                     textAnchor="middle"
                     fill={catLabelColor}
-                    fontSize={11}
+                    fontSize={12}
                     fontWeight="600"
                   >
                     {labelText}
@@ -426,42 +577,49 @@ export function KnowledgeMapScreen({ navigation }: Props) {
                     <Circle
                       cx={node.x}
                       cy={node.y}
-                      r={NODE_R + 6}
+                      r={NODE_R + 8}
                       fill="none"
                       stroke={colors.accent}
-                      strokeWidth={2.5}
-                      opacity={0.85}
+                      strokeWidth={3}
+                      opacity={0.9}
                     />
                   )}
-
+                  {/* ノード影（疑似シャドウ） */}
+                  <Circle
+                    cx={node.x}
+                    cy={node.y + 2.5}
+                    r={NODE_R}
+                    fill="rgba(0,0,0,0.18)"
+                  />
                   {/* ノード本体 */}
                   <Circle
                     cx={node.x}
                     cy={node.y}
                     r={NODE_R}
                     fill={color}
-                    opacity={0.9}
+                    stroke="rgba(255,255,255,0.40)"
+                    strokeWidth={2}
+                    opacity={0.92}
                   />
-
                   {/* タイトル頭文字 */}
                   <SvgText
                     x={node.x}
-                    y={node.y + 5}
+                    y={node.y + 5.5}
                     textAnchor="middle"
                     fill="#FFFFFF"
-                    fontSize={14}
+                    fontSize={15}
                     fontWeight="700"
                   >
                     {initial}
                   </SvgText>
-
                   {/* タイトルラベル */}
                   <SvgText
                     x={node.x}
-                    y={node.y + NODE_R + 14}
+                    y={node.y + NODE_R + 16}
                     textAnchor="middle"
                     fill={labelColor}
-                    fontSize={10}
+                    fontSize={11}
+                    fontWeight="500"
                   >
                     {label}
                   </SvgText>
@@ -469,6 +627,51 @@ export function KnowledgeMapScreen({ navigation }: Props) {
               );
             })}
           </Svg>
+        )}
+
+        {/* ズームコントロール */}
+        {!showLoading && !showEmpty && (
+          <View style={styles.zoomControls}>
+            <Pressable
+              style={[
+                styles.zoomBtn,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.separator,
+                  shadowColor: colors.cardShadowColor,
+                },
+              ]}
+              onPress={zoomIn}
+            >
+              <Text style={[styles.zoomBtnText, { color: colors.label }]}>+</Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.zoomBtn,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.separator,
+                  shadowColor: colors.cardShadowColor,
+                },
+              ]}
+              onPress={resetZoom}
+            >
+              <Text style={[styles.zoomBtnText, { color: colors.label }]}>↺</Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.zoomBtn,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.separator,
+                  shadowColor: colors.cardShadowColor,
+                },
+              ]}
+              onPress={zoomOut}
+            >
+              <Text style={[styles.zoomBtnText, { color: colors.label }]}>−</Text>
+            </Pressable>
+          </View>
         )}
       </View>
 
@@ -488,8 +691,12 @@ export function KnowledgeMapScreen({ navigation }: Props) {
                   { backgroundColor: tagColor(tag.id) + '28' },
                 ]}
               >
-                <View style={[styles.legendDot, { backgroundColor: tagColor(tag.id) }]} />
-                <Text style={[styles.legendLabel, { color: colors.label }]}>{tag.name}</Text>
+                <View
+                  style={[styles.legendDot, { backgroundColor: tagColor(tag.id) }]}
+                />
+                <Text style={[styles.legendLabel, { color: colors.label }]}>
+                  {tag.name}
+                </Text>
               </View>
             ))}
           </ScrollView>
@@ -527,7 +734,9 @@ export function KnowledgeMapScreen({ navigation }: Props) {
                 style={styles.closeBtn}
                 hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
               >
-                <Text style={[styles.closeBtnText, { color: colors.labelSecondary }]}>✕</Text>
+                <Text style={[styles.closeBtnText, { color: colors.labelSecondary }]}>
+                  ✕
+                </Text>
               </Pressable>
             </View>
 
@@ -576,8 +785,33 @@ export function KnowledgeMapScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   graph: { flex: 1 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.xl,
+  },
   emptyText: { fontSize: 15, textAlign: 'center', lineHeight: 24 },
+
+  zoomControls: {
+    position: 'absolute',
+    right: Spacing.m,
+    top: Spacing.m,
+    gap: Spacing.xs,
+  },
+  zoomBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  zoomBtnText: { fontSize: 20, fontWeight: '400', lineHeight: 24 },
 
   legendBar: {
     borderTopWidth: StyleSheet.hairlineWidth,
