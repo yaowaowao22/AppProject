@@ -201,11 +201,12 @@ export function ReviewCard({
         // 左右スワイプ: forgot / remembered
         const rating: SimpleRating = e.translationX < 0 ? 'forgot' : 'remembered';
         const targetX = e.translationX < 0 ? -EXIT_DISTANCE : EXIT_DISTANCE;
-        exitProgress.value = withTiming(1, { duration: EXIT_DURATION });
-        translateX.value = withTiming(targetX, { duration: EXIT_DURATION }, (done) => {
+        const targetY = e.translationY * 0.3; // 慣性でやや斜めに飛ぶ
+        exitProgress.value = withTiming(1, { duration: EXIT_DURATION, easing: Easing.in(Easing.cubic) });
+        translateX.value = withTiming(targetX, { duration: EXIT_DURATION, easing: Easing.in(Easing.cubic) }, (done) => {
           if (done) runOnJS(callOnSwipeRate)(rating);
         });
-        translateY.value = withTiming(0, { duration: EXIT_DURATION });
+        translateY.value = withTiming(targetY, { duration: EXIT_DURATION });
       } else {
         // 閾値未満: 元の位置に戻す
         translateX.value = withSpring(0);

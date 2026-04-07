@@ -94,17 +94,19 @@ async function processLoop(db: SQLiteDatabase): Promise<void> {
 
 function buildDeepDivePrompt(question: string, answer: string): string {
   return `<start_of_turn>user
-学習カードの補足説明を日本語500字以内で書いてください。余計な挨拶・前置き・見出しは不要です。
+以下の学習カードについて、補足説明を日本語500字以内で書いてください。
 
 Q: ${question}
 A: ${answer}
 
-▼ 以下の要点のみ簡潔に説明してください:
-・なぜそうなるのか（根拠・原理）
-・具体例またはたとえ話（1つだけ）
-・間違えやすいポイント（あれば）
+【厳守ルール】
+- 確実に正しいと言える事実のみ書く。不確かな情報は書かない
+- 推測・憶測・「〜かもしれない」は禁止。断言できる内容のみ
+- 見出し・箇条書き・前置き・挨拶は不要。文章のみ
+- 500字を超えない
 
-500字を超えないこと。箇条書き禁止。文章で書くこと。<end_of_turn>
+【書く内容（確実な情報に限る）】
+なぜそうなるか（根拠・原理）、具体例またはたとえ話（1つ）、間違えやすいポイント（あれば）<end_of_turn>
 <start_of_turn>model
 `;
 }
