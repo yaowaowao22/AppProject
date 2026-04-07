@@ -6,9 +6,9 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { GoogleCalendarColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 const BLUE = GoogleCalendarColors.blue;
-const SUBTITLE_COLOR = GoogleCalendarColors.textSecondary;
 
 const WEEKDAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
@@ -20,6 +20,7 @@ interface DateRowProps {
 }
 
 export function DateRow({ date, dueCount }: DateRowProps) {
+  const { colors } = useTheme();
   const { weekday, day } = useMemo(() => {
     const d = date ?? new Date();
     return {
@@ -41,7 +42,7 @@ export function DateRow({ date, dueCount }: DateRowProps) {
       {/* 曜日 + サブテキスト */}
       <View style={styles.textGroup}>
         <Text style={styles.weekday}>{weekday.toUpperCase()}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
+        <Text style={[styles.subtitle, { color: colors.labelSecondary }]}>{subtitle}</Text>
       </View>
     </View>
   );
@@ -81,7 +82,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   subtitle: {
-    color: SUBTITLE_COLOR,
     fontSize: 14,
     lineHeight: 18,
     marginTop: 1,

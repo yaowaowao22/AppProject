@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { TypeScale } from '../theme/typography';
 import { Spacing, Radius } from '../theme/spacing';
-import { GoogleCalendarColors } from '../theme/colors';
+import { SystemColors } from '../theme/colors';
 
 interface ReviewCTACardProps {
   /** 今日の復習対象件数 */
@@ -89,10 +89,10 @@ export function ReviewCTACard({
       {heroState === 'due' && (
         <>
           {/* イラスト帯 */}
-          <View style={styles.reviewIllust}>
-            <View style={[styles.illustCard, styles.illustCardBack2]} />
-            <View style={[styles.illustCard, styles.illustCardBack1]} />
-            <View style={[styles.illustCard, styles.illustCardFront]} />
+          <View style={[styles.reviewIllust, { backgroundColor: colors.accent + '22' }]}>
+            <View style={[styles.illustCard, styles.illustCardBack2, { backgroundColor: colors.accent + '66' }]} />
+            <View style={[styles.illustCard, styles.illustCardBack1, { backgroundColor: colors.accent + '44' }]} />
+            <View style={[styles.illustCard, styles.illustCardFront, { backgroundColor: colors.card }]} />
           </View>
 
           {/* ボディ */}
@@ -102,7 +102,7 @@ export function ReviewCTACard({
               <Text style={styles.countTextStrong}>{dueCount}件</Text>
             </Text>
             {(estimatedMinutes !== undefined || (categories && categories.length > 0)) && (
-              <Text style={styles.metaText}>
+              <Text style={[styles.metaText, { color: colors.labelSecondary }]}>
                 {estimatedMinutes !== undefined ? `推定 ${estimatedMinutes}分` : ''}
                 {estimatedMinutes !== undefined && categories && categories.length > 0 ? ' · ' : ''}
                 {categories && categories.length > 0 ? categories.join(', ') : ''}
@@ -114,7 +114,7 @@ export function ReviewCTACard({
             <Pressable
               style={({ pressed }) => [
                 styles.startButton,
-                { opacity: pressed ? 0.85 : 1 },
+                { backgroundColor: colors.info, opacity: pressed ? 0.85 : 1 },
               ]}
               onPress={onStart}
               accessibilityRole="button"
@@ -208,7 +208,6 @@ const styles = StyleSheet.create({
   // ── due: イラスト帯 ──
   reviewIllust: {
     height: 140,
-    backgroundColor: '#FFECB3',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -218,7 +217,6 @@ const styles = StyleSheet.create({
     width: 90,
     height: 60,
     borderRadius: 8,
-    backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.10,
@@ -227,11 +225,9 @@ const styles = StyleSheet.create({
   },
   illustCardBack2: {
     transform: [{ rotate: '-12deg' }, { translateX: -50 }, { translateY: 8 }],
-    backgroundColor: '#FFE082',
   },
   illustCardBack1: {
     transform: [{ rotate: '6deg' }, { translateX: 40 }, { translateY: -4 }],
-    backgroundColor: '#FFECB3',
   },
   illustCardFront: {
     transform: [{ rotate: '-2deg' }],
@@ -257,16 +253,14 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: 13,
     lineHeight: 18,
-    color: GoogleCalendarColors.textSecondary,
   },
   overdueText: {
     fontSize: 13,
     lineHeight: 18,
-    color: GoogleCalendarColors.red,
+    color: SystemColors.red,
     fontWeight: '500' as const,
   },
   startButton: {
-    backgroundColor: GoogleCalendarColors.blue,
     borderRadius: 20,
     paddingVertical: 10,
     paddingHorizontal: 24,

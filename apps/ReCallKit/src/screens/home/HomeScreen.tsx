@@ -337,7 +337,7 @@ export function HomeScreen({ navigation }: Props) {
       {/* ── [5] 週間アクティビティ ─────────────────────── */}
       {totalItems > 0 && (
         <View style={styles.weeklyCard}>
-          <Text style={styles.labelUpper}>This Week</Text>
+          <Text style={[styles.labelUpper, { color: colors.labelTertiary }]}>This Week</Text>
           <View style={styles.weeklyRow}>
             {weeklyActivity.map((day, i) => {
               const isToday = i === 6;
@@ -406,7 +406,7 @@ export function HomeScreen({ navigation }: Props) {
       {/* ── [6] Recently Added ──────────────────────────── */}
       {recentItems.length > 0 && (
         <>
-          <Text style={styles.labelUpper}>Recently Added</Text>
+          <Text style={[styles.labelUpper, { color: colors.labelTertiary }]}>Recently Added</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -421,14 +421,14 @@ export function HomeScreen({ navigation }: Props) {
                   key={item.id}
                   style={({ pressed }) => [
                     styles.recentCard,
-                    { backgroundColor: colors.card, opacity: pressed ? 0.7 : 1 },
+                    { backgroundColor: colors.card, borderColor: colors.separator, opacity: pressed ? 0.7 : 1 },
                   ]}
                   onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}
                   accessibilityRole="button"
                 >
                   <View style={styles.recentCatRow}>
                     <View style={[styles.recentCatDot, { backgroundColor: catColor }]} />
-                    <Text style={styles.recentCatName} numberOfLines={1}>
+                    <Text style={[styles.recentCatName, { color: colors.labelTertiary }]} numberOfLines={1}>
                       {item.category ?? '未分類'}
                     </Text>
                   </View>
@@ -438,7 +438,7 @@ export function HomeScreen({ navigation }: Props) {
                   >
                     {item.title}
                   </Text>
-                  <Text style={styles.recentCardTime}>{relativeTime}</Text>
+                  <Text style={[styles.recentCardTime, { color: colors.labelTertiary }]}>{relativeTime}</Text>
                 </Pressable>
               );
             })}
@@ -569,7 +569,6 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,      // mockup .label-upper { font-weight:500 }
     textTransform: 'uppercase' as const,
     letterSpacing: 0.8,
-    color: GoogleCalendarColors.textTertiary,
     marginTop: Spacing.m,
     marginBottom: 14,
     // marginLeft なし: mockup に左インデントなし、container の padding のみ
@@ -588,7 +587,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: GoogleCalendarColors.border,
     gap: Spacing.s,
   },
   recentCatRow: {
@@ -603,7 +601,6 @@ const styles = StyleSheet.create({
   },
   recentCatName: {
     fontSize: 11,
-    color: GoogleCalendarColors.textTertiary,
     lineHeight: 15,
   },
   recentCardTitle: {
@@ -612,7 +609,6 @@ const styles = StyleSheet.create({
   },
   recentCardTime: {
     fontSize: 11,
-    color: GoogleCalendarColors.textTertiary,
     marginTop: 10,
   },
 });
