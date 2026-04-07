@@ -1,6 +1,6 @@
 // ============================================================
 // URL解析統合パイプライン
-// LOCAL_AI_ENABLED = true  → ローカルOllama（Gemma 4）
+// LOCAL_AI_ENABLED = true  → llama.rn（デバイス内Gemma 4 on-device）
 // LOCAL_AI_ENABLED = false → Bedrock（Claude 3 Haiku via Lambda）
 // ============================================================
 
@@ -25,7 +25,7 @@ export async function analyzeUrlPipeline(url: string): Promise<PipelineResult> {
     let result: AnalysisResult;
 
     if (LOCAL_AI_ENABLED) {
-      console.log('[urlAnalysisPipeline] ローカルAI（Ollama）モードで解析:', url);
+      console.log('[urlAnalysisPipeline] ローカルAI（llama.rn + Gemma 4）モードで解析:', url);
       result = await analyzeUrlLocal(url);
     } else {
       if (!isAwsConfigured()) {

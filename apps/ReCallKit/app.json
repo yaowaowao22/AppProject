@@ -77,6 +77,13 @@
             "useFrameworks": "static"
           }
         }
+      ],
+      [
+        "llama.rn",
+        {
+          "enableEntitlements": true,
+          "forceCxx20": true
+        }
       ]
     ],
     "extra": {
