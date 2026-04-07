@@ -26,6 +26,7 @@ interface DueRow {
   created_at: string;
   updated_at: string;
   archived: 0 | 1;
+  flagged: number;
   review_id: number;
   repetitions: number;
   easiness_factor: number;
@@ -66,6 +67,7 @@ export async function getDueItems(db: SQLiteDatabase): Promise<ReviewableItem[]>
       created_at: row.created_at,
       updated_at: row.updated_at,
       archived: row.archived,
+      flagged: row.flagged,
       tags: [],
       review: {
         id: row.review_id,
@@ -175,6 +177,7 @@ export async function getRecentlyReviewedItems(db: SQLiteDatabase): Promise<Revi
       created_at: row.created_at,
       updated_at: row.updated_at,
       archived: row.archived,
+      flagged: row.flagged,
       tags: [],
       review: {
         id: row.review_id,
@@ -224,6 +227,7 @@ export async function getItemById(
       created_at: row.created_at,
       updated_at: row.updated_at,
       archived: row.archived,
+      flagged: row.flagged,
       tags: [],
       review: {
         id: row.review_id,
@@ -268,6 +272,7 @@ export async function getAllReviewableItems(db: SQLiteDatabase): Promise<Reviewa
       created_at: row.created_at,
       updated_at: row.updated_at,
       archived: row.archived,
+      flagged: row.flagged,
       tags: [],
       review: {
         id: row.review_id,
@@ -322,5 +327,19 @@ export async function submitReviewRating(
       quality,
       reviewId,
     ]
+  );
+}
+
+/**
+ * アイテムのフラグ状態を更新
+ */
+export async function toggleItemFlag(
+  db: SQLiteDatabase,
+  itemId: number,
+  flagged: boolean
+): Promise<void> {
+  await db.runAsync(
+    `UPDATE items SET flagged = ?, updated_at = datetime('now', 'localtime') WHERE id = ?`,
+    [flagged ? 1 : 0, itemId]
   );
 }

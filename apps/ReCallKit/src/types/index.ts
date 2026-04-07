@@ -15,6 +15,7 @@ export interface Item {
   created_at: string;
   updated_at: string;
   archived: 0 | 1;
+  flagged: number; // 0 = 通常, 1 = フラグ済み
 }
 
 export interface Review {

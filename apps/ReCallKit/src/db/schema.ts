@@ -3,7 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 // ============================================================
 // スキーマバージョン管理
 // ============================================================
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 const CREATE_TABLES_SQL = `
   -- アイテム（URL・テキスト・メモ）
@@ -183,6 +183,14 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_url_jobs_created ON url_import_jobs(created_at);
     `);
     await setSchemaVersion(db, 5);
+  }
+
+  if (currentVersion < 6) {
+    // アイテムフラグ機能（学習中に「後で確認」マーク）
+    await db.execAsync(`
+      ALTER TABLE items ADD COLUMN flagged INTEGER NOT NULL DEFAULT 0;
+    `);
+    await setSchemaVersion(db, 6);
   }
 }
 
