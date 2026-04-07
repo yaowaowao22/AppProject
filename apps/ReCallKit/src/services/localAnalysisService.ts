@@ -259,14 +259,27 @@ let llamaContext: LlamaContext | null = null;
 let isInitializing = false;
 let loadedModelId: string | null = null;
 
-// iOSメモリ警告時にコンテキストを解放してOSによるアプリ強制終了を防ぐ
-// AppStateがbackground/inactiveになった際の解放はアプリ側で別途呼ばれる想定
+// バックグラウンド移行時にコンテキストを解放してOSによる強制終了を防ぐ
+// Gemma 4 等の大型モデルは数GBを占有するため、バックグラウンド中に保持すると
+// iOS のメモリ制限に引っかかりアプリが即座に強制終了される
+AppState.addEventListener('change', (nextAppState) => {
+  if ((nextAppState === 'background' || nextAppState === 'inactive') && llamaContext) {
+    console.warn('[localAnalysis] バックグラウンド移行 → コンテキストを解放します');
+    const ctx = llamaContext;
+    llamaContext = null;   // 先にnullにして新規リクエストを即ブロック
+    loadedModelId = null;
+    ctx.release().catch(() => {});
+  }
+});
+
+// iOSメモリ警告時の追加フォールバック（バックグラウンド解放が間に合わなかった場合）
 AppState.addEventListener('memoryWarning' as never, () => {
   if (llamaContext) {
     console.warn('[localAnalysis] メモリ警告受信 → コンテキストを解放します');
-    llamaContext.release().catch(() => {});
+    const ctx = llamaContext;
     llamaContext = null;
     loadedModelId = null;
+    ctx.release().catch(() => {});
   }
 });
 
