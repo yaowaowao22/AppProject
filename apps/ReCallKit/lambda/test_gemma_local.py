@@ -205,10 +205,67 @@ def call_ollama(model: str, prompt: str) -> dict:
 # メイン
 # ============================================================
 
+def write_markdown(out_path: str, url: str, model: str, elapsed: float, tps: float,
+                   parsed: dict | None, raw: str, parse_ok: bool) -> None:
+    """解析結果をMarkdownファイルに書き出す。"""
+    from datetime import datetime
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    lines = [
+        f"# Gemma 4 解析結果",
+        f"",
+        f"| 項目 | 値 |",
+        f"|---|---|",
+        f"| 日時 | {now} |",
+        f"| モデル | `{model}` |",
+        f"| URL | {url} |",
+        f"| 所要時間 | {elapsed:.1f}s |",
+        f"| 速度 | {tps:.1f} tok/s |",
+        f"| JSON解析 | {'OK' if parse_ok else 'NG'} |",
+        f"",
+    ]
+
+    if parse_ok and parsed:
+        qa = parsed.get("qa_pairs", [])
+        lines += [
+            f"## メタ情報",
+            f"",
+            f"- **タイトル**: {parsed.get('title', '')}",
+            f"- **カテゴリ**: {parsed.get('category', '')}",
+            f"- **Q&A件数**: {len(qa)} 件",
+            f"- **要約**: {parsed.get('summary', '')}",
+            f"",
+            f"## Q&A ペア",
+            f"",
+        ]
+        for i, qa_pair in enumerate(qa, 1):
+            lines += [
+                f"### Q{i:02d}",
+                f"**Q**: {qa_pair.get('question', '')}  ",
+                f"**A**: {qa_pair.get('answer', '')}",
+                f"",
+            ]
+    else:
+        lines += [
+            f"## 生の出力（パース失敗）",
+            f"",
+            f"```",
+            raw,
+            f"```",
+            f"",
+        ]
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
+    print(f"\n[MD出力] {out_path}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Gemma 4 E2B ローカルテスト")
     parser.add_argument("--url",   default="", help="解析するURL（省略時はサンプルテキスト使用）")
     parser.add_argument("--model", default=DEFAULT_MODEL, help=f"Ollamaモデル名 (default: {DEFAULT_MODEL})")
+    parser.add_argument("--out",   default="", help="MD出力ファイルパス（省略時は自動生成）")
     args = parser.parse_args()
 
     # テキスト取得
@@ -231,26 +288,33 @@ def main():
     # プロンプト生成・Ollama呼び出し
     prompt = build_prompt(url, text)
     result = call_ollama(args.model, prompt)
-    raw = result["raw"]
+    raw    = result["raw"]
+    stats  = result["stats"]
+    elapsed     = stats.get("total_duration", 0) / 1e9
+    eval_count  = stats.get("eval_count", 0)
+    eval_dur    = stats.get("eval_duration", 1) / 1e9
+    tps         = eval_count / eval_dur if eval_dur > 0 else 0
 
     print("\n" + "=" * 60)
     print("【生の出力】")
     print("=" * 60)
     print(raw)
 
-    # JSON パース試行
+    # JSON パース
     print("\n" + "=" * 60)
     print("【JSON パース結果】")
     print("=" * 60)
 
-    # ```json ``` ブロック除去
     clean = raw
     if clean.startswith("```"):
         lines = clean.split("\n")
         clean = "\n".join(lines[1:-1]) if lines[-1].strip() == "```" else "\n".join(lines[1:])
 
+    parsed   = None
+    parse_ok = False
     try:
-        parsed = json.loads(clean)
+        parsed   = json.loads(clean)
+        parse_ok = True
         print("[OK] パース成功")
         print(f"  title    : {parsed.get('title')}")
         print(f"  summary  : {parsed.get('summary')}")
@@ -265,7 +329,14 @@ def main():
     except json.JSONDecodeError as e:
         print(f"[NG] パース失敗: {e}")
         print("  -> モデルがJSONを正しく出力していない可能性あり")
-        print("  -> 量子化レベルを上げる（Q4_K_M）か、プロンプトを調整してください")
+
+    # MD出力
+    import re as _re
+    slug = _re.sub(r"[^a-zA-Z0-9]+", "-", url)[-40:] if url else "sample"
+    from datetime import datetime
+    ts       = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_path = args.out or f"result_{ts}_{slug}.md"
+    write_markdown(out_path, url, args.model, elapsed, tps, parsed, raw, parse_ok)
 
 
 if __name__ == "__main__":
