@@ -401,6 +401,7 @@ function normalize(parsed: Partial<AnalysisResult>): AnalysisResult {
     summary: parsed.summary ?? '',
     qa_pairs: Array.isArray(parsed.qa_pairs) ? parsed.qa_pairs : [],
     category: parsed.category ?? 'その他',
+    tags: Array.isArray(parsed.tags) ? parsed.tags : [],
   };
 }
 

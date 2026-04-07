@@ -46,6 +46,7 @@ export async function analyzeUrlPipeline(url: string): Promise<PipelineResult> {
       summary: message,
       qa_pairs: [],
       category: '',
+      tags: [],
       sourceUrl: url,
     };
   }

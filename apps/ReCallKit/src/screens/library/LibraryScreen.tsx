@@ -496,10 +496,10 @@ export function LibraryScreen({ navigation }: Props) {
 
     return (
       <ReanimatedSwipeable
-        ref={(ref) => {
+        ref={((ref: any) => {
           if (ref) swipeableRefs.current.set(item.id, ref);
           else swipeableRefs.current.delete(item.id);
-        }}
+        }) as any}
         friction={2}
         rightThreshold={SWIPE_ACTION_WIDTH * 0.4}
         renderRightActions={(_, drag) => (
