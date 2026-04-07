@@ -439,7 +439,7 @@ export function QAPreviewScreen({ route, navigation }: Props) {
   const clippedPairs = useMemo(() => rawPairs.slice(0, MAX_ITEMS), [rawPairs]);
 
   // ── 共通状態 ──
-  const [viewMode, setViewMode] = useState<ViewMode>('card');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [editedQAs, setEditedQAs] = useState<{ question: string; answer: string }[]>(
     () => clippedPairs.map((p) => ({ ...p })),
   );

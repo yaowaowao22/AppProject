@@ -28,7 +28,7 @@ import { getItemById, submitReviewRating } from '../../db/reviewRepository';
 import { SIMPLE_RATINGS } from '../../sm2/algorithm';
 import type { SimpleRating } from '../../sm2/algorithm';
 import { RatingButtons } from '../../components/RatingButtons';
-import { AIDeepDiveButtons } from '../../components/AIDeepDiveButtons';
+import { DeepDiveButton } from '../../components/DeepDiveButton';
 import { ReviewProgressBar } from '../../components/ReviewProgressBar';
 import { useCloseHeader } from '../../hooks/useCloseHeader';
 import { useTheme } from '../../theme/ThemeContext';
@@ -354,10 +354,11 @@ export function QuizScreen({ navigation, route }: Props) {
         {revealed ? (
           <>
             <Text style={[styles.rateHint, { color: colors.labelSecondary }]}>
-              どのくらい思い出せましたか？
+              覚えていましたか？
             </Text>
             <RatingButtons onRate={handleRate} />
-            <AIDeepDiveButtons
+            <DeepDiveButton
+              itemId={reviewable.item.id}
               question={reviewable.item.title}
               answer={reviewable.item.content}
             />

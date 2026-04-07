@@ -21,7 +21,11 @@ import { GoogleCalendarColors } from '../../theme/colors';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
 import type { LibraryStackParamList } from '../../navigation/types';
-import type { Item, Tag, Review } from '../../types';
+import type { Item, Tag, Review, DeepDive } from '../../types';
+import { getDeepDivesForItem } from '../../db/deepDiveRepository';
+import { DeepDiveButton } from '../../components/DeepDiveButton';
+import { DeepDiveResultModal } from '../../components/DeepDiveResultModal';
+import { subscribeDeepDive } from '../../services/deepDiveService';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'ItemDetail'>;
 
@@ -57,6 +61,8 @@ export function ItemDetailScreen({ route }: Props) {
   const [tags, setTags] = useState<Tag[]>([]);
   const [review, setReview] = useState<Review | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deepDives, setDeepDives] = useState<DeepDive[]>([]);
+  const [deepDiveModalVisible, setDeepDiveModalVisible] = useState(false);
 
   // ---- 編集モード状態 ----
   const [editMode, setEditMode] = useState(false);
@@ -89,6 +95,9 @@ export function ItemDetailScreen({ route }: Props) {
         [itemId]
       );
       setReview(reviewRow ?? null);
+
+      const dives = await getDeepDivesForItem(db, itemId);
+      setDeepDives(dives);
     } finally {
       setLoading(false);
     }
@@ -99,6 +108,16 @@ export function ItemDetailScreen({ route }: Props) {
       loadItem();
     }, [loadItem])
   );
+
+  // 深掘り状態変更を購読してリロード
+  useEffect(() => {
+    const unsub = subscribeDeepDive(() => {
+      if (db) {
+        getDeepDivesForItem(db, itemId).then(setDeepDives);
+      }
+    });
+    return unsub;
+  }, [db, itemId]);
 
   useEffect(() => {
     if (item?.title) {
@@ -366,6 +385,36 @@ export function ItemDetailScreen({ route }: Props) {
         </View>
       )}
 
+      {/* ── 深掘りセクション ── */}
+      <View style={s.section}>
+        <Text style={[s.sectionTitle, { color: colors.labelTertiary }]}>AI DEEP DIVE</Text>
+        <DeepDiveButton
+          itemId={itemId}
+          question={item.title}
+          answer={item.content}
+        />
+        {deepDives.length > 0 && (
+          <View style={{ marginTop: Spacing.s, gap: Spacing.s }}>
+            {deepDives.slice(0, 2).map((dive) => (
+              <Pressable
+                key={dive.id}
+                style={[s.deepDiveCard, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => setDeepDiveModalVisible(true)}
+              >
+                <Text style={[s.deepDiveText, { color: colors.label }]} numberOfLines={4}>
+                  {dive.result}
+                </Text>
+                <Text style={[s.deepDiveMore, { color: colors.accent }]}>
+                  タップして全文を見る
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+      </View>
+
+      <View style={[s.sep, { backgroundColor: colors.separator }]} />
+
       {/* ── メタ情報（背景色つき） ── */}
       <View style={[s.metaSection, { backgroundColor: colors.backgroundSecondary }]}>
         <View style={s.metaRow}>
@@ -385,6 +434,11 @@ export function ItemDetailScreen({ route }: Props) {
           </View>
         )}
       </View>
+      <DeepDiveResultModal
+        visible={deepDiveModalVisible}
+        dives={deepDives}
+        onClose={() => setDeepDiveModalVisible(false)}
+      />
     </ScrollView>
   );
 }
@@ -559,5 +613,21 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 20,
+  },
+
+  // ---- 深掘りカード ----
+  deepDiveCard: {
+    borderRadius: Radius.m,
+    padding: Spacing.m,
+    gap: Spacing.xs,
+  },
+  deepDiveText: {
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  deepDiveMore: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    textAlign: 'right',
   },
 });

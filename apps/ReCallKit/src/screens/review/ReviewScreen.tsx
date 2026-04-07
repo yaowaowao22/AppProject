@@ -1,7 +1,7 @@
 // ============================================================
 // ReviewScreen - フルスクリーンモーダル復習画面
-// カードフリップ → 評価ボタン → SM-2更新 → 次のカード
-// スワイプ評価・背景フラッシュ・評価内訳サマリー対応
+// カードフリップ → 2段階評価（覚えた/覚えてない）→ SM-2更新 → 次のカード
+// スワイプ評価・背景フラッシュ・評価内訳サマリー・AI深掘り対応
 // ============================================================
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -34,7 +34,7 @@ import { SIMPLE_RATINGS } from '../../sm2/algorithm';
 import type { SimpleRating } from '../../sm2/algorithm';
 import { ReviewCard } from '../../components/ReviewCard';
 import { RatingButtons } from '../../components/RatingButtons';
-import { AIDeepDiveButtons } from '../../components/AIDeepDiveButtons';
+import { DeepDiveButton } from '../../components/DeepDiveButton';
 import { ReviewProgressBar } from '../../components/ReviewProgressBar';
 import { useCloseHeader } from '../../hooks/useCloseHeader';
 import { useTheme } from '../../theme/ThemeContext';
@@ -44,20 +44,16 @@ import type { ReviewStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewSession'>;
 
-// 評価ごとのフラッシュカラー（iOS system colors: mockupStyles.RatingColors 準拠）
+// 評価ごとのフラッシュカラー
 const RATING_COLORS: Record<SimpleRating, string> = {
-  again:   '#FF3B30',
-  hard:    '#FF9F0A',
-  good:    '#30D158',
-  perfect: '#0A84FF',
+  forgot:     '#FF3B30',
+  remembered: '#34C759',
 };
 
 // 完了画面の内訳表示順
 const SUMMARY_ITEMS: { key: SimpleRating; label: string }[] = [
-  { key: 'perfect', label: '簡単' },
-  { key: 'good',    label: '良かった' },
-  { key: 'hard',    label: '難しかった' },
-  { key: 'again',   label: 'もう一度' },
+  { key: 'remembered', label: '覚えた！' },
+  { key: 'forgot',     label: '覚えてない' },
 ];
 
 export function ReviewScreen({ navigation, route }: Props) {
@@ -72,7 +68,7 @@ export function ReviewScreen({ navigation, route }: Props) {
   const [isComplete, setIsComplete] = useState(false);
   const [loading, setLoading] = useState(true);
   const [ratingCounts, setRatingCounts] = useState<Record<string, number>>({
-    again: 0, hard: 0, good: 0, perfect: 0,
+    forgot: 0, remembered: 0,
   });
   const sessionIdRef = React.useRef<number | null>(null);
 
@@ -92,7 +88,6 @@ export function ReviewScreen({ navigation, route }: Props) {
     if (!db || !isReady) return;
     (async () => {
       try {
-        // reviewIds 指定時はグループ内アイテムが期限外でも取得できるよう全件対象にする
         const allItems = (forceAll || (reviewIds && reviewIds.length > 0))
           ? await getAllReviewableItems(db)
           : await getDueItems(db);
@@ -103,7 +98,6 @@ export function ReviewScreen({ navigation, route }: Props) {
         if (filtered.length === 0) {
           setIsComplete(true);
         } else {
-          // セッション開始
           const sid = await startReviewSession(db);
           sessionIdRef.current = sid;
         }
@@ -128,7 +122,7 @@ export function ReviewScreen({ navigation, route }: Props) {
         withTiming(0, { duration: 200 })
       );
 
-      const newCounts = { ...ratingCounts, [rating]: ratingCounts[rating] + 1 } as Record<string, number>;
+      const newCounts = { ...ratingCounts, [rating]: (ratingCounts[rating] ?? 0) + 1 };
       setRatingCounts(newCounts);
 
       const quality = SIMPLE_RATINGS[rating];
@@ -146,7 +140,7 @@ export function ReviewScreen({ navigation, route }: Props) {
         quality
       );
 
-      // セッションアイテムを記録（SM-2更新後にマスタリーを取得）
+      // セッションアイテムを記録
       if (sessionIdRef.current !== null) {
         await recordSessionItem(
           db,
@@ -159,22 +153,11 @@ export function ReviewScreen({ navigation, route }: Props) {
 
       const isLastCard = currentIndex + 1 >= items.length;
       if (isLastCard) {
-        // セッション終了
         if (sessionIdRef.current !== null) {
-          const correct = (newCounts.good ?? 0) + (newCounts.perfect ?? 0);
+          const correct = newCounts.remembered ?? 0;
           const total = items.length;
           const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
-          await endReviewSession(
-            db,
-            sessionIdRef.current,
-            {
-              again:   newCounts.again   ?? 0,
-              hard:    newCounts.hard    ?? 0,
-              good:    newCounts.good    ?? 0,
-              perfect: newCounts.perfect ?? 0,
-            },
-            accuracy
-          );
+          await endReviewSession(db, sessionIdRef.current, newCounts, accuracy);
         }
         setIsComplete(true);
       } else {
@@ -199,10 +182,10 @@ export function ReviewScreen({ navigation, route }: Props) {
     const completedCount = items.length;
     const maxCount = Math.max(...Object.values(ratingCounts), 1);
 
-    // 正答率: good + perfect / total
-    const correctCount = (ratingCounts.good ?? 0) + (ratingCounts.perfect ?? 0);
+    // 正答率: remembered / total
+    const correctCount = ratingCounts.remembered ?? 0;
     const accuracy = completedCount > 0 ? Math.round((correctCount / completedCount) * 100) : 0;
-    const againCount = ratingCounts.again ?? 0;
+    const forgotCount = ratingCounts.forgot ?? 0;
 
     // 成績バッジ
     const performanceConfig =
@@ -211,7 +194,7 @@ export function ReviewScreen({ navigation, route }: Props) {
       : accuracy >= 40 ? { emoji: '👍', msg: 'もう少し！' }
       : { emoji: '💪', msg: '練習あるのみ！' };
 
-    // 入場アニメーション（初回レンダ時）
+    // 入場アニメーション
     summaryEntranceY.value = withTiming(0, { duration: 400 });
     summaryEntranceOpacity.value = withTiming(1, { duration: 350 });
     summaryBarProgress.value = withDelay(200, withTiming(1, { duration: 600 }));
@@ -278,11 +261,11 @@ export function ReviewScreen({ navigation, route }: Props) {
                 })}
               </View>
 
-              {/* もう一度あるカードの告知 */}
-              {againCount > 0 && (
+              {/* 覚えてないカードの告知 */}
+              {forgotCount > 0 && (
                 <View style={[styles.againCallout, { backgroundColor: '#FF3B3015' }]}>
                   <Text style={[styles.againCalloutText, { color: '#FF3B30' }]}>
-                    「もう一度」が {againCount} 枚 — 明日また挑戦しよう
+                    「覚えてない」が {forgotCount} 枚 — 明日また挑戦しよう
                   </Text>
                 </View>
               )}
@@ -302,13 +285,13 @@ export function ReviewScreen({ navigation, route }: Props) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* 背景フラッシュオーバーレイ（評価時に一瞬光る） */}
+      {/* 背景フラッシュオーバーレイ */}
       <Animated.View
         style={[styles.flashOverlay, { backgroundColor: flashColor }, flashAnimatedStyle]}
         pointerEvents="none"
       />
 
-      {/* プログレスセクション（バー + カウンター + 評価ミニドット） */}
+      {/* プログレスセクション */}
       <ReviewProgressBar
         currentIndex={currentIndex}
         total={items.length}
@@ -332,7 +315,8 @@ export function ReviewScreen({ navigation, route }: Props) {
         {isCardFlipped ? (
           <>
             <RatingButtons onRate={handleRate} />
-            <AIDeepDiveButtons
+            <DeepDiveButton
+              itemId={currentItem.item.id}
               question={currentItem.item.title}
               answer={currentItem.item.content}
             />
@@ -432,7 +416,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // もう一度カード告知
+  // 覚えてないカード告知
   againCallout: {
     width: '100%',
     borderRadius: Radius.m,
