@@ -29,3 +29,14 @@ export function updateWidgetQuizData(
 ): void {
   NativeModule?.updateWidgetQuizData(items);
 }
+
+/**
+ * Flashcard Peek ウィジェット用データを App Group UserDefaults へ書き込む。
+ * 穴埋めヒント付きの復習カードデータ（最大5件）。
+ * iOS 以外・Expo Go では何もしない。
+ */
+export function updateFlashcardPeekData(
+  items: { id: number; question: string; hintAnswer: string }[]
+): void {
+  NativeModule?.updateFlashcardPeekData(items);
+}
