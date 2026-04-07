@@ -312,7 +312,7 @@ export function HomeScreen({ navigation }: Props) {
       <View style={[styles.sep, { backgroundColor: colors.separator }]} />
 
       {/* ── [3] 復習ヒーローCTA ─────────────────────────── */}
-      <View style={[styles.heroCard, { backgroundColor: colors.card }, cardShadow]}>
+      <View style={[styles.heroCard, { backgroundColor: colors.card }]}>
 
         {/* empty: アイテム未登録 */}
         {heroState === 'empty' && (
@@ -611,9 +611,11 @@ const styles = StyleSheet.create({
 
   // ── [3] ヒーローカード ────────────────────────────────
   heroCard: {
-    borderRadius: Radius.l,
+    borderRadius: 12,
     overflow: 'hidden',
     marginTop: Spacing.s,
+    borderWidth: 1,
+    borderColor: '#DADCE0',
   },
   heroBody: {
     padding: Spacing.l,
@@ -682,7 +684,8 @@ const styles = StyleSheet.create({
   reviewStartBtn: {
     backgroundColor: '#1A73E8',
     borderRadius: 20,
-    paddingVertical: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
@@ -691,8 +694,8 @@ const styles = StyleSheet.create({
   },
   reviewStartBtnText: {
     color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600' as const,
+    fontSize: 14,
+    fontWeight: '500' as const,
     lineHeight: 20,
   },
 

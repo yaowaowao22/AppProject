@@ -1,15 +1,14 @@
 // ============================================================
 // ReviewCTACard - 今日の復習 CTA カード
 // due件数・overdue件数・完了状態に応じてUIを切り替える
+// イラスト帯 + ボディ のフラットデザイン（モック準拠）
 // ============================================================
 
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
-import { TypeScale } from '../theme/typography';
-import { Spacing, Radius, CardShadow } from '../theme/spacing';
-import { SystemColors } from '../theme/colors';
+import { Spacing, Radius } from '../theme/spacing';
 
 interface ReviewCTACardProps {
   /** 今日の復習対象件数 */
@@ -20,6 +19,10 @@ interface ReviewCTACardProps {
   todayCompleted: number;
   /** 総アイテム数（0 のとき「アイテム未登録」状態） */
   totalItems: number;
+  /** 推定復習時間（分）*/
+  estimatedMinutes?: number;
+  /** 復習対象カテゴリ一覧 */
+  categories?: string[];
   /** 「復習を始める」押下 */
   onStart: () => void;
   /** 「追加学習を始める」押下（全完了時に表示） */
@@ -31,60 +34,56 @@ export function ReviewCTACard({
   overdueCount,
   todayCompleted,
   totalItems,
+  estimatedMinutes,
+  categories,
   onStart,
   onStartExtra,
 }: ReviewCTACardProps) {
-  const { colors, isDark } = useTheme();
-  const cardShadow = isDark ? {} : CardShadow;
-
+  const { colors } = useTheme();
   const isOverdue = overdueCount > 0;
-  const actionColor = isOverdue ? SystemColors.orange : colors.accent;
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card }, cardShadow]}>
-      {/* ヘッダー行 */}
-      <View style={styles.header}>
-        <Text style={[styles.countText, { color: colors.label }]}>
-          今日の復習　{dueCount}件
-        </Text>
-
-        {isOverdue && dueCount > 0 && (
-          <View style={[styles.overdueBadge, { backgroundColor: SystemColors.orange + '22' }]}>
-            <Ionicons name="time-outline" size={12} color={SystemColors.orange} />
-            <Text style={[styles.overdueBadgeText, { color: SystemColors.orange }]}>
-              うち {overdueCount} 件が期限切れ
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {/* 状態別ボディ */}
+    <View style={[styles.card, { backgroundColor: colors.card }]}>
       {dueCount > 0 ? (
         /* ── 復習あり ── */
-        <View style={styles.section}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.startButton,
-              { backgroundColor: pressed ? actionColor + 'CC' : actionColor },
-            ]}
-            onPress={onStart}
-            accessibilityRole="button"
-            accessibilityLabel="復習を始める"
-          >
-            <Ionicons
-              name="play-circle-outline"
-              size={20}
-              color="#FFFFFF"
-              style={styles.startButtonIcon}
-            />
-            <Text style={styles.startButtonText}>復習を始める</Text>
-          </Pressable>
-          {isOverdue && (
-            <Text style={[styles.hintText, { color: SystemColors.orange }]}>
-              期限切れが {overdueCount} 件あります。早めに復習しましょう
+        <>
+          {/* イラスト帯 */}
+          <View style={styles.reviewIllust}>
+            <View style={[styles.illustCard, styles.illustCardBack2]} />
+            <View style={[styles.illustCard, styles.illustCardBack1]} />
+            <View style={[styles.illustCard, styles.illustCardFront]} />
+          </View>
+
+          {/* ボディ */}
+          <View style={styles.reviewBody}>
+            <Text style={[styles.countText, { color: colors.label }]}>
+              今日の復習{' '}
+              <Text style={styles.countTextStrong}>{dueCount}件</Text>
             </Text>
-          )}
-        </View>
+            {(estimatedMinutes !== undefined || (categories && categories.length > 0)) && (
+              <Text style={styles.metaText}>
+                {estimatedMinutes !== undefined ? `推定 ${estimatedMinutes}分` : ''}
+                {estimatedMinutes !== undefined && categories && categories.length > 0 ? ' · ' : ''}
+                {categories && categories.length > 0 ? categories.join(', ') : ''}
+              </Text>
+            )}
+            {isOverdue && (
+              <Text style={styles.overdueText}>期限切れ {overdueCount}件</Text>
+            )}
+            <Pressable
+              style={({ pressed }) => [
+                styles.startButton,
+                { opacity: pressed ? 0.85 : 1 },
+              ]}
+              onPress={onStart}
+              accessibilityRole="button"
+              accessibilityLabel="復習を始める"
+            >
+              <Ionicons name="play-circle-outline" size={18} color="#FFFFFF" />
+              <Text style={styles.startButtonText}>復習を始める</Text>
+            </Pressable>
+          </View>
+        </>
       ) : totalItems === 0 ? (
         /* ── アイテム未登録 ── */
         <View style={styles.emptyRow}>
@@ -94,7 +93,7 @@ export function ReviewCTACard({
         </View>
       ) : (
         /* ── 全完了 ── */
-        <View style={styles.section}>
+        <View style={styles.doneBody}>
           <View style={styles.completionRow}>
             <View style={[styles.completionIcon, { backgroundColor: colors.success + '1F' }]}>
               <Ionicons name="checkmark-circle" size={24} color={colors.success} />
@@ -130,67 +129,106 @@ export function ReviewCTACard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: Radius.l,
-    padding: Spacing.l,
-    gap: Spacing.m,
-  },
-  header: {
-    gap: Spacing.s,
-  },
-  countText: {
-    ...TypeScale.title3,
-    fontWeight: '600' as const,
-  },
-  overdueBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    alignSelf: 'flex-start',
-    borderRadius: Radius.xs,
-    paddingHorizontal: Spacing.s,
-    paddingVertical: 3,
-  },
-  overdueBadgeText: {
-    fontSize: 11,
-    fontWeight: '600' as const,
-    lineHeight: 14,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#DADCE0',
   },
 
-  // ── 復習あり ──
-  section: {
-    gap: Spacing.xs,
+  // ── イラスト帯 ──
+  reviewIllust: {
+    height: 140,
+    backgroundColor: '#FFF8E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  illustCard: {
+    position: 'absolute',
+    width: 90,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  illustCardBack2: {
+    transform: [{ rotate: '-12deg' }, { translateX: -50 }, { translateY: 8 }],
+    backgroundColor: '#FFE082',
+  },
+  illustCardBack1: {
+    transform: [{ rotate: '6deg' }, { translateX: 40 }, { translateY: -4 }],
+    backgroundColor: '#FFECB3',
+  },
+  illustCardFront: {
+    transform: [{ rotate: '-2deg' }],
+  },
+
+  // ── ボディ ──
+  reviewBody: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 24,
+    gap: 6,
+  },
+  countText: {
+    fontSize: 16,
+    fontWeight: '400' as const,
+    lineHeight: 22,
+  },
+  countTextStrong: {
+    fontSize: 16,
+    fontWeight: '500' as const,
+    lineHeight: 22,
+  },
+  metaText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#5F6368',
+  },
+  overdueText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#D93025',
+    fontWeight: '500' as const,
   },
   startButton: {
-    borderRadius: Radius.m,
-    paddingVertical: Spacing.m,
+    backgroundColor: '#1A73E8',
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
     gap: Spacing.xs,
-  },
-  startButtonIcon: {
-    marginRight: 2,
+    marginTop: 16,
   },
   startButtonText: {
-    ...TypeScale.headline,
     color: '#FFFFFF',
-  },
-  hintText: {
-    ...TypeScale.caption1,
-    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '500' as const,
+    lineHeight: 20,
   },
 
   // ── アイテム未登録 ──
   emptyRow: {
+    padding: Spacing.l,
     flexDirection: 'row',
     alignItems: 'center',
   },
   emptyText: {
-    ...TypeScale.body,
+    fontSize: 15,
     fontWeight: '600' as const,
   },
 
   // ── 全完了 ──
+  doneBody: {
+    padding: Spacing.l,
+    gap: Spacing.m,
+  },
   completionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -208,14 +246,14 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   allDoneText: {
-    ...TypeScale.body,
+    fontSize: 15,
     fontWeight: '600' as const,
   },
   completedCountLabel: {
-    ...TypeScale.caption1,
+    fontSize: 13,
   },
   extraHint: {
-    ...TypeScale.subheadline,
+    fontSize: 15,
   },
   extraButton: {
     borderRadius: Radius.m,
@@ -225,6 +263,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   extraButtonText: {
-    ...TypeScale.headline,
+    fontSize: 15,
+    fontWeight: '600' as const,
   },
 });
