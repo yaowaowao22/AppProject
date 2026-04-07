@@ -37,6 +37,12 @@ export type DownloadProgressCallback = (progress: number, bytesWrittenMB: number
 // HuggingFace は Content-Length を返さないことがある。その場合の推定サイズ（~2.35GB）
 const ESTIMATED_MODEL_BYTES = 2_468_000_000;
 
+// バックグラウンド一時停止のための状態保存パス
+const RESUME_DATA_PATH = `${MODEL_DIR}download_resume.json`;
+
+// モジュールレベルでダウンロードオブジェクトを保持（pause/resume 用）
+let activeDownload: FileSystem.DownloadResumable | null = null;
+
 /** モデルファイルがデバイスに存在するか確認する */
 export async function isModelDownloaded(): Promise<boolean> {
   const info = await FileSystem.getInfoAsync(MODEL_PATH);
@@ -44,7 +50,27 @@ export async function isModelDownloaded(): Promise<boolean> {
 }
 
 /**
+ * バックグラウンド移行時にダウンロードを一時停止してresumeDataを保存する。
+ * AppState 'background' イベントで呼ぶ。
+ */
+export async function pauseDownload(): Promise<void> {
+  if (!activeDownload) return;
+  try {
+    const state = await activeDownload.pauseAsync();
+    if (state?.resumeData) {
+      await FileSystem.writeAsStringAsync(
+        RESUME_DATA_PATH,
+        JSON.stringify(state),
+      );
+    }
+  } catch {
+    // pause失敗は無視（ダウンロードが完了済みの場合など）
+  }
+}
+
+/**
  * モデルをHuggingFaceからダウンロードする（初回のみ、約2.3GB）。
+ * バックグラウンド移行時は pauseDownload() で一時停止 → 復帰後に再度 downloadModel() で再開。
  * @param onProgress 進捗コールバック（progress: 0〜1、bytesWrittenMB: 書き込み済みMB）
  */
 export async function downloadModel(
@@ -52,23 +78,49 @@ export async function downloadModel(
 ): Promise<void> {
   await FileSystem.makeDirectoryAsync(MODEL_DIR, { intermediates: true });
 
-  const downloadResumable = FileSystem.createDownloadResumable(
+  const progressCallback = (dp: FileSystem.DownloadProgressData) => {
+    const bytesWrittenMB = Math.round(dp.totalBytesWritten / 1_000_000);
+    const total =
+      dp.totalBytesExpectedToWrite > 0
+        ? dp.totalBytesExpectedToWrite
+        : ESTIMATED_MODEL_BYTES;
+    const p = Math.min(dp.totalBytesWritten / total, 0.99);
+    onProgress?.(p, bytesWrittenMB);
+  };
+
+  // 前回の一時停止データが残っていれば再開する
+  const resumeInfo = await FileSystem.getInfoAsync(RESUME_DATA_PATH);
+  if (resumeInfo.exists) {
+    try {
+      const raw = await FileSystem.readAsStringAsync(RESUME_DATA_PATH);
+      const saved = JSON.parse(raw) as FileSystem.DownloadPauseState;
+      activeDownload = FileSystem.createDownloadResumable(
+        saved.url,
+        saved.fileUri,
+        saved.options,
+        progressCallback,
+        saved.resumeData,
+      );
+      await FileSystem.deleteAsync(RESUME_DATA_PATH, { idempotent: true });
+      const result = await activeDownload.resumeAsync();
+      activeDownload = null;
+      if (result?.uri) return; // 再開成功
+      // 再開失敗時はフォールスルーして新規ダウンロード
+    } catch {
+      await FileSystem.deleteAsync(RESUME_DATA_PATH, { idempotent: true });
+    }
+  }
+
+  // 新規ダウンロード
+  activeDownload = FileSystem.createDownloadResumable(
     LOCAL_AI_MODEL_URL,
     MODEL_PATH,
     {},
-    (dp) => {
-      const bytesWrittenMB = Math.round(dp.totalBytesWritten / 1_000_000);
-      // totalBytesExpectedToWrite が 0（Content-Length なし）の場合は推定サイズで計算
-      const total =
-        dp.totalBytesExpectedToWrite > 0
-          ? dp.totalBytesExpectedToWrite
-          : ESTIMATED_MODEL_BYTES;
-      const p = Math.min(dp.totalBytesWritten / total, 0.99);
-      onProgress?.(p, bytesWrittenMB);
-    },
+    progressCallback,
   );
 
-  const result = await downloadResumable.downloadAsync();
+  const result = await activeDownload.downloadAsync();
+  activeDownload = null;
   if (!result?.uri) {
     throw new Error('モデルのダウンロードに失敗しました');
   }

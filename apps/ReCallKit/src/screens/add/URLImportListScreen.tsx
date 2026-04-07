@@ -15,6 +15,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Animated,
+  AppState,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,7 +28,7 @@ import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { analyzeUrlPipeline } from '../../services/urlAnalysisPipeline';
 import { LOCAL_AI_ENABLED } from '../../config/localAI';
-import { isModelDownloaded, downloadModel } from '../../services/localAnalysisService';
+import { isModelDownloaded, downloadModel, pauseDownload } from '../../services/localAnalysisService';
 import { getRemainingCount, consumeOne } from '../../utils/analysisLimit';
 import {
   listJobs,
@@ -179,24 +180,58 @@ export function URLImportListScreen({ navigation }: Props) {
   const [modelReady, setModelReady] = useState(!LOCAL_AI_ENABLED);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadedMB, setDownloadedMB] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const downloadingRef = useRef(false);
 
+  const startDownload = useCallback(async () => {
+    if (downloadingRef.current) return;
+    downloadingRef.current = true;
+    setIsPaused(false);
+    setDownloadError(null);
+    try {
+      await downloadModel((p, mb) => {
+        setDownloadProgress(p);
+        setDownloadedMB(mb);
+      });
+      setModelReady(true);
+    } catch (err) {
+      // バックグラウンド移行による中断は無視（再開は AppState で管理）
+      if (downloadingRef.current) {
+        setDownloadError(err instanceof Error ? err.message : 'ダウンロードに失敗しました');
+      }
+    } finally {
+      downloadingRef.current = false;
+    }
+  }, []);
+
+  // モデル未ダウンロードならダウンロード開始
   useEffect(() => {
     if (!LOCAL_AI_ENABLED) return;
     (async () => {
       const downloaded = await isModelDownloaded();
       if (downloaded) { setModelReady(true); return; }
-      try {
-        await downloadModel((p, mb) => {
-          setDownloadProgress(p);
-          setDownloadedMB(mb);
-        });
-        setModelReady(true);
-      } catch (err) {
-        setDownloadError(err instanceof Error ? err.message : 'ダウンロードに失敗しました');
-      }
+      await startDownload();
     })();
-  }, []);
+  }, [startDownload]);
+
+  // AppState 監視: バックグラウンド → 一時停止、フォアグラウンド復帰 → 再開
+  useEffect(() => {
+    if (!LOCAL_AI_ENABLED) return;
+    const sub = AppState.addEventListener('change', async (state) => {
+      if (state === 'background' || state === 'inactive') {
+        if (downloadingRef.current) {
+          setIsPaused(true);
+          downloadingRef.current = false;
+          await pauseDownload();
+        }
+      } else if (state === 'active' && isPaused) {
+        setIsPaused(false);
+        await startDownload();
+      }
+    });
+    return () => sub.remove();
+  }, [isPaused, startDownload]);
 
   // loading 中のみシマーアニメーションを動かす
   useEffect(() => {
@@ -361,17 +396,20 @@ export function URLImportListScreen({ navigation }: Props) {
                 <View
                   style={[
                     styles.progressFill,
-                    { backgroundColor: colors.accent, width: pct > 0 ? `${pct}%` : '2%' },
+                    { backgroundColor: isPaused ? colors.labelTertiary : colors.accent, width: pct > 0 ? `${pct}%` : '2%' },
                   ]}
                 />
               </View>
               <Text style={[styles.downloadPercent, { color: colors.labelSecondary }]}>
-                {isDownloading
-                  ? `${downloadedMB} MB ダウンロード済み / 約2,355 MB`
-                  : 'ダウンロードを開始しています...'}
+                {isPaused
+                  ? `一時停止中 — ${downloadedMB} MB / 約2,355 MB（アプリを開いたまま再開します）`
+                  : isDownloading
+                    ? `${downloadedMB} MB ダウンロード済み / 約2,355 MB`
+                    : 'ダウンロードを開始しています...'}
               </Text>
-              {/* ダウンロード中は常にインジケーターを表示 */}
-              <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: Spacing.s }} />
+              {!isPaused && (
+                <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: Spacing.s }} />
+              )}
             </>
           )}
         </View>
