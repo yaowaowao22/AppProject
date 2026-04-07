@@ -55,6 +55,16 @@ export function SettingsScreen() {
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
 
+  // OTA診断: useUpdates() でリアルタイム状態を監視
+  const {
+    currentlyRunning,
+    isUpdateAvailable,
+    isUpdatePending,
+    checkError,
+    downloadError,
+    lastCheckForUpdateTimeSinceRestart,
+  } = Updates.useUpdates();
+
   // 初期ロード
   useEffect(() => {
     (async () => {
@@ -418,24 +428,6 @@ export function SettingsScreen() {
           </View>
           <View style={[styles.separator, { backgroundColor: colors.separator }]} />
           <View style={styles.row}>
-            <Text style={[styles.rowLabel, { color: colors.label }]}>OTA Update</Text>
-            <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
-              {Updates.isEmbeddedLaunch ? 'embedded' : Updates.updateId?.slice(0, 8) ?? '-'}
-            </Text>
-          </View>
-          {!Updates.isEmbeddedLaunch && Updates.createdAt && (
-            <>
-              <View style={[styles.separator, { backgroundColor: colors.separator }]} />
-              <View style={styles.row}>
-                <Text style={[styles.rowLabel, { color: colors.label }]}>更新日時</Text>
-                <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
-                  {Updates.createdAt.toLocaleString('ja-JP')}
-                </Text>
-              </View>
-            </>
-          )}
-          <View style={[styles.separator, { backgroundColor: colors.separator }]} />
-          <View style={styles.row}>
             <Text style={[styles.rowLabel, { color: colors.label }]}>チャンネル</Text>
             <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
               {Updates.channel ?? '-'}
@@ -471,6 +463,72 @@ export function SettingsScreen() {
               )}
             </View>
           </TouchableOpacity>
+        </View>
+
+        {/* ── OTA 診断 ─────────────────────────────────────── */}
+        <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
+          OTA 診断
+        </Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <View style={styles.row}>
+            <Text style={[styles.rowLabel, { color: colors.label }]}>実行中バンドル</Text>
+            <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
+              {currentlyRunning.isEmbeddedLaunch
+                ? 'embedded（ビルド内蔵）'
+                : currentlyRunning.updateId?.slice(0, 8) ?? '-'}
+            </Text>
+          </View>
+          {!currentlyRunning.isEmbeddedLaunch && currentlyRunning.createdAt && (
+            <>
+              <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+              <View style={styles.row}>
+                <Text style={[styles.rowLabel, { color: colors.label }]}>バンドル作成日</Text>
+                <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
+                  {currentlyRunning.createdAt.toLocaleString('ja-JP')}
+                </Text>
+              </View>
+            </>
+          )}
+          <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+          <View style={styles.row}>
+            <Text style={[styles.rowLabel, { color: colors.label }]}>新しい更新</Text>
+            <Text style={[styles.rowValue, {
+              color: isUpdateAvailable ? '#e67e22' : colors.labelSecondary,
+              fontWeight: isUpdateAvailable ? '600' : '400',
+            }]}>
+              {isUpdateAvailable ? 'あり（DL中…）' : 'なし'}
+            </Text>
+          </View>
+          <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+          <View style={styles.row}>
+            <Text style={[styles.rowLabel, { color: colors.label }]}>適用待ち</Text>
+            <Text style={[styles.rowValue, {
+              color: isUpdatePending ? '#27ae60' : colors.labelSecondary,
+              fontWeight: isUpdatePending ? '600' : '400',
+            }]}>
+              {isUpdatePending ? 'あり（再起動で適用）' : 'なし'}
+            </Text>
+          </View>
+          <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+          <View style={styles.row}>
+            <Text style={[styles.rowLabel, { color: colors.label }]}>最終チェック</Text>
+            <Text style={[styles.rowValue, { color: colors.labelSecondary }]}>
+              {lastCheckForUpdateTimeSinceRestart
+                ? lastCheckForUpdateTimeSinceRestart.toLocaleString('ja-JP')
+                : '未チェック'}
+            </Text>
+          </View>
+          {(checkError || downloadError) && (
+            <>
+              <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+              <View style={styles.row}>
+                <Text style={[styles.rowLabel, { color: colors.error }]}>
+                  {checkError ? `チェックエラー: ${checkError.message}` : ''}
+                  {downloadError ? `DLエラー: ${downloadError.message}` : ''}
+                </Text>
+              </View>
+            </>
+          )}
         </View>
       </ScrollView>
 
