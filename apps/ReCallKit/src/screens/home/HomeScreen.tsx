@@ -47,6 +47,7 @@ import { generateHint } from '../../utils/generateHint';
 import { StatsRow } from '../../components/StatsRow';
 import { CategoryMasteryBar } from '../../components/CategoryMasteryBar';
 import { ShortcutList, type ShortcutAction } from '../../components/ShortcutList';
+import { DateRow } from '../../components/DateRow';
 import type { HomeStackParamList, DrawerParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'HomeMain'>;
@@ -61,6 +62,30 @@ interface RecentItem {
 }
 
 const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+
+const RECENT_CATEGORY_COLORS: Record<string, string> = {
+  Programming: '#1A73E8',
+  Design: '#E8A000',
+  Infrastructure: '#1E8E3E',
+};
+
+function getRecentCategoryColor(category: string | null): string {
+  if (!category) return '#9AA0A6';
+  return RECENT_CATEGORY_COLORS[category] ?? '#9AA0A6';
+}
+
+function getRelativeTime(createdAt: string): string {
+  const now = new Date();
+  const created = new Date(createdAt.replace(' ', 'T'));
+  const diffMs = now.getTime() - created.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  if (diffHours < 1) return 'たった今';
+  if (diffHours < 24) return `${Math.floor(diffHours)}時間前`;
+  if (diffDays < 2) return '昨日';
+  if (diffDays < 7) return `${Math.floor(diffDays)}日前`;
+  return `${Math.floor(diffDays / 7)}週間前`;
+}
 
 function getSidebarFilterLabel(
   filter: NonNullable<ReturnType<typeof useSidebarFilter>['sidebarFilter']>
@@ -152,6 +177,19 @@ export function HomeScreen({ navigation }: Props) {
     }).length;
   }, [filteredDueItems]);
 
+  // due状態ヒーロー用: カテゴリ一覧・推定時間
+  const dueCategories = useMemo(() => {
+    const cats = filteredDueItems
+      .map((ri) => ri.item.category)
+      .filter((c): c is string => c != null && c !== '');
+    return [...new Set(cats)].slice(0, 3);
+  }, [filteredDueItems]);
+
+  const estimatedMinutes = useMemo(
+    () => Math.max(1, Math.round(filteredDueItems.length * 0.5)),
+    [filteredDueItems.length]
+  );
+
   // ウィジェット同期
   const quizItems = useMemo(
     () =>
@@ -184,10 +222,18 @@ export function HomeScreen({ navigation }: Props) {
     );
   };
 
+  const handleOpenManualAdd = () => {
+    navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate(
+      'Library',
+      { screen: 'AddItem', params: {} }
+    );
+  };
+
   const handleShortcut = (action: ShortcutAction) => {
     switch (action) {
-      case 'review':   handleStartReview(); break;
-      case 'url_add': handleOpenURLAnalysis(); break;
+      case 'review':     handleStartReview(); break;
+      case 'url_add':    handleOpenURLAnalysis(); break;
+      case 'manual_add': handleOpenManualAdd(); break;
       case 'library':
         navigation.getParent<DrawerNavigationProp<DrawerParamList>>()?.navigate('Library');
         break;
@@ -224,6 +270,10 @@ export function HomeScreen({ navigation }: Props) {
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
+      {/* DateRow + 区切り線 */}
+      <DateRow dueCount={filteredDueItems.length} />
+      <View style={[styles.hr, { backgroundColor: colors.separator }]} />
+
       {/* ① フィルターバッジ */}
       {sidebarFilter && (
         <View style={styles.badgeRow}>
@@ -273,47 +323,51 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         )}
 
-        {/* due: 復習が残っている（1タップ復習） */}
+        {/* due: 復習が残っている（モック準拠） */}
         {heroState === 'due' && (
-          <View style={styles.heroBody}>
-            <View style={styles.heroCountRow}>
-              <Text style={[styles.heroCountNum, { color: colors.label }]}>
-                {filteredDueItems.length}
-              </Text>
-              <View style={styles.heroCountSub}>
-                <Text style={[styles.heroCountLabel, { color: colors.labelSecondary }]}>
-                  件の復習
-                </Text>
-                {overdueCount > 0 && (
-                  <View style={[styles.overduePill, { backgroundColor: SystemColors.orange + '22' }]}>
-                    <Ionicons name="time-outline" size={11} color={SystemColors.orange} />
-                    <Text style={[styles.overduePillText, { color: SystemColors.orange }]}>
-                      {overdueCount}件期限切れ
-                    </Text>
-                  </View>
-                )}
-              </View>
+          <>
+            {/* イラスト帯 */}
+            <View style={styles.reviewIllust}>
+              {/* 装飾カード（回転） */}
+              <View style={[styles.illustCard, styles.illustCardBack2]} />
+              <View style={[styles.illustCard, styles.illustCardBack1]} />
+              <View style={[styles.illustCard, styles.illustCardFront]} />
             </View>
-            <Pressable
-              style={({ pressed }) => [
-                styles.heroCTA,
-                overdueCount > 0
-                  ? { backgroundColor: pressed ? SystemColors.orange + 'CC' : SystemColors.orange }
-                  : { backgroundColor: pressed ? colors.accent + 'CC' : colors.accent },
-              ]}
-              onPress={handleStartReview}
-              accessibilityRole="button"
-              accessibilityLabel="復習を始める"
-            >
-              <Ionicons name="play-circle-outline" size={20} color="#FFFFFF" />
-              <Text style={styles.heroCTAText}>今すぐ復習</Text>
-            </Pressable>
-            {overdueCount > 0 && (
-              <Text style={[styles.overdueHint, { color: SystemColors.orange }]}>
-                期限切れが {overdueCount} 件あります
+
+            {/* ボディ */}
+            <View style={styles.reviewBody}>
+              {/* タイトル行: "今日の復習 N件" */}
+              <Text style={[styles.reviewTitle, { color: colors.label }]}>
+                今日の復習{' '}
+                <Text style={styles.reviewTitleCount}>{filteredDueItems.length}件</Text>
               </Text>
-            )}
-          </View>
+
+              {/* メタ行: 推定時間 · カテゴリ */}
+              <Text style={styles.reviewMeta}>
+                推定 {estimatedMinutes}分
+                {dueCategories.length > 0 && ` · ${dueCategories.join(', ')}`}
+              </Text>
+
+              {/* 期限切れ（条件付き） */}
+              {overdueCount > 0 && (
+                <Text style={styles.reviewOverdue}>期限切れ {overdueCount}件</Text>
+              )}
+
+              {/* CTAボタン */}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.reviewStartBtn,
+                  { opacity: pressed ? 0.85 : 1 },
+                ]}
+                onPress={handleStartReview}
+                accessibilityRole="button"
+                accessibilityLabel="復習を始める"
+              >
+                <Ionicons name="play-circle-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.reviewStartBtnText}>復習を始める</Text>
+              </Pressable>
+            </View>
+          </>
         )}
 
         {/* done: 本日分完了 */}
@@ -439,9 +493,7 @@ export function HomeScreen({ navigation }: Props) {
       {/* ⑦ 最近追加 */}
       {recentItems.length > 0 && (
         <>
-          <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
-            最近追加
-          </Text>
+          <Text style={styles.labelUpper}>Recently Added</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -449,45 +501,36 @@ export function HomeScreen({ navigation }: Props) {
             contentContainerStyle={styles.recentScrollContent}
           >
             {recentItems.map((item) => {
-              const isUrl = item.type === 'url' && item.source_url;
-              const iconName: React.ComponentProps<typeof Ionicons>['name'] =
-                isUrl ? 'link-outline' : 'document-text-outline';
-              const dateStr = item.created_at.slice(5, 10).replace('-', '/');
+              const catColor = getRecentCategoryColor(item.category);
+              const relativeTime = getRelativeTime(item.created_at);
               return (
                 <Pressable
                   key={item.id}
                   style={({ pressed }) => [
                     styles.recentCard,
                     { backgroundColor: colors.card, opacity: pressed ? 0.7 : 1 },
-                    cardShadow,
                   ]}
                   onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}
                   accessibilityRole="button"
                 >
-                  <View style={[styles.recentIconWrap, { backgroundColor: colors.accent + '1A' }]}>
-                    <Ionicons name={iconName} size={16} color={colors.accent} />
+                  {/* カテゴリ行: ドット + カテゴリ名 */}
+                  <View style={styles.recentCatRow}>
+                    <View style={[styles.recentCatDot, { backgroundColor: catColor }]} />
+                    <Text style={styles.recentCatName} numberOfLines={1}>
+                      {item.category ?? '未分類'}
+                    </Text>
                   </View>
+
+                  {/* 質問テキスト */}
                   <Text
                     style={[styles.recentCardTitle, { color: colors.label }]}
                     numberOfLines={3}
                   >
                     {item.title}
                   </Text>
-                  <View style={styles.recentCardFooter}>
-                    {item.category ? (
-                      <Text
-                        style={[styles.recentCardCat, { color: colors.accent }]}
-                        numberOfLines={1}
-                      >
-                        {item.category}
-                      </Text>
-                    ) : (
-                      <View />
-                    )}
-                    <Text style={[styles.recentCardDate, { color: colors.labelTertiary }]}>
-                      {dateStr}
-                    </Text>
-                  </View>
+
+                  {/* 相対時刻 */}
+                  <Text style={styles.recentCardTime}>{relativeTime}</Text>
                 </Pressable>
               );
             })}
@@ -536,6 +579,12 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 
+  // hr 区切り線
+  hr: {
+    height: 1,
+    marginHorizontal: 16,
+  },
+
   // ② ヒーローカード
   heroCard: {
     borderRadius: Radius.l,
@@ -545,6 +594,83 @@ const styles = StyleSheet.create({
     padding: Spacing.l,
     gap: Spacing.m,
   },
+
+  // due: イラスト帯
+  reviewIllust: {
+    height: 140,
+    backgroundColor: '#FFF8E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  illustCard: {
+    position: 'absolute',
+    width: 90,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  illustCardBack2: {
+    transform: [{ rotate: '-12deg' }, { translateX: -50 }, { translateY: 8 }],
+    backgroundColor: '#FFE082',
+  },
+  illustCardBack1: {
+    transform: [{ rotate: '6deg' }, { translateX: 40 }, { translateY: -4 }],
+    backgroundColor: '#FFECB3',
+  },
+  illustCardFront: {
+    transform: [{ rotate: '-2deg' }],
+  },
+
+  // due: ボディ
+  reviewBody: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 24,
+    gap: 6,
+  },
+  reviewTitle: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  reviewTitleCount: {
+    fontSize: 16,
+    fontWeight: '500' as const,
+    lineHeight: 22,
+  },
+  reviewMeta: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#5F6368',
+  },
+  reviewOverdue: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#D93025',
+    fontWeight: '500' as const,
+  },
+  reviewStartBtn: {
+    backgroundColor: '#1A73E8',
+    borderRadius: 20,
+    paddingVertical: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    marginTop: 16,
+  },
+  reviewStartBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600' as const,
+    lineHeight: 20,
+  },
+
   // empty 状態
   heroIconCircle: {
     width: 52,
@@ -563,43 +689,6 @@ const styles = StyleSheet.create({
   },
   heroSub: {
     ...TypeScale.subheadline,
-  },
-  // due 状態
-  heroCountRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: Spacing.s,
-  },
-  heroCountNum: {
-    fontSize: 52,
-    fontWeight: '800' as const,
-    lineHeight: 56,
-    letterSpacing: -2,
-  },
-  heroCountSub: {
-    gap: Spacing.xs,
-    paddingBottom: Spacing.xs,
-  },
-  heroCountLabel: {
-    ...TypeScale.subheadline,
-  },
-  overduePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    alignSelf: 'flex-start',
-    borderRadius: Radius.xs,
-    paddingHorizontal: Spacing.s,
-    paddingVertical: 3,
-  },
-  overduePillText: {
-    fontSize: 11,
-    fontWeight: '600' as const,
-    lineHeight: 14,
-  },
-  overdueHint: {
-    ...TypeScale.caption1,
-    textAlign: 'center',
   },
   // done 状態
   doneRow: {
@@ -694,6 +783,16 @@ const styles = StyleSheet.create({
     lineHeight: 13,
   },
 
+  // label-upper 共通スタイル
+  labelUpper: {
+    fontSize: 11,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.8,
+    color: '#9AA0A6',
+    marginLeft: Spacing.xs,
+    marginBottom: -Spacing.xs,
+  },
+
   // ⑦ 最近追加
   recentScroll: {
     marginHorizontal: -Spacing.m,
@@ -703,42 +802,35 @@ const styles = StyleSheet.create({
     gap: Spacing.s,
   },
   recentCard: {
-    width: 144,
-    borderRadius: Radius.m,
-    padding: Spacing.m,
+    width: 220,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#DADCE0',
     gap: Spacing.s,
-    justifyContent: 'space-between',
-    minHeight: 120,
   },
-  recentIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: Radius.s,
+  recentCatRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'flex-start',
+    gap: 5,
+  },
+  recentCatDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  recentCatName: {
+    fontSize: 11,
+    color: '#9AA0A6',
+    lineHeight: 15,
   },
   recentCardTitle: {
-    ...TypeScale.caption1,
-    fontWeight: '500' as const,
-    flex: 1,
-    lineHeight: 16,
+    fontSize: 14,
+    lineHeight: 21,
   },
-  recentCardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    gap: Spacing.xs,
-  },
-  recentCardCat: {
-    fontSize: 10,
-    fontWeight: '600' as const,
-    lineHeight: 12,
-    flex: 1,
-  },
-  recentCardDate: {
-    fontSize: 10,
-    lineHeight: 12,
-    flexShrink: 0,
+  recentCardTime: {
+    fontSize: 11,
+    color: '#9AA0A6',
+    marginTop: 10,
   },
 });

@@ -1,119 +1,109 @@
 // ============================================================
 // ShortcutList
-// ホームスクリーン用クイックアクション 2×2 グリッド
+// ホームスクリーン用クイックアクション 縦リスト形式
 // ============================================================
 
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
-import { TypeScale } from '../theme/typography';
 import { Spacing, Radius } from '../theme/spacing';
 
-export type ShortcutAction = 'review' | 'url_add' | 'library' | 'map';
+export type ShortcutAction = 'review' | 'url_add' | 'library' | 'map' | 'manual_add';
 
 interface ShortcutItem {
   action: ShortcutAction;
   icon: React.ComponentProps<typeof Ionicons>['name'];
   label: string;
+  subLabel?: string;
 }
 
 const SHORTCUTS: ShortcutItem[] = [
-  { action: 'review',  icon: 'play-circle-outline', label: '復習を始める' },
-  { action: 'url_add', icon: 'link-outline',         label: 'URLから追加' },
-  { action: 'library', icon: 'library-outline',      label: 'ライブラリ' },
-  { action: 'map',     icon: 'map-outline',          label: 'ナレッジマップ' },
+  {
+    action: 'url_add',
+    icon: 'link-outline',
+    label: 'URLから学習カードを作成',
+    subLabel: 'AIがQ&Aを自動生成します',
+  },
+  {
+    action: 'manual_add',
+    icon: 'add-circle-outline',
+    label: '手動でカードを作成',
+  },
 ];
 
 interface Props {
   onPress: (action: ShortcutAction) => void;
-  /** 復習件数 > 0 の場合に「復習を始める」セルにバッジ表示 */
+  /** 後方互換性のために保持（内部では未使用） */
   reviewDueCount?: number;
 }
 
-export function ShortcutList({ onPress, reviewDueCount = 0 }: Props) {
+export function ShortcutList({ onPress }: Props) {
   const { colors } = useTheme();
 
   return (
-    <View style={styles.grid}>
-      {SHORTCUTS.map((item) => (
-        <Pressable
-          key={item.action}
-          style={({ pressed }) => [
-            styles.cell,
-            { backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
-          ]}
-          onPress={() => onPress(item.action)}
-          accessibilityRole="button"
-          accessibilityLabel={item.label}
-        >
-          {/* アイコン + バッジ */}
-          <View style={[styles.iconWrap, { backgroundColor: colors.accent + '1A' }]}>
-            <Ionicons name={item.icon} size={22} color={colors.accent} />
-            {item.action === 'review' && reviewDueCount > 0 && (
-              <View style={[styles.badge, { backgroundColor: colors.accent }]}>
-                <Text style={styles.badgeText}>
-                  {reviewDueCount > 99 ? '99+' : String(reviewDueCount)}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* ラベル */}
-          <Text
-            style={[styles.label, { color: colors.label }]}
-            numberOfLines={1}
+    <View style={[styles.list, { backgroundColor: colors.card, borderRadius: Radius.l }]}>
+      {SHORTCUTS.map((item, index) => {
+        const isLast = index === SHORTCUTS.length - 1;
+        return (
+          <Pressable
+            key={item.action}
+            style={({ pressed }) => [
+              styles.row,
+              !isLast && { borderBottomWidth: 1, borderBottomColor: '#F8F9FA' },
+              { opacity: pressed ? 0.72 : 1 },
+            ]}
+            onPress={() => onPress(item.action)}
+            accessibilityRole="button"
+            accessibilityLabel={item.label}
           >
-            {item.label}
-          </Text>
-        </Pressable>
-      ))}
+            {/* 左: アイコン */}
+            <Ionicons name={item.icon} size={20} color="#5F6368" />
+
+            {/* 中央: テキスト */}
+            <View style={styles.textWrap}>
+              <Text style={[styles.label, { color: colors.label }]} numberOfLines={1}>
+                {item.label}
+              </Text>
+              {item.subLabel && (
+                <Text style={styles.subLabel} numberOfLines={1}>
+                  {item.subLabel}
+                </Text>
+              )}
+            </View>
+
+            {/* 右: シェブロン */}
+            <Ionicons name="chevron-forward" size={16} color="#9AA0A6" />
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // 2列ラップレイアウト（gap: Spacing.s = 8pt）
-  grid: {
+  list: {
+    overflow: 'hidden',
+  },
+  row: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.s,
+    alignItems: 'center',
+    paddingHorizontal: Spacing.m,
+    paddingVertical: 14,
+    gap: 16,
   },
-  cell: {
-    // flex: 1 + minWidth: '45%' で 2列を維持しつつ伸縮
+  textWrap: {
     flex: 1,
-    minWidth: '45%',
-    borderRadius: Radius.l,
-    padding: Spacing.m,
-    alignItems: 'flex-start',
-    gap: Spacing.s,
-  },
-  iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.m,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    minWidth: 18,
-    height: 18,
-    borderRadius: Radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '700' as const,
-    color: '#FFFFFF',
-    lineHeight: 12,
+    gap: 2,
   },
   label: {
-    ...TypeScale.footnote,
+    fontSize: 14,
     fontWeight: '500' as const,
+    lineHeight: 20,
+  },
+  subLabel: {
+    fontSize: 12,
+    color: '#9AA0A6',
+    lineHeight: 16,
   },
 });
