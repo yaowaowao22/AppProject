@@ -547,12 +547,12 @@ export function QAPreviewScreen({ route, navigation }: Props) {
     setEditModalIndex(null);
   }, [editModalIndex]);
 
-  // ── 保存（両モード共通） ──
-  const handleSaveSelected = useCallback(async () => {
+  // ── 保存共通処理（selectedIds を返す） ──
+  const performSave = useCallback(async (): Promise<number[] | null> => {
     const targets = editedQAs.filter((_, i) => selected[i]);
     if (targets.length === 0) {
       Alert.alert('未選択', '保存するQ&Aを1件以上選択してください');
-      return;
+      return null;
     }
 
     setSaving(true);
@@ -578,35 +578,51 @@ export function QAPreviewScreen({ route, navigation }: Props) {
           [itemId],
         );
       }
-
-      Alert.alert(
-        '保存完了',
-        `${targets.length}件のQ&Aをライブラリに追加しました`,
-        [
-          {
-            text: 'ライブラリへ',
-            style: 'cancel',
-            onPress: () => navigation.popToTop(),
-          },
-          {
-            text: '今すぐ復習',
-            onPress: () => {
-              // LibraryStack → Drawer → ReviewStack の ReviewSession へクロスナビゲーション
-              (navigation.getParent() as any)?.navigate('Review', {
-                screen: 'ReviewSession',
-                params: { reviewIds: savedIds },
-              });
-            },
-          },
-        ],
-      );
+      return savedIds;
     } catch (err) {
       Alert.alert('エラー', '保存に失敗しました');
       console.error('[QAPreviewScreen] save error:', err);
+      return null;
     } finally {
       setSaving(false);
     }
-  }, [db, url, summary, editedQAs, selected, catConfig, navigation]);
+  }, [db, url, summary, editedQAs, selected, catConfig]);
+
+  // ── 保存 → ライブラリへ ──
+  const handleSaveSelected = useCallback(async () => {
+    const savedIds = await performSave();
+    if (!savedIds) return;
+    Alert.alert(
+      '保存完了',
+      `${savedIds.length}件のQ&Aをライブラリに追加しました`,
+      [
+        {
+          text: 'ライブラリへ',
+          style: 'cancel',
+          onPress: () => navigation.popToTop(),
+        },
+        {
+          text: '今すぐ復習',
+          onPress: () => {
+            (navigation.getParent() as any)?.navigate('Review', {
+              screen: 'ReviewSession',
+              params: { reviewIds: savedIds },
+            });
+          },
+        },
+      ],
+    );
+  }, [performSave, navigation]);
+
+  // ── 保存 → そのまま復習開始 ──
+  const handleSaveAndReview = useCallback(async () => {
+    const savedIds = await performSave();
+    if (!savedIds) return;
+    (navigation.getParent() as any)?.navigate('Review', {
+      screen: 'ReviewSession',
+      params: { reviewIds: savedIds },
+    });
+  }, [performSave, navigation]);
 
   const handleCancel = useCallback(() => {
     Alert.alert(
@@ -1092,27 +1108,59 @@ export function QAPreviewScreen({ route, navigation }: Props) {
           },
         ]}
       >
-        <Pressable
-          style={({ pressed }) => [
-            styles.cancelButton,
-            {
-              backgroundColor: pressed
-                ? colors.backgroundSecondary
-                : colors.backgroundGrouped,
-              borderColor: colors.separator,
-            },
-          ]}
-          onPress={handleCancel}
-          disabled={saving}
-          accessibilityRole="button"
-          accessibilityLabel="キャンセル"
-        >
-          <Text style={[styles.cancelButtonText, { color: colors.label }]}>キャンセル</Text>
-        </Pressable>
+        {/* 1行目: キャンセル + ライブラリに保存 */}
+        <View style={styles.buttonRow}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.cancelButton,
+              {
+                backgroundColor: pressed
+                  ? colors.backgroundSecondary
+                  : colors.backgroundGrouped,
+                borderColor: colors.separator,
+              },
+            ]}
+            onPress={handleCancel}
+            disabled={saving}
+            accessibilityRole="button"
+            accessibilityLabel="キャンセル"
+          >
+            <Text style={[styles.cancelButtonText, { color: colors.label }]}>キャンセル</Text>
+          </Pressable>
 
+          <Pressable
+            style={({ pressed }) => [
+              styles.saveButton,
+              {
+                borderColor: selectedCount === 0 ? colors.separator : colors.accent,
+                backgroundColor: pressed ? colors.accent + '14' : 'transparent',
+              },
+              (saving || selectedCount === 0) && styles.buttonDisabled,
+            ]}
+            onPress={handleSaveSelected}
+            disabled={saving || selectedCount === 0}
+            accessibilityRole="button"
+            accessibilityLabel={`選択した${selectedCount}件を保存`}
+          >
+            {saving ? (
+              <ActivityIndicator color={colors.accent} size="small" />
+            ) : (
+              <Text
+                style={[
+                  styles.saveButtonText,
+                  { color: selectedCount === 0 ? colors.labelTertiary : colors.accent },
+                ]}
+              >
+                {selectedCount}件を保存
+              </Text>
+            )}
+          </Pressable>
+        </View>
+
+        {/* 2行目: 保存して復習開始（プライマリCTA） */}
         <Pressable
           style={({ pressed }) => [
-            styles.saveButton,
+            styles.reviewStartButton,
             {
               backgroundColor:
                 selectedCount === 0
@@ -1123,22 +1171,29 @@ export function QAPreviewScreen({ route, navigation }: Props) {
             },
             (saving || selectedCount === 0) && styles.buttonDisabled,
           ]}
-          onPress={handleSaveSelected}
+          onPress={handleSaveAndReview}
           disabled={saving || selectedCount === 0}
           accessibilityRole="button"
-          accessibilityLabel={`選択した${selectedCount}件を保存`}
+          accessibilityLabel={`${selectedCount}件を保存して復習開始`}
         >
           {saving ? (
             <ActivityIndicator color="#FFFFFF" size="small" />
           ) : (
-            <Text
-              style={[
-                styles.saveButtonText,
-                { color: selectedCount === 0 ? colors.labelTertiary : '#FFFFFF' },
-              ]}
-            >
-              {selectedCount}件を保存
-            </Text>
+            <>
+              <Ionicons
+                name="play-circle-outline"
+                size={18}
+                color={selectedCount === 0 ? colors.labelTertiary : '#FFFFFF'}
+              />
+              <Text
+                style={[
+                  styles.reviewStartButtonText,
+                  { color: selectedCount === 0 ? colors.labelTertiary : '#FFFFFF' },
+                ]}
+              >
+                保存して復習開始
+              </Text>
+            </>
           )}
         </Pressable>
       </View>
@@ -1371,31 +1426,47 @@ const styles = StyleSheet.create({
 
   // ── 固定ボタンエリア ──
   buttonArea: {
-    flexDirection: 'row',
     gap: Spacing.s,
     paddingHorizontal: Spacing.m,
     paddingTop: Spacing.m,
     borderTopWidth: 1,
   },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: Spacing.s,
+  },
   cancelButton: {
     flex: 1,
-    height: 50,
+    height: 46,
     borderRadius: Radius.m,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
   },
   cancelButtonText: {
-    ...TypeScale.headline,
+    ...TypeScale.subheadline,
   },
   saveButton: {
     flex: 2,
-    height: 50,
+    height: 46,
     borderRadius: Radius.m,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
   saveButtonText: {
+    ...TypeScale.subheadline,
+    fontWeight: '600' as const,
+  },
+  reviewStartButton: {
+    height: 50,
+    borderRadius: Radius.m,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.s,
+  },
+  reviewStartButtonText: {
     ...TypeScale.headline,
   },
   buttonDisabled: {
