@@ -9,7 +9,6 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../theme/ThemeContext';
 import { TypeScale } from '../theme/typography';
 import { Spacing, Radius, MinTapTarget } from '../theme/spacing';
-import { SystemColors } from '../theme/colors';
 import type { SimpleRating } from '../sm2/algorithm';
 
 interface RatingButtonsProps {
@@ -79,7 +78,6 @@ export function RatingButtons({ onRate }: RatingButtonsProps) {
           accessibilityLabel={label}
           accessibilityRole="button"
         >
-          <View style={[styles.indicator, { backgroundColor: tint }]} />
           <Text style={[styles.label, { color: tint }]}>{label}</Text>
           <Text style={[styles.sublabel, { color: tint }]}>
             {sublabel}
@@ -99,26 +97,21 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
     minHeight: MinTapTarget,
     borderRadius: Radius.m,
-    borderWidth: 1.5,
-    paddingVertical: Spacing.xs,
-    gap: 2,
-  },
-  indicator: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginBottom: Spacing.xs,
+    paddingTop: 12,
+    paddingHorizontal: Spacing.xs,
+    paddingBottom: 10,
+    gap: 3,
   },
   label: {
-    ...TypeScale.footnote,
+    fontSize: 15,
     fontWeight: '600',
     textAlign: 'center',
   },
   sublabel: {
-    fontSize: 10,
+    fontSize: 11,
+    opacity: 0.7,
     textAlign: 'center',
   },
 });

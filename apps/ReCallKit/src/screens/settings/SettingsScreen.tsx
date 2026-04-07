@@ -637,102 +637,6 @@ export function SettingsScreen() {
         </View>
       </Modal>
 
-      {/* ── テーマピッカー Modal ─────────────────────────── */}
-      <Modal visible={showThemePicker} transparent animationType="slide">
-        <Pressable style={styles.modalOverlay} onPress={() => setShowThemePicker(false)}>
-          <Pressable style={[styles.themeSheet, { backgroundColor: colors.backgroundGrouped }]}>
-
-            {/* ヘッダー */}
-            <View style={[styles.modalHeader, { borderBottomColor: colors.separator, backgroundColor: colors.card }]}>
-              <TouchableOpacity onPress={() => setShowThemePicker(false)}>
-                <Text style={[styles.modalCancel, { color: colors.labelSecondary }]}>
-                  閉じる
-                </Text>
-              </TouchableOpacity>
-              <Text style={[styles.modalTitle, { color: colors.label }]}>
-                テーマ
-              </Text>
-              <View style={{ minWidth: 64 }} />
-            </View>
-
-            <ScrollView
-              style={styles.themeScroll}
-              contentContainerStyle={styles.themeScrollContent}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              {/* システム設定に従う */}
-              <Text style={[styles.themeCategoryHeader, { color: colors.labelSecondary }]}>
-                自動
-              </Text>
-              <View style={[styles.section, { backgroundColor: colors.card }]}>
-                <Pressable
-                  style={styles.themeRow}
-                  onPress={() => handleTheme('system')}
-                >
-                  <View style={[styles.themeSwatchSystem, { borderColor: colors.separator }]}>
-                    <View style={[styles.themeSwatchHalf, { backgroundColor: '#FFFFFF' }]} />
-                    <View style={[styles.themeSwatchHalf, { backgroundColor: '#000000' }]} />
-                  </View>
-                  <Text style={[styles.themeRowLabel, { color: colors.label }]}>
-                    システム設定に従う
-                  </Text>
-                  {themePreference === 'system' && (
-                    <Ionicons name="checkmark" size={20} color={colors.accent} />
-                  )}
-                </Pressable>
-              </View>
-
-              {/* カテゴリ別テーマ一覧 */}
-              {THEME_CATEGORIES.map((cat) => (
-                <React.Fragment key={cat.id}>
-                  <Text style={[styles.themeCategoryHeader, { color: colors.labelSecondary }]}>
-                    {cat.label}
-                  </Text>
-                  <View style={[styles.section, { backgroundColor: colors.card }]}>
-                    {cat.ids.map((tid, i) => {
-                      const entry = THEMES[tid];
-                      const isSelected = themePreference === tid;
-                      return (
-                        <React.Fragment key={tid}>
-                          {i > 0 && (
-                            <View style={[styles.separator, { backgroundColor: colors.separator }]} />
-                          )}
-                          <Pressable
-                            style={styles.themeRow}
-                            onPress={() => handleTheme(tid)}
-                          >
-                            {/* カラースウォッチ */}
-                            <View
-                              style={[
-                                styles.themeSwatch,
-                                { backgroundColor: entry.swatchBg, borderColor: colors.separator },
-                              ]}
-                            >
-                              <View
-                                style={[
-                                  styles.themeSwatchDot,
-                                  { backgroundColor: entry.swatchColor },
-                                ]}
-                              />
-                            </View>
-                            <Text style={[styles.themeRowLabel, { color: colors.label }]}>
-                              {entry.name}
-                            </Text>
-                            {isSelected && (
-                              <Ionicons name="checkmark" size={20} color={colors.accent} />
-                            )}
-                          </Pressable>
-                        </React.Fragment>
-                      );
-                    })}
-                  </View>
-                </React.Fragment>
-              ))}
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </>
   );
 }
@@ -900,67 +804,23 @@ const styles = StyleSheet.create({
     ...TypeScale.title3,
   },
 
-  // テーマピッカー
-  themeSheet: {
-    borderTopLeftRadius: Radius.l,
-    borderTopRightRadius: Radius.l,
-    minHeight: '40%',
-    maxHeight: '85%',
-  },
-  themeScroll: {
-    flex: 1,
-  },
-  themeScrollContent: {
-    paddingHorizontal: Spacing.m,
-    paddingBottom: Spacing.xl,
-    gap: Spacing.xs,
-  },
-  themeCategoryHeader: {
-    fontSize: 13,
-    fontWeight: '400',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    lineHeight: 18,
-    marginTop: 20,
-    marginBottom: 6,
-    paddingHorizontal: Spacing.m,
-  },
-  themeRow: {
+  // テーマ セグメントコントロール
+  themeSegment: {
     flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 44,
-    paddingHorizontal: Spacing.m,
-    paddingVertical: Spacing.s,
-    gap: Spacing.s,
-  },
-  themeRowLabel: {
-    ...TypeScale.body,
-    flex: 1,
-  },
-  // カラースウォッチ（丸アイコン + アクセントドット）
-  themeSwatch: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    borderRadius: Radius.s,
     borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+    padding: 2,
+    gap: 2,
+  },
+  themeSegmentItem: {
+    paddingHorizontal: Spacing.s,
+    paddingVertical: 5,
+    borderRadius: Radius.xs,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  themeSwatchDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-  },
-  // システム設定スウォッチ（白黒 2 分割）
-  themeSwatchSystem: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
-    flexDirection: 'row',
-  },
-  themeSwatchHalf: {
-    flex: 1,
+  themeSegmentText: {
+    ...TypeScale.footnote,
   },
 });

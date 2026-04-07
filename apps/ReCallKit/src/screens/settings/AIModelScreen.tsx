@@ -145,9 +145,8 @@ export function AIModelScreen() {
             key={model.id}
             style={[
               styles.card,
-              { backgroundColor: colors.card },
+              { backgroundColor: colors.card, borderColor: isActive ? colors.accent : colors.separator, borderWidth: isActive ? 1.5 : StyleSheet.hairlineWidth },
               CardShadow,
-              isActive && { borderColor: colors.accent, borderWidth: 1.5 },
             ]}
           >
             {/* ヘッダー行 */}
@@ -264,15 +263,18 @@ export function AIModelScreen() {
 // ============================================================
 const styles = StyleSheet.create({
   container: {
-    padding: Spacing.m,
-    gap: Spacing.s,
+    paddingTop: Spacing.m,
+    paddingHorizontal: Spacing.m,
+    gap: Spacing.xs,
   },
   sectionHeader: {
-    ...TypeScale.caption1,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '400',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: Spacing.xs,
+    lineHeight: 18,
+    marginTop: 8,
+    marginBottom: 6,
     paddingHorizontal: Spacing.xs,
   },
   card: {

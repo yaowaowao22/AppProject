@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     ...TypeScale.caption1,
   },
   track: {
-    height: 4,
+    height: 3,
     borderRadius: Radius.full,
     overflow: 'hidden',
   },
