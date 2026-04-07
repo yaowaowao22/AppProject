@@ -20,4 +20,6 @@ export interface AnalysisResult {
   category: string;
   /** AIが提案する詳細タグ一覧（2〜5個） */
   tags: TagSuggestion[];
+  /** フェッチした元テキスト（ローカルAI利用時のみ） */
+  fetched_text?: string;
 }

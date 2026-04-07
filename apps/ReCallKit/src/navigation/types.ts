@@ -21,6 +21,7 @@ export type QAPreviewParams = {
   summary: string;
   qa_pairs: { question: string; answer: string }[];
   category: string;
+  fetched_text?: string;
 };
 
 // ---- 単体Screen再利用用の最小ParamList ----

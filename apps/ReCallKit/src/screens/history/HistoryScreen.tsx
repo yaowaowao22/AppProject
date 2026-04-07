@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
   historyStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingBottom: 20,
     paddingHorizontal: 16,
     gap: 20,
   },

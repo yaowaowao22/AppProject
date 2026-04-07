@@ -77,6 +77,14 @@ export async function recoverStaleJobs(db: SQLiteDatabase): Promise<number> {
   return result.changes;
 }
 
+/** URLで完了済みジョブを検索（ItemDetailScreenから元記事テキストを取得するため） */
+export async function getJobByUrl(db: SQLiteDatabase, url: string): Promise<UrlImportJob | null> {
+  return db.getFirstAsync<UrlImportJob>(
+    "SELECT * FROM url_import_jobs WHERE url = ? AND status = 'done' ORDER BY updated_at DESC LIMIT 1",
+    [url],
+  );
+}
+
 /** ジョブを削除 */
 export async function deleteJob(db: SQLiteDatabase, id: number): Promise<void> {
   await db.runAsync('DELETE FROM url_import_jobs WHERE id = ?', [id]);

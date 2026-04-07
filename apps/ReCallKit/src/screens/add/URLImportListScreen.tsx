@@ -41,6 +41,7 @@ import {
   recoverStaleJobs,
   type UrlImportJob,
 } from '../../db/urlJobRepository';
+import { FetchedTextModal } from '../../components/FetchedTextModal';
 import type { LibraryStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'URLImportList'>;
@@ -213,6 +214,9 @@ export function URLImportListScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [, forceUpdate] = useReducer(x => x + 1, 0);
   const processingRef = useRef(false);
+
+  // ---- 元記事モーダル ----
+  const [fetchedTextModal, setFetchedTextModal] = useState<{ text: string; title?: string } | null>(null);
 
   // モジュールレベルのチャンク進捗を購読（画面遷移後に戻っても最新値を読める）
   useEffect(() => {
@@ -438,27 +442,53 @@ export function URLImportListScreen({ navigation }: Props) {
         {/* アクションボタン行 */}
         <View style={styles.cardActions}>
           {item.status === 'done' && item.result_json != null && (
-            <Pressable
-              style={({ pressed }) => [
-                styles.actionButton,
-                { borderColor: colors.separator, backgroundColor: 'transparent', opacity: pressed ? 0.7 : 1 },
-              ]}
-              onPress={() => {
-                const result = JSON.parse(item.result_json!);
-                navigation.navigate('QAPreview', {
-                  url: item.url,
-                  title: result.title ?? item.url,
-                  summary: result.summary ?? '',
-                  qa_pairs: result.qa_pairs,
-                  category: result.category ?? 'その他',
-                });
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="プレビュー"
-            >
-              <Ionicons name="eye-outline" size={14} color={colors.label} />
-              <Text style={[styles.actionButtonText, { color: colors.label }]}>プレビュー</Text>
-            </Pressable>
+            <>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.actionButton,
+                  { borderColor: colors.separator, backgroundColor: 'transparent', opacity: pressed ? 0.7 : 1 },
+                ]}
+                onPress={() => {
+                  const result = JSON.parse(item.result_json!);
+                  navigation.navigate('QAPreview', {
+                    url: item.url,
+                    title: result.title ?? item.url,
+                    summary: result.summary ?? '',
+                    qa_pairs: result.qa_pairs,
+                    category: result.category ?? 'その他',
+                    fetched_text: result.fetched_text,
+                  });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="プレビュー"
+              >
+                <Ionicons name="eye-outline" size={14} color={colors.label} />
+                <Text style={[styles.actionButtonText, { color: colors.label }]}>プレビュー</Text>
+              </Pressable>
+              {/* 元記事テキスト表示ボタン */}
+              {(() => {
+                try {
+                  const parsed = JSON.parse(item.result_json!);
+                  if (parsed.fetched_text) {
+                    return (
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.actionButton,
+                          { borderColor: colors.accent, backgroundColor: colors.accent + '14', opacity: pressed ? 0.7 : 1 },
+                        ]}
+                        onPress={() => setFetchedTextModal({ text: parsed.fetched_text, title: item.title ?? undefined })}
+                        accessibilityRole="button"
+                        accessibilityLabel="記事を見る"
+                      >
+                        <Ionicons name="document-text-outline" size={14} color={colors.accent} />
+                        <Text style={[styles.actionButtonText, { color: colors.accent }]}>記事</Text>
+                      </Pressable>
+                    );
+                  }
+                } catch { /* ignore parse error */ }
+                return null;
+              })()}
+            </>
           )}
           {/* 旧フロー互換: item_idのみある場合はライブラリで見るを表示 */}
           {item.status === 'done' && item.result_json == null && item.item_id != null && (
@@ -500,7 +530,7 @@ export function URLImportListScreen({ navigation }: Props) {
         </View>
       </View>
     );
-  }, [colors, navigation, chunkProgress, handleRetry, handleRecoveryAction]);
+  }, [colors, navigation, chunkProgress, handleRetry, handleRecoveryAction, setFetchedTextModal]);
 
   // ---- スケルトンローディング ----
   if (loading) {
@@ -585,18 +615,26 @@ export function URLImportListScreen({ navigation }: Props) {
   };
 
   return (
-    <FlatList
-      style={{ backgroundColor: colors.backgroundGrouped }}
-      contentContainerStyle={[
-        styles.list,
-        { paddingBottom: Math.max(insets.bottom, Spacing.xl) },
-      ]}
-      ListHeaderComponent={renderModelCard}
-      data={jobs}
-      keyExtractor={(item) => String(item.id)}
-      renderItem={renderJob}
-      showsVerticalScrollIndicator={false}
-    />
+    <View style={{ flex: 1, backgroundColor: colors.backgroundGrouped }}>
+      <FlatList
+        style={{ flex: 1 }}
+        contentContainerStyle={[
+          styles.list,
+          { paddingBottom: Math.max(insets.bottom, Spacing.xl) },
+        ]}
+        ListHeaderComponent={renderModelCard}
+        data={jobs}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={renderJob}
+        showsVerticalScrollIndicator={false}
+      />
+      <FetchedTextModal
+        visible={fetchedTextModal != null}
+        text={fetchedTextModal?.text ?? ''}
+        title={fetchedTextModal?.title}
+        onClose={() => setFetchedTextModal(null)}
+      />
+    </View>
   );
 }
 

@@ -292,7 +292,7 @@ export function HomeScreen({ navigation }: Props) {
       {/* ── [2] 週間アクティビティ（This Week） ────────── */}
       {totalItems > 0 && (
         <View style={styles.weeklyCard}>
-          <Text style={[styles.labelUpper, { color: colors.labelTertiary }]}>This Week</Text>
+          <Text style={[styles.labelUpper, { color: colors.labelTertiary, marginTop: 0 }]}>This Week</Text>
           <View style={styles.weeklyRow}>
             {weeklyActivity.map((day, i) => {
               const isToday = i === 6;
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
   // ── [5] 週間アクティビティ ────────────────────────────
   weeklyCard: {
     backgroundColor: 'transparent',
-    paddingVertical: 20,
+    paddingBottom: 20,
     paddingHorizontal: 0,
   },
   weeklyRow: {

@@ -616,7 +616,7 @@ function normalize(parsed: Partial<AnalysisResult>): AnalysisResult {
 }
 
 // ============================================================
-// LLM推論ヘルパー（タイムアウト付き）
+// LLM推論ヘルパー（タイムアウト付き + 排他ロック）
 // ============================================================
 
 /**
@@ -630,32 +630,55 @@ const N_PREDICT_CONTINUATION = 3000;
 /** 1URL あたりの Q&A 上限。超えたらチャンク処理を打ち切る */
 const MAX_QA_TOTAL = 50;
 
+/**
+ * LLM排他ロック — llama.rn は同一コンテキストへの並行 completion を
+ * サポートしないため、URL解析と深掘りの同時実行で
+ * "hostFunction Context not found" が発生する。
+ * チェーン方式で後続の呼び出しを直列化する。
+ */
+let _completionChain: Promise<void> = Promise.resolve();
+
+function withCompletionLock<T>(fn: () => Promise<T>): Promise<T> {
+  const prev = _completionChain;
+  let release: () => void;
+  _completionChain = new Promise<void>((r) => { release = r; });
+  return prev.then(async () => {
+    try {
+      return await fn();
+    } finally {
+      release!();
+    }
+  });
+}
+
 async function runCompletion(
   context: LlamaContext,
   prompt: string,
   nPredict: number = N_PREDICT_FIRST,
 ): Promise<string> {
-  let aborted = false;
-  const timeoutId = setTimeout(() => {
-    aborted = true;
-    context.stopCompletion().catch(() => {});
-  }, LOCAL_AI_TIMEOUT_MS);
+  return withCompletionLock(async () => {
+    let aborted = false;
+    const timeoutId = setTimeout(() => {
+      aborted = true;
+      context.stopCompletion().catch(() => {});
+    }, LOCAL_AI_TIMEOUT_MS);
 
-  try {
-    const completion = await context.completion(
-      {
-        prompt,
-        n_predict: nPredict,
-        temperature: 0,
-        stop: ['<end_of_turn>', '<eos>', '</s>'],
-      },
-      (_data: TokenData) => {},
-    );
-    if (aborted) throw new Error('AI解析がタイムアウトしました（3分）');
-    return completion.text;
-  } finally {
-    clearTimeout(timeoutId);
-  }
+    try {
+      const completion = await context.completion(
+        {
+          prompt,
+          n_predict: nPredict,
+          temperature: 0,
+          stop: ['<end_of_turn>', '<eos>', '</s>'],
+        },
+        (_data: TokenData) => {},
+      );
+      if (aborted) throw new Error('AI解析がタイムアウトしました（3分）');
+      return completion.text;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  });
 }
 
 // ============================================================
@@ -665,10 +688,26 @@ async function runCompletion(
 /**
  * ローカルLLMでテキスト補完を実行する汎用API。
  * getLlamaContext + runCompletion をカプセル化し、外部から安全に呼べるようにする。
+ *
+ * "hostFunction Context not found" 等のコンテキスト破損エラー時は
+ * コンテキストを再初期化して1回リトライする。
  */
 export async function runLocalCompletion(prompt: string, maxTokens = 2000): Promise<string> {
-  const context = await getLlamaContext();
-  return runCompletion(context, prompt, maxTokens);
+  try {
+    const context = await getLlamaContext();
+    return await runCompletion(context, prompt, maxTokens);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('hostFunction') || msg.includes('Context not found')) {
+      console.warn('[localAnalysis] コンテキストエラー検出、再初期化してリトライ:', msg);
+      // コンテキストが破損しているため強制リセット
+      llamaContext = null;
+      loadedModelId = null;
+      const context = await getLlamaContext();
+      return await runCompletion(context, prompt, maxTokens);
+    }
+    throw err;
+  }
 }
 
 // ============================================================
@@ -717,17 +756,34 @@ export async function analyzeUrlLocal(
     `[localAnalysis] ${chunks.length}チャンク / ${text.length}文字 / URL: ${url}`,
   );
 
+  // コンテキスト破損時に再初期化してリトライするヘルパー
+  const safeComplete = async (prompt: string, nPredict: number): Promise<string> => {
+    try {
+      return await runCompletion(context, prompt, nPredict);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('hostFunction') || msg.includes('Context not found')) {
+        console.warn('[localAnalysis] コンテキスト破損検出、再初期化:', msg);
+        llamaContext = null;
+        loadedModelId = null;
+        context = await getLlamaContext();
+        return await runCompletion(context, prompt, nPredict);
+      }
+      throw err;
+    }
+  };
+
   // ---- 第1チャンク: title / summary / category / tags + Q&A ----
   // モデル初回ロード直後は出力が不安定なことがあるため、パース失敗時に1回リトライする
   onProgress?.(0, chunks.length);
   const firstPrompt = buildFirstChunkPrompt(url, chunks[0], chunks.length);
   let baseResult: AnalysisResult;
   try {
-    const firstRaw = await runCompletion(context, firstPrompt, N_PREDICT_FIRST);
+    const firstRaw = await safeComplete(firstPrompt, N_PREDICT_FIRST);
     baseResult = parseAnalysisResult(firstRaw);
   } catch (err) {
     console.warn('[localAnalysis] 第1チャンクパース失敗、リトライします:', err);
-    const retryRaw = await runCompletion(context, firstPrompt, N_PREDICT_FIRST);
+    const retryRaw = await safeComplete(firstPrompt, N_PREDICT_FIRST);
     baseResult = parseAnalysisResult(retryRaw);
   }
 
@@ -742,8 +798,7 @@ export async function analyzeUrlLocal(
     for (let i = 1; i < chunks.length; i++) {
       if (allQaPairs.length >= MAX_QA_TOTAL) break;
       onProgress?.(i, chunks.length);
-      const chunkRaw = await runCompletion(
-        context,
+      const chunkRaw = await safeComplete(
         buildChunkPrompt(url, chunks[i], i, chunks.length),
         N_PREDICT_CONTINUATION,
       );
@@ -759,6 +814,9 @@ export async function analyzeUrlLocal(
       finalResult = { ...finalResult, title: new URL(url).hostname };
     } catch { /* URL パース失敗時はそのまま */ }
   }
+
+  // ---- フェッチしたテキストを結果に含める ----
+  finalResult = { ...finalResult, fetched_text: text };
 
   // ---- セッションキャッシュに保存 ----
   setCachedResult(url, finalResult);

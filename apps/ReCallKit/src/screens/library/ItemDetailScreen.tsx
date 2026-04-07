@@ -25,7 +25,9 @@ import type { Item, Tag, Review, DeepDive } from '../../types';
 import { getDeepDivesForItem } from '../../db/deepDiveRepository';
 import { DeepDiveButton } from '../../components/DeepDiveButton';
 import { DeepDiveResultModal } from '../../components/DeepDiveResultModal';
+import { FetchedTextModal } from '../../components/FetchedTextModal';
 import { subscribeDeepDive } from '../../services/deepDiveService';
+import { getJobByUrl } from '../../db/urlJobRepository';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'ItemDetail'>;
 
@@ -63,6 +65,8 @@ export function ItemDetailScreen({ route }: Props) {
   const [loading, setLoading] = useState(true);
   const [deepDives, setDeepDives] = useState<DeepDive[]>([]);
   const [deepDiveModalVisible, setDeepDiveModalVisible] = useState(false);
+  const [fetchedText, setFetchedText] = useState<string | null>(null);
+  const [showFetchedText, setShowFetchedText] = useState(false);
 
   // ---- 編集モード状態 ----
   const [editMode, setEditMode] = useState(false);
@@ -98,6 +102,17 @@ export function ItemDetailScreen({ route }: Props) {
 
       const dives = await getDeepDivesForItem(db, itemId);
       setDeepDives(dives);
+
+      // source_url があれば url_import_jobs からフェッチテキストを取得
+      if (row?.source_url) {
+        try {
+          const job = await getJobByUrl(db, row.source_url);
+          if (job?.result_json) {
+            const parsed = JSON.parse(job.result_json);
+            setFetchedText(parsed.fetched_text ?? null);
+          }
+        } catch { /* フェッチテキスト取得失敗は無視 */ }
+      }
     } finally {
       setLoading(false);
     }
@@ -433,12 +448,33 @@ export function ItemDetailScreen({ route }: Props) {
             </Text>
           </View>
         )}
+        {fetchedText && (
+          <View style={[s.metaRowBorder, { borderTopColor: colors.separator }]}>
+            <Pressable
+              onPress={() => setShowFetchedText(true)}
+              style={s.fetchedTextRow}
+              accessibilityRole="button"
+              accessibilityLabel="元記事を見る"
+            >
+              <Ionicons name="document-text-outline" size={16} color={colors.accent} />
+              <Text style={[s.metaValue, { color: colors.accent }]}>元記事を見る</Text>
+            </Pressable>
+          </View>
+        )}
       </View>
       <DeepDiveResultModal
         visible={deepDiveModalVisible}
         dives={deepDives}
         onClose={() => setDeepDiveModalVisible(false)}
       />
+      {fetchedText && (
+        <FetchedTextModal
+          visible={showFetchedText}
+          text={fetchedText}
+          title={item.title}
+          onClose={() => setShowFetchedText(false)}
+        />
+      )}
     </ScrollView>
   );
 }

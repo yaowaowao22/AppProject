@@ -49,6 +49,7 @@ import { Spacing, Radius, CardShadow, CardShadowStrong } from '../../theme/spaci
 import type { LibraryStackParamList } from '../../navigation/types';
 import { getCategoryConfig } from '../../config/categories';
 import { SystemColors } from '../../theme/colors';
+import { FetchedTextModal } from '../../components/FetchedTextModal';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'QAPreview'>;
 type ViewMode = 'card' | 'list';
@@ -429,10 +430,13 @@ function SwipeFlipCard({ question, answer, onInclude, onExclude, onEdit }: Swipe
 // ============================================================
 
 export function QAPreviewScreen({ route, navigation }: Props) {
-  const { url, title, summary, qa_pairs: rawPairs, category } = route.params;
+  const { url, title, summary, qa_pairs: rawPairs, category, fetched_text } = route.params;
   const { colors } = useTheme();
   const db = useDB();
   const insets = useSafeAreaInsets();
+
+  // ---- 元記事モーダル ----
+  const [showFetchedText, setShowFetchedText] = useState(false);
 
   // 25件上限
   const wasTruncated = rawPairs.length > MAX_ITEMS;
@@ -948,6 +952,17 @@ export function QAPreviewScreen({ route, navigation }: Props) {
         <Text style={[styles.sourceUrl, { color: colors.labelTertiary }]} numberOfLines={1}>
           {url}
         </Text>
+        {fetched_text ? (
+          <Pressable
+            onPress={() => setShowFetchedText(true)}
+            style={[styles.fetchedTextBtn, { borderColor: colors.separator }]}
+            accessibilityRole="button"
+            accessibilityLabel="元記事を見る"
+          >
+            <Ionicons name="document-text-outline" size={14} color={colors.accent} />
+            <Text style={[styles.fetchedTextBtnLabel, { color: colors.accent }]}>元記事を見る</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       {/* ─── 25件超過バナー ─── */}
@@ -1245,6 +1260,16 @@ export function QAPreviewScreen({ route, navigation }: Props) {
           onDismiss={() => setEditModalIndex(null)}
         />
       )}
+
+      {/* ─── 元記事テキストモーダル ─── */}
+      {fetched_text ? (
+        <FetchedTextModal
+          visible={showFetchedText}
+          text={fetched_text}
+          title={title}
+          onClose={() => setShowFetchedText(false)}
+        />
+      ) : null}
     </View>
   );
 }
@@ -1314,6 +1339,21 @@ const styles = StyleSheet.create({
   sourceUrl: {
     ...TypeScale.caption1,
     marginTop: Spacing.xs,
+  },
+  fetchedTextBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: Spacing.s,
+    borderWidth: 1,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.m,
+    paddingVertical: 6,
+    alignSelf: 'flex-start',
+  },
+  fetchedTextBtnLabel: {
+    ...TypeScale.caption1,
+    fontWeight: '600',
   },
 
   // ── ソースカード（カードモード・コンパクト版） ──
