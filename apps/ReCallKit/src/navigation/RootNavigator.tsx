@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import * as Updates from 'expo-updates';
 import { useDatabase } from '../hooks/useDatabase';
 import { useTheme } from '../theme/ThemeContext';
 import { DrawerNavigator } from './DrawerNavigator';
@@ -18,29 +17,7 @@ export function RootNavigator() {
   const { isReady, error, db } = useDatabase();
   const { colors } = useTheme();
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
-  const [otaUpdating, setOtaUpdating] = useState(false);
-
-  // 起動時に即時OTAチェック → 更新があれば即リロード（次回起動待ちをスキップ）
-  useEffect(() => {
-    if (__DEV__) return;
-    (async () => {
-      try {
-        console.log('[OTA] checking for update... channel:', Updates.channel, 'runtime:', Updates.runtimeVersion);
-        const result = await Updates.checkForUpdateAsync();
-        console.log('[OTA] isAvailable:', result.isAvailable);
-        if (result.isAvailable) {
-          setOtaUpdating(true);
-          console.log('[OTA] fetching update...');
-          await Updates.fetchUpdateAsync();
-          console.log('[OTA] reloading...');
-          await Updates.reloadAsync();
-        }
-      } catch (e) {
-        console.log('[OTA] check error:', e);
-        setOtaUpdating(false); // フェッチ失敗時に画面が固まるのを防ぐ
-      }
-    })();
-  }, []);
+  // OTA チェックは App.tsx の OTAGate で実施済み（ネイティブコンポーネント未マウント状態でリロードするため）
 
   // DB初期化完了後にオンボーディング完了フラグを確認
   useEffect(() => {
@@ -76,18 +53,6 @@ export function RootNavigator() {
         </Text>
         <Text style={{ color: colors.labelSecondary, fontSize: 13, textAlign: 'center', paddingHorizontal: 32 }}>
           {error.message}
-        </Text>
-      </View>
-    );
-  }
-
-  // OTA適用中
-  if (otaUpdating) {
-    return (
-      <View style={[styles.loading, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.accent} />
-        <Text style={{ color: colors.labelSecondary, fontSize: 13, marginTop: 12 }}>
-          アップデートを適用中...
         </Text>
       </View>
     );

@@ -22,7 +22,6 @@ import {
   getStreakDays,
   getTodayCompletedCount,
   getTotalItemCount,
-  getRecentlyReviewedItems,
   getAllReviewableItems,
   type ReviewableItem,
 } from '../../db/reviewRepository';
@@ -35,26 +34,6 @@ import { useWidgetData } from '../../hooks/useWidgetData';
 import type { HomeStackParamList, DrawerParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'HomeMain'>;
-
-// アイテムタイプのラベルと色
-const TYPE_META: Record<string, { label: string; color: string; bg: string }> = {
-  url:        { label: 'URL',      color: SystemColors.blue,   bg: SystemColors.blue   + '1F' },
-  text:       { label: 'テキスト', color: SystemColors.green,  bg: SystemColors.green  + '1F' },
-  screenshot: { label: '画像',     color: SystemColors.purple, bg: SystemColors.purple + '1F' },
-};
-
-// 相対時刻を日本語で返す
-function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr.replace(' ', 'T'));
-  const diffMs = Date.now() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-  if (diffMins < 60) return `${diffMins}分前`;
-  if (diffHours < 24) return `${diffHours}時間前`;
-  if (diffDays === 1) return '昨日';
-  return `${diffDays}日前`;
-}
 
 // サイドバーフィルターのラベル文字列を生成
 function getSidebarFilterLabel(filter: NonNullable<ReturnType<typeof useSidebarFilter>['sidebarFilter']>): string {
@@ -69,7 +48,6 @@ export function HomeScreen({ navigation }: Props) {
   const { sidebarFilter, clearFilter } = useSidebarFilter();
 
   const [dueItems, setDueItems] = useState<ReviewableItem[]>([]);
-  const [recentlyReviewed, setRecentlyReviewed] = useState<ReviewableItem[]>([]);
   const [allItems, setAllItems] = useState<ReviewableItem[]>([]);
   const [streakDays, setStreakDays] = useState(0);
   const [todayCompleted, setTodayCompleted] = useState(0);
@@ -85,16 +63,14 @@ export function HomeScreen({ navigation }: Props) {
     setLoading(true);
     setLoadError(null);
     try {
-      const [due, recent, streak, completed, total, all] = await Promise.all([
+      const [due, streak, completed, total, all] = await Promise.all([
         getDueItems(db),
-        getRecentlyReviewedItems(db),
         getStreakDays(db),
         getTodayCompletedCount(db),
         getTotalItemCount(db),
         getAllReviewableItems(db),
       ]);
       setDueItems(due);
-      setRecentlyReviewed(recent);
       setAllItems(all);
       setStreakDays(streak);
       setTodayCompleted(completed);
@@ -134,13 +110,12 @@ export function HomeScreen({ navigation }: Props) {
 
   // ウィジェット用Q&Aデータ（全アイテムからランダムに最大20件）
   const quizItems = useMemo(() => {
-    const source = allItems.length > 0 ? allItems : recentlyReviewed;
-    const shuffled = [...source].sort(() => Math.random() - 0.5);
+    const shuffled = [...allItems].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, 20).map((ri) => ({
       question: ri.item.title,
       answer: ri.item.content ?? '',
     }));
-  }, [allItems, recentlyReviewed]);
+  }, [allItems]);
 
   // iOS ウィジェットへデータを同期
   useWidgetData(dueItems.length, streakDays, totalItems, quizItems);
@@ -332,62 +307,6 @@ export function HomeScreen({ navigation }: Props) {
         </View>
         <Text style={[styles.urlAnalysisChevron, { color: colors.labelTertiary }]}>›</Text>
       </Pressable>
-
-      {/* ――― 最近復習した内容 ――― */}
-      {recentlyReviewed.length > 0 && (
-        <>
-          <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
-            最近復習した内容
-          </Text>
-          {recentlyReviewed.map((ri) => {
-            const meta = TYPE_META[ri.item.type] ?? TYPE_META.text;
-            const relTime = ri.item.review?.last_reviewed_at
-              ? formatRelativeTime(ri.item.review.last_reviewed_at)
-              : '';
-            return (
-              <Pressable
-                key={ri.reviewId}
-                style={({ pressed }) => [
-                  styles.recentCard,
-                  { backgroundColor: colors.card, opacity: pressed ? 0.75 : 1 },
-                  cardShadow,
-                ]}
-                onPress={() => navigation.navigate('ItemDetail', { itemId: ri.item.id })}
-                accessibilityRole="button"
-                accessibilityLabel={ri.item.title}
-              >
-                <View style={[styles.typeBadge, { backgroundColor: meta.bg }]}>
-                  <Text style={[styles.typeBadgeText, { color: meta.color }]}>{meta.label}</Text>
-                </View>
-                <View style={styles.recentTextArea}>
-                  <View style={styles.recentTitleRow}>
-                    <Text
-                      style={[styles.recentTitle, { color: colors.label }]}
-                      numberOfLines={2}
-                    >
-                      {ri.item.title}
-                    </Text>
-                    {relTime ? (
-                      <Text style={[styles.recentTime, { color: colors.labelTertiary }]}>
-                        {relTime}
-                      </Text>
-                    ) : null}
-                  </View>
-                  {ri.item.content ? (
-                    <Text
-                      style={[styles.recentContent, { color: colors.labelSecondary }]}
-                      numberOfLines={2}
-                    >
-                      {ri.item.content}
-                    </Text>
-                  ) : null}
-                </View>
-                <Text style={[styles.recentChevron, { color: colors.labelTertiary }]}>›</Text>
-              </Pressable>
-            );
-          })}
-        </>
-      )}
 
       {/* ――― ジャーナル導線 ――― */}
       <Text style={[styles.sectionTitle, { color: colors.labelSecondary }]}>
@@ -596,55 +515,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 24,
     fontWeight: '300' as const,
-  },
-
-  // ――― 最近復習カード ―――
-  recentCard: {
-    borderRadius: Radius.m,
-    padding: Spacing.m,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.m,
-  },
-  typeBadge: {
-    paddingHorizontal: Spacing.s,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radius.xs,
-    minWidth: 44,
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  typeBadgeText: {
-    fontSize: 11,
-    fontWeight: '600' as const,
-    lineHeight: 14,
-  },
-  recentTextArea: {
-    flex: 1,
-    gap: Spacing.xs,
-  },
-  recentTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.s,
-  },
-  recentTitle: {
-    ...TypeScale.subheadline,
-    fontWeight: '500' as const,
-    flex: 1,
-  },
-  recentTime: {
-    ...TypeScale.caption1,
-    flexShrink: 0,
-  },
-  recentContent: {
-    ...TypeScale.footnote,
-  },
-  recentChevron: {
-    fontSize: 22,
-    lineHeight: 24,
-    fontWeight: '300' as const,
-    marginTop: -1,
   },
 
   // ――― ジャーナル導線 ―――
