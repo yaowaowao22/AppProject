@@ -33,7 +33,7 @@ public class RecallWidgetBridgeModule: Module {
     // Flashcard Peek ウィジェット用データを書き込み、タイムラインをリロード
     Function("updateFlashcardPeekData") { (items: [[String: Any]]) in
       guard let defaults = UserDefaults(suiteName: appGroupId) else { return }
-      let limited = Array(items.prefix(5))
+      let limited = Array(items.prefix(20))
       // id を Int、question/hintAnswer を String として安全に変換
       let sanitized: [[String: Any]] = limited.compactMap { item in
         guard let id = item["id"] as? Int,

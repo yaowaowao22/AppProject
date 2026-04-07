@@ -365,37 +365,57 @@ struct FlashcardPeekProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (FlashcardPeekEntry) -> Void) {
-        completion(loadPeekEntry())
+        let allItems = loadAllPeekItems()
+        let shuffled = allItems.shuffled()
+        completion(FlashcardPeekEntry(
+            date: Date(),
+            items: Array(shuffled.prefix(5)),
+            isEmpty: shuffled.isEmpty
+        ))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<FlashcardPeekEntry>) -> Void) {
-        let entry = loadPeekEntry()
-        // 15分間隔で自動切替
-        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date()
-        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
-        completion(timeline)
+        let allItems = loadAllPeekItems()
+        guard !allItems.isEmpty else {
+            let entry = FlashcardPeekEntry(date: Date(), items: [], isEmpty: true)
+            let nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date()
+            completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
+            return
+        }
+
+        // 15分間隔×8エントリ（2時間分）を生成。毎回シャッフルで異なるQ&Aを表示
+        var entries: [FlashcardPeekEntry] = []
+        let now = Date()
+        for i in 0..<8 {
+            let entryDate = Calendar.current.date(byAdding: .minute, value: 15 * i, to: now) ?? now
+            let shuffled = allItems.shuffled()
+            entries.append(FlashcardPeekEntry(
+                date: entryDate,
+                items: Array(shuffled.prefix(5)),
+                isEmpty: false
+            ))
+        }
+
+        let nextUpdate = Calendar.current.date(byAdding: .hour, value: 2, to: now) ?? now
+        completion(Timeline(entries: entries, policy: .after(nextUpdate)))
     }
 
-    private func loadPeekEntry() -> FlashcardPeekEntry {
+    private func loadAllPeekItems() -> [PeekItem] {
         let defaults = UserDefaults(suiteName: appGroupId)
         guard
             let jsonString = defaults?.string(forKey: "flashcardPeekItems"),
             let data = jsonString.data(using: .utf8),
             let array = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
             !array.isEmpty
-        else {
-            return FlashcardPeekEntry(date: Date(), items: [], isEmpty: true)
-        }
+        else { return [] }
 
-        let items: [PeekItem] = array.compactMap { dict in
+        return array.compactMap { dict in
             guard let id = dict["id"] as? Int,
                   let question = dict["question"] as? String,
                   let hintAnswer = dict["hintAnswer"] as? String
             else { return nil }
             return PeekItem(id: id, question: question, hintAnswer: hintAnswer)
         }
-
-        return FlashcardPeekEntry(date: Date(), items: items, isEmpty: items.isEmpty)
     }
 }
 

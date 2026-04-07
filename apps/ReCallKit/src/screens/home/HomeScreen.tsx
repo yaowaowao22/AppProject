@@ -210,12 +210,15 @@ export function HomeScreen({ navigation }: Props) {
   );
   const peekItems = useMemo(
     () =>
-      dueItems.slice(0, 5).map((ri) => ({
-        id: ri.item.id,
-        question: ri.item.title,
-        hintAnswer: generateHint(ri.item.content ?? ''),
-      })),
-    [dueItems]
+      [...allItems]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 20)
+        .map((ri) => ({
+          id: ri.item.id,
+          question: ri.item.title,
+          hintAnswer: generateHint(ri.item.content ?? ''),
+        })),
+    [allItems]
   );
   useWidgetData(dueItems.length, streakDays, totalItems, quizItems, peekItems);
 
