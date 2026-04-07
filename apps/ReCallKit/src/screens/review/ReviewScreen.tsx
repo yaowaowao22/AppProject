@@ -311,10 +311,10 @@ export function ReviewScreen({ navigation, route }: Props) {
         />
       </View>
 
-      {/* 評価エリア（カードをめくった後に表示） */}
-      <View style={styles.ratingArea}>
-        {isCardFlipped ? (
-          <>
+      {/* 評価エリア（常にレンダリングし、opacity+pointerEventsで制御） */}
+      <View style={styles.ratingArea} pointerEvents={isCardFlipped ? 'auto' : 'none'}>
+        <View style={{ opacity: isCardFlipped ? 1 : 0 }}>
+          <View style={{ gap: Spacing.s }}>
             <RatingButtons onRate={handleRate} />
             <DeepDiveButton
               itemId={currentItem.item.id}
@@ -325,11 +325,16 @@ export function ReviewScreen({ navigation, route }: Props) {
               question={currentItem.item.title}
               answer={currentItem.item.content}
             />
-          </>
-        ) : (
-          <Text style={[styles.ratingHint, { color: colors.labelTertiary }]}>
-            カードをめくって自己評価してください
-          </Text>
+          </View>
+        </View>
+        {!isCardFlipped && (
+          <View style={StyleSheet.absoluteFill}>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+              <Text style={[styles.ratingHint, { color: colors.labelTertiary }]}>
+                カードをめくって自己評価してください
+              </Text>
+            </View>
+          </View>
         )}
       </View>
     </View>

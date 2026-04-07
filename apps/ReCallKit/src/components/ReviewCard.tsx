@@ -39,7 +39,8 @@ const FLIP_DURATION = 320; // 表→裏 (ms)
 const EASING = Easing.out(Easing.cubic);
 const SWIPE_THRESHOLD = 80; // px
 const EXIT_DISTANCE = 500; // px
-const EXIT_DURATION = 250; // ms
+const EXIT_DURATION = 300; // ms
+const SWIPE_ROTATE_FACTOR = 0.08; // deg per px
 
 export function ReviewCard({
   title,
@@ -113,15 +114,54 @@ export function ReviewCard({
   });
 
   // ---- スワイプ用 wrapper transform ----
-  const swipeStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-      { rotateZ: `${translateX.value * 0.05}deg` },
-      { scale: interpolate(exitProgress.value, [0, 1], [1, 0.8]) },
-    ],
-    opacity: interpolate(exitProgress.value, [0, 1], [1, 0]),
-  }));
+  const swipeStyle = useAnimatedStyle(() => {
+    const isExiting = exitProgress.value > 0;
+    const swipeScale = isExiting
+      ? interpolate(exitProgress.value, [0, 1], [1, 0.85])
+      : interpolate(Math.abs(translateX.value), [0, SWIPE_THRESHOLD], [1, 1.03], Extrapolation.CLAMP);
+    return {
+      transform: [
+        { translateX: translateX.value },
+        { translateY: translateY.value },
+        { rotateZ: `${translateX.value * SWIPE_ROTATE_FACTOR}deg` },
+        { scale: swipeScale },
+      ],
+      opacity: interpolate(exitProgress.value, [0, 0.6, 1], [1, 0.8, 0]),
+    };
+  });
+
+  // ---- スワイプ方向ティントオーバーレイ ----
+  const swipeTintStyle = useAnimatedStyle(() => {
+    const absX = Math.abs(translateX.value);
+    const tintOpacity = interpolate(absX, [0, SWIPE_THRESHOLD * 0.5, SWIPE_THRESHOLD * 1.5], [0, 0, 0.18], Extrapolation.CLAMP);
+    const isRight = translateX.value > 0;
+    return {
+      backgroundColor: isRight ? '#34C759' : '#FF3B30',
+      opacity: tintOpacity,
+    };
+  });
+
+  // ---- スワイプスタンプ（覚えた!/覚えてない） ----
+  const stampRememberedStyle = useAnimatedStyle(() => {
+    const progress = interpolate(translateX.value, [SWIPE_THRESHOLD * 0.5, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP);
+    return {
+      opacity: progress,
+      transform: [
+        { scale: interpolate(progress, [0, 1], [0.5, 1]) },
+        { rotateZ: '-15deg' },
+      ],
+    };
+  });
+  const stampForgotStyle = useAnimatedStyle(() => {
+    const progress = interpolate(translateX.value, [-SWIPE_THRESHOLD * 0.5, -SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP);
+    return {
+      opacity: progress,
+      transform: [
+        { scale: interpolate(progress, [0, 1], [0.5, 1]) },
+        { rotateZ: '15deg' },
+      ],
+    };
+  });
 
   const handleFlip = async () => {
     if (flip.value > 0) return;
@@ -228,6 +268,26 @@ export function ReviewCard({
                   {content}
                 </Text>
               </View>
+
+              {/* スワイプ方向ティントオーバーレイ */}
+              <Animated.View
+                style={[styles.absoluteFill, { borderRadius: Radius.l }, swipeTintStyle]}
+                pointerEvents="none"
+              />
+
+              {/* スワイプスタンプ: 覚えた！ */}
+              <Animated.View style={[styles.stampContainer, styles.stampLeft, stampRememberedStyle]} pointerEvents="none">
+                <View style={[styles.stampBorder, { borderColor: '#34C759' }]}>
+                  <Text style={[styles.stampText, { color: '#34C759' }]}>覚えた！</Text>
+                </View>
+              </Animated.View>
+
+              {/* スワイプスタンプ: 覚えてない */}
+              <Animated.View style={[styles.stampContainer, styles.stampRight, stampForgotStyle]} pointerEvents="none">
+                <View style={[styles.stampBorder, { borderColor: '#FF3B30' }]}>
+                  <Text style={[styles.stampText, { color: '#FF3B30' }]}>覚えてない</Text>
+                </View>
+              </Animated.View>
 
               {/* スワイプ2方向ヒント */}
               <View style={styles.swipeHintBlock}>
@@ -345,5 +405,29 @@ const styles = StyleSheet.create({
   swipeLabel: {
     ...TypeScale.caption1,
     fontWeight: '500',
+  },
+
+  // スワイプスタンプ
+  stampContainer: {
+    position: 'absolute',
+    top: 40,
+    zIndex: 10,
+  },
+  stampLeft: {
+    left: 16,
+  },
+  stampRight: {
+    right: 16,
+  },
+  stampBorder: {
+    borderWidth: 3,
+    borderRadius: Radius.m,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  stampText: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
 });
