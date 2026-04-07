@@ -1,13 +1,12 @@
 // ============================================================
 // StreakRing - SVGリング型ストリーク表示
-// 7日サイクルで円弧が埋まる。中央にアイコン+日数。
+// 7日サイクルで円弧が埋まる。中央に日数+「日連続」。
 // ============================================================
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useTheme } from '../theme/ThemeContext';
-import { TypeScale } from '../theme/typography';
 import { RecallAmber, SystemColors } from '../theme/colors';
 
 interface StreakRingProps {
@@ -16,8 +15,6 @@ interface StreakRingProps {
   size?: number;
   /** リングの太さ（デフォルト 7） */
   strokeWidth?: number;
-  /** ラベルを下に表示するか（デフォルト false） */
-  showLabel?: boolean;
 }
 
 // 7日を1サイクルとして進捗を計算
@@ -28,7 +25,6 @@ export function StreakRing({
   days,
   size = 80,
   strokeWidth = 6,
-  showLabel = false,
 }: StreakRingProps) {
   const { colors, isDark } = useTheme();
 
@@ -93,18 +89,15 @@ export function StreakRing({
         )}
       </Svg>
 
-      {/* 中央テキスト */}
+      {/* 中央テキスト（数字 + 「日連続」縦積み） */}
       <View style={[styles.center, { width: size, height: size }]}>
         <Text style={[styles.days, { color: days > 0 ? colors.label : colors.labelTertiary }]}>
           {days}
         </Text>
-      </View>
-
-      {showLabel && (
-        <Text style={[styles.label, { color: colors.labelSecondary }]}>
+        <Text style={[styles.label, { color: colors.labelTertiary }]}>
           日連続
         </Text>
-      )}
+      </View>
     </View>
   );
 }
@@ -122,12 +115,10 @@ const styles = StyleSheet.create({
   },
   days: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '500',
     lineHeight: 24,
-    letterSpacing: -0.5,
   },
   label: {
-    ...TypeScale.caption2,
-    marginTop: 4,
+    fontSize: 10,
   },
 });

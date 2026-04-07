@@ -343,3 +343,23 @@ export async function toggleItemFlag(
     [flagged ? 1 : 0, itemId]
   );
 }
+
+/**
+ * 全レビュー履歴から正答率を計算（quality >= 3 = 正解）
+ */
+export async function getAccuracyRate(db: SQLiteDatabase): Promise<number> {
+  const rows = await db.getAllAsync<{ quality_history: string }>(`
+    SELECT quality_history FROM reviews
+    WHERE quality_history IS NOT NULL AND quality_history != '[]'
+  `);
+  let total = 0;
+  let correct = 0;
+  for (const row of rows) {
+    const history: number[] = JSON.parse(row.quality_history || '[]');
+    for (const q of history) {
+      total++;
+      if (q >= 3) correct++;
+    }
+  }
+  return total > 0 ? Math.round((correct / total) * 100) : 0;
+}

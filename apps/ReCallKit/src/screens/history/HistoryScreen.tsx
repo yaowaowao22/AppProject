@@ -21,6 +21,7 @@ import {
   getTodayCompletedCount,
   getTotalItemCount,
   getRecentlyReviewedItems,
+  getAccuracyRate,
   type ReviewableItem,
 } from '../../db/reviewRepository';
 import {
@@ -73,6 +74,8 @@ export function HistoryScreen() {
   const [totalItems, setTotalItems] = useState(0);
   const [recentlyReviewed, setRecentlyReviewed] = useState<ReviewableItem[]>([]);
   const [masterySummary, setMasterySummary] = useState<MasterySummary | null>(null);
+  const [masteredCount, setMasteredCount] = useState(0);
+  const [accuracyRate, setAccuracyRate] = useState(0);
   const [sortKey, setSortKey] = useState<SortKey>('recent');
   const [loading, setLoading] = useState(true);
 
@@ -80,18 +83,21 @@ export function HistoryScreen() {
     if (!db || !isReady) return;
     setLoading(true);
     try {
-      const [streak, completed, total, recent, mastery] = await Promise.all([
+      const [streak, completed, total, recent, mastery, accuracy] = await Promise.all([
         getStreakDays(db),
         getTodayCompletedCount(db),
         getTotalItemCount(db),
         getRecentlyReviewedItems(db, 30),
         getMasterySummary(db),
+        getAccuracyRate(db),
       ]);
       setStreakDays(streak);
       setTodayCompleted(completed);
       setTotalItems(total);
       setRecentlyReviewed(recent);
       setMasterySummary(mastery);
+      setMasteredCount((mastery.advanced ?? 0) + (mastery.master ?? 0));
+      setAccuracyRate(accuracy);
     } catch (err) {
       console.error('[HistoryScreen] loadData error:', err);
     } finally {
@@ -145,38 +151,24 @@ export function HistoryScreen() {
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
-      {/* ――― StreakRing + 統計カード ――― */}
-      <View style={[styles.statsCard, { backgroundColor: colors.card }, cardShadow]}>
-        <View style={styles.streakRow}>
-          <StreakRing days={streakDays} size={80} strokeWidth={6} showLabel />
-          <View style={styles.streakInfo}>
-            <Text style={[styles.streakLabel, { color: colors.labelSecondary }]}>
-              現在の連続記録
-            </Text>
-            <Text style={[styles.streakValue, { color: colors.accent }]}>
-              {streakDays}日
-            </Text>
-          </View>
-        </View>
-
-        <View style={[styles.separator, { backgroundColor: colors.separator }]} />
-
-        {/* 統計行 */}
-        <View style={styles.statsRow}>
-          <View style={styles.statCell}>
-            <Text style={[styles.statValue, { color: colors.label }]}>{todayCompleted}</Text>
-            <Text style={[styles.statLabel, { color: colors.labelSecondary }]}>今日完了</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: colors.separator }]} />
-          <View style={styles.statCell}>
-            <Text style={[styles.statValue, { color: colors.label }]}>{totalItems}</Text>
-            <Text style={[styles.statLabel, { color: colors.labelSecondary }]}>総アイテム</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: colors.separator }]} />
-          <View style={styles.statCell}>
-            <Text style={[styles.statValue, { color: colors.label }]}>{streakDays}</Text>
-            <Text style={[styles.statLabel, { color: colors.labelSecondary }]}>連続日数</Text>
-          </View>
+      {/* ――― StreakRing + 統計グリッド ――― */}
+      <View style={styles.historyStats}>
+        <StreakRing days={streakDays} size={80} strokeWidth={6} />
+        <View style={styles.statGrid}>
+          {[
+            { val: todayCompleted, lbl: '今日完了' },
+            { val: totalItems,     lbl: '総カード' },
+            { val: masteredCount,  lbl: '習得済み' },
+            { val: `${accuracyRate}%`, lbl: '正答率' },
+          ].map((s) => (
+            <View
+              key={s.lbl}
+              style={[styles.statBox, { borderColor: colors.separator }]}
+            >
+              <Text style={[styles.statVal, { color: colors.label }]}>{s.val}</Text>
+              <Text style={[styles.statLbl, { color: colors.labelTertiary }]}>{s.lbl}</Text>
+            </View>
+          ))}
         </View>
       </View>
 
@@ -233,28 +225,26 @@ export function HistoryScreen() {
             return (
               <View
                 key={ri.reviewId}
-                style={[styles.recentCard, { backgroundColor: colors.card }, cardShadow]}
+                style={[styles.historyItem, { borderBottomColor: colors.separator, backgroundColor: colors.card }]}
               >
                 <View style={[styles.typeBadge, { backgroundColor: meta.bg }]}>
                   <Text style={[styles.typeBadgeText, { color: meta.color }]}>{meta.label}</Text>
                 </View>
-                <View style={styles.recentTextArea}>
-                  <View style={styles.recentTitleRow}>
-                    <Text
-                      style={[styles.recentTitle, { color: colors.label }]}
-                      numberOfLines={2}
-                    >
-                      {ri.item.title}
+                <View style={styles.historyBody}>
+                  <Text
+                    style={[styles.historyTitle, { color: colors.accent }]}
+                    numberOfLines={1}
+                  >
+                    {ri.item.title}
+                  </Text>
+                  {relTime ? (
+                    <Text style={[styles.historyTime, { color: colors.labelTertiary }]}>
+                      {relTime}
                     </Text>
-                    {relTime ? (
-                      <Text style={[styles.recentTime, { color: colors.labelTertiary }]}>
-                        {relTime}
-                      </Text>
-                    ) : null}
-                  </View>
+                  ) : null}
                   {ri.item.content ? (
                     <Text
-                      style={[styles.recentContent, { color: colors.labelSecondary }]}
+                      style={[styles.historyPreview, { color: colors.labelSecondary }]}
                       numberOfLines={2}
                     >
                       {ri.item.content}
