@@ -66,7 +66,11 @@ function classifyError(msg: string | null): ErrorType {
     msg.includes('fetch') ||
     msg.includes('timeout') ||
     msg.includes('接続') ||
-    msg.includes('タイムアウト')
+    msg.includes('タイムアウト') ||
+    msg.includes('ブロック') ||
+    msg.includes('HTTP 403') ||
+    msg.includes('HTTP 429') ||
+    msg.includes('HTTP 5')
   ) return 'network';
   return 'general';
 }

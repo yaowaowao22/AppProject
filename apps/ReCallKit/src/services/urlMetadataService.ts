@@ -7,24 +7,37 @@ export interface UrlMetadata {
 /** URLのHTMLを取得して文字列で返す。失敗時はエラーをスロー */
 async function fetchHtml(url: string): Promise<string> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const timeoutId = setTimeout(() => controller.abort(), 15_000);
 
-  const response = await fetch(url, {
-    signal: controller.signal,
-    headers: {
-      // Webサイトのbot拒否を回避する最低限のUser-Agent
-      'User-Agent': 'Mozilla/5.0 (compatible; ReCallKit/1.0)',
-      Accept: 'text/html',
-    },
-  });
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      redirect: 'follow',
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) ' +
+          'AppleWebKit/537.36 (KHTML, like Gecko) ' +
+          'Chrome/131.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Upgrade-Insecure-Requests': '1',
+      },
+    });
 
-  clearTimeout(timeoutId);
+    clearTimeout(timeoutId);
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    return response.text();
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
   }
-
-  return response.text();
 }
 
 /**
@@ -94,7 +107,21 @@ export async function extractBodyText(
       text = extractTagContent(cleaned, 'main');
     }
 
-    // 優先順位3: <body> 内の <p> タグを全結合
+    // 優先順位3: <section> タグの集合（note.com 等のCMS対応）
+    if (!text || text.replace(/<[^>]+>/g, ' ').trim().length < 100) {
+      const sectionMatches = cleaned.match(/<section[^>]*>[\s\S]*?<\/section>/gi);
+      if (sectionMatches) {
+        const sectionText = sectionMatches
+          .map((s) => s.replace(/<[^>]+>/g, ' ').trim())
+          .filter((s) => s.length > 30)
+          .join(' ');
+        if (sectionText.length > (text?.replace(/<[^>]+>/g, ' ').trim().length ?? 0)) {
+          text = sectionText;
+        }
+      }
+    }
+
+    // 優先順位4: <body> 内の <p> タグを全結合
     if (!text) {
       text = extractParagraphs(cleaned);
     }
@@ -139,12 +166,44 @@ function removeExcludedTags(html: string): string {
 }
 
 /**
- * 指定タグの最初のブロックの内容を返す。
- * 存在しなければ空文字列。
+ * 指定タグの最も外側のブロック内容を返す。
+ * ネストされた同名タグがあっても正しくペアリングする。
  */
 function extractTagContent(html: string, tag: string): string {
-  const match = html.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i'));
-  return match ? match[1] : '';
+  const openRe = new RegExp(`<${tag}[\\s>]`, 'gi');
+  const openMatch = openRe.exec(html);
+  if (!openMatch) return '';
+
+  const startIdx = openMatch.index;
+  const tagCloseIdx = html.indexOf('>', startIdx);
+  if (tagCloseIdx === -1) return '';
+
+  let depth = 1;
+  let pos = tagCloseIdx + 1;
+  const openPattern = new RegExp(`<${tag}[\\s>]`, 'gi');
+  const closePattern = new RegExp(`</${tag}\\s*>`, 'gi');
+
+  while (depth > 0 && pos < html.length) {
+    openPattern.lastIndex = pos;
+    closePattern.lastIndex = pos;
+    const nextOpen = openPattern.exec(html);
+    const nextClose = closePattern.exec(html);
+
+    if (!nextClose) break;
+
+    if (nextOpen && nextOpen.index < nextClose.index) {
+      depth++;
+      pos = nextOpen.index + nextOpen[0].length;
+    } else {
+      depth--;
+      if (depth === 0) {
+        return html.slice(tagCloseIdx + 1, nextClose.index);
+      }
+      pos = nextClose.index + nextClose[0].length;
+    }
+  }
+
+  return html.slice(tagCloseIdx + 1, pos);
 }
 
 /** <body> 内の全 <p> タグのテキストをスペース区切りで結合 */

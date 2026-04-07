@@ -63,46 +63,77 @@ LONG_TEXT_TAIL = 6000
 bedrock = boto3.client("bedrock-runtime", region_name=BEDROCK_REGION)
 s3 = boto3.client("s3")
 
-FETCH_HEADERS = {
-    "User-Agent": (
+USER_AGENTS = [
+    # Chrome 131 on macOS
+    (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
+        "Chrome/131.0.0.0 Safari/537.36"
     ),
+    # Safari 17 on macOS
+    (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+        "Version/17.6 Safari/605.1.15"
+    ),
+]
+
+FETCH_HEADERS_BASE = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Upgrade-Insecure-Requests": "1",
 }
+
+MAX_RETRIES = 2
+RETRYABLE_CODES = {403, 429, 500, 502, 503, 504}
 
 
 # ============================================================
 # URLフェッチ・テキスト抽出
 # ============================================================
 
-def fetch_and_extract(url: str) -> str:
-    """URLをサーバー側でフェッチしてテキストを抽出する。"""
-    ctx = ssl._create_unverified_context()
-    req = urllib.request.Request(url, headers=FETCH_HEADERS)
-    try:
-        with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
-            html = resp.read().decode("utf-8", errors="replace")
-    except urllib.error.HTTPError as e:
-        raise RuntimeError(f"HTTP {e.code}") from e
-    except Exception as e:
-        raise RuntimeError(str(e)) from e
-
+def _extract_text_from_html(html: str) -> str:
+    """HTML文字列からテキストを抽出する。"""
     # script / style / noscript を除去
     html = re.sub(r"<(script|style|noscript)[^>]*>[\s\S]*?</\1>", "", html, flags=re.IGNORECASE)
+    # コメント除去
+    html = re.sub(r"<!--[\s\S]*?-->", "", html)
 
-    # article → main → p タグの順で抽出
+    # 1. article → main の順で抽出（ネスト対応: 最長マッチ）
     for tag in ("article", "main"):
-        m = re.search(rf"<{tag}[^>]*>([\s\S]*?)</{tag}>", html, re.IGNORECASE)
-        if m:
-            text = re.sub(r"<[^>]+>", " ", m.group(1))
+        content = _extract_outer_tag(html, tag)
+        if content:
+            text = re.sub(r"<[^>]+>", " ", content)
             text = re.sub(r"\s+", " ", text).strip()
             if len(text) > 100:
                 return text[:MAX_TEXT_LENGTH]
 
-    # <p> タグを全結合
+    # 2. role="article" コンテナ（note.com 等のCMS対応）
+    m = re.search(r'role\s*=\s*["\']article["\'][^>]*>([\s\S]*?)(?:</div>|</section>)', html, re.IGNORECASE)
+    if m:
+        text = re.sub(r"<[^>]+>", " ", m.group(1))
+        text = re.sub(r"\s+", " ", text).strip()
+        if len(text) > 100:
+            return text[:MAX_TEXT_LENGTH]
+
+    # 3. <section> タグの集合（note.com 等で使われる）
+    sections = re.findall(r"<section[^>]*>([\s\S]*?)</section>", html, re.IGNORECASE)
+    if sections:
+        texts = []
+        for sec in sections:
+            t = re.sub(r"<[^>]+>", " ", sec)
+            t = re.sub(r"\s+", " ", t).strip()
+            if len(t) > 30:
+                texts.append(t)
+        if texts:
+            combined = " ".join(texts)
+            if len(combined) > 200:
+                return combined[:MAX_TEXT_LENGTH]
+
+    # 4. <p> タグを全結合
     paragraphs = re.findall(r"<p[^>]*>([\s\S]*?)</p>", html, re.IGNORECASE)
     if paragraphs:
         text = " ".join(re.sub(r"<[^>]+>", " ", p) for p in paragraphs)
@@ -110,11 +141,79 @@ def fetch_and_extract(url: str) -> str:
         if text:
             return text[:MAX_TEXT_LENGTH]
 
-    # fallback: body 全体
-    m = re.search(r"<body[^>]*>([\s\S]*?)</body>", html, re.IGNORECASE)
-    raw = m.group(1) if m else html
+    # 5. fallback: body 全体
+    body = _extract_outer_tag(html, "body")
+    raw = body if body else html
     text = re.sub(r"<[^>]+>", " ", raw)
     return re.sub(r"\s+", " ", text).strip()[:MAX_TEXT_LENGTH]
+
+
+def _extract_outer_tag(html: str, tag: str) -> str | None:
+    """指定タグの最も外側のブロック内容を返す（ネスト対応）。"""
+    open_re = re.compile(rf"<{tag}[\s>]", re.IGNORECASE)
+    close_re = re.compile(rf"</{tag}\s*>", re.IGNORECASE)
+
+    open_m = open_re.search(html)
+    if not open_m:
+        return None
+
+    tag_close_idx = html.find(">", open_m.start())
+    if tag_close_idx == -1:
+        return None
+
+    depth = 1
+    pos = tag_close_idx + 1
+
+    while depth > 0 and pos < len(html):
+        next_open = open_re.search(html, pos)
+        next_close = close_re.search(html, pos)
+
+        if not next_close:
+            break
+
+        if next_open and next_open.start() < next_close.start():
+            depth += 1
+            pos = next_open.end()
+        else:
+            depth -= 1
+            if depth == 0:
+                return html[tag_close_idx + 1 : next_close.start()]
+            pos = next_close.end()
+
+    return html[tag_close_idx + 1 : pos]
+
+
+def fetch_and_extract(url: str) -> str:
+    """URLをサーバー側でフェッチしてテキストを抽出する。403等はUAを変えてリトライ。"""
+    ctx = ssl._create_unverified_context()
+    last_error = None
+
+    for attempt in range(1 + MAX_RETRIES):
+        ua = USER_AGENTS[attempt % len(USER_AGENTS)]
+        headers = {**FETCH_HEADERS_BASE, "User-Agent": ua}
+        req = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=20, context=ctx) as resp:
+                html = resp.read().decode("utf-8", errors="replace")
+            return _extract_text_from_html(html)
+        except urllib.error.HTTPError as e:
+            last_error = e
+            if e.code in RETRYABLE_CODES and attempt < MAX_RETRIES:
+                logger.warning("HTTP %d for %s, retrying (%d/%d)...", e.code, url, attempt + 1, MAX_RETRIES)
+                import time
+                time.sleep(1.5 * (attempt + 1))
+                continue
+            raise RuntimeError(f"HTTP {e.code}") from e
+        except Exception as e:
+            last_error = e
+            if attempt < MAX_RETRIES:
+                logger.warning("Fetch error for %s: %s, retrying (%d/%d)...", url, e, attempt + 1, MAX_RETRIES)
+                import time
+                time.sleep(1.5 * (attempt + 1))
+                continue
+            raise RuntimeError(str(e)) from e
+
+    raise RuntimeError(str(last_error))
 
 
 # ============================================================
