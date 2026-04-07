@@ -31,7 +31,11 @@ import type { AnalysisResult } from '../types/analysis';
 const MODEL_DIR = `${FileSystem.documentDirectory}localai/`;
 const MODEL_PATH = `${MODEL_DIR}${LOCAL_AI_MODEL_FILENAME}`;
 
-export type DownloadProgressCallback = (progress: number) => void;
+/** progress: 0.0〜1.0、bytesWrittenMB: 実際に書き込んだMB数 */
+export type DownloadProgressCallback = (progress: number, bytesWrittenMB: number) => void;
+
+// HuggingFace は Content-Length を返さないことがある。その場合の推定サイズ（~2.35GB）
+const ESTIMATED_MODEL_BYTES = 2_468_000_000;
 
 /** モデルファイルがデバイスに存在するか確認する */
 export async function isModelDownloaded(): Promise<boolean> {
@@ -41,7 +45,7 @@ export async function isModelDownloaded(): Promise<boolean> {
 
 /**
  * モデルをHuggingFaceからダウンロードする（初回のみ、約2.3GB）。
- * @param onProgress 0.0〜1.0 の進捗コールバック
+ * @param onProgress 進捗コールバック（progress: 0〜1、bytesWrittenMB: 書き込み済みMB）
  */
 export async function downloadModel(
   onProgress?: DownloadProgressCallback,
@@ -53,11 +57,14 @@ export async function downloadModel(
     MODEL_PATH,
     {},
     (dp) => {
-      const p =
+      const bytesWrittenMB = Math.round(dp.totalBytesWritten / 1_000_000);
+      // totalBytesExpectedToWrite が 0（Content-Length なし）の場合は推定サイズで計算
+      const total =
         dp.totalBytesExpectedToWrite > 0
-          ? dp.totalBytesWritten / dp.totalBytesExpectedToWrite
-          : 0;
-      onProgress?.(p);
+          ? dp.totalBytesExpectedToWrite
+          : ESTIMATED_MODEL_BYTES;
+      const p = Math.min(dp.totalBytesWritten / total, 0.99);
+      onProgress?.(p, bytesWrittenMB);
     },
   );
 

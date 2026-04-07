@@ -178,6 +178,7 @@ export function URLImportListScreen({ navigation }: Props) {
   // ---- モデルダウンロード状態 ----
   const [modelReady, setModelReady] = useState(!LOCAL_AI_ENABLED);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadedMB, setDownloadedMB] = useState(0);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -186,7 +187,10 @@ export function URLImportListScreen({ navigation }: Props) {
       const downloaded = await isModelDownloaded();
       if (downloaded) { setModelReady(true); return; }
       try {
-        await downloadModel((p) => setDownloadProgress(p));
+        await downloadModel((p, mb) => {
+          setDownloadProgress(p);
+          setDownloadedMB(mb);
+        });
         setModelReady(true);
       } catch (err) {
         setDownloadError(err instanceof Error ? err.message : 'ダウンロードに失敗しました');
@@ -334,7 +338,7 @@ export function URLImportListScreen({ navigation }: Props) {
   // ---- モデルダウンロード UI ----
   if (LOCAL_AI_ENABLED && !modelReady) {
     const pct = Math.round(downloadProgress * 100);
-    const mb  = Math.round(downloadProgress * 2355); // ~2.3GB
+    const isDownloading = downloadedMB > 0 || downloadProgress > 0;
     return (
       <View style={[styles.center, { backgroundColor: colors.backgroundGrouped }]}>
         <View style={[styles.downloadCard, { backgroundColor: colors.card }]}>
@@ -357,16 +361,17 @@ export function URLImportListScreen({ navigation }: Props) {
                 <View
                   style={[
                     styles.progressFill,
-                    { backgroundColor: colors.accent, width: `${pct}%` },
+                    { backgroundColor: colors.accent, width: pct > 0 ? `${pct}%` : '2%' },
                   ]}
                 />
               </View>
               <Text style={[styles.downloadPercent, { color: colors.labelSecondary }]}>
-                {pct}% — {mb} MB / 2,355 MB
+                {isDownloading
+                  ? `${downloadedMB} MB ダウンロード済み / 約2,355 MB`
+                  : 'ダウンロードを開始しています...'}
               </Text>
-              {pct === 0 && (
-                <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: Spacing.s }} />
-              )}
+              {/* ダウンロード中は常にインジケーターを表示 */}
+              <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: Spacing.s }} />
             </>
           )}
         </View>
