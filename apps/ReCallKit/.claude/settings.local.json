@@ -3,7 +3,10 @@
     "allow": [
       "Bash(npm install:*)",
       "Bash(node:*)",
-      "Bash(node C:/Users/ytata/iosApp/claude-parallel-manager/scripts/save-essence.mjs)"
+      "Bash(claude --print --bare --model claude-haiku-4-5-20251001 --no-session-persistence --dangerously-skip-permissions)",
+      "Bash(claude --print --system-prompt \"No special instructions.\" --model claude-haiku-4-5-20251001 --no-session-persistence)",
+      "Bash(git -C /c/Users/ytata/AppProject/baseProject diff HEAD -- apps/ReCallKit/src/db/schema.ts)",
+      "Bash(git:*)"
     ]
   }
 }
