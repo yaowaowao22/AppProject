@@ -26,7 +26,7 @@ interface ThemeContextValue {
   setThemePreference: (pref: ThemePreference) => Promise<void>;
 }
 
-const _defaultTheme = THEMES['light-amber'];
+const _defaultTheme = THEMES['light'];
 
 const ThemeContext = createContext<ThemeContextValue>({
   colors: _defaultTheme.colors,

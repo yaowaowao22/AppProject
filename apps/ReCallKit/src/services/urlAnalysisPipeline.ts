@@ -20,13 +20,16 @@ export type PipelineResult = AnalysisResult & { sourceUrl: string };
  * LOCAL_AI_ENABLED = false の場合:
  *   App → Lambda → Bedrock（Claude 3 Haiku）→ JSON
  */
-export async function analyzeUrlPipeline(url: string): Promise<PipelineResult> {
+export async function analyzeUrlPipeline(
+  url: string,
+  onProgress?: (currentChunk: number, totalChunks: number) => void,
+): Promise<PipelineResult> {
   try {
     let result: AnalysisResult;
 
     if (LOCAL_AI_ENABLED) {
       console.log('[urlAnalysisPipeline] ローカルAI（llama.rn + Gemma 4）モードで解析:', url);
-      result = await analyzeUrlLocal(url);
+      result = await analyzeUrlLocal(url, onProgress);
     } else {
       if (!isAwsConfigured()) {
         throw new Error(

@@ -120,6 +120,7 @@ const ERROR_RECOVERY: Record<ErrorType, ErrorRecoveryConfig> = {
 async function executeJob(
   db: import('expo-sqlite').SQLiteDatabase,
   job: UrlImportJob,
+  onChunkProgress?: (current: number, total: number) => void,
 ): Promise<void> {
   await updateJob(db, job.id, { status: 'processing' });
 
@@ -133,7 +134,7 @@ async function executeJob(
       return;
     }
 
-    const result = await analyzeUrlPipeline(job.url);
+    const result = await analyzeUrlPipeline(job.url, onChunkProgress);
     await consumeOne();
 
     if (result.qa_pairs.length === 0) {
@@ -209,6 +210,7 @@ export function URLImportListScreen({ navigation }: Props) {
 
   const [jobs, setJobs] = useState<UrlImportJob[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chunkProgress, setChunkProgress] = useState<{ jobId: number; current: number; total: number } | null>(null);
   const processingRef = useRef(false);
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
@@ -253,8 +255,11 @@ export function URLImportListScreen({ navigation }: Props) {
     if (!pending) return;
 
     processingRef.current = true;
-    executeJob(db, pending).finally(() => {
+    executeJob(db, pending, (current, total) => {
+      setChunkProgress({ jobId: pending.id, current, total });
+    }).finally(() => {
       processingRef.current = false;
+      setChunkProgress(null);
       loadJobs();
     });
   }, [jobs, db, isReady, loadJobs]);
@@ -302,6 +307,9 @@ export function URLImportListScreen({ navigation }: Props) {
   // ---- ジョブカードのレンダリング ----
   const renderJob = useCallback(({ item }: { item: UrlImportJob }) => {
     const cfg = STATUS_CONFIG[item.status];
+    const progress = item.status === 'processing' && chunkProgress?.jobId === item.id
+      ? chunkProgress
+      : null;
     const statusColor = item.status === 'done'
       ? colors.success
       : item.status === 'failed'
@@ -320,7 +328,11 @@ export function URLImportListScreen({ navigation }: Props) {
             ) : (
               <Ionicons name={cfg.iconName} size={14} color={statusColor} />
             )}
-            <Text style={[styles.statusLabel, { color: statusColor }]}>{cfg.label}</Text>
+            <Text style={[styles.statusLabel, { color: statusColor }]}>
+              {progress
+                ? `第${progress.current + 1}チャンク / 全${progress.total}チャンク`
+                : cfg.label}
+            </Text>
           </View>
           <Text style={[styles.timeText, { color: colors.labelTertiary }]}>
             {relativeTime(item.created_at)}
@@ -426,7 +438,7 @@ export function URLImportListScreen({ navigation }: Props) {
         </View>
       </View>
     );
-  }, [colors, navigation, handleRetry, handleRecoveryAction]);
+  }, [colors, navigation, chunkProgress, handleRetry, handleRecoveryAction]);
 
   // ---- スケルトンローディング ----
   if (loading) {
