@@ -1,8 +1,8 @@
 // ============================================================
 // HomeScreen - 6セクション統合ダッシュボード
 // [1] ヘッダー（DrawerNavigator が担当）
-// [2] DateRow: 青丸日付 + 曜日 + due件数
-// [3] 週間アクティビティ（This Week）
+// [2] 週間アクティビティ（This Week）
+// [3] 復習ヒーロー CTA（empty / due / done 3状態）
 // [4] Recently Added（横スクロール）
 // [5] Mastery（カテゴリ別習熟度バー）
 // [6] Shortcuts（URLから / 手動）
@@ -25,6 +25,7 @@ import { useDatabase } from '../../hooks/useDatabase';
 import {
   getDueItems,
   getStreakDays,
+  getTodayCompletedCount,
   getTotalItemCount,
   getAllReviewableItems,
   type ReviewableItem,
@@ -43,7 +44,7 @@ import { useWidgetData } from '../../hooks/useWidgetData';
 import { generateHint } from '../../utils/generateHint';
 import { CategoryMasteryBar } from '../../components/CategoryMasteryBar';
 import { ShortcutList, type ShortcutAction } from '../../components/ShortcutList';
-import { DateRow } from '../../components/DateRow';
+import { ReviewCTACard } from '../../components/ReviewCTACard';
 import type { HomeStackParamList, DrawerParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'HomeMain'>;
@@ -101,6 +102,7 @@ export function HomeScreen({ navigation }: Props) {
   const [dueItems, setDueItems] = useState<ReviewableItem[]>([]);
   const [allItems, setAllItems] = useState<ReviewableItem[]>([]);
   const [streakDays, setStreakDays] = useState(0);
+  const [todayCompleted, setTodayCompleted] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
   const [weeklyActivity, setWeeklyActivity] = useState<DailyActivity[]>([]);
@@ -112,9 +114,10 @@ export function HomeScreen({ navigation }: Props) {
     if (!db || !isReady) return;
     setLoading(true);
     try {
-      const [due, streak, total, all, weekly, recent, catStats] = await Promise.all([
+      const [due, streak, completed, total, all, weekly, recent, catStats] = await Promise.all([
         getDueItems(db),
         getStreakDays(db),
+        getTodayCompletedCount(db),
         getTotalItemCount(db),
         getAllReviewableItems(db),
         getWeeklyActivity(db),
@@ -130,6 +133,7 @@ export function HomeScreen({ navigation }: Props) {
       setDueItems(due);
       setAllItems(all);
       setStreakDays(streak);
+      setTodayCompleted(completed);
       setTotalItems(total);
       setWeeklyActivity(weekly);
       setRecentItems(recent);
@@ -161,6 +165,29 @@ export function HomeScreen({ navigation }: Props) {
     if (sidebarFilter.kind === 'tag') return dueItems.filter((ri) => taggedItemIds.has(ri.item.id));
     return dueItems;
   }, [sidebarFilter, dueItems, taggedItemIds]);
+
+  // 期限切れ件数（today midnight 以前）
+  const overdueCount = useMemo(() => {
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+    return filteredDueItems.filter((ri) => {
+      const next = new Date(ri.item.review!.next_review_at.replace(' ', 'T'));
+      return next < todayMidnight;
+    }).length;
+  }, [filteredDueItems]);
+
+  // due状態ヒーロー用: カテゴリ一覧・推定時間
+  const dueCategories = useMemo(() => {
+    const cats = filteredDueItems
+      .map((ri) => ri.item.category)
+      .filter((c): c is string => c != null && c !== '');
+    return [...new Set(cats)].slice(0, 3);
+  }, [filteredDueItems]);
+
+  const estimatedMinutes = useMemo(
+    () => Math.max(1, Math.round(filteredDueItems.length * 0.5)),
+    [filteredDueItems.length]
+  );
 
   // 週間サマリー
   const weekActiveDays = useMemo(
