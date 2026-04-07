@@ -42,7 +42,7 @@ export function HomeStack() {
       <Stack.Screen
         name="URLImportList"
         component={URLImportListScreen as React.ComponentType<any>}
-        options={{ title: '取り込み一覧' }}
+        options={{ title: 'タスク' }}
       />
       <Stack.Screen
         name="QAPreview"

@@ -2,6 +2,9 @@
 // DeepDiveButton - ローカルLLM深掘りトリガーボタン
 // タップ → キューに追加 → バックグラウンドで処理
 // 結果があればバッジ表示 → タップでモーダル表示
+//
+// compact=true のとき: 幅いっぱいの1行コンパクト表示
+//   URLImportListScreen の各カード下部などで使用
 // ============================================================
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -24,9 +27,11 @@ interface DeepDiveButtonProps {
   itemId: number;
   question: string;
   answer: string;
+  /** true のとき横幅いっぱいのコンパクト1行表示 */
+  compact?: boolean;
 }
 
-export function DeepDiveButton({ itemId, question, answer }: DeepDiveButtonProps) {
+export function DeepDiveButton({ itemId, question, answer, compact = false }: DeepDiveButtonProps) {
   const { db, isReady } = useDatabase();
   const { colors } = useTheme();
   const [dives, setDives] = useState<DeepDive[]>([]);
@@ -92,6 +97,41 @@ export function DeepDiveButton({ itemId, question, answer }: DeepDiveButtonProps
       ? 'hourglass-outline'
       : 'bulb-outline';
 
+  if (compact) {
+    return (
+      <>
+        <Pressable
+          style={({ pressed }) => [
+            styles.compactButton,
+            {
+              backgroundColor: pressed ? `${buttonColor}22` : 'transparent',
+            },
+          ]}
+          onPress={handlePress}
+          disabled={enqueueing}
+          accessibilityRole="button"
+          accessibilityLabel={buttonLabel}
+        >
+          <Ionicons name={buttonIcon} size={13} color={buttonColor} />
+          <Text style={[styles.compactLabel, { color: buttonColor }]}>
+            {buttonLabel}
+          </Text>
+          {hasDoneResult && (
+            <View style={[styles.badge, { backgroundColor: buttonColor }]}>
+              <Text style={styles.badgeText}>{dives.length}</Text>
+            </View>
+          )}
+        </Pressable>
+
+        <DeepDiveResultModal
+          visible={modalVisible}
+          dives={dives}
+          onClose={() => setModalVisible(false)}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <View style={styles.wrapper}>
@@ -141,5 +181,32 @@ const styles = StyleSheet.create({
   label: {
     ...TypeScale.footnote,
     fontWeight: '600',
+  },
+  // ---- compact mode ----
+  compactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    borderRadius: Radius.xs,
+  },
+  compactLabel: {
+    ...TypeScale.caption1,
+    fontWeight: '600',
+    flex: 1,
+  },
+  badge: {
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

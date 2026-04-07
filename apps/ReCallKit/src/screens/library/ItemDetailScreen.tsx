@@ -666,4 +666,13 @@ const s = StyleSheet.create({
     fontWeight: '500' as const,
     textAlign: 'right',
   },
+
+  // ---- 元記事リンク ----
+  fetchedTextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    flex: 1,
+  },
 });

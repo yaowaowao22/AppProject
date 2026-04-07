@@ -25,7 +25,7 @@ export function TaskStack() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         component={URLImportListScreen as React.ComponentType<any>}
         options={{
-          title: '取り込み一覧',
+          title: 'タスク',
           ...makeLargeTitleOptions(colors),
         }}
       />

@@ -79,7 +79,7 @@ async function processLoop(db: SQLiteDatabase): Promise<void> {
       notifyListeners();
 
       const prompt = buildDeepDivePrompt(job.question, job.answer);
-      const result = await runLocalCompletion(prompt, 2000);
+      const result = await runLocalCompletion(prompt, 3000);
 
       await updateDeepDiveStatus(db, job.id, 'done', result);
       notifyListeners();
@@ -94,7 +94,7 @@ async function processLoop(db: SQLiteDatabase): Promise<void> {
 
 function buildDeepDivePrompt(question: string, answer: string): string {
   return `<start_of_turn>user
-以下の学習カード（Q&A）について、より深く理解するために詳しく解説してください。
+以下の学習カード（Q&A）について、より深く理解できるよう詳細に解説してください。
 
 【問題】
 ${question}
@@ -103,13 +103,24 @@ ${question}
 ${answer}
 
 ---
-以下の観点で日本語で解説してください:
-- なぜそうなるのか（背景・原理）
-- 関連する重要な概念
-- 具体例やたとえ話
-- よくある誤解や注意点
+以下の構成で日本語で解説してください（合計1500〜2000字程度）:
 
-わかりやすく、800字程度で構造的に回答してください。<end_of_turn>
+## 背景・なぜそうなるのか
+この概念・事実が成り立つ根拠や原理を丁寧に説明してください。
+
+## 関連する重要な概念
+この知識を正しく理解するために必要な周辺知識・前提知識を説明してください。
+
+## 具体例・応用
+現実世界での具体例、コード例、たとえ話などを使って理解を深めてください。
+
+## よくある誤解・注意点
+学習者がはまりやすい誤解や、間違えやすいポイントを挙げてください。
+
+## まとめ
+要点を3〜5行でまとめてください。
+
+各セクションは必ず書いてください。<end_of_turn>
 <start_of_turn>model
 `;
 }

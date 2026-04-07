@@ -28,6 +28,7 @@ import { getItemById, submitReviewRating } from '../../db/reviewRepository';
 import { SIMPLE_RATINGS } from '../../sm2/algorithm';
 import type { SimpleRating } from '../../sm2/algorithm';
 import { RatingButtons } from '../../components/RatingButtons';
+import { AIDeepDiveButtons } from '../../components/AIDeepDiveButtons';
 import { DeepDiveButton } from '../../components/DeepDiveButton';
 import { ReviewProgressBar } from '../../components/ReviewProgressBar';
 import { useCloseHeader } from '../../hooks/useCloseHeader';
@@ -359,6 +360,10 @@ export function QuizScreen({ navigation, route }: Props) {
             <RatingButtons onRate={handleRate} />
             <DeepDiveButton
               itemId={reviewable.item.id}
+              question={reviewable.item.title}
+              answer={reviewable.item.content}
+            />
+            <AIDeepDiveButtons
               question={reviewable.item.title}
               answer={reviewable.item.content}
             />

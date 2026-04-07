@@ -34,6 +34,7 @@ import { SIMPLE_RATINGS } from '../../sm2/algorithm';
 import type { SimpleRating } from '../../sm2/algorithm';
 import { ReviewCard } from '../../components/ReviewCard';
 import { RatingButtons } from '../../components/RatingButtons';
+import { AIDeepDiveButtons } from '../../components/AIDeepDiveButtons';
 import { DeepDiveButton } from '../../components/DeepDiveButton';
 import { ReviewProgressBar } from '../../components/ReviewProgressBar';
 import { useCloseHeader } from '../../hooks/useCloseHeader';
@@ -317,6 +318,10 @@ export function ReviewScreen({ navigation, route }: Props) {
             <RatingButtons onRate={handleRate} />
             <DeepDiveButton
               itemId={currentItem.item.id}
+              question={currentItem.item.title}
+              answer={currentItem.item.content}
+            />
+            <AIDeepDiveButtons
               question={currentItem.item.title}
               answer={currentItem.item.content}
             />

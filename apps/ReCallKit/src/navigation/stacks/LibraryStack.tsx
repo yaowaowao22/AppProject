@@ -60,7 +60,7 @@ export function LibraryStack() {
       <Stack.Screen
         name="URLImportList"
         component={URLImportListScreen}
-        options={{ title: '取り込み一覧' }}
+        options={{ title: 'タスク' }}
       />
       <Stack.Screen
         name="QAPreview"

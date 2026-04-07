@@ -42,6 +42,7 @@ import {
   type UrlImportJob,
 } from '../../db/urlJobRepository';
 import { FetchedTextModal } from '../../components/FetchedTextModal';
+import { DeepDiveButton } from '../../components/DeepDiveButton';
 import type { LibraryStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'URLImportList'>;
@@ -439,6 +440,18 @@ export function URLImportListScreen({ navigation }: Props) {
           );
         })()}
 
+        {/* 深掘り行（保存済みアイテムのみ・1行） */}
+        {item.status === 'done' && item.item_id != null && (
+          <View style={[styles.deepDiveRow, { borderTopColor: colors.separator }]}>
+            <DeepDiveButton
+              itemId={item.item_id}
+              question={item.title ?? item.url}
+              answer={item.url}
+              compact
+            />
+          </View>
+        )}
+
         {/* アクションボタン行 */}
         <View style={styles.cardActions}>
           {item.status === 'done' && item.result_json != null && (
@@ -749,6 +762,13 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: Radius.xs,
     width: '45%',
+  },
+
+  // ---- 深掘り行 ----
+  deepDiveRow: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: Spacing.xs,
+    marginTop: Spacing.xs,
   },
 
   // ---- 解析中プログレスバー ----
