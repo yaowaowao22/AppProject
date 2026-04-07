@@ -469,6 +469,21 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
     sidebar: ds('#F87171', 248, 113, 113),
   },
 
+  'dark-blue': {
+    id: 'dark-blue',
+    name: 'ブルー',
+    category: 'dark',
+    isDark: true,
+    swatchColor: '#60A5FA',
+    swatchBg: '#0D1B2A',
+    colors: darkBase(
+      '#60A5FA', 96, 165, 250,
+      '#0A1520', '#0D1B2A', '#0D1B2A',
+      'rgba(10,21,32,0.94)', 'rgba(84,84,88,0.65)',
+    ),
+    sidebar: ds('#60A5FA', 96, 165, 250, '#0A1520', 'rgba(10,21,32,0.92)'),
+  },
+
   // ── モノクロ・ライト（5） ────────────────────────────────────
 
   'mono-white': {

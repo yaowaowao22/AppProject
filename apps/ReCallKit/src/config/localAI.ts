@@ -24,8 +24,12 @@ export const LOCAL_AI_MODEL_FILENAME = 'gemma-4-E2B-Q3_K_S.gguf';
 /** タイムアウト（ms）。Metal GPU使用時は ~40秒程度 */
 export const LOCAL_AI_TIMEOUT_MS = 180_000;
 
-/** テキスト抽出の上限文字数（Lambdaと同値） */
-export const LOCAL_AI_MAX_TEXT_LENGTH = 12_000;
+/**
+ * テキスト抽出の上限文字数。
+ * チャンク分割して全文処理するため Bedrock 版より大きく設定。
+ * 3,500 chars/chunk × ~6 chunks = ~21,000 chars が目安。
+ */
+export const LOCAL_AI_MAX_TEXT_LENGTH = 20_000;
 
 /** llama.rn: コンテキストウィンドウ（トークン数） */
 export const LOCAL_AI_N_CTX = 4096;

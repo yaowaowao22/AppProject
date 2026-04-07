@@ -15,6 +15,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: false,
     shouldPlaySound: false,
     shouldSetBadge: false,
+    shouldShowBanner: false,
+    shouldShowList: false,
   }),
 });
 

@@ -14,10 +14,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import type { DownloadProgressData, DownloadPauseState } from 'expo-file-system/legacy';
 import type { TokenData, LlamaContext } from 'llama.rn';
 
-import {
-  LOCAL_AI_TIMEOUT_MS,
-  LOCAL_AI_MAX_TEXT_LENGTH,
-} from '../config/localAI';
+import { LOCAL_AI_TIMEOUT_MS } from '../config/localAI';
 import {
   MODEL_CATALOG,
   DEFAULT_MODEL_ID,
@@ -25,7 +22,7 @@ import {
   type ModelDefinition,
 } from '../config/modelCatalog';
 import { fetchAndExtractText } from './htmlExtractorService';
-import type { AnalysisResult } from '../types/analysis';
+import type { AnalysisResult, QAPair } from '../types/analysis';
 
 // ============================================================
 // パス管理

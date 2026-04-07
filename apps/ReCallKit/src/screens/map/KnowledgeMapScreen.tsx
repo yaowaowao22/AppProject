@@ -31,6 +31,7 @@ import { useKnowledgeMap } from '../../hooks/useKnowledgeMap';
 import { Spacing, Radius } from '../../theme/spacing';
 import { TypeScale } from '../../theme/typography';
 import { SystemColors, RecallAmber } from '../../theme/colors';
+import { Ionicons } from '@expo/vector-icons';
 import type { DrawerNavigationProp } from '@react-navigation/drawer';
 import type { MapStackParamList, DrawerParamList } from '../../navigation/types';
 import type { ItemWithMeta, Tag } from '../../types';
