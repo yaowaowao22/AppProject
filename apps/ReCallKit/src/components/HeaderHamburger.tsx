@@ -7,18 +7,17 @@ import { useTheme } from '../theme/ThemeContext';
 
 export function HeaderHamburger() {
   const navigation = useNavigation();
-  const { colors, isDark } = useTheme();
-  const pressedBg = isDark ? 'rgba(142,142,147,0.24)' : 'rgba(142,142,147,0.12)';
+  const { colors } = useTheme();
 
   return (
     <Pressable
       onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-      style={({ pressed }) => [styles.button, pressed && { backgroundColor: pressedBg }]}
+      style={({ pressed }) => [styles.button, pressed && { backgroundColor: colors.hamburgerPressedBg }]}
       accessibilityLabel="メニューを開く"
       accessibilityRole="button"
       hitSlop={{ top: 4, right: 4, bottom: 4, left: 4 }}
     >
-      <Ionicons name="menu" size={22} color={colors.labelSecondary} />
+      <Ionicons name="menu" size={22} color={colors.hamburgerTint} />
     </Pressable>
   );
 }

@@ -10,7 +10,7 @@ import { HeaderHamburger } from '../components/HeaderHamburger';
  */
 export function makeNavigatorOptions(colors: ColorScheme): NativeStackNavigationOptions {
   return {
-    headerStyle: { backgroundColor: colors.background },
+    headerStyle: { backgroundColor: colors.navBarBackground },
     headerTintColor: colors.labelSecondary,
     headerTitleStyle: { color: colors.label },
     headerShadowVisible: false,
