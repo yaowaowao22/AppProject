@@ -3,7 +3,7 @@
 // Bedrock解析結果のQ&Aペアをプレビューし、保存 or キャンセルを選択する画面
 // 機能:
 //   - カードスタック（デフォルト）/ リスト の切り替え
-//   - 25件上限（超過時バナー表示）
+//   - 50件上限（超過時バナー表示）
 //   - カードモード: スワイプでinclude/exclude、タップでフリップ、長押しで編集
 //   - リストモード: チェックボックスで選択保存、インライン編集
 //   - 全カード確認後の集計確認画面（除外カードを戻すボタン付き）
@@ -53,7 +53,7 @@ type Props = NativeStackScreenProps<LibraryStackParamList, 'QAPreview'>;
 type ViewMode = 'card' | 'list';
 
 // ---- 定数 ----
-const MAX_ITEMS = 25;
+const MAX_ITEMS = 50;
 const SWIPE_THRESHOLD = 80;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_HEIGHT = 340;
