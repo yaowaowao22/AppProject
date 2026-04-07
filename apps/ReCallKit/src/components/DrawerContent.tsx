@@ -317,7 +317,7 @@ export function DrawerContent({ navigation, state: drawerState }: DrawerContentC
 
         {/* ---- Tags（24pt gap） ---- */}
         <View style={[styles.section, styles.sectionGap]}>
-          <SectionHeading label="Tags" color={sc.sectionHeader} />
+          <SectionHeading label="Tags" color={sc.sectionHeader} separator={sc.separator} />
           {tags.map((tag, index) => {
             const tagId = `tag-${tag.id}`;
             const dotColor = TAG_DOT_PALETTE[index % TAG_DOT_PALETTE.length];
@@ -341,7 +341,7 @@ export function DrawerContent({ navigation, state: drawerState }: DrawerContentC
         {/* ---- Collections（24pt gap、0件の場合は非表示） ---- */}
         {collections.length > 0 && (
           <View style={[styles.section, styles.sectionGap]}>
-            <SectionHeading label="Collections" color={sc.sectionHeader} />
+            <SectionHeading label="Collections" color={sc.sectionHeader} separator={sc.separator} />
             {collections.map((col) => {
               const colId = String(col.id);
               return (
@@ -413,9 +413,9 @@ export function DrawerContent({ navigation, state: drawerState }: DrawerContentC
 // Sub-components
 // ============================================================
 
-function SectionHeading({ label, color }: { label: string; color: string }) {
+function SectionHeading({ label, color, separator }: { label: string; color: string; separator: string }) {
   return (
-    <View style={styles.sectionHeading} accessibilityRole="summary">
+    <View style={[styles.sectionHeading, { borderTopColor: separator }]} accessibilityRole="summary">
       <Text style={[styles.sectionHeadingText, { color }]}>{label}</Text>
     </View>
   );
@@ -540,12 +540,14 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   sectionGap: {
-    paddingTop: Spacing.l, // 24pt — 呼吸の切れ目
+    marginTop: Spacing.s, // 8pt — 罫線前の余白（モックアップ: margin-top:8px）
   },
   sectionHeading: {
-    height: SidebarLayout.sectionHeaderHeight,
-    justifyContent: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: Spacing.m,   // 16pt — 罫線とラベルの間（モックアップ: padding-top:16px）
+    paddingBottom: Spacing.xs, // 4pt
     paddingHorizontal: SidebarLayout.sectionHeaderPaddingH,
+    justifyContent: 'center',
   },
   sectionHeadingText: {
     fontSize: 12,
