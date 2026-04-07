@@ -238,7 +238,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 0,
     borderBottomLeftRadius: 0,
     borderLeftWidth: 3,
-    padding: Spacing.m,
+    paddingVertical: 12,
+    paddingHorizontal: Spacing.m,
     gap: Spacing.s,
   },
   cardGap: {
@@ -246,8 +247,10 @@ const styles = StyleSheet.create({
   },
 
   itemTitle: {
-    ...TypeScale.footnote,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '600' as const,
+    lineHeight: 19,
+    letterSpacing: -0.1,
   },
   noteText: {
     fontSize: 16,

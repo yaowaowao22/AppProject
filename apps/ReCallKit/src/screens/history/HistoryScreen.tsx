@@ -285,49 +285,35 @@ const styles = StyleSheet.create({
     gap: Spacing.m,
   },
 
-  // ――― StreakRing + 統計カード ―――
-  statsCard: {
-    borderRadius: Radius.l,
-    padding: Spacing.l,
-    gap: Spacing.m,
-  },
-  streakRow: {
+  // ――― StreakRing + 統計グリッド ―――
+  historyStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.l,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    gap: 20,
   },
-  streakInfo: {
+  statGrid: {
     flex: 1,
-    gap: Spacing.xs,
-  },
-  streakLabel: {
-    ...TypeScale.subheadline,
-  },
-  streakValue: {
-    ...TypeScale.title2,
-  },
-  separator: {
-    height: StyleSheet.hairlineWidth,
-  },
-  statsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  statBox: {
+    width: '45%',
+    flexGrow: 1,
+    padding: 10,
+    borderWidth: 1,
+    borderRadius: 10,
     alignItems: 'center',
   },
-  statCell: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 2,
+  statVal: {
+    fontSize: 18,
+    fontWeight: '500' as const,
   },
-  statDivider: {
-    width: StyleSheet.hairlineWidth,
-    height: 28,
-  },
-  statValue: {
-    ...TypeScale.title3,
-    fontWeight: '600' as const,
-  },
-  statLabel: {
-    ...TypeScale.caption2,
+  statLbl: {
+    fontSize: 11,
+    marginTop: 2,
   },
 
   // ――― マスタリー分布カード ―――
@@ -368,14 +354,14 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
   },
 
-  // ――― 最近の復習カード ―――
-  recentCard: {
-    borderRadius: Radius.m,
-    paddingVertical: 14,
-    paddingHorizontal: Spacing.m,
+  // ――― 履歴リストアイテム ―――
+  historyItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: Spacing.m,
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   typeBadge: {
     paddingHorizontal: Spacing.s,
@@ -384,32 +370,28 @@ const styles = StyleSheet.create({
     minWidth: 44,
     alignItems: 'center',
     marginTop: 2,
-  },
-  typeBadgeText: {
-    fontSize: 11,
-    fontWeight: '600' as const,
-    lineHeight: 14,
-  },
-  recentTextArea: {
-    flex: 1,
-    gap: Spacing.xs,
-  },
-  recentTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.s,
-  },
-  recentTitle: {
-    ...TypeScale.subheadline,
-    fontWeight: '500' as const,
-    flex: 1,
-  },
-  recentTime: {
-    ...TypeScale.caption1,
     flexShrink: 0,
   },
-  recentContent: {
-    ...TypeScale.footnote,
+  typeBadgeText: {
+    fontSize: 10,
+    fontWeight: '500' as const,
+    lineHeight: 14,
+  },
+  historyBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  historyTitle: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    marginBottom: 2,
+  },
+  historyTime: {
+    fontSize: 11,
+  },
+  historyPreview: {
+    fontSize: 13,
+    marginTop: 4,
   },
 
   // ――― 空状態 ―――
