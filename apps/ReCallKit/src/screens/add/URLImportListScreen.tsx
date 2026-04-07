@@ -14,6 +14,7 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -130,6 +131,36 @@ function relativeTime(dateStr: string): string {
 }
 
 // ============================================================
+// スケルトンカード
+// ============================================================
+function SkeletonCard({
+  animValue,
+  skeletonBg,
+  cardBg,
+}: {
+  animValue: Animated.Value;
+  skeletonBg: string;
+  cardBg: string;
+}) {
+  const opacity = animValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.35, 0.9],
+  });
+
+  return (
+    <View style={[styles.card, { backgroundColor: cardBg }, CardShadow]}>
+      <View style={styles.cardHeader}>
+        <Animated.View style={[styles.skeletonBadge, { backgroundColor: skeletonBg, opacity }]} />
+        <Animated.View style={[styles.skeletonTime,  { backgroundColor: skeletonBg, opacity }]} />
+      </View>
+      <Animated.View style={[styles.skeletonLineFull,  { backgroundColor: skeletonBg, opacity }]} />
+      <Animated.View style={[styles.skeletonLineShort, { backgroundColor: skeletonBg, opacity }]} />
+      <Animated.View style={[styles.skeletonUrl,       { backgroundColor: skeletonBg, opacity }]} />
+    </View>
+  );
+}
+
+// ============================================================
 // コンポーネント
 // ============================================================
 export function URLImportListScreen({ navigation }: Props) {
@@ -140,6 +171,20 @@ export function URLImportListScreen({ navigation }: Props) {
   const [jobs, setJobs] = useState<UrlImportJob[]>([]);
   const [loading, setLoading] = useState(true);
   const processingRef = useRef(false);
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+  // loading 中のみシマーアニメーションを動かす
+  useEffect(() => {
+    if (!loading) return;
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(shimmerAnim, { toValue: 0, duration: 800, useNativeDriver: true }),
+      ]),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [loading, shimmerAnim]);
 
   // ---- ジョブ一覧を DB から読み込む ----
   const loadJobs = useCallback(async () => {
@@ -265,11 +310,19 @@ export function URLImportListScreen({ navigation }: Props) {
     );
   }, [colors, navigation, handleRetry]);
 
-  // ---- 空状態 ----
+  // ---- スケルトンローディング ----
   if (loading) {
+    const skeletonBg = colors.labelTertiary;
     return (
-      <View style={[styles.center, { backgroundColor: colors.backgroundGrouped }]}>
-        <ActivityIndicator color={colors.accent} />
+      <View style={[styles.list, { flex: 1, backgroundColor: colors.backgroundGrouped }]}>
+        {[0, 1, 2].map((i) => (
+          <SkeletonCard
+            key={i}
+            animValue={shimmerAnim}
+            skeletonBg={skeletonBg}
+            cardBg={colors.card}
+          />
+        ))}
       </View>
     );
   }
@@ -375,6 +428,32 @@ const styles = StyleSheet.create({
   actionButtonText: {
     ...TypeScale.caption1,
     fontWeight: '600',
+  },
+
+  // ---- スケルトン ----
+  skeletonBadge: {
+    width: 72,
+    height: 22,
+    borderRadius: Radius.xs,
+  },
+  skeletonTime: {
+    width: 44,
+    height: 13,
+    borderRadius: Radius.xs,
+  },
+  skeletonLineFull: {
+    height: 16,
+    borderRadius: Radius.xs,
+  },
+  skeletonLineShort: {
+    height: 16,
+    borderRadius: Radius.xs,
+    width: '60%',
+  },
+  skeletonUrl: {
+    height: 12,
+    borderRadius: Radius.xs,
+    width: '45%',
   },
 
   // ---- 空状態 ----
