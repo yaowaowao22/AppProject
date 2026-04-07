@@ -1,30 +1,45 @@
 // ============================================================
 // URL解析統合パイプライン
-// extractBodyText → analyzeUrl を1呼び出しで完結させる
+// LOCAL_AI_ENABLED = true  → ローカルOllama（Gemma 4）
+// LOCAL_AI_ENABLED = false → Bedrock（Claude 3 Haiku via Lambda）
 // ============================================================
 
 import { isAwsConfigured } from '../config/aws';
+import { LOCAL_AI_ENABLED } from '../config/localAI';
 import { analyzeUrl } from './bedrockAnalysisService';
+import { analyzeUrlLocal } from './localAnalysisService';
 import type { AnalysisResult } from '../types/analysis';
 
 export type PipelineResult = AnalysisResult & { sourceUrl: string };
 
 /**
- * URLを受け取り、Lambda経由でページ取得・AI解析・結果返却を一括で行う。
- * HTML取得はLambda側で実行するためCORS・Botブロックの影響を受けない。
+ * URLを受け取り、設定に応じてローカルAIまたはBedrock経由でQ&A解析する。
+ *
+ * LOCAL_AI_ENABLED = true の場合:
+ *   App → HTML取得 → Ollama（Gemma 4）→ JSON
+ * LOCAL_AI_ENABLED = false の場合:
+ *   App → Lambda → Bedrock（Claude 3 Haiku）→ JSON
  */
 export async function analyzeUrlPipeline(url: string): Promise<PipelineResult> {
-  if (!isAwsConfigured()) {
-    throw new Error(
-      'AWS設定が未完了です。Cognito Identity Pool IDとLambda Function URLを設定してください',
-    );
-  }
-
   try {
-    const result = await analyzeUrl(url);
+    let result: AnalysisResult;
+
+    if (LOCAL_AI_ENABLED) {
+      console.log('[urlAnalysisPipeline] ローカルAI（Ollama）モードで解析:', url);
+      result = await analyzeUrlLocal(url);
+    } else {
+      if (!isAwsConfigured()) {
+        throw new Error(
+          'AWS設定が未完了です。Cognito Identity Pool IDとLambda Function URLを設定してください',
+        );
+      }
+      console.log('[urlAnalysisPipeline] Bedrock（Lambda）モードで解析:', url);
+      result = await analyzeUrl(url);
+    }
+
     return { ...result, sourceUrl: url };
   } catch (err) {
-    console.error('[urlAnalysisPipeline] analyzeUrl エラー:', err);
+    console.error('[urlAnalysisPipeline] 解析エラー:', err);
     const message = err instanceof Error ? err.message : 'AI解析に失敗しました';
     return {
       title: '',
