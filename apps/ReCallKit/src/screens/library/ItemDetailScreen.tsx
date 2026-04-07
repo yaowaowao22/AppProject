@@ -132,7 +132,7 @@ export function ItemDetailScreen({ route }: Props) {
       return;
     }
     // 仮IDとして負の値を使用（保存時にDB側で正式IDが付与される）
-    setEditTags((prev) => [...prev, { id: -Date.now(), name }]);
+    setEditTags((prev) => [...prev, { id: -Date.now(), name, description: null }]);
     setNewTagInput('');
   }, [newTagInput, editTags]);
 

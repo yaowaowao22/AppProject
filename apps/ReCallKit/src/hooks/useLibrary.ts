@@ -172,7 +172,7 @@ export function useItems(filter: LibraryFilter) {
       const tagsByItem = new Map<number, Tag[]>();
       for (const row of tagRows) {
         if (!tagsByItem.has(row.item_id)) tagsByItem.set(row.item_id, []);
-        tagsByItem.get(row.item_id)!.push({ id: row.tag_id, name: row.tag_name });
+        tagsByItem.get(row.item_id)!.push({ id: row.tag_id, name: row.tag_name, description: null });
       }
 
       // ItemWithMeta に変換

@@ -75,7 +75,7 @@ export function useKnowledgeMap() {
       const tagMap = new Map<number, Tag[]>();
       for (const tr of tagRows) {
         if (!tagMap.has(tr.item_id)) tagMap.set(tr.item_id, []);
-        tagMap.get(tr.item_id)!.push({ id: tr.tag_id, name: tr.tag_name });
+        tagMap.get(tr.item_id)!.push({ id: tr.tag_id, name: tr.tag_name, description: null });
       }
 
       setItems(

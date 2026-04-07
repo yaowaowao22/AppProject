@@ -48,6 +48,7 @@ import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow, CardShadowStrong } from '../../theme/spacing';
 import type { LibraryStackParamList } from '../../navigation/types';
 import { getCategoryConfig } from '../../config/categories';
+import { SystemColors } from '../../theme/colors';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'QAPreview'>;
 type ViewMode = 'card' | 'list';
@@ -61,25 +62,6 @@ const FLIP_DURATION = 300;
 const Q_MAX_CHARS = 120;
 const A_MAX_CHARS = 300;
 
-// ---- カテゴリ設定 ----
-const CATEGORY_CONFIG: Record<string, { icon: string; color: string; label: string }> = {
-  '技術':     { icon: '💻', color: SystemColors.blue,   label: '技術' },
-  'ビジネス': { icon: '📈', color: SystemColors.green,  label: 'ビジネス' },
-  '科学':     { icon: '🔬', color: SystemColors.teal,   label: '科学' },
-  '語学':     { icon: '🗣', color: SystemColors.indigo, label: '語学' },
-  '一般教養': { icon: '📜', color: SystemColors.orange, label: '一般教養' },
-  'その他':   { icon: '📚', color: SystemColors.blue,   label: 'その他' },
-  technology:   { icon: '💻', color: SystemColors.blue,   label: 'テクノロジー' },
-  science:      { icon: '🔬', color: SystemColors.teal,   label: 'サイエンス' },
-  business:     { icon: '📈', color: SystemColors.green,  label: 'ビジネス' },
-  language:     { icon: '🗣', color: SystemColors.indigo, label: '語学' },
-};
-
-const DEFAULT_CATEGORY = { icon: '📚', color: SystemColors.blue, label: 'その他' };
-
-function getCategoryConfig(raw: string) {
-  return CATEGORY_CONFIG[raw.trim()] ?? CATEGORY_CONFIG[raw.toLowerCase().trim()] ?? { ...DEFAULT_CATEGORY, label: raw || 'その他' };
-}
 
 // カテゴリをタグとしてDBに登録し、tag_id を返す
 async function upsertCategoryTag(
