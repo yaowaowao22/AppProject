@@ -1,12 +1,10 @@
 // ============================================================
 // ReviewCard - 3Dフリップアニメーション付きレビューカード
-// 表面: タイトル / 裏面: タイトル + 内容
-// フリップ: Y軸回転 + 浮き上がりスケール + 影深度変化
-// スワイプ: 裏面表示時のみ有効 / 方向で評価送信 / 退場アニメーション
+// Indigo Pro: 2px角丸 + オフセット影 + FadeSeparator
 // ============================================================
 
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -24,7 +22,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { TypeScale } from '../theme/typography';
 import { Spacing, Radius } from '../theme/spacing';
 import { SystemColors } from '../theme/colors';
-import { WavySeparator } from './WavySeparator';
+import { FadeSeparator } from './FadeSeparator';
 import type { SimpleRating } from '../sm2/algorithm';
 
 interface ReviewCardProps {
@@ -42,6 +40,22 @@ const SWIPE_THRESHOLD = 80; // px
 const EXIT_DISTANCE = 500; // px
 const EXIT_DURATION = 300; // ms
 const SWIPE_ROTATE_FACTOR = 0.08; // deg per px
+
+// オフセット影
+const cardOffsetShadow = Platform.select({
+  ios: {
+    shadowColor: '#E5E5E5',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
+  default: {
+    borderRightWidth: 3,
+    borderBottomWidth: 3,
+    borderRightColor: '#E5E5E5',
+    borderBottomColor: '#E5E5E5',
+  },
+});
 
 export function ReviewCard({
   title,
@@ -63,7 +77,6 @@ export function ReviewCard({
   const exitProgress = useSharedValue(0);
 
   // ---- 表面 ----
-  // 0→0.5: 0→90deg、0.35→0.5でフェードアウト
   const frontStyle = useAnimatedStyle(() => ({
     transform: [
       { perspective: 1200 },
@@ -83,7 +96,6 @@ export function ReviewCard({
   }));
 
   // ---- 裏面 ----
-  // 0.5→1: -90→0deg、0.5→0.65でフェードイン
   const backStyle = useAnimatedStyle(() => ({
     transform: [
       { perspective: 1200 },
@@ -168,7 +180,6 @@ export function ReviewCard({
     if (flip.value > 0) return;
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    // 浮き上がりを表→裏の途中でピーク
     lift.value = withSequence(
       withTiming(1, { duration: FLIP_DURATION, easing: EASING }),
       withTiming(0, { duration: FLIP_DURATION * 0.5, easing: EASING })
@@ -179,17 +190,14 @@ export function ReviewCard({
     });
   };
 
-  // runOnJS 経由で UI スレッドから JS コールバックを呼ぶ
   const callOnSwipeRate = (rating: SimpleRating) => {
     if (onSwipeRate) onSwipeRate(rating);
   };
 
-  // スワイプ閾値通過ハプティクス
   const triggerThresholdHaptic = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
-  // 閾値通過済みフラグ（UIスレッド）
-  const crossedThreshold = useSharedValue(0); // 0=未通過, 1=通過済み
+  const crossedThreshold = useSharedValue(0);
 
   const panGesture = Gesture.Pan()
     .enabled(isFlipped)
@@ -202,13 +210,11 @@ export function ReviewCard({
       if (exitProgress.value > 0) return;
       translateX.value = e.translationX;
       translateY.value = e.translationY;
-      // 閾値通過時にハプティクス（1回のみ）
       const absX = Math.abs(e.translationX);
       if (absX >= SWIPE_THRESHOLD && crossedThreshold.value === 0) {
         crossedThreshold.value = 1;
         runOnJS(triggerThresholdHaptic)();
       } else if (absX < SWIPE_THRESHOLD * 0.7 && crossedThreshold.value === 1) {
-        // 閾値以下に戻ったらリセット（再度通過で再トリガー）
         crossedThreshold.value = 0;
       }
     })
@@ -218,17 +224,15 @@ export function ReviewCard({
       const absX = Math.abs(e.translationX);
 
       if (absX > SWIPE_THRESHOLD) {
-        // 左右スワイプ: forgot / remembered
         const rating: SimpleRating = e.translationX < 0 ? 'forgot' : 'remembered';
         const targetX = e.translationX < 0 ? -EXIT_DISTANCE : EXIT_DISTANCE;
-        const targetY = e.translationY * 0.3; // 慣性でやや斜めに飛ぶ
+        const targetY = e.translationY * 0.3;
         exitProgress.value = withTiming(1, { duration: EXIT_DURATION, easing: Easing.in(Easing.cubic) });
         translateX.value = withTiming(targetX, { duration: EXIT_DURATION, easing: Easing.in(Easing.cubic) }, (done) => {
           if (done) runOnJS(callOnSwipeRate)(rating);
         });
         translateY.value = withTiming(targetY, { duration: EXIT_DURATION });
       } else {
-        // 閾値未満: 元の位置に戻す
         translateX.value = withSpring(0);
         translateY.value = withSpring(0);
       }
@@ -236,8 +240,7 @@ export function ReviewCard({
 
   const cardBase = {
     backgroundColor: colors.card,
-    shadowColor: colors.cardShadowColor,
-    shadowOffset: { width: 0, height: 4 },
+    borderColor: colors.separator,
   };
 
   return (
@@ -250,7 +253,14 @@ export function ReviewCard({
         >
           <Animated.View style={[styles.wrapper, shadowStyle]}>
             {/* 表面 */}
-            <Animated.View style={[styles.card, cardBase, frontStyle]}>
+            <Animated.View
+              style={[
+                styles.card,
+                cardBase,
+                !isDark && cardOffsetShadow,
+                frontStyle,
+              ]}
+            >
               <View style={styles.cardBody}>
                 <Text style={[styles.sectionLabel, { color: colors.labelTertiary }]}>
                   QUESTION
@@ -270,7 +280,15 @@ export function ReviewCard({
             </Animated.View>
 
             {/* 裏面 (絶対位置) */}
-            <Animated.View style={[styles.card, cardBase, styles.absoluteFill, backStyle]}>
+            <Animated.View
+              style={[
+                styles.card,
+                cardBase,
+                !isDark && cardOffsetShadow,
+                styles.absoluteFill,
+                backStyle,
+              ]}
+            >
               <View style={styles.cardBody}>
                 <Text style={[styles.sectionLabel, { color: colors.labelTertiary }]}>
                   QUESTION
@@ -281,7 +299,7 @@ export function ReviewCard({
                 >
                   {title}
                 </Text>
-                <WavySeparator style={{ marginVertical: Spacing.m, marginHorizontal: 0 }} />
+                <FadeSeparator style={{ marginVertical: Spacing.m, marginHorizontal: 0 }} />
                 <Text style={[styles.sectionLabel, { color: colors.labelTertiary }]}>
                   ANSWER
                 </Text>
@@ -292,7 +310,7 @@ export function ReviewCard({
 
               {/* スワイプ方向ティントオーバーレイ */}
               <Animated.View
-                style={[styles.absoluteFill, { borderRadius: Radius.l }, swipeTintStyle]}
+                style={[styles.absoluteFill, { borderRadius: Radius.xs }, swipeTintStyle]}
                 pointerEvents="none"
               />
 
@@ -340,7 +358,8 @@ const styles = StyleSheet.create({
   },
   card: {
     height: CARD_HEIGHT,
-    borderRadius: Radius.l,
+    borderRadius: Radius.xs,
+    borderWidth: 1,
     paddingVertical: 32,
     paddingHorizontal: Spacing.l,
     justifyContent: 'space-between',
@@ -370,7 +389,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600' as const,
     lineHeight: 28,
-    letterSpacing: 0.38,
+    letterSpacing: -0.22,
     marginTop: Spacing.xs,
   },
   contentText: {
@@ -397,12 +416,6 @@ const styles = StyleSheet.create({
     gap: 2,
     paddingTop: Spacing.xs,
     opacity: 0.65,
-  },
-  swipeHintCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
   },
   swipeHintSides: {
     flexDirection: 'row',
@@ -438,7 +451,7 @@ const styles = StyleSheet.create({
   },
   stampBorder: {
     borderWidth: 3,
-    borderRadius: Radius.m,
+    borderRadius: Radius.xs,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },

@@ -1,6 +1,6 @@
 // ============================================================
 // ReCallKit テーマカタログ
-// ライト / ダーク の2テーマ
+// ライト / ダーク の2テーマ（Indigo Pro）
 // ============================================================
 
 import { SystemColors } from './colors';
@@ -64,7 +64,7 @@ export interface ThemeEntry {
 }
 
 // ============================================================
-// 2テーマ定義
+// 2テーマ定義（Indigo Pro）
 // ============================================================
 
 export const THEMES: Record<ThemeId, ThemeEntry> = {
@@ -73,37 +73,37 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
     id: 'light',
     name: 'ライト',
     isDark: false,
-    swatchColor: '#1A73E8',
-    swatchBg: '#FFFFFF',
+    swatchColor: '#6366F1',
+    swatchBg: '#FAFAFA',
     colors: {
-      accent: '#1A73E8',
-      background: '#FFFFFF',
-      backgroundSecondary: '#F8F9FA',
-      backgroundGrouped: '#F8F9FA',
-      label: '#202124',
-      labelSecondary: '#5F6368',
-      labelTertiary: '#9AA0A6',
+      accent: '#6366F1',
+      background: '#FAFAFA',
+      backgroundSecondary: '#F5F5F5',
+      backgroundGrouped: '#F5F5F5',
+      label: '#171717',
+      labelSecondary: '#525252',
+      labelTertiary: '#A3A3A3',
       card: '#FFFFFF',
-      cardShadowColor: '#000000',
-      separator: '#DADCE0',
-      navBarBackground: '#FFFFFF',
-      navBarBorder: '#DADCE0',
-      filterBadgeBg: '#E8F0FE',
-      filterBadgeText: '#1A73E8',
-      hamburgerTint: '#202124',
+      cardShadowColor: '#E5E5E5',
+      separator: '#E5E5E5',
+      navBarBackground: '#FAFAFA',
+      navBarBorder: '#E5E5E5',
+      filterBadgeBg: '#EEF2FF',
+      filterBadgeText: '#6366F1',
+      hamburgerTint: '#171717',
       hamburgerPressedBg: 'rgba(142,142,147,0.12)',
       success: SystemColors.green,
       warning: SystemColors.orange,
       error: SystemColors.red,
-      info: SystemColors.blue,
+      info: '#6366F1',
     },
     sidebar: {
       backgroundSolid: '#FFFFFF',
       overlay: 'rgba(0,0,0,0.30)',
-      activeBackground: '#E8F0FE',
-      activeTint: '#1A73E8',
+      activeBackground: '#EEF2FF',
+      activeTint: '#6366F1',
       inactiveTint: 'rgba(60,60,67,0.60)',
-      sectionHeader: '#9AA0A6',
+      sectionHeader: '#A3A3A3',
       separator: 'rgba(60,60,67,0.12)',
       textPrimary: '#000000',
       textTertiary: 'rgba(60,60,67,0.30)',
@@ -115,10 +115,10 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
     id: 'dark',
     name: 'ダーク',
     isDark: true,
-    swatchColor: '#0A84FF',
+    swatchColor: '#818CF8',
     swatchBg: '#1C1C1E',
     colors: {
-      accent: '#0A84FF',
+      accent: '#818CF8',
       background: '#000000',
       backgroundSecondary: '#1C1C1E',
       backgroundGrouped: '#000000',
@@ -130,20 +130,20 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
       separator: 'rgba(84,84,88,0.65)',
       navBarBackground: 'rgba(30,30,30,0.94)',
       navBarBorder: 'rgba(84,84,88,0.65)',
-      filterBadgeBg: 'rgba(10,132,255,0.15)',
-      filterBadgeText: '#0A84FF',
+      filterBadgeBg: 'rgba(129,140,248,0.15)',
+      filterBadgeText: '#818CF8',
       hamburgerTint: '#FFFFFF',
       hamburgerPressedBg: 'rgba(142,142,147,0.24)',
       success: SystemColors.green,
       warning: SystemColors.orange,
       error: SystemColors.red,
-      info: SystemColors.blue,
+      info: '#818CF8',
     },
     sidebar: {
       backgroundSolid: '#161618',
       overlay: 'rgba(0,0,0,0.50)',
-      activeBackground: 'rgba(10,132,255,0.15)',
-      activeTint: '#0A84FF',
+      activeBackground: 'rgba(129,140,248,0.15)',
+      activeTint: '#818CF8',
       inactiveTint: 'rgba(235,235,245,0.60)',
       sectionHeader: 'rgba(235,235,245,0.50)',
       separator: 'rgba(84,84,88,0.65)',

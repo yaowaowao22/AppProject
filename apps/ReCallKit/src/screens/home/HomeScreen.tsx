@@ -1,11 +1,14 @@
 // ============================================================
-// HomeScreen - 6セクション統合ダッシュボード
-// [1] ヘッダー（DrawerNavigator が担当）
-// [2] 週間アクティビティ（This Week）
-// [3] 復習ヒーロー CTA（empty / due / done 3状態）
-// [4] Recently Added（横スクロール）
-// [5] Mastery（カテゴリ別習熟度バー）
-// [6] Shortcuts（URLから / 手動）
+// HomeScreen - Indigo Pro ダッシュボード
+// [1] 今日の復習 CTA（empty / due / done）
+// [2] FadeSeparator
+// [3] This Week（週間チェックボックス）
+// [4] FadeSeparator
+// [5] Recently Added（横スクロール）
+// [6] FadeSeparator
+// [7] Mastery（カテゴリ別習熟度バー）
+// [8] FadeSeparator
+// [9] Shortcuts（URLから / 手動）
 // ============================================================
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
@@ -16,6 +19,7 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -37,15 +41,15 @@ import {
   type CategoryStats,
 } from '../../db/queries';
 import { useTheme } from '../../theme/ThemeContext';
-import { Spacing } from '../../theme/spacing';
-import { GoogleCalendarColors } from '../../theme/colors';
+import { Spacing, Radius, CardStyle } from '../../theme/spacing';
+import { IndigoProColors } from '../../theme/colors';
 import { useSidebarFilter } from '../../hooks/useSidebarFilter';
 import { useWidgetData } from '../../hooks/useWidgetData';
 import { generateHint } from '../../utils/generateHint';
 import { CategoryMasteryBar } from '../../components/CategoryMasteryBar';
 import { ShortcutList, type ShortcutAction } from '../../components/ShortcutList';
 import { ReviewCTACard } from '../../components/ReviewCTACard';
-import { WavySeparator } from '../../components/WavySeparator';
+import { FadeSeparator } from '../../components/FadeSeparator';
 import type { HomeStackParamList, DrawerParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'HomeMain'>;
@@ -60,18 +64,16 @@ interface RecentItem {
 }
 
 const DAY_LABELS_1 = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const WEEK_BLUE = GoogleCalendarColors.blue;
-const WEEK_BLUE_LIGHT = GoogleCalendarColors.pillBlueBg;
 
 const RECENT_CATEGORY_COLORS: Record<string, string> = {
-  Programming: '#1A73E8',
-  Design: '#E8A000',
-  Infrastructure: '#1E8E3E',
+  Programming: '#6366F1',
+  Design: '#D97706',
+  Infrastructure: '#059669',
 };
 
 function getRecentCategoryColor(category: string | null): string {
-  if (!category) return GoogleCalendarColors.textTertiary;
-  return RECENT_CATEGORY_COLORS[category] ?? GoogleCalendarColors.textTertiary;
+  if (!category) return IndigoProColors.textTertiary;
+  return RECENT_CATEGORY_COLORS[category] ?? IndigoProColors.textTertiary;
 }
 
 function getRelativeTime(createdAt: string): string {
@@ -94,6 +96,22 @@ function getSidebarFilterLabel(
   if (filter.kind === 'collection') return filter.collectionName;
   return '';
 }
+
+// カード用オフセット影（Android: border代替）
+const recentCardShadow = Platform.select({
+  ios: {
+    shadowColor: '#E5E5E5',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
+  default: {
+    borderRightWidth: 3,
+    borderBottomWidth: 3,
+    borderRightColor: '#E5E5E5',
+    borderBottomColor: '#E5E5E5',
+  },
+});
 
 export function HomeScreen({ navigation }: Props) {
   const { db, isReady } = useDatabase();
@@ -274,7 +292,7 @@ export function HomeScreen({ navigation }: Props) {
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
-      {/* フィルターバッジ（モック未収録・サイドバーフィルター使用時のみ） */}
+      {/* フィルターバッジ（サイドバーフィルター使用時のみ） */}
       {sidebarFilter && (
         <View style={styles.badgeRow}>
           <View style={[styles.badge, { backgroundColor: colors.accent + '22' }]}>
@@ -293,7 +311,22 @@ export function HomeScreen({ navigation }: Props) {
         </View>
       )}
 
-      {/* ── [2] 週間アクティビティ（This Week） ────────── */}
+      {/* ── [1] 今日の復習 CTA ──────────────────────────── */}
+      <ReviewCTACard
+        dueCount={filteredDueItems.length}
+        overdueCount={overdueCount}
+        todayCompleted={todayCompleted}
+        streakDays={streakDays}
+        totalItems={totalItems}
+        estimatedMinutes={estimatedMinutes}
+        categories={dueCategories}
+        onStart={handleStartReview}
+        onStartExtra={handleStartExtraReview}
+        onStartURLAdd={handleOpenURLAnalysis}
+      />
+      <FadeSeparator />
+
+      {/* ── [3] This Week（週間チェックボックス） ────────── */}
       {totalItems > 0 && (
         <View style={styles.weeklyCard}>
           <Text style={[styles.labelUpper, { color: colors.labelTertiary, marginTop: 0 }]}>This Week</Text>
@@ -325,7 +358,7 @@ export function HomeScreen({ navigation }: Props) {
                       styles.checkbox,
                       cbState === 'strong' && { backgroundColor: colors.accent },
                       cbState === 'done' && {
-                        backgroundColor: '#E8F0FE',
+                        backgroundColor: colors.accent + '1A',
                         borderWidth: 1.5,
                         borderColor: colors.accent,
                       },
@@ -363,24 +396,9 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         </View>
       )}
-      {totalItems > 0 && <WavySeparator />}
+      {totalItems > 0 && <FadeSeparator />}
 
-      {/* ── [3] 復習ヒーローCTA ─────────────────────────── */}
-      <ReviewCTACard
-        dueCount={filteredDueItems.length}
-        overdueCount={overdueCount}
-        todayCompleted={todayCompleted}
-        streakDays={streakDays}
-        totalItems={totalItems}
-        estimatedMinutes={estimatedMinutes}
-        categories={dueCategories}
-        onStart={handleStartReview}
-        onStartExtra={handleStartExtraReview}
-        onStartURLAdd={handleOpenURLAnalysis}
-      />
-      <WavySeparator />
-
-      {/* ── [4] Recently Added ──────────────────────────── */}
+      {/* ── [5] Recently Added ──────────────────────────── */}
       {recentItems.length > 0 && (
         <>
           <Text style={[styles.labelUpper, { color: colors.labelTertiary }]}>Recently Added</Text>
@@ -398,7 +416,12 @@ export function HomeScreen({ navigation }: Props) {
                   key={item.id}
                   style={({ pressed }) => [
                     styles.recentCard,
-                    { backgroundColor: colors.card, borderColor: colors.separator, opacity: pressed ? 0.7 : 1 },
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.separator,
+                      opacity: pressed ? 0.7 : 1,
+                    },
+                    !isDark && recentCardShadow,
                   ]}
                   onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}
                   accessibilityRole="button"
@@ -422,31 +445,17 @@ export function HomeScreen({ navigation }: Props) {
           </ScrollView>
         </>
       )}
-      {/* sep（Recently Added がある場合は marginTop:20） */}
-      <WavySeparator style={recentItems.length > 0 ? { marginTop: 20 } : undefined} />
+      <FadeSeparator style={recentItems.length > 0 ? { marginTop: 20 } : undefined} />
 
       {/* ── [7] Mastery ─────────────────────────────────── */}
       {categoryStats.length > 0 && (
         <CategoryMasteryBar stats={categoryStats} onPressCategory={handlePressCategory} />
       )}
-      <WavySeparator />
+      <FadeSeparator />
 
-      {/* ── [8] Shortcuts ───────────────────────────────── */}
+      {/* ── [9] Shortcuts ───────────────────────────────── */}
       <ShortcutList onPress={handleShortcut} reviewDueCount={filteredDueItems.length} />
     </ScrollView>
-
-    {/* ── FAB: URLから学習カード作成 ──────────────────── */}
-    <Pressable
-      onPress={handleOpenURLAnalysis}
-      style={({ pressed }) => [
-        styles.fab,
-        { backgroundColor: colors.accent, opacity: pressed ? 0.8 : 1 },
-      ]}
-      accessibilityLabel="URLから学習カードを作成"
-      accessibilityRole="button"
-    >
-      <Ionicons name="add" size={28} color="#FFFFFF" />
-    </Pressable>
     </View>
   );
 }
@@ -460,7 +469,7 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: Spacing.m,
     paddingHorizontal: Spacing.m,
-    paddingBottom: Spacing.xxl + 80,
+    paddingBottom: Spacing.xxl + 40,
   },
 
   // フィルターバッジ
@@ -490,7 +499,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 
-  // ── [5] 週間アクティビティ ────────────────────────────
+  // ── 週間アクティビティ ────────────────────────────
   weeklyCard: {
     backgroundColor: 'transparent',
     paddingBottom: 20,
@@ -532,25 +541,24 @@ const styles = StyleSheet.create({
   // label-upper 共通スタイル
   labelUpper: {
     fontSize: 11,
-    fontWeight: '500' as const,      // mockup .label-upper { font-weight:500 }
+    fontWeight: '500' as const,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.8,
     marginTop: Spacing.m,
     marginBottom: 14,
-    // marginLeft なし: mockup に左インデントなし、container の padding のみ
   },
 
-  // ── [6] Recently Added ────────────────────────────────
+  // ── Recently Added ────────────────────────────────
   recentScroll: {
     marginHorizontal: -Spacing.m,
   },
   recentScrollContent: {
     paddingHorizontal: Spacing.m,
-    gap: 10, // mockup .recent-scroll { gap:10px }
+    gap: 10,
   },
   recentCard: {
     width: 220,
-    borderRadius: 12,
+    borderRadius: Radius.xs,
     padding: 16,
     borderWidth: 1,
     gap: Spacing.s,
@@ -576,24 +584,5 @@ const styles = StyleSheet.create({
   recentCardTime: {
     fontSize: 11,
     marginTop: 10,
-  },
-
-  // ── FAB ──────────────────────────────────────────────
-  fab: {
-    position: 'absolute',
-    bottom: 32,
-    alignSelf: 'center',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    // iOS shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    // Android shadow
-    elevation: 6,
   },
 });

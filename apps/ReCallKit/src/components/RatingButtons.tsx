@@ -1,6 +1,6 @@
 // ============================================================
-// RatingButtons - SM-2 2段階評価ボタン
-// 覚えてない / 覚えた！
+// RatingButtons - SM-2 2段階評価ボタン（Indigo Pro）
+// 覚えてない / 覚えた！ — 2px角丸
 // ============================================================
 
 import React from 'react';
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     minHeight: MinTapTarget + 16,
-    borderRadius: Radius.l,
+    borderRadius: Radius.xs,
     paddingTop: 14,
     paddingHorizontal: Spacing.s,
     paddingBottom: 12,

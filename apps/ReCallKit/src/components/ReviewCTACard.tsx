@@ -1,10 +1,11 @@
 // ============================================================
-// ReviewCTACard - 今日の復習 CTA カード
-// empty / due / done 3状態（モックアップ準拠）
+// ReviewCTACard - 今日の復習 CTA カード（Indigo Pro）
+// empty / due / done 3状態
+// イラスト帯削除・2px角丸・オフセット影・ボタン黒背景
 // ============================================================
 
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { TypeScale } from '../theme/typography';
@@ -12,27 +13,33 @@ import { Spacing, Radius } from '../theme/spacing';
 import { SystemColors } from '../theme/colors';
 
 interface ReviewCTACardProps {
-  /** 今日の復習対象件数 */
   dueCount: number;
-  /** うち期限切れ件数 */
   overdueCount: number;
-  /** 今日すでに復習した件数 */
   todayCompleted: number;
-  /** 連続学習日数 */
   streakDays: number;
-  /** 総アイテム数（0 のとき「アイテム未登録」状態） */
   totalItems: number;
-  /** 推定復習時間（分）*/
   estimatedMinutes?: number;
-  /** 復習対象カテゴリ一覧 */
   categories?: string[];
-  /** 「復習を始める」押下 */
   onStart: () => void;
-  /** 「追加学習を始める」押下（全完了時） */
   onStartExtra: () => void;
-  /** 「URLから追加」押下（empty時） */
   onStartURLAdd: () => void;
 }
+
+// オフセット影（iOS: shadow / Android: border代替）
+const cardShadowStyle = Platform.select({
+  ios: {
+    shadowColor: '#E5E5E5',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
+  default: {
+    borderRightWidth: 3,
+    borderBottomWidth: 3,
+    borderRightColor: '#E5E5E5',
+    borderBottomColor: '#E5E5E5',
+  },
+});
 
 export function ReviewCTACard({
   dueCount,
@@ -46,7 +53,7 @@ export function ReviewCTACard({
   onStartExtra,
   onStartURLAdd,
 }: ReviewCTACardProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const heroState: 'empty' | 'due' | 'done' =
     totalItems === 0 ? 'empty' : dueCount > 0 ? 'due' : 'done';
@@ -56,6 +63,7 @@ export function ReviewCTACard({
       style={[
         styles.card,
         { backgroundColor: colors.card, borderColor: colors.separator },
+        !isDark && cardShadowStyle,
       ]}
     >
       {/* ── empty: アイテム未登録 ── */}
@@ -73,7 +81,7 @@ export function ReviewCTACard({
           <Pressable
             style={({ pressed }) => [
               styles.heroCTA,
-              { backgroundColor: pressed ? colors.accent + 'CC' : colors.accent },
+              { backgroundColor: pressed ? '#171717CC' : '#171717' },
             ]}
             onPress={onStartURLAdd}
             accessibilityRole="button"
@@ -85,46 +93,36 @@ export function ReviewCTACard({
         </View>
       )}
 
-      {/* ── due: 復習あり ── */}
+      {/* ── due: 復習あり（イラスト帯なし） ── */}
       {heroState === 'due' && (
-        <>
-          {/* イラスト帯 */}
-          <View style={[styles.reviewIllust, { backgroundColor: colors.accent + '22' }]}>
-            <View style={[styles.illustCard, styles.illustCardBack2, { backgroundColor: colors.accent + '66' }]} />
-            <View style={[styles.illustCard, styles.illustCardBack1, { backgroundColor: colors.accent + '44' }]} />
-            <View style={[styles.illustCard, styles.illustCardFront, { backgroundColor: colors.card }]} />
-          </View>
-
-          {/* ボディ */}
-          <View style={styles.reviewBody}>
-            <Text style={[styles.countText, { color: colors.label }]}>
-              今日の復習{' '}
-              <Text style={styles.countTextStrong}>{dueCount}件</Text>
+        <View style={styles.reviewBody}>
+          <Text style={[styles.countText, { color: colors.label }]}>
+            今日の復習{' '}
+            <Text style={styles.countTextStrong}>{dueCount}件</Text>
+          </Text>
+          {(estimatedMinutes !== undefined || (categories && categories.length > 0)) && (
+            <Text style={[styles.metaText, { color: colors.labelSecondary }]}>
+              {estimatedMinutes !== undefined ? `推定 ${estimatedMinutes}分` : ''}
+              {estimatedMinutes !== undefined && categories && categories.length > 0 ? ' · ' : ''}
+              {categories && categories.length > 0 ? categories.join(', ') : ''}
             </Text>
-            {(estimatedMinutes !== undefined || (categories && categories.length > 0)) && (
-              <Text style={[styles.metaText, { color: colors.labelSecondary }]}>
-                {estimatedMinutes !== undefined ? `推定 ${estimatedMinutes}分` : ''}
-                {estimatedMinutes !== undefined && categories && categories.length > 0 ? ' · ' : ''}
-                {categories && categories.length > 0 ? categories.join(', ') : ''}
-              </Text>
-            )}
-            {overdueCount > 0 && (
-              <Text style={styles.overdueText}>期限切れ {overdueCount}件</Text>
-            )}
-            <Pressable
-              style={({ pressed }) => [
-                styles.startButton,
-                { backgroundColor: colors.info, opacity: pressed ? 0.85 : 1 },
-              ]}
-              onPress={onStart}
-              accessibilityRole="button"
-              accessibilityLabel="復習を始める"
-            >
-              <Ionicons name="play-circle-outline" size={18} color="#FFFFFF" />
-              <Text style={styles.startButtonText}>復習を始める</Text>
-            </Pressable>
-          </View>
-        </>
+          )}
+          {overdueCount > 0 && (
+            <Text style={styles.overdueText}>期限切れ {overdueCount}件</Text>
+          )}
+          <Pressable
+            style={({ pressed }) => [
+              styles.startButton,
+              { backgroundColor: '#171717', opacity: pressed ? 0.85 : 1 },
+            ]}
+            onPress={onStart}
+            accessibilityRole="button"
+            accessibilityLabel="復習を始める"
+          >
+            <Ionicons name="play-circle-outline" size={18} color="#FFFFFF" />
+            <Text style={styles.startButtonText}>復習を始める</Text>
+          </Pressable>
+        </View>
       )}
 
       {/* ── done: 本日分完了 ── */}
@@ -162,7 +160,7 @@ export function ReviewCTACard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
+    borderRadius: Radius.xs,
     overflow: 'hidden',
     marginTop: Spacing.s,
     borderWidth: 1,
@@ -192,48 +190,21 @@ const styles = StyleSheet.create({
     ...TypeScale.subheadline,
   },
   heroCTA: {
-    borderRadius: Radius.m,
-    paddingVertical: Spacing.m,
+    borderRadius: Radius.xs,
+    paddingVertical: 9,
+    paddingHorizontal: 18,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
     gap: Spacing.xs,
   },
   heroCTAText: {
-    ...TypeScale.headline,
-    color: '#FFFFFF',
+    fontSize: 13,
     fontWeight: '600' as const,
+    color: '#FFFFFF',
   },
 
-  // ── due: イラスト帯 ──
-  reviewIllust: {
-    height: 140,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  illustCard: {
-    position: 'absolute',
-    width: 90,
-    height: 60,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.10,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  illustCardBack2: {
-    transform: [{ rotate: '-12deg' }, { translateX: -50 }, { translateY: 8 }],
-  },
-  illustCardBack1: {
-    transform: [{ rotate: '6deg' }, { translateX: 40 }, { translateY: -4 }],
-  },
-  illustCardFront: {
-    transform: [{ rotate: '-2deg' }],
-  },
-
-  // ── due: ボディ ──
+  // ── due: ボディ（イラスト帯なし） ──
   reviewBody: {
     paddingHorizontal: 16,
     paddingTop: 20,
@@ -261,9 +232,9 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
   },
   startButton: {
-    borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
+    borderRadius: Radius.xs,
+    paddingVertical: 9,
+    paddingHorizontal: 18,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
@@ -272,8 +243,8 @@ const styles = StyleSheet.create({
   },
   startButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '500' as const,
+    fontSize: 13,
+    fontWeight: '600' as const,
     lineHeight: 20,
   },
 
@@ -302,14 +273,15 @@ const styles = StyleSheet.create({
     ...TypeScale.subheadline,
   },
   extraBtn: {
-    borderRadius: Radius.m,
-    paddingVertical: Spacing.m,
+    borderRadius: Radius.xs,
+    paddingVertical: 9,
+    paddingHorizontal: 18,
     alignItems: 'center',
     borderWidth: 1,
     backgroundColor: 'transparent',
   },
   extraBtnText: {
-    ...TypeScale.headline,
+    fontSize: 13,
     fontWeight: '600' as const,
   },
 });

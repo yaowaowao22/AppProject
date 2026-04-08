@@ -1,7 +1,9 @@
 // ============================================================
 // ReCallKit スペーシングシステム
-// 8pt グリッド準拠
+// 8pt グリッド準拠 + Indigo Pro カードスタイル
 // ============================================================
+
+import { Platform } from 'react-native';
 
 export const Spacing = {
   xs: 4,   // アイコンとラベルの間隔
@@ -16,9 +18,9 @@ export type SpacingKey = keyof typeof Spacing;
 
 // ボーダー半径
 export const Radius = {
-  xs: 4,
+  xs: 2,   // カード・ボタン（Indigo Pro: 2px角丸）
   s: 8,
-  m: 12, // カード
+  m: 12,
   l: 16,
   xl: 20,
   full: 9999, // タグチップ・ピル
@@ -29,22 +31,51 @@ export type RadiusKey = keyof typeof Radius;
 // タップターゲット最小サイズ（HIG: 44×44pt）
 export const MinTapTarget = 44;
 
-// カード影（ライトモード用）
-export const CardShadow = {
-  shadowColor: '#000000',
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.06,
-  shadowRadius: 3,
-  elevation: 2, // Android
-} as const;
+// カード影（Indigo Pro: オフセットソリッド影）
+// separator色 (#E5E5E5) で右下にずれたソリッド影
+export const CardShadow = Platform.select({
+  ios: {
+    shadowColor: '#E5E5E5',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 0,
+  } as const,
+  default: {
+    // Android: elevation ではソリッドオフセット影を表現できないため
+    // 右と下に太めのボーダーで代替
+    borderRightWidth: 3,
+    borderBottomWidth: 3,
+    borderRightColor: '#E5E5E5',
+    borderBottomColor: '#E5E5E5',
+    elevation: 0,
+  } as const,
+});
 
-// カード影 2層目（強調カード用）
-export const CardShadowStrong = {
-  shadowColor: '#000000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.10,
-  shadowRadius: 10,
-  elevation: 5,
+// カード影 2層目（強調カード用） — 同じオフセット影
+export const CardShadowStrong = Platform.select({
+  ios: {
+    shadowColor: '#E5E5E5',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 0,
+  } as const,
+  default: {
+    borderRightWidth: 3,
+    borderBottomWidth: 3,
+    borderRightColor: '#E5E5E5',
+    borderBottomColor: '#E5E5E5',
+    elevation: 0,
+  } as const,
+});
+
+// カードスタイル共通（2px角丸 + 1px枠線 + オフセット影）
+export const CardStyle = {
+  borderRadius: Radius.xs,
+  borderWidth: 1,
+  borderColor: '#E5E5E5',
+  ...CardShadow,
 } as const;
 
 // サイドバーレイアウト定数
