@@ -24,6 +24,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { TypeScale } from '../theme/typography';
 import { Spacing, Radius } from '../theme/spacing';
 import { SystemColors } from '../theme/colors';
+import { WavySeparator } from './WavySeparator';
 import type { SimpleRating } from '../sm2/algorithm';
 
 interface ReviewCardProps {
@@ -280,7 +281,7 @@ export function ReviewCard({
                 >
                   {title}
                 </Text>
-                <View style={[styles.divider, { backgroundColor: colors.separator }]} />
+                <WavySeparator style={{ marginVertical: Spacing.m, marginHorizontal: 0 }} />
                 <Text style={[styles.sectionLabel, { color: colors.labelTertiary }]}>
                   ANSWER
                 </Text>
@@ -371,10 +372,6 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     letterSpacing: 0.38,
     marginTop: Spacing.xs,
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    marginVertical: Spacing.m,
   },
   contentText: {
     ...TypeScale.bodyJA,

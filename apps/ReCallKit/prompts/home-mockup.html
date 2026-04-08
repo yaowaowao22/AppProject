@@ -5,15 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ReCallKit — Prototype</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Noto+Sans+JP:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600&family=Noto+Sans+JP:wght@400;500;600&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#FFF;--text-1:#202124;--text-2:#5F6368;--text-3:#9AA0A6;
-  --accent:#E8A000;--blue:#1A73E8;--green:#1E8E3E;--red:#D93025;--orange:#F29900;
-  --border:#DADCE0;--tint:#F8F9FA;--surface:#FFF;
+  --bg:#FAFAFA;--text-1:#171717;--text-2:#525252;--text-3:#A3A3A3;
+  --accent:#6366F1;--blue:#6366F1;--green:#059669;--red:#DC2626;--orange:#D97706;
+  --border:#E5E5E5;--tint:#F5F5F5;--surface:#FFF;
 }
 html,body{height:100%;overflow:hidden}
-body{font-family:'Google Sans','Noto Sans JP',-apple-system,sans-serif;background:var(--bg);color:var(--text-1);max-width:430px;margin:0 auto;-webkit-font-smoothing:antialiased;position:relative;height:100%}
+body{font-family:'Inter','Noto Sans JP',-apple-system,sans-serif;background:var(--bg);color:var(--text-1);max-width:430px;margin:0 auto;-webkit-font-smoothing:antialiased;position:relative;height:100%;letter-spacing:-0.011em}
 
 /* ── Screen System ── */
 .screen{position:absolute;inset:0;background:var(--bg);overflow-y:auto;overflow-x:hidden;display:none;flex-direction:column;-webkit-overflow-scrolling:touch}
@@ -22,7 +22,7 @@ body{font-family:'Google Sans','Noto Sans JP',-apple-system,sans-serif;backgroun
 
 /* ── Shared Header ── */
 .hdr{display:flex;align-items:center;padding:14px 16px;gap:16px;position:sticky;top:0;background:var(--bg);z-index:50}
-.hdr-title{font-size:22px;font-weight:400;flex:1}
+.hdr-title{font-size:15px;font-weight:600;flex:1;letter-spacing:-0.02em}
 .hdr-back,.hdr-menu{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;border:none;background:none}
 .hdr-back:active,.hdr-menu:active{background:var(--tint)}
 .hdr-actions{display:flex;gap:4px;align-items:center}
@@ -37,7 +37,7 @@ body{font-family:'Google Sans','Noto Sans JP',-apple-system,sans-serif;backgroun
 .drawer-header p{font-size:12px;color:var(--text-3);margin-top:4px}
 .drawer-nav{padding:8px 0}
 .drawer-item{display:flex;align-items:center;gap:16px;padding:12px 20px;cursor:pointer;font-size:14px;color:var(--text-2);border-radius:0 24px 24px 0;margin-right:12px;transition:background .15s}
-.drawer-item:active,.drawer-item.active{background:#E8F0FE;color:var(--blue)}
+.drawer-item:active,.drawer-item.active{background:var(--tint);color:var(--text-1)}
 .drawer-item.active{font-weight:500}
 .drawer-item svg{width:20px;height:20px;flex-shrink:0}
 .drawer-section{padding:8px 20px 4px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);border-top:1px solid #DADCE0;margin-top:8px;padding-top:16px}
@@ -46,42 +46,42 @@ body{font-family:'Google Sans','Noto Sans JP',-apple-system,sans-serif;backgroun
 .drawer-tag-count{margin-left:auto;font-size:11px;color:var(--text-3)}
 
 /* ── Cards ── */
-.card-border{border:1px solid #DADCE0;border-radius:12px;overflow:hidden}
+.card-border{border:1px solid #DADCE0;border-radius:8px;overflow:hidden}
 .section-gap{height:20px;flex-shrink:0;margin:0 6px;overflow:visible}
 .section-gap svg{width:100%;height:20px;display:block}
 .sep{margin:0 6px;height:20px;overflow:visible}
 .sep svg{width:100%;height:20px;display:block}
 .label-upper{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3)}
-.pill{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500}
-.pill-blue{background:#E8F0FE;color:var(--blue)}
-.pill-green{background:#E6F4EA;color:var(--green)}
-.pill-red{background:#FCE8E6;color:var(--red)}
-.pill-amber{background:#FEF7E0;color:#B06000}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.pill-blue{background:rgba(99,102,241,0.08);color:var(--blue)}
+.pill-green{background:rgba(5,150,105,0.08);color:var(--green)}
+.pill-red{background:rgba(220,38,38,0.08);color:var(--red)}
+.pill-amber{background:rgba(217,119,6,0.08);color:var(--orange)}
 .pill-gray{background:var(--tint);color:var(--text-2)}
 
 /* ── Buttons ── */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 24px;border:none;border-radius:20px;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;letter-spacing:.1px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;letter-spacing:0}
 .btn:active{opacity:.85}
-.btn-primary{background:var(--blue);color:#FFF}
-.btn-outline{background:none;border:1px solid #DADCE0;color:var(--text-1)}
+.btn-primary{background:var(--text-1);color:#FFF}
+.btn-outline{background:none;border:1px solid var(--border);color:var(--text-1)}
 .btn-danger{background:none;border:1px solid var(--red);color:var(--red)}
 .btn-block{width:100%;justify-content:center}
 .btn-lg{padding:14px 28px;font-size:15px}
 
 /* ── Inputs ── */
-.input-group{display:flex;align-items:center;gap:10px;padding:12px 16px;border:1px solid #DADCE0;border-radius:12px;background:var(--bg)}
+.input-group{display:flex;align-items:center;gap:10px;padding:12px 16px;border:1px solid var(--border);border-radius:8px;background:var(--bg)}
 .input-group:focus-within{border-color:var(--blue)}
 .input-group input{flex:1;border:none;outline:none;font-size:15px;font-family:inherit;background:none;color:var(--text-1)}
 .input-group input::placeholder{color:var(--text-3)}
 .input-group svg{width:20px;height:20px;color:var(--text-3);flex-shrink:0}
-textarea.input-area{width:100%;border:1px solid #DADCE0;border-radius:12px;padding:14px 16px;font-size:15px;font-family:inherit;resize:none;outline:none;background:var(--bg);color:var(--text-1);line-height:1.6}
+textarea.input-area{width:100%;border:1px solid #DADCE0;border-radius:8px;padding:14px 16px;font-size:15px;font-family:inherit;resize:none;outline:none;background:var(--bg);color:var(--text-1);line-height:1.6}
 textarea.input-area:focus{border-color:var(--blue)}
 
 /* ── List items ── */
 .list-item{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer;border-bottom:1px solid #F3F4F6}
 .list-item:active{background:var(--tint)}
 .list-item:last-child{border-bottom:none}
-.list-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
+.list-icon{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
 .list-body{flex:1;min-width:0}
 .list-title{font-size:14px;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .list-sub{font-size:12px;color:var(--text-3);margin-top:2px}
@@ -98,12 +98,11 @@ textarea.input-area:focus{border-color:var(--blue)}
 .today-circle{width:46px;height:46px;border-radius:50%;background:var(--blue);color:#FFF;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:500}
 .today-weekday{font-size:12px;font-weight:500;color:var(--blue);text-transform:uppercase;letter-spacing:.3px}
 .today-sub{font-size:14px;color:var(--text-2);margin-top:1px}
-.review-illust{height:140px;position:relative;overflow:hidden}
-.review-illust svg{width:100%;height:100%;display:block}
+.review-illust{display:none}
 .review-body{padding:20px 16px 24px}
-.review-title{font-size:16px;font-weight:400}.review-title strong{font-weight:500}
-.review-meta{font-size:13px;color:var(--text-2);margin:2px 0}
-.overdue{font-size:13px;color:var(--red);font-weight:500}
+.review-title{font-size:20px;font-weight:600;letter-spacing:-0.03em}.review-title strong{font-weight:600}
+.review-meta{font-size:12px;color:var(--text-3);margin:4px 0;letter-spacing:0.02em}
+.overdue{font-size:12px;color:var(--red);font-weight:500;letter-spacing:0.02em}
 .stats{display:flex;padding:0 16px 20px}
 .stat{flex:1;text-align:center;position:relative}
 .stat+.stat::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:1px;background:var(--border)}
@@ -112,42 +111,41 @@ textarea.input-area:focus{border-color:var(--blue)}
 .week-boxes{display:flex;gap:8px;margin-bottom:0;position:relative}
 .week-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px}
 .week-lbl{font-size:10px;color:var(--text-3);font-weight:400}
-.week-lbl.is-today{color:var(--blue);font-weight:500}
+.week-lbl.is-today{color:var(--text-1);font-weight:600}
 .week-box{width:34px;height:34px;border-radius:8px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;position:relative;background:var(--bg)}
-.week-box.done{border-color:var(--blue);background:#E8F0FE}
-.week-box.done svg{color:var(--blue)}
-.week-box.strong{border-color:var(--blue);background:var(--blue)}
+.week-box.done{border-color:var(--text-1);background:var(--tint)}
+.week-box.done svg{color:var(--text-1)}
+.week-box.strong{border-color:var(--text-1);background:var(--text-1)}
 .week-box.strong svg{color:#FFF}
-.week-box.today{border-color:var(--blue);border-style:dashed}
+.week-box.today{border-color:var(--text-1);border-style:dashed}
 .week-box.missed{border-color:#E5E7EB;background:#FAFAFA}
 .week-box svg{width:14px;height:20px}
 .week-sum{display:flex;justify-content:space-between;padding:6px 0 0;font-size:12px;color:var(--text-3)}
 .recent{padding:20px 0 0 16px}
 .recent-scroll{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
 .recent-scroll::-webkit-scrollbar{display:none}
-.rcard{flex-shrink:0;width:220px;padding:16px;border:1px solid #DADCE0;border-radius:12px;cursor:pointer}
+.rcard{flex-shrink:0;width:220px;padding:16px;border:1px solid var(--border);border-radius:8px;cursor:pointer}
 .rcard:last-child{margin-right:16px}
 .rcard-cat{font-size:11px;font-weight:500;color:var(--text-3);margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .rcard-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .rcard-q{font-size:14px;color:var(--text-1);line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .rcard-time{font-size:11px;color:var(--text-3);margin-top:10px}
 .mastery{padding:20px 16px}
-.mastery-row{display:flex;align-items:center;padding:10px 0;gap:12px}
-.mastery-row+.mastery-row{border-top:1px solid var(--tint)}
-.mastery-name{flex:1;font-size:14px}.mastery-bar{width:80px;height:4px;background:var(--tint);border-radius:2px;overflow:hidden}
-.mastery-fill{height:100%;border-radius:2px}.mastery-pct{font-size:13px;color:var(--text-2);min-width:32px;text-align:right;font-weight:500}
+.mastery-row{display:flex;align-items:center;padding:8px 0;gap:12px}
+.mastery-name{flex:1;font-size:13px;color:var(--text-2)}.mastery-bar{width:80px;height:3px;background:var(--tint);border-radius:2px;overflow:hidden}
+.mastery-fill{height:100%;border-radius:2px}.mastery-pct{font-size:12px;color:var(--text-3);min-width:32px;text-align:right}
 .shortcuts{padding:8px 16px 20px}
-.shortcut{display:flex;align-items:center;gap:16px;padding:14px 0;cursor:pointer;border-bottom:1px solid #F3F4F6}
-.shortcut:last-child{border-bottom:none}
-.shortcut svg{width:20px;height:20px;color:var(--text-2);flex-shrink:0}
-.shortcut-text{font-size:14px}.shortcut-sub{font-size:12px;color:var(--text-3)}
-.shortcut-chev{margin-left:auto;color:var(--text-3)}
+.shortcut{display:flex;align-items:center;gap:16px;padding:14px 0;cursor:pointer}
+.shortcut:active{opacity:.7}
+.shortcut svg{width:18px;height:18px;color:var(--text-3);flex-shrink:0}
+.shortcut-text{font-size:14px;color:var(--text-2)}.shortcut-sub{display:none}
+.shortcut-chev{display:none}
 
 /* ── Library ── */
 .lib-filters{display:flex;gap:8px;padding:8px 16px;overflow-x:auto;scrollbar-width:none}
 .lib-filters::-webkit-scrollbar{display:none}
-.filter-chip{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;border:1px solid #DADCE0;color:var(--text-2);cursor:pointer;white-space:nowrap;flex-shrink:0}
-.filter-chip.active{background:var(--blue);color:#FFF;border-color:var(--blue)}
+.filter-chip{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;background:var(--tint);color:var(--text-2);cursor:pointer;white-space:nowrap;flex-shrink:0;border:none}
+.filter-chip.active{background:var(--text-1);color:#FFF}
 .lib-card{padding:16px;border-bottom:1px solid #F3F4F6}
 .lib-card:active{background:var(--tint)}
 .lib-card-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
@@ -163,7 +161,9 @@ textarea.input-area:focus{border-color:var(--blue)}
 .flip-container{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 16px;perspective:1200px}
 .flip-card{width:100%;max-width:360px;height:300px;position:relative;cursor:pointer;transform-style:preserve-3d;transition:transform .4s cubic-bezier(.4,0,.2,1)}
 .flip-card.flipped{transform:rotateY(180deg)}
-.flip-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;background:var(--bg);border:1px solid #DADCE0;display:flex;flex-direction:column;padding:28px 24px}
+.flip-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:flex;flex-direction:column;padding:28px 24px;overflow:hidden}
+.card-deco{position:absolute;inset:0;pointer-events:none;z-index:0}
+.flip-face>*:not(.card-deco){position:relative;z-index:1}
 .flip-back{transform:rotateY(180deg)}
 .flip-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--text-3);margin-bottom:12px}
 .flip-text{font-size:16px;line-height:1.6;color:var(--text-1);flex:1}
@@ -172,7 +172,7 @@ textarea.input-area:focus{border-color:var(--blue)}
 .flip-sep svg{width:100%;height:8px;display:block}
 .rating-area{padding:16px;display:none;gap:8px}
 .rating-area.visible{display:flex}
-.rate-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px;border:1px solid #DADCE0;border-radius:12px;background:var(--bg);cursor:pointer;font-family:inherit}
+.rate-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px;border:1px solid var(--border);border-radius:8px;background:var(--bg);cursor:pointer;font-family:inherit}
 .rate-btn:active{opacity:.8}
 .rate-dot{width:6px;height:6px;border-radius:50%}
 .rate-label{font-size:12px;font-weight:500;color:var(--text-1)}
@@ -202,7 +202,7 @@ textarea.input-area:focus{border-color:var(--blue)}
 .qa-mode-btn{padding:6px 16px;border-radius:20px;font-size:13px;border:1px solid #DADCE0;background:none;color:var(--text-2);cursor:pointer;font-family:inherit}
 .qa-mode-btn.active{background:var(--blue);color:#FFF;border-color:var(--blue)}
 .qa-card-view{padding:0 16px}
-.qa-item{border:1px solid #DADCE0;border-radius:12px;padding:16px;margin-bottom:12px}
+.qa-item{border:1px solid #DADCE0;border-radius:8px;padding:16px;margin-bottom:12px}
 .qa-q{font-size:14px;font-weight:500;color:var(--text-1);margin-bottom:8px}
 .qa-a{font-size:13px;color:var(--text-2);line-height:1.6}
 .qa-bottom{padding:16px;position:sticky;bottom:0;background:var(--bg);border-top:1px solid #DADCE0}
@@ -250,33 +250,32 @@ textarea.input-area:focus{border-color:var(--blue)}
 .streak-ring-num{font-size:20px;font-weight:500;color:var(--text-1)}
 .streak-ring-lbl{font-size:10px;color:var(--text-3)}
 .history-stat-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.history-stat-box{padding:10px;border:1px solid #DADCE0;border-radius:10px;text-align:center}
+.history-stat-box{padding:10px;border:1px solid #DADCE0;border-radius:8px;text-align:center}
 .history-stat-val{font-size:18px;font-weight:500;color:var(--text-1)}
 .history-stat-lbl{font-size:11px;color:var(--text-3);margin-top:2px}
 .history-item{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid #F3F4F6}
-.history-badge{padding:2px 8px;border-radius:6px;font-size:10px;font-weight:500;align-self:flex-start;margin-top:2px;flex-shrink:0}
+.history-badge{padding:2px 8px;border-radius:8px;font-size:10px;font-weight:500;align-self:flex-start;margin-top:2px;flex-shrink:0}
 .history-body{flex:1;min-width:0}
 .history-title{font-size:14px;color:var(--blue);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .history-time{font-size:11px;color:var(--text-3)}
 .history-preview{font-size:13px;color:var(--text-2);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 /* ── ReviewSelect ── */
-.rsel-card{margin:0 16px 12px;border:1px solid #DADCE0;border-radius:12px;padding:20px;cursor:pointer}
+.rsel-card{margin:0 16px 12px;border:1px solid #DADCE0;border-radius:8px;padding:20px;cursor:pointer}
 .rsel-card:active{background:var(--tint)}
-.rsel-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.rsel-icon{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
 .rsel-title{font-size:16px;font-weight:500;margin-bottom:4px}
 .rsel-sub{font-size:13px;color:var(--text-2)}
-.rsel-group{margin:0 16px 8px;border:1px solid #DADCE0;border-radius:12px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer}
+.rsel-group{margin:0 16px 8px;border:1px solid #DADCE0;border-radius:8px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer}
 .rsel-group:active{background:var(--tint)}
 .rsel-group-bar{width:3px;height:36px;border-radius:2px;flex-shrink:0}
 .rsel-group-body{flex:1}
 .rsel-group-name{font-size:14px;font-weight:500}
 .rsel-group-desc{font-size:12px;color:var(--text-3);margin-top:2px}
-.rsel-group-count{font-size:12px;font-weight:500;color:var(--blue);background:#E8F0FE;padding:2px 8px;border-radius:10px}
+.rsel-group-count{font-size:12px;font-weight:500;color:var(--blue);background:#E8F0FE;padding:2px 8px;border-radius:8px}
 
 /* ── FAB ── */
-.fab{position:fixed;bottom:24px;right:20px;width:56px;height:56px;border-radius:16px;background:var(--bg);border:none;box-shadow:0 1px 3px rgba(0,0,0,.12),0 4px 12px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10}
-.fab:active{box-shadow:0 1px 2px rgba(0,0,0,.15),0 2px 6px rgba(0,0,0,.1)}
+.fab{display:none}
 
 /* ── Animations ── */
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
@@ -302,17 +301,17 @@ textarea.input-area:focus{border-color:var(--blue)}
     <div class="drawer-item" onclick="nav('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>設定</div>
   </div>
   <div class="drawer-section">Tags</div>
-  <div class="drawer-tag"><span class="drawer-tag-dot" style="background:#1A73E8"></span>Programming<span class="drawer-tag-count">52</span></div>
-  <div class="drawer-tag"><span class="drawer-tag-dot" style="background:#E8A000"></span>Design<span class="drawer-tag-count">38</span></div>
-  <div class="drawer-tag"><span class="drawer-tag-dot" style="background:#1E8E3E"></span>Infrastructure<span class="drawer-tag-count">34</span></div>
+  <div class="drawer-tag"><span class="drawer-tag-dot" style="background:#6366F1"></span>Programming<span class="drawer-tag-count">52</span></div>
+  <div class="drawer-tag"><span class="drawer-tag-dot" style="background:#D97706"></span>Design<span class="drawer-tag-count">38</span></div>
+  <div class="drawer-tag"><span class="drawer-tag-dot" style="background:#059669"></span>Infrastructure<span class="drawer-tag-count">34</span></div>
   <div class="drawer-section">Collections</div>
-  <div class="drawer-tag"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>React Deep Dive<span class="drawer-tag-count">12</span></div>
-  <div class="drawer-tag"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>AWS Certification<span class="drawer-tag-count">8</span></div>
+  <div class="drawer-tag"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>React Deep Dive<span class="drawer-tag-count">12</span></div>
+  <div class="drawer-tag"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>AWS Certification<span class="drawer-tag-count">8</span></div>
 </div>
 
 <!-- ════════════════════════ HOME ════════════════════════ -->
 <div class="screen active" data-screen="home">
-  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">ReCallKit</div></div>
+  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#525252" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">ReCallKit</div></div>
   <div class="screen-content">
     <div class="review-illust" id="heroIllust"></div>
     <div class="review-body">
@@ -339,17 +338,17 @@ textarea.input-area:focus{border-color:var(--blue)}
     <div class="recent">
       <div class="label-upper" style="margin-bottom:14px">Recently Added</div>
       <div class="recent-scroll">
-        <div class="rcard" onclick="nav('itemDetail')"><div class="rcard-cat"><span class="rcard-dot" style="background:#1A73E8"></span>Programming</div><div class="rcard-q">React Server Componentsがクライアントコンポーネントと異なる点は？</div><div class="rcard-time">2時間前</div></div>
-        <div class="rcard" onclick="nav('itemDetail')"><div class="rcard-cat"><span class="rcard-dot" style="background:#E8A000"></span>Design</div><div class="rcard-q">ゲシュタルトの法則における「近接の法則」とは何か？</div><div class="rcard-time">昨日</div></div>
-        <div class="rcard" onclick="nav('itemDetail')"><div class="rcard-cat"><span class="rcard-dot" style="background:#1E8E3E"></span>Infrastructure</div><div class="rcard-q">CDNのエッジキャッシュとオリジンサーバーの役割の違いは？</div><div class="rcard-time">3日前</div></div>
+        <div class="rcard" onclick="nav('itemDetail')"><div class="rcard-cat"><span class="rcard-dot" style="background:#6366F1"></span>Programming</div><div class="rcard-q">React Server Componentsがクライアントコンポーネントと異なる点は？</div><div class="rcard-time">2時間前</div></div>
+        <div class="rcard" onclick="nav('itemDetail')"><div class="rcard-cat"><span class="rcard-dot" style="background:#D97706"></span>Design</div><div class="rcard-q">ゲシュタルトの法則における「近接の法則」とは何か？</div><div class="rcard-time">昨日</div></div>
+        <div class="rcard" onclick="nav('itemDetail')"><div class="rcard-cat"><span class="rcard-dot" style="background:#059669"></span>Infrastructure</div><div class="rcard-q">CDNのエッジキャッシュとオリジンサーバーの役割の違いは？</div><div class="rcard-time">3日前</div></div>
       </div>
     </div>
     <div class="sep" style="margin-top:20px"></div>
     <div class="mastery">
       <div class="label-upper" style="margin-bottom:16px">Mastery</div>
-      <div class="mastery-row"><div class="mastery-name">Programming</div><div class="mastery-bar"><div class="mastery-fill" style="width:68%;background:#1A73E8"></div></div><div class="mastery-pct">68%</div></div>
-      <div class="mastery-row"><div class="mastery-name">Design</div><div class="mastery-bar"><div class="mastery-fill" style="width:45%;background:#E8A000"></div></div><div class="mastery-pct">45%</div></div>
-      <div class="mastery-row"><div class="mastery-name">Infrastructure</div><div class="mastery-bar"><div class="mastery-fill" style="width:82%;background:#1E8E3E"></div></div><div class="mastery-pct">82%</div></div>
+      <div class="mastery-row"><div class="mastery-name">Programming</div><div class="mastery-bar"><div class="mastery-fill" style="width:68%;background:#6366F1"></div></div><div class="mastery-pct">68%</div></div>
+      <div class="mastery-row"><div class="mastery-name">Design</div><div class="mastery-bar"><div class="mastery-fill" style="width:45%;background:#D97706"></div></div><div class="mastery-pct">45%</div></div>
+      <div class="mastery-row"><div class="mastery-name">Infrastructure</div><div class="mastery-bar"><div class="mastery-fill" style="width:82%;background:#059669"></div></div><div class="mastery-pct">82%</div></div>
     </div>
     <div class="sep"><svg viewBox="0 0 430 20" preserveAspectRatio="none"><path d="M0 10 C55 18, 100 18, 145 10 S240 2, 285 10 S380 18, 430 10" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 4" fill="none"/></svg></div>
     <div class="shortcuts">
@@ -361,7 +360,7 @@ textarea.input-area:focus{border-color:var(--blue)}
 
 <!-- ════════════════════════ LIBRARY ════════════════════════ -->
 <div class="screen" data-screen="library">
-  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">ライブラリ</div><div class="hdr-actions"><button class="hdr-back" onclick="nav('urlAnalysis')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div></div>
+  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#525252" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">ライブラリ</div><div class="hdr-actions"><button class="hdr-back" onclick="nav('urlAnalysis')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#525252" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div></div>
   <div class="screen-content">
     <div style="padding:0 16px 12px"><div class="input-group"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="検索..."></div></div>
     <div class="lib-filters"><span class="filter-chip active">すべて</span><span class="filter-chip">Programming</span><span class="filter-chip">Design</span><span class="filter-chip">Infrastructure</span><span class="filter-chip">新規</span><span class="filter-chip">期限切れ</span></div>
@@ -371,12 +370,12 @@ textarea.input-area:focus{border-color:var(--blue)}
 
 <!-- ════════════════════════ URL ANALYSIS ════════════════════════ -->
 <div class="screen" data-screen="urlAnalysis">
-  <div class="hdr"><button class="hdr-back" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button><div class="hdr-title">URL解析</div></div>
+  <div class="hdr"><button class="hdr-back" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#525252" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button><div class="hdr-title">URL解析</div></div>
   <div class="url-screen-body">
     <div class="label-upper" style="margin-bottom:10px">解析するURL</div>
     <div class="input-group"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><input type="url" placeholder="https://..." id="urlInput" oninput="updateUrlBtn()"></div>
     <div class="url-desc">スタートするとバックグラウンドで解析が始まります。取り込み一覧で進捗を確認できます。</div>
-    <div style="margin-top:20px;padding:16px;border:1px solid #DADCE0;border-radius:12px">
+    <div style="margin-top:20px;padding:16px;border:1px solid #DADCE0;border-radius:8px">
       <div style="font-size:13px;color:var(--text-2);margin-bottom:4px">本日の残り回数</div>
       <div style="display:flex;align-items:center;gap:8px"><div style="font-size:20px;font-weight:500">2 / 3</div><div style="font-size:12px;color:var(--text-3)">広告視聴で追加可能</div></div>
     </div>
@@ -386,7 +385,7 @@ textarea.input-area:focus{border-color:var(--blue)}
 
 <!-- ════════════════════════ URL IMPORT LIST ════════════════════════ -->
 <div class="screen" data-screen="urlImportList">
-  <div class="hdr"><button class="hdr-back" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button><div class="hdr-title">取り込み一覧</div></div>
+  <div class="hdr"><button class="hdr-back" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#525252" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button><div class="hdr-title">取り込み一覧</div></div>
   <div class="screen-content">
     <div class="job-card"><div class="job-header"><span class="pill pill-green">完了</span><span style="font-size:11px;color:var(--text-3)">2分前</span></div><div class="job-title">React Server Components: A Deep Dive</div><div class="job-url">https://react.dev/blog/rsc-deep-dive</div><div class="job-actions"><button class="btn btn-outline" style="font-size:12px;padding:6px 14px" onclick="nav('qaPreview')">プレビュー</button><button class="btn btn-primary" style="font-size:12px;padding:6px 14px" onclick="nav('library')">ライブラリで見る</button></div></div>
     <div class="job-card"><div class="job-header"><span class="pill pill-blue">解析中...</span><span style="font-size:11px;color:var(--text-3)">1分前</span></div><div class="job-title" style="color:var(--text-2)">https://web.dev/articles/css-container-queries</div><div style="margin-top:10px"><div style="height:3px;background:var(--tint);border-radius:2px;overflow:hidden"><div style="width:65%;height:100%;background:var(--blue);border-radius:2px;animation:progress 2s ease-in-out infinite"></div></div></div></div>
@@ -397,7 +396,7 @@ textarea.input-area:focus{border-color:var(--blue)}
 
 <!-- ════════════════════════ QA PREVIEW ════════════════════════ -->
 <div class="screen" data-screen="qaPreview">
-  <div class="hdr"><button class="hdr-back" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button><div class="hdr-title">プレビュー</div><div class="hdr-actions"><span style="font-size:13px;color:var(--text-3)">5件</span></div></div>
+  <div class="hdr"><button class="hdr-back" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#525252" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button><div class="hdr-title">プレビュー</div><div class="hdr-actions"><span style="font-size:13px;color:var(--text-3)">5件</span></div></div>
   <div class="screen-content">
     <div class="qa-mode-toggle"><button class="qa-mode-btn active">リスト</button><button class="qa-mode-btn">カード</button></div>
     <div class="qa-card-view" id="qaList"></div>
@@ -407,7 +406,7 @@ textarea.input-area:focus{border-color:var(--blue)}
 
 <!-- ════════════════════════ REVIEW SELECT ════════════════════════ -->
 <div class="screen" data-screen="reviewSelect">
-  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">復習</div></div>
+  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#525252" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">復習</div></div>
   <div class="screen-content" style="padding-top:8px">
     <div class="rsel-card" onclick="nav('reviewSession')">
       <div class="rsel-icon" style="background:#E8F0FE"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1A73E8" stroke-width="1.5"><rect x="3" y="4" rx="2" width="18" height="18"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg></div>
@@ -415,23 +414,60 @@ textarea.input-area:focus{border-color:var(--blue)}
       <div class="rsel-sub">8件が待機中 · 推定 4分</div>
     </div>
     <div class="label-upper" style="padding:16px 16px 12px">Groups</div>
-    <div class="rsel-group" onclick="nav('reviewSession')"><div class="rsel-group-bar" style="background:#1A73E8"></div><div class="rsel-group-body"><div class="rsel-group-name">React Deep Dive</div><div class="rsel-group-desc">コアコンセプトの復習</div></div><span class="rsel-group-count">12</span></div>
-    <div class="rsel-group" onclick="nav('reviewSession')"><div class="rsel-group-bar" style="background:#1E8E3E"></div><div class="rsel-group-body"><div class="rsel-group-name">AWS Certification</div><div class="rsel-group-desc">SAA試験準備</div></div><span class="rsel-group-count">8</span></div>
+    <div class="rsel-group" onclick="nav('reviewSession')"><div class="rsel-group-bar" style="background:#6366F1"></div><div class="rsel-group-body"><div class="rsel-group-name">React Deep Dive</div><div class="rsel-group-desc">コアコンセプトの復習</div></div><span class="rsel-group-count">12</span></div>
+    <div class="rsel-group" onclick="nav('reviewSession')"><div class="rsel-group-bar" style="background:#059669"></div><div class="rsel-group-body"><div class="rsel-group-name">AWS Certification</div><div class="rsel-group-desc">SAA試験準備</div></div><span class="rsel-group-count">8</span></div>
   </div>
 </div>
 
 <!-- ════════════════════════ REVIEW SESSION ════════════════════════ -->
 <div class="screen review-screen" data-screen="reviewSession">
-  <div class="hdr" style="background:var(--tint)"><button class="hdr-back" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="hdr-title" style="font-size:16px;text-align:center">復習セッション</div><div style="width:40px"></div></div>
+  <div class="hdr" style="background:var(--tint)"><button class="hdr-back" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#525252" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="hdr-title" style="font-size:16px;text-align:center">復習セッション</div><div style="width:40px"></div></div>
   <div class="progress-bar-wrap"><div class="progress-track"><div class="progress-fill" id="reviewProgress" style="width:12.5%"></div></div><div class="progress-count" id="reviewCount">1 / 8</div></div>
   <div class="flip-container" id="flipContainer">
     <div class="flip-card" id="flipCard" onclick="flipCard()">
       <div class="flip-face">
+        <svg class="card-deco" viewBox="0 0 360 300" fill="none">
+          <!-- top-left: loose spiral -->
+          <path d="M18 22 C20 16, 28 14, 32 18 C36 22, 34 28, 28 30 C22 32, 16 28, 15 23" stroke="#DADCE0" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+          <!-- top-right: three dots -->
+          <circle cx="330" cy="20" r="2" fill="#DADCE0"/>
+          <circle cx="338" cy="16" r="1.5" fill="#DADCE0" opacity=".6"/>
+          <circle cx="336" cy="25" r="1.8" fill="#DADCE0" opacity=".4"/>
+          <!-- top edge: trailing dots -->
+          <circle cx="80" cy="10" r="1" fill="#DADCE0" opacity=".5"/>
+          <circle cx="95" cy="8" r="1.3" fill="#DADCE0" opacity=".35"/>
+          <circle cx="112" cy="11" r="0.8" fill="#DADCE0" opacity=".25"/>
+          <!-- left edge: tiny sprout -->
+          <path d="M8 150 C10 142, 16 140, 14 148" stroke="#DADCE0" stroke-width="1" stroke-linecap="round" fill="none"/>
+          <path d="M8 150 C6 142, 2 141, 4 149" stroke="#DADCE0" stroke-width="1" stroke-linecap="round" fill="none"/>
+          <line x1="8" y1="150" x2="8" y2="158" stroke="#DADCE0" stroke-width="1" stroke-linecap="round"/>
+          <!-- bottom-left: wavy bracket -->
+          <path d="M20 272 C16 274, 14 278, 16 282 C18 286, 16 290, 20 292" stroke="#DADCE0" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+          <!-- bottom-right: quotation marks -->
+          <line x1="332" y1="274" x2="332" y2="282" stroke="#DADCE0" stroke-width="1.3" stroke-linecap="round"/>
+          <line x1="338" y1="274" x2="338" y2="282" stroke="#DADCE0" stroke-width="1.3" stroke-linecap="round"/>
+          <!-- bottom edge: wavy line segment -->
+          <path d="M100 290 C115 294, 130 294, 145 290 S175 286, 190 290" stroke="#DADCE0" stroke-width="1" stroke-linecap="round" stroke-dasharray="3 4" fill="none"/>
+        </svg>
         <div class="flip-label">Question</div>
         <div class="flip-text" id="flipQ">React Server Componentsがクライアントコンポーネントと異なる点は？</div>
         <div class="flip-hint">タップしてめくる</div>
       </div>
       <div class="flip-face flip-back">
+        <svg class="card-deco" viewBox="0 0 360 300" fill="none">
+          <!-- top-right: small star -->
+          <path d="M335 18 L337 14 L339 18 L343 19 L339 21 L337 25 L335 21 L331 19 Z" fill="#DADCE0" opacity=".5"/>
+          <!-- top-left: tiny arc -->
+          <path d="M16 16 C24 10, 36 12, 38 20" stroke="#DADCE0" stroke-width="1" stroke-linecap="round" fill="none"/>
+          <!-- bottom-left: two small dots -->
+          <circle cx="18" cy="278" r="1.5" fill="#DADCE0" opacity=".5"/>
+          <circle cx="24" cy="282" r="1" fill="#DADCE0" opacity=".35"/>
+          <!-- bottom-right: tiny loop -->
+          <path d="M334 280 C338 276, 344 278, 342 284 C340 288, 334 288, 334 284" stroke="#DADCE0" stroke-width="1" stroke-linecap="round" fill="none"/>
+          <!-- right edge: small dash marks -->
+          <line x1="350" y1="120" x2="354" y2="118" stroke="#DADCE0" stroke-width="1" stroke-linecap="round" opacity=".4"/>
+          <line x1="350" y1="128" x2="354" y2="126" stroke="#DADCE0" stroke-width="1" stroke-linecap="round" opacity=".3"/>
+        </svg>
         <div class="flip-label">Question</div>
         <div class="flip-text" style="font-size:13px;color:var(--text-2);flex:none" id="flipQBack">React Server Componentsがクライアントコンポーネントと異なる点は？</div>
         <div class="flip-sep"><svg viewBox="0 0 430 20" preserveAspectRatio="none"><path d="M0 10 C55 18, 100 18, 145 10 S240 2, 285 10 S380 18, 430 10" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 4" fill="none"/></svg></div>
@@ -443,16 +479,16 @@ textarea.input-area:focus{border-color:var(--blue)}
   <div class="rating-area" id="ratingArea">
     <button class="rate-btn" onclick="rateCard('again')"><div class="rate-dot" style="background:#D93025"></div><div class="rate-label">もう一度</div><div class="rate-sub">忘れた</div></button>
     <button class="rate-btn" onclick="rateCard('hard')"><div class="rate-dot" style="background:#F29900"></div><div class="rate-label">難しい</div><div class="rate-sub">苦労した</div></button>
-    <button class="rate-btn" onclick="rateCard('good')"><div class="rate-dot" style="background:#1A73E8"></div><div class="rate-label">良い</div><div class="rate-sub">少し迷った</div></button>
-    <button class="rate-btn" onclick="rateCard('perfect')"><div class="rate-dot" style="background:#1E8E3E"></div><div class="rate-label">簡単</div><div class="rate-sub">完璧</div></button>
+    <button class="rate-btn" onclick="rateCard('good')"><div class="rate-dot" style="background:#6366F1"></div><div class="rate-label">良い</div><div class="rate-sub">少し迷った</div></button>
+    <button class="rate-btn" onclick="rateCard('perfect')"><div class="rate-dot" style="background:#059669"></div><div class="rate-label">簡単</div><div class="rate-sub">完璧</div></button>
   </div>
   <div class="review-complete" id="reviewComplete">
     <div class="complete-emoji">&#127881;</div>
     <div class="complete-title">復習完了！</div>
     <div class="complete-count">8件の復習を完了しました</div>
     <div class="complete-stats">
-      <div class="complete-stat"><span class="rate-dot" style="background:#1E8E3E"></span>簡単 3</div>
-      <div class="complete-stat"><span class="rate-dot" style="background:#1A73E8"></span>良い 3</div>
+      <div class="complete-stat"><span class="rate-dot" style="background:#059669"></span>簡単 3</div>
+      <div class="complete-stat"><span class="rate-dot" style="background:#6366F1"></span>良い 3</div>
       <div class="complete-stat"><span class="rate-dot" style="background:#F29900"></span>難しい 1</div>
       <div class="complete-stat"><span class="rate-dot" style="background:#D93025"></span>もう一度 1</div>
     </div>
@@ -462,7 +498,7 @@ textarea.input-area:focus{border-color:var(--blue)}
 
 <!-- ════════════════════════ ITEM DETAIL ════════════════════════ -->
 <div class="screen" data-screen="itemDetail">
-  <div class="hdr"><button class="hdr-back" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button><div class="hdr-title"></div><div class="hdr-actions"><button class="hdr-back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="1.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></div></div>
+  <div class="hdr"><button class="hdr-back" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#525252" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button><div class="hdr-title"></div><div class="hdr-actions"><button class="hdr-back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#525252" stroke-width="1.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></div></div>
   <div class="screen-content">
     <div class="detail-hero">
       <div class="detail-tags"><span class="pill pill-blue">Programming</span><span class="pill pill-gray">React</span></div>
@@ -477,9 +513,9 @@ textarea.input-area:focus{border-color:var(--blue)}
     <div class="detail-section">
       <div class="detail-section-title">Review Info</div>
       <div style="display:flex;gap:12px">
-        <div style="flex:1;padding:12px;border:1px solid #DADCE0;border-radius:10px;text-align:center"><div style="font-size:18px;font-weight:500">5</div><div style="font-size:11px;color:var(--text-3)">繰り返し</div></div>
-        <div style="flex:1;padding:12px;border:1px solid #DADCE0;border-radius:10px;text-align:center"><div style="font-size:18px;font-weight:500">3日</div><div style="font-size:11px;color:var(--text-3)">次の復習</div></div>
-        <div style="flex:1;padding:12px;border:1px solid #DADCE0;border-radius:10px;text-align:center"><div style="font-size:18px;font-weight:500">2.6</div><div style="font-size:11px;color:var(--text-3)">EF</div></div>
+        <div style="flex:1;padding:12px;border:1px solid #DADCE0;border-radius:8px;text-align:center"><div style="font-size:18px;font-weight:500">5</div><div style="font-size:11px;color:var(--text-3)">繰り返し</div></div>
+        <div style="flex:1;padding:12px;border:1px solid #DADCE0;border-radius:8px;text-align:center"><div style="font-size:18px;font-weight:500">3日</div><div style="font-size:11px;color:var(--text-3)">次の復習</div></div>
+        <div style="flex:1;padding:12px;border:1px solid #DADCE0;border-radius:8px;text-align:center"><div style="font-size:18px;font-weight:500">2.6</div><div style="font-size:11px;color:var(--text-3)">EF</div></div>
       </div>
     </div>
     <div class="detail-meta">
@@ -492,11 +528,11 @@ textarea.input-area:focus{border-color:var(--blue)}
 
 <!-- ════════════════════════ SETTINGS ════════════════════════ -->
 <div class="screen" data-screen="settings">
-  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">設定</div></div>
+  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#525252" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">設定</div></div>
   <div class="screen-content">
     <div class="setting-group">
       <div class="setting-group-title">AI設定</div>
-      <div class="setting-row"><span class="setting-label">AIモデル</span><span style="display:flex;align-items:center;gap:6px"><span class="setting-value">Gemma 4</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></span></div>
+      <div class="setting-row"><span class="setting-label">AIモデル</span><span style="display:flex;align-items:center;gap:6px"><span class="setting-value">Gemma 4</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></span></div>
     </div>
     <div class="setting-group">
       <div class="setting-group-title">復習設定</div>
@@ -506,7 +542,7 @@ textarea.input-area:focus{border-color:var(--blue)}
     </div>
     <div class="setting-group">
       <div class="setting-group-title">外観</div>
-      <div class="setting-row"><span class="setting-label">テーマ</span><span style="display:flex;align-items:center;gap:6px"><span class="setting-value">Light Amber</span><span style="width:16px;height:16px;border-radius:50%;background:#E8A000"></span></span></div>
+      <div class="setting-row"><span class="setting-label">テーマ</span><span style="display:flex;align-items:center;gap:6px"><span class="setting-value">Light Amber</span><span style="width:16px;height:16px;border-radius:50%;background:#D97706"></span></span></div>
     </div>
     <div class="setting-group">
       <div class="setting-group-title">データ</div>
@@ -523,7 +559,7 @@ textarea.input-area:focus{border-color:var(--blue)}
 
 <!-- ════════════════════════ JOURNAL ════════════════════════ -->
 <div class="screen" data-screen="journal">
-  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">ジャーナル</div></div>
+  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#525252" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">ジャーナル</div></div>
   <div class="screen-content">
     <div class="journal-date">今日</div>
     <div class="journal-entry"><div class="journal-entry-header"><span class="journal-item-title">RSCのデータフェッチ</span><span class="journal-time">14:30</span></div><div class="journal-note">Server Componentsではasync/awaitでDBに直接アクセスできるのが新鮮。useEffectからの脱却が見える。</div></div>
@@ -537,7 +573,7 @@ textarea.input-area:focus{border-color:var(--blue)}
 
 <!-- ════════════════════════ HISTORY ════════════════════════ -->
 <div class="screen" data-screen="history">
-  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">学習履歴</div></div>
+  <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#525252" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">学習履歴</div></div>
   <div class="screen-content">
     <div class="history-stats">
       <div class="streak-ring">

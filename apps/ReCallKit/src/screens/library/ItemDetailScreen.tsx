@@ -25,6 +25,7 @@ import type { Item, Tag, DeepDive } from '../../types';
 import { getDeepDivesForItem } from '../../db/deepDiveRepository';
 import { DeepDiveButton } from '../../components/DeepDiveButton';
 import { FetchedTextModal } from '../../components/FetchedTextModal';
+import { WavySeparator } from '../../components/WavySeparator';
 import { subscribeDeepDive } from '../../services/deepDiveService';
 import { getJobByUrl } from '../../db/urlJobRepository';
 
@@ -349,7 +350,7 @@ export function ItemDetailScreen({ route }: Props) {
       </View>
 
       {/* ── セパレーター ── */}
-      <View style={[s.sep, { backgroundColor: colors.separator }]} />
+      <WavySeparator />
 
       {/* ── Answer セクション + 深堀結果 ── */}
       <View style={s.section}>
@@ -359,8 +360,8 @@ export function ItemDetailScreen({ route }: Props) {
           <View style={{ marginTop: Spacing.m }}>
             {deepDives.map((dive) => (
               <View key={dive.id} style={{ marginBottom: Spacing.m }}>
-                <View style={[s.deepDiveDivider, { backgroundColor: colors.separator }]} />
-                <Text style={[s.detailContent, { color: colors.label }]}>
+                <WavySeparator />
+                <Text style={[s.detailContent, { color: colors.label, marginTop: Spacing.m }]}>
                   {dive.result ?? ''}
                 </Text>
               </View>
@@ -370,7 +371,7 @@ export function ItemDetailScreen({ route }: Props) {
       </View>
 
       {/* ── セパレーター ── */}
-      <View style={[s.sep, { backgroundColor: colors.separator }]} />
+      <WavySeparator />
 
       {/* ── 深掘りボタン ── */}
       <View style={s.section}>
@@ -382,7 +383,7 @@ export function ItemDetailScreen({ route }: Props) {
         />
       </View>
 
-      <View style={[s.sep, { backgroundColor: colors.separator }]} />
+      <WavySeparator />
 
       {/* ── メタ情報（背景色つき） ── */}
       <View style={[s.metaSection, { backgroundColor: colors.backgroundSecondary }]}>
@@ -462,12 +463,6 @@ const s = StyleSheet.create({
     lineHeight: 31,
   },
 
-  // ---- セパレーター ----
-  sep: {
-    height: 1,
-    marginHorizontal: Spacing.m,
-  },
-
   // ---- セクション ----
   section: {
     paddingHorizontal: Spacing.m,
@@ -483,12 +478,6 @@ const s = StyleSheet.create({
   detailContent: {
     fontSize: 15,
     lineHeight: 26,
-  },
-
-  // ---- 深堀区切り線 ----
-  deepDiveDivider: {
-    height: 1,
-    marginBottom: Spacing.m,
   },
 
   // ---- メタセクション ----

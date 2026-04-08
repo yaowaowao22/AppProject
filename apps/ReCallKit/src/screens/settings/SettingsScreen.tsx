@@ -22,6 +22,7 @@ import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { SettingsStackParamList } from '../../navigation/types';
+import { WavySeparator } from '../../components/WavySeparator';
 import { getDatabase } from '../../db/connection';
 import { getAllSettings, setSetting, type AppSettings } from '../../db/settingsRepository';
 import { deleteAllData } from '../../db/schema';
@@ -266,6 +267,8 @@ export function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
+        <WavySeparator />
+
         {/* ── 復習設定 ─────────────────────────────────────── */}
         <Text style={[styles.sectionHeader, { color: colors.labelSecondary }]}>
           復習設定
@@ -338,6 +341,8 @@ export function SettingsScreen() {
           </View>
         </View>
 
+        <WavySeparator />
+
         {/* ── 外観 ─────────────────────────────────────────── */}
         <Text style={[styles.sectionHeader, { color: colors.labelSecondary }]}>
           外観
@@ -367,6 +372,8 @@ export function SettingsScreen() {
             </View>
           </View>
         </View>
+
+        <WavySeparator />
 
         {/* ── データ ───────────────────────────────────────── */}
         <Text style={[styles.sectionHeader, { color: colors.labelSecondary }]}>
@@ -424,6 +431,8 @@ export function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
+        <WavySeparator />
+
         {/* ── アプリ情報 ───────────────────────────────────── */}
         <Text style={[styles.sectionHeader, { color: colors.labelSecondary }]}>
           アプリ情報
@@ -473,6 +482,8 @@ export function SettingsScreen() {
             </View>
           </TouchableOpacity>
         </View>
+
+        <WavySeparator />
 
         {/* ── OTA 診断 ─────────────────────────────────────── */}
         <Text style={[styles.sectionHeader, { color: colors.labelSecondary }]}>

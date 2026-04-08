@@ -25,6 +25,7 @@ import {
 import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
+import { WavySeparator } from '../../components/WavySeparator';
 import type { DrawerNavigationProp } from '@react-navigation/drawer';
 import type { JournalStackParamList, DrawerParamList } from '../../navigation/types';
 
@@ -179,7 +180,7 @@ export function JournalScreen({ navigation }: Props) {
           </View>
         );
       }}
-      renderSectionFooter={() => <View style={styles.sectionFooter} />}
+      renderSectionFooter={() => <WavySeparator style={{ marginVertical: Spacing.xs }} />}
     />
   );
 }
@@ -265,9 +266,5 @@ const styles = StyleSheet.create({
   },
   timeLabel: {
     ...TypeScale.caption1,
-  },
-
-  sectionFooter: {
-    height: Spacing.xs,
   },
 });

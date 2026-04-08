@@ -43,6 +43,7 @@ import type { LibraryStackParamList } from '../../navigation/types';
 import type { ItemWithMeta } from '../../types';
 import { useDB } from '../../hooks/useDatabase';
 import { HeaderHamburger } from '../../components/HeaderHamburger';
+import { WavySeparator } from '../../components/WavySeparator';
 
 type Props = NativeStackScreenProps<LibraryStackParamList, 'LibraryMain'>;
 
@@ -400,6 +401,8 @@ export function LibraryScreen({ navigation }: Props) {
           );
         })}
       </ScrollView>
+
+      <WavySeparator />
 
       {isLoading ? (
         <View style={styles.center}>

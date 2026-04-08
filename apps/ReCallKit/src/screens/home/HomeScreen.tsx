@@ -45,6 +45,7 @@ import { generateHint } from '../../utils/generateHint';
 import { CategoryMasteryBar } from '../../components/CategoryMasteryBar';
 import { ShortcutList, type ShortcutAction } from '../../components/ShortcutList';
 import { ReviewCTACard } from '../../components/ReviewCTACard';
+import { WavySeparator } from '../../components/WavySeparator';
 import type { HomeStackParamList, DrawerParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'HomeMain'>;
@@ -58,7 +59,7 @@ interface RecentItem {
   created_at: string;
 }
 
-const ENG_DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_LABELS_1 = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const WEEK_BLUE = GoogleCalendarColors.blue;
 const WEEK_BLUE_LIGHT = GoogleCalendarColors.pillBlueBg;
 
@@ -300,66 +301,69 @@ export function HomeScreen({ navigation }: Props) {
             {weeklyActivity.map((day, i) => {
               const isToday = i === 6;
               const dotDate = new Date(day.date + 'T00:00:00');
-              const dayLabel = ENG_DAY_LABELS[dotDate.getDay()];
+              const dayLabel = DAY_LABELS_1[dotDate.getDay()];
 
-              let dotState: 'strong' | 'done' | 'today-ring' | 'none';
-              if (day.count >= 5) dotState = 'strong';
-              else if (day.count >= 1) dotState = 'done';
-              else if (isToday) dotState = 'today-ring';
-              else dotState = 'none';
-
-              const dotBg =
-                dotState === 'strong' ? WEEK_BLUE
-                : dotState === 'done' ? WEEK_BLUE_LIGHT
-                : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-
-              const showCheck = dotState === 'strong' || dotState === 'done';
-              const checkColor = dotState === 'strong' ? '#FFFFFF' : WEEK_BLUE;
+              let cbState: 'strong' | 'done' | 'today' | 'missed';
+              if (day.count >= 10) cbState = 'strong';
+              else if (day.count >= 1) cbState = 'done';
+              else if (isToday) cbState = 'today';
+              else cbState = 'missed';
 
               return (
                 <View key={day.date} style={styles.dayCol}>
                   <Text
                     style={[
                       styles.dayLabel,
-                      { color: isToday ? WEEK_BLUE : colors.labelTertiary },
-                      isToday && { fontWeight: '700' as const },
+                      { color: isToday ? colors.accent : colors.labelTertiary },
+                      isToday && { fontWeight: '500' as const },
                     ]}
                   >
-                    {isToday ? 'Today' : dayLabel}
+                    {dayLabel}
                   </Text>
                   <View
                     style={[
-                      styles.dot,
-                      { backgroundColor: dotBg },
-                      dotState === 'today-ring' && {
+                      styles.checkbox,
+                      cbState === 'strong' && { backgroundColor: colors.accent },
+                      cbState === 'done' && {
+                        backgroundColor: '#E8F0FE',
+                        borderWidth: 1.5,
+                        borderColor: colors.accent,
+                      },
+                      cbState === 'missed' && {
+                        backgroundColor: '#FAFAFA',
+                        borderWidth: 1.5,
+                        borderColor: '#E5E7EB',
+                      },
+                      cbState === 'today' && {
                         backgroundColor: 'transparent',
-                        borderWidth: 2,
-                        borderColor: WEEK_BLUE,
+                        borderWidth: 1.5,
+                        borderColor: colors.accent,
+                        borderStyle: 'dashed' as const,
                       },
                     ]}
                   >
-                    {showCheck && (
-                      <Ionicons name="checkmark" size={16} color={checkColor} />
+                    {cbState === 'strong' && (
+                      <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+                    )}
+                    {cbState === 'done' && (
+                      <Ionicons name="checkmark" size={18} color={colors.accent} />
                     )}
                   </View>
                 </View>
               );
             })}
           </View>
-          <View style={[styles.weekSummary, { borderTopColor: colors.separator }]}>
-            <Text style={[styles.weekSummaryText, { color: colors.labelSecondary }]}>
-              今週{' '}
-              <Text style={{ fontWeight: '700' as const }}>{weekActiveDays} / 7日</Text>
+          <View style={styles.weekSummary}>
+            <Text style={[styles.weekSummaryText, { color: colors.labelTertiary }]}>
+              {weekActiveDays}/7日
             </Text>
-            <Text style={[styles.weekSummaryText, { color: colors.labelSecondary }]}>
+            <Text style={[styles.weekSummaryText, { color: colors.labelTertiary }]}>
               {weekTotalReviewed}枚 復習済み
             </Text>
           </View>
         </View>
       )}
-      {totalItems > 0 && (
-        <View style={[styles.sectionGap, { backgroundColor: colors.backgroundSecondary }]} />
-      )}
+      {totalItems > 0 && <WavySeparator />}
 
       {/* ── [3] 復習ヒーローCTA ─────────────────────────── */}
       <ReviewCTACard
@@ -374,7 +378,7 @@ export function HomeScreen({ navigation }: Props) {
         onStartExtra={handleStartExtraReview}
         onStartURLAdd={handleOpenURLAnalysis}
       />
-      <View style={[styles.sectionGap, { backgroundColor: colors.backgroundSecondary }]} />
+      <WavySeparator />
 
       {/* ── [4] Recently Added ──────────────────────────── */}
       {recentItems.length > 0 && (
@@ -419,19 +423,13 @@ export function HomeScreen({ navigation }: Props) {
         </>
       )}
       {/* sep（Recently Added がある場合は marginTop:20） */}
-      <View
-        style={[
-          styles.sep,
-          { backgroundColor: colors.separator },
-          recentItems.length > 0 && { marginTop: 20 },
-        ]}
-      />
+      <WavySeparator style={recentItems.length > 0 ? { marginTop: 20 } : undefined} />
 
       {/* ── [7] Mastery ─────────────────────────────────── */}
       {categoryStats.length > 0 && (
         <CategoryMasteryBar stats={categoryStats} onPressCategory={handlePressCategory} />
       )}
-      <View style={[styles.sep, { backgroundColor: colors.separator }]} />
+      <WavySeparator />
 
       {/* ── [8] Shortcuts ───────────────────────────────── */}
       <ShortcutList onPress={handleShortcut} reviewDueCount={filteredDueItems.length} />
@@ -492,19 +490,6 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 
-  // ── 区切り線 ──────────────────────────────────────────
-  // sep: container の paddingHorizontal:16 があるので marginHorizontal 不要
-  // → 画面端から16pxの位置に自動的に配置される
-  sep: {
-    height: 1,
-  },
-
-  // section-gap: full-screen 幅（container の padding を打ち消す）
-  sectionGap: {
-    height: 8,
-    marginHorizontal: -Spacing.m,
-  },
-
   // ── [5] 週間アクティビティ ────────────────────────────
   weeklyCard: {
     backgroundColor: 'transparent',
@@ -522,28 +507,26 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
     flex: 1,
   },
-  dot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  checkbox: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dayLabel: {
-    fontSize: 11,
+    fontSize: 10,
     lineHeight: 13,
   },
   weekSummary: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTopWidth: 1,
-    paddingTop: 12,
-    marginTop: Spacing.m,
+    paddingTop: 6,
   },
   weekSummaryText: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 16,
   },
 
   // label-upper 共通スタイル

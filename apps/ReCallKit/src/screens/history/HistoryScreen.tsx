@@ -41,6 +41,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { TypeScale } from '../../theme/typography';
 import { Spacing, Radius, CardShadow } from '../../theme/spacing';
 import { SystemColors } from '../../theme/colors';
+import { WavySeparator } from '../../components/WavySeparator';
 import type { DrawerParamList } from '../../navigation/types';
 
 // Android で LayoutAnimation を有効化
@@ -210,6 +211,8 @@ export function HistoryScreen() {
           <MasteryDistribution summary={masterySummary} />
         </View>
       )}
+
+      <WavySeparator />
 
       {/* ――― 復習セッション別履歴 ――― */}
       {sessions.length > 0 ? (
