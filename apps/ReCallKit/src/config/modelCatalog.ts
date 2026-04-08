@@ -18,6 +18,18 @@ export interface ModelDefinition {
 
 export const MODEL_CATALOG: ModelDefinition[] = [
   {
+    id: 'qwen3-06b-q4km',
+    name: 'Qwen3 0.6B Q4_K_M',
+    tag: '超軽量・日本語',
+    description: '0.4GB・最軽量。Qwen3で日本語対応。iPhone 12以降',
+    sizeGB: 0.4,
+    sizeBytesEstimate: 397_000_000,
+    url: 'https://huggingface.co/unsloth/Qwen3-0.6B-GGUF/resolve/main/Q4_K_M.gguf',
+    filename: 'Qwen3-0.6B-Q4_K_M.gguf',
+    nGpuLayers: 99,
+    nCtx: 4096,
+  },
+  {
     id: 'llama32-1b-q4km',
     name: 'Llama 3.2 1B Q4_K_M',
     tag: '超軽量',
