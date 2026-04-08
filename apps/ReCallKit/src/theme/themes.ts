@@ -16,6 +16,8 @@ export type ThemePreference = ThemeId | 'system';
 // ColorScheme — 全テーマ共通の構造
 export interface ColorScheme {
   accent: string;
+  /** accent背景上のテキスト/アイコン色 */
+  onAccent: string;
   background: string;
   backgroundSecondary: string;
   backgroundGrouped: string;
@@ -73,10 +75,11 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
     id: 'light',
     name: 'ライト',
     isDark: false,
-    swatchColor: '#6366F1',
+    swatchColor: '#171717',
     swatchBg: '#FFFFFF',
     colors: {
-      accent: '#6366F1',
+      accent: '#171717',
+      onAccent: '#FFFFFF',
       background: '#FFFFFF',
       backgroundSecondary: '#F5F5F5',
       backgroundGrouped: '#F5F5F5',
@@ -88,14 +91,14 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
       separator: '#E5E5E5',
       navBarBackground: '#FFFFFF',
       navBarBorder: '#E5E5E5',
-      filterBadgeBg: '#EEF2FF',
-      filterBadgeText: '#6366F1',
+      filterBadgeBg: '#F5F5F5',
+      filterBadgeText: '#171717',
       hamburgerTint: '#171717',
       hamburgerPressedBg: 'rgba(142,142,147,0.12)',
       success: SystemColors.green,
       warning: SystemColors.orange,
       error: SystemColors.red,
-      info: '#6366F1',
+      info: '#171717',
     },
     sidebar: {
       backgroundSolid: '#FFFFFF',
@@ -115,10 +118,11 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
     id: 'dark',
     name: 'ダーク',
     isDark: true,
-    swatchColor: '#818CF8',
+    swatchColor: '#FFFFFF',
     swatchBg: '#1C1C1E',
     colors: {
-      accent: '#818CF8',
+      accent: '#FFFFFF',
+      onAccent: '#000000',
       background: '#000000',
       backgroundSecondary: '#1C1C1E',
       backgroundGrouped: '#000000',
@@ -130,14 +134,14 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
       separator: 'rgba(84,84,88,0.65)',
       navBarBackground: 'rgba(30,30,30,0.94)',
       navBarBorder: 'rgba(84,84,88,0.65)',
-      filterBadgeBg: 'rgba(129,140,248,0.15)',
-      filterBadgeText: '#818CF8',
+      filterBadgeBg: 'rgba(255,255,255,0.15)',
+      filterBadgeText: '#FFFFFF',
       hamburgerTint: '#FFFFFF',
       hamburgerPressedBg: 'rgba(142,142,147,0.24)',
       success: SystemColors.green,
       warning: SystemColors.orange,
       error: SystemColors.red,
-      info: '#818CF8',
+      info: '#FFFFFF',
     },
     sidebar: {
       backgroundSolid: '#161618',

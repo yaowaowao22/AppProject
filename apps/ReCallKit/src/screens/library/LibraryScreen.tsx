@@ -393,7 +393,7 @@ export function LibraryScreen({ navigation }: Props) {
               <Text style={[
                 styles.filterChipText,
                 { color: colors.labelSecondary },
-                isActive && { color: '#FFFFFF' },
+                isActive && { color: colors.onAccent },
               ]}>
                 {chip.label}
               </Text>
@@ -462,7 +462,7 @@ export function LibraryScreen({ navigation }: Props) {
             }}
             accessibilityLabel="アイテムを追加"
           >
-            <Ionicons name="add" size={28} color="#FFFFFF" />
+            <Ionicons name="add" size={28} color={colors.onAccent} />
           </Pressable>
         </>
       )}

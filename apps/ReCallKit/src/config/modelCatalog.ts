@@ -42,6 +42,18 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     nCtx: 4096,
   },
   {
+    id: 'qwen3-4b-q4km',
+    name: 'Qwen3 4B Q4_K_M',
+    tag: '日本語◎',
+    description: '2.5GB・日本語高精度。Qwen2.5から推論能力大幅向上。iPhone 14以降',
+    sizeGB: 2.5,
+    sizeBytesEstimate: 2_500_000_000,
+    url: 'https://huggingface.co/unsloth/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf',
+    filename: 'Qwen3-4B-Q4_K_M.gguf',
+    nGpuLayers: 99,
+    nCtx: 4096,
+  },
+  {
     id: 'gemma4-iq2m',
     name: 'Gemma 4 E2B UD-IQ2_M',
     tag: '軽量',

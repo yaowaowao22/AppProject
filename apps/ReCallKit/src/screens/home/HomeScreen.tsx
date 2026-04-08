@@ -467,7 +467,7 @@ export function HomeScreen({ navigation }: Props) {
         accessibilityLabel="URLから学習カードを作成"
         accessibilityRole="button"
       >
-        <Ionicons name="add" size={28} color="#FFFFFF" />
+        <Ionicons name="add" size={28} color={colors.onAccent} />
       </Pressable>
     </View>
   );

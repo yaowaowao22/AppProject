@@ -165,7 +165,7 @@ export function TaskScreen({ navigation }: Props) {
                 )
               }
             >
-              <Text style={styles.ctaButtonText}>URLを解析する</Text>
+              <Text style={[styles.ctaButtonText, { color: colors.onAccent }]}>URLを解析する</Text>
             </Pressable>
           </View>
         }
@@ -282,6 +282,5 @@ const styles = StyleSheet.create({
   ctaButtonText: {
     ...TypeScale.subheadline,
     fontWeight: '600' as const,
-    color: '#FFFFFF',
   },
 });

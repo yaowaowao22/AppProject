@@ -111,7 +111,7 @@ export function ReviewSelectScreen({ navigation }: Props) {
           accessibilityRole="button"
           accessibilityLabel={dueCount === 0 ? '追加学習を始める' : '復習を開始'}
         >
-          <Text style={styles.startButtonText}>
+          <Text style={[styles.startButtonText, { color: colors.onAccent }]}>
             {dueCount > 0 ? 'スタート' : '追加学習を始める'}
           </Text>
         </Pressable>
@@ -184,7 +184,7 @@ export function ReviewSelectScreen({ navigation }: Props) {
               )
             }
           >
-            <Text style={styles.ctaButtonText}>グループを作成する</Text>
+            <Text style={[styles.ctaButtonText, { color: colors.onAccent }]}>グループを作成する</Text>
           </Pressable>
         </View>
       )}
@@ -242,7 +242,6 @@ const styles = StyleSheet.create({
   },
   startButtonText: {
     ...TypeScale.headline,
-    color: '#FFFFFF',
   },
 
   // ---- セクションタイトル ----
@@ -322,6 +321,5 @@ const styles = StyleSheet.create({
   ctaButtonText: {
     ...TypeScale.subheadline,
     fontWeight: '600' as const,
-    color: '#FFFFFF',
   },
 });

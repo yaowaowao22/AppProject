@@ -28,13 +28,14 @@ export function FilterChip({
   icon,
   activeColor,
   bgColor,
-  textActiveColor = '#FFFFFF',
+  textActiveColor,
   textInactiveColor,
 }: FilterChipProps) {
   const { colors } = useTheme();
 
   const resolvedActiveColor = activeColor ?? colors.accent;
   const resolvedBgColor = bgColor ?? colors.backgroundSecondary;
+  const resolvedTextActiveColor = textActiveColor ?? colors.onAccent;
   const resolvedTextInactiveColor = textInactiveColor ?? colors.labelSecondary;
 
   return (
@@ -65,7 +66,7 @@ export function FilterChip({
       <Text
         style={[
           styles.chipText,
-          { color: active ? textActiveColor : resolvedTextInactiveColor },
+          { color: active ? resolvedTextActiveColor : resolvedTextInactiveColor },
         ]}
         numberOfLines={1}
       >
@@ -77,7 +78,7 @@ export function FilterChip({
         <Ionicons
           name="close-circle"
           size={13}
-          color={textActiveColor}
+          color={resolvedTextActiveColor}
           style={styles.closeIcon}
         />
       )}
