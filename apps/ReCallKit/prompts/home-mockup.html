@@ -30,9 +30,9 @@ body{font-family:'Google Sans','Noto Sans JP',-apple-system,sans-serif;backgroun
 /* ── Drawer ── */
 .drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s}
 .drawer-overlay.open{opacity:1;pointer-events:auto}
-.drawer{position:fixed;top:0;left:-280px;width:280px;height:100%;background:var(--bg);z-index:201;transition:left .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;border-right:1px solid var(--border)}
+.drawer{position:fixed;top:0;left:-280px;width:280px;height:100%;background:var(--bg);z-index:201;transition:left .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;border-right:1px solid #DADCE0}
 .drawer.open{left:0}
-.drawer-header{padding:24px 20px 16px;border-bottom:1px solid var(--border)}
+.drawer-header{padding:24px 20px 16px;border-bottom:1px solid #DADCE0}
 .drawer-header h2{font-size:20px;font-weight:500}
 .drawer-header p{font-size:12px;color:var(--text-3);margin-top:4px}
 .drawer-nav{padding:8px 0}
@@ -40,15 +40,17 @@ body{font-family:'Google Sans','Noto Sans JP',-apple-system,sans-serif;backgroun
 .drawer-item:active,.drawer-item.active{background:#E8F0FE;color:var(--blue)}
 .drawer-item.active{font-weight:500}
 .drawer-item svg{width:20px;height:20px;flex-shrink:0}
-.drawer-section{padding:8px 20px 4px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);border-top:1px solid var(--border);margin-top:8px;padding-top:16px}
+.drawer-section{padding:8px 20px 4px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);border-top:1px solid #DADCE0;margin-top:8px;padding-top:16px}
 .drawer-tag{display:flex;align-items:center;gap:12px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--text-2)}
 .drawer-tag-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .drawer-tag-count{margin-left:auto;font-size:11px;color:var(--text-3)}
 
 /* ── Cards ── */
-.card-border{border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.section-gap{height:8px;background:var(--tint);flex-shrink:0}
-.sep{height:1px;background:var(--border);margin:0 16px}
+.card-border{border:1px solid #DADCE0;border-radius:12px;overflow:hidden}
+.section-gap{height:20px;flex-shrink:0;margin:0 6px;overflow:visible}
+.section-gap svg{width:100%;height:20px;display:block}
+.sep{margin:0 6px;height:20px;overflow:visible}
+.sep svg{width:100%;height:20px;display:block}
 .label-upper{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3)}
 .pill{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500}
 .pill-blue{background:#E8F0FE;color:var(--blue)}
@@ -61,22 +63,22 @@ body{font-family:'Google Sans','Noto Sans JP',-apple-system,sans-serif;backgroun
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 24px;border:none;border-radius:20px;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;letter-spacing:.1px}
 .btn:active{opacity:.85}
 .btn-primary{background:var(--blue);color:#FFF}
-.btn-outline{background:none;border:1px solid var(--border);color:var(--text-1)}
+.btn-outline{background:none;border:1px solid #DADCE0;color:var(--text-1)}
 .btn-danger{background:none;border:1px solid var(--red);color:var(--red)}
 .btn-block{width:100%;justify-content:center}
 .btn-lg{padding:14px 28px;font-size:15px}
 
 /* ── Inputs ── */
-.input-group{display:flex;align-items:center;gap:10px;padding:12px 16px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
+.input-group{display:flex;align-items:center;gap:10px;padding:12px 16px;border:1px solid #DADCE0;border-radius:12px;background:var(--bg)}
 .input-group:focus-within{border-color:var(--blue)}
 .input-group input{flex:1;border:none;outline:none;font-size:15px;font-family:inherit;background:none;color:var(--text-1)}
 .input-group input::placeholder{color:var(--text-3)}
 .input-group svg{width:20px;height:20px;color:var(--text-3);flex-shrink:0}
-textarea.input-area{width:100%;border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:15px;font-family:inherit;resize:none;outline:none;background:var(--bg);color:var(--text-1);line-height:1.6}
+textarea.input-area{width:100%;border:1px solid #DADCE0;border-radius:12px;padding:14px 16px;font-size:15px;font-family:inherit;resize:none;outline:none;background:var(--bg);color:var(--text-1);line-height:1.6}
 textarea.input-area:focus{border-color:var(--blue)}
 
 /* ── List items ── */
-.list-item{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--tint)}
+.list-item{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer;border-bottom:1px solid #F3F4F6}
 .list-item:active{background:var(--tint)}
 .list-item:last-child{border-bottom:none}
 .list-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
@@ -96,7 +98,8 @@ textarea.input-area:focus{border-color:var(--blue)}
 .today-circle{width:46px;height:46px;border-radius:50%;background:var(--blue);color:#FFF;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:500}
 .today-weekday{font-size:12px;font-weight:500;color:var(--blue);text-transform:uppercase;letter-spacing:.3px}
 .today-sub{font-size:14px;color:var(--text-2);margin-top:1px}
-.review-illust{height:140px;background:linear-gradient(160deg,#FFF8E1,#FFECB3 40%,#FFE082);position:relative;overflow:hidden}
+.review-illust{height:140px;position:relative;overflow:hidden}
+.review-illust svg{width:100%;height:100%;display:block}
 .review-body{padding:20px 16px 24px}
 .review-title{font-size:16px;font-weight:400}.review-title strong{font-weight:500}
 .review-meta{font-size:13px;color:var(--text-2);margin:2px 0}
@@ -106,19 +109,23 @@ textarea.input-area:focus{border-color:var(--blue)}
 .stat+.stat::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:1px;background:var(--border)}
 .stat-val{font-size:22px;font-weight:500}.stat-lbl{font-size:11px;color:var(--text-3);margin-top:2px}
 .week{padding:20px 16px}
-.week-grid{display:flex;gap:8px;margin-bottom:10px}
-.week-day{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
-.week-day-lbl{font-size:11px;color:var(--text-3)}.week-day-lbl.today-l{color:var(--blue);font-weight:500}
-.wdot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center}
-.wdot.done{background:#E8F0FE}.wdot.strong{background:var(--blue)}
-.wdot.today-ring{border:2px solid var(--blue)}
-.wdot svg{width:14px;height:14px}
-.week-sum{display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border);font-size:13px;color:var(--text-2)}
-.week-sum strong{font-weight:500;color:var(--text-1)}
+.week-boxes{display:flex;gap:8px;margin-bottom:0;position:relative}
+.week-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px}
+.week-lbl{font-size:10px;color:var(--text-3);font-weight:400}
+.week-lbl.is-today{color:var(--blue);font-weight:500}
+.week-box{width:34px;height:34px;border-radius:8px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;position:relative;background:var(--bg)}
+.week-box.done{border-color:var(--blue);background:#E8F0FE}
+.week-box.done svg{color:var(--blue)}
+.week-box.strong{border-color:var(--blue);background:var(--blue)}
+.week-box.strong svg{color:#FFF}
+.week-box.today{border-color:var(--blue);border-style:dashed}
+.week-box.missed{border-color:#E5E7EB;background:#FAFAFA}
+.week-box svg{width:14px;height:20px}
+.week-sum{display:flex;justify-content:space-between;padding:6px 0 0;font-size:12px;color:var(--text-3)}
 .recent{padding:20px 0 0 16px}
 .recent-scroll{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
 .recent-scroll::-webkit-scrollbar{display:none}
-.rcard{flex-shrink:0;width:220px;padding:16px;border:1px solid var(--border);border-radius:12px;cursor:pointer}
+.rcard{flex-shrink:0;width:220px;padding:16px;border:1px solid #DADCE0;border-radius:12px;cursor:pointer}
 .rcard:last-child{margin-right:16px}
 .rcard-cat{font-size:11px;font-weight:500;color:var(--text-3);margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .rcard-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
@@ -130,7 +137,7 @@ textarea.input-area:focus{border-color:var(--blue)}
 .mastery-name{flex:1;font-size:14px}.mastery-bar{width:80px;height:4px;background:var(--tint);border-radius:2px;overflow:hidden}
 .mastery-fill{height:100%;border-radius:2px}.mastery-pct{font-size:13px;color:var(--text-2);min-width:32px;text-align:right;font-weight:500}
 .shortcuts{padding:8px 16px 20px}
-.shortcut{display:flex;align-items:center;gap:16px;padding:14px 0;cursor:pointer;border-bottom:1px solid var(--tint)}
+.shortcut{display:flex;align-items:center;gap:16px;padding:14px 0;cursor:pointer;border-bottom:1px solid #F3F4F6}
 .shortcut:last-child{border-bottom:none}
 .shortcut svg{width:20px;height:20px;color:var(--text-2);flex-shrink:0}
 .shortcut-text{font-size:14px}.shortcut-sub{font-size:12px;color:var(--text-3)}
@@ -139,9 +146,9 @@ textarea.input-area:focus{border-color:var(--blue)}
 /* ── Library ── */
 .lib-filters{display:flex;gap:8px;padding:8px 16px;overflow-x:auto;scrollbar-width:none}
 .lib-filters::-webkit-scrollbar{display:none}
-.filter-chip{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;border:1px solid var(--border);color:var(--text-2);cursor:pointer;white-space:nowrap;flex-shrink:0}
+.filter-chip{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;border:1px solid #DADCE0;color:var(--text-2);cursor:pointer;white-space:nowrap;flex-shrink:0}
 .filter-chip.active{background:var(--blue);color:#FFF;border-color:var(--blue)}
-.lib-card{padding:16px;border-bottom:1px solid var(--tint)}
+.lib-card{padding:16px;border-bottom:1px solid #F3F4F6}
 .lib-card:active{background:var(--tint)}
 .lib-card-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .lib-card-title{font-size:15px;font-weight:400;color:var(--text-1);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -156,15 +163,16 @@ textarea.input-area:focus{border-color:var(--blue)}
 .flip-container{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 16px;perspective:1200px}
 .flip-card{width:100%;max-width:360px;height:300px;position:relative;cursor:pointer;transform-style:preserve-3d;transition:transform .4s cubic-bezier(.4,0,.2,1)}
 .flip-card.flipped{transform:rotateY(180deg)}
-.flip-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;background:var(--bg);border:1px solid var(--border);display:flex;flex-direction:column;padding:28px 24px}
+.flip-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;background:var(--bg);border:1px solid #DADCE0;display:flex;flex-direction:column;padding:28px 24px}
 .flip-back{transform:rotateY(180deg)}
 .flip-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--text-3);margin-bottom:12px}
 .flip-text{font-size:16px;line-height:1.6;color:var(--text-1);flex:1}
 .flip-hint{text-align:center;font-size:12px;color:var(--text-3);margin-top:auto;padding-top:12px}
-.flip-sep{height:1px;background:var(--border);margin:14px 0}
+.flip-sep{margin:14px 0;height:8px;overflow:visible}
+.flip-sep svg{width:100%;height:8px;display:block}
 .rating-area{padding:16px;display:none;gap:8px}
 .rating-area.visible{display:flex}
-.rate-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px;border:1px solid var(--border);border-radius:12px;background:var(--bg);cursor:pointer;font-family:inherit}
+.rate-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px;border:1px solid #DADCE0;border-radius:12px;background:var(--bg);cursor:pointer;font-family:inherit}
 .rate-btn:active{opacity:.8}
 .rate-dot{width:6px;height:6px;border-radius:50%}
 .rate-label{font-size:12px;font-weight:500;color:var(--text-1)}
@@ -183,7 +191,7 @@ textarea.input-area:focus{border-color:var(--blue)}
 .url-bottom{padding:16px;margin-top:auto}
 
 /* ── URL Import List ── */
-.job-card{padding:16px;border-bottom:1px solid var(--tint)}
+.job-card{padding:16px;border-bottom:1px solid #F3F4F6}
 .job-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .job-title{font-size:14px;color:var(--text-1);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .job-url{font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -191,13 +199,13 @@ textarea.input-area:focus{border-color:var(--blue)}
 
 /* ── QA Preview ── */
 .qa-mode-toggle{display:flex;padding:0 16px 12px;gap:8px}
-.qa-mode-btn{padding:6px 16px;border-radius:20px;font-size:13px;border:1px solid var(--border);background:none;color:var(--text-2);cursor:pointer;font-family:inherit}
+.qa-mode-btn{padding:6px 16px;border-radius:20px;font-size:13px;border:1px solid #DADCE0;background:none;color:var(--text-2);cursor:pointer;font-family:inherit}
 .qa-mode-btn.active{background:var(--blue);color:#FFF;border-color:var(--blue)}
 .qa-card-view{padding:0 16px}
-.qa-item{border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.qa-item{border:1px solid #DADCE0;border-radius:12px;padding:16px;margin-bottom:12px}
 .qa-q{font-size:14px;font-weight:500;color:var(--text-1);margin-bottom:8px}
 .qa-a{font-size:13px;color:var(--text-2);line-height:1.6}
-.qa-bottom{padding:16px;position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border)}
+.qa-bottom{padding:16px;position:sticky;bottom:0;background:var(--bg);border-top:1px solid #DADCE0}
 
 /* ── Item Detail ── */
 .detail-hero{padding:24px 16px 16px}
@@ -208,13 +216,13 @@ textarea.input-area:focus{border-color:var(--blue)}
 .detail-content{font-size:15px;line-height:1.7;color:var(--text-1)}
 .detail-meta{padding:16px;background:var(--tint)}
 .detail-meta-row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px}
-.detail-meta-row+.detail-meta-row{border-top:1px solid var(--border)}
+.detail-meta-row+.detail-meta-row{border-top:1px solid #DADCE0}
 .detail-meta-label{color:var(--text-3)}.detail-meta-value{color:var(--text-1);font-weight:500}
 
 /* ── Settings ── */
 .setting-group{padding:0 16px}
 .setting-group-title{padding:20px 0 8px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3)}
-.setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--tint)}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F3F4F6}
 .setting-row:last-child{border-bottom:none}
 .setting-label{font-size:14px;color:var(--text-1)}
 .setting-value{font-size:14px;color:var(--text-3)}
@@ -223,12 +231,12 @@ textarea.input-area:focus{border-color:var(--blue)}
 .toggle::after{content:'';position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#FFF;box-shadow:0 1px 3px rgba(0,0,0,.15);transition:left .2s}
 .toggle.on::after{left:22px}
 .stepper{display:flex;align-items:center;gap:12px}
-.stepper-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-2)}
+.stepper-btn{width:32px;height:32px;border-radius:50%;border:1px solid #DADCE0;background:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-2)}
 .stepper-val{font-size:16px;font-weight:500;min-width:20px;text-align:center}
 
 /* ── Journal ── */
 .journal-date{padding:16px 16px 8px;font-size:13px;font-weight:500;color:var(--text-2);position:sticky;top:56px;background:var(--bg);z-index:5}
-.journal-entry{padding:12px 16px;border-bottom:1px solid var(--tint)}
+.journal-entry{padding:12px 16px;border-bottom:1px solid #F3F4F6}
 .journal-entry-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .journal-item-title{font-size:13px;font-weight:500;color:var(--blue)}
 .journal-time{font-size:11px;color:var(--text-3)}
@@ -242,10 +250,10 @@ textarea.input-area:focus{border-color:var(--blue)}
 .streak-ring-num{font-size:20px;font-weight:500;color:var(--text-1)}
 .streak-ring-lbl{font-size:10px;color:var(--text-3)}
 .history-stat-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.history-stat-box{padding:10px;border:1px solid var(--border);border-radius:10px;text-align:center}
+.history-stat-box{padding:10px;border:1px solid #DADCE0;border-radius:10px;text-align:center}
 .history-stat-val{font-size:18px;font-weight:500;color:var(--text-1)}
 .history-stat-lbl{font-size:11px;color:var(--text-3);margin-top:2px}
-.history-item{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--tint)}
+.history-item{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid #F3F4F6}
 .history-badge{padding:2px 8px;border-radius:6px;font-size:10px;font-weight:500;align-self:flex-start;margin-top:2px;flex-shrink:0}
 .history-body{flex:1;min-width:0}
 .history-title{font-size:14px;color:var(--blue);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -253,12 +261,12 @@ textarea.input-area:focus{border-color:var(--blue)}
 .history-preview{font-size:13px;color:var(--text-2);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 /* ── ReviewSelect ── */
-.rsel-card{margin:0 16px 12px;border:1px solid var(--border);border-radius:12px;padding:20px;cursor:pointer}
+.rsel-card{margin:0 16px 12px;border:1px solid #DADCE0;border-radius:12px;padding:20px;cursor:pointer}
 .rsel-card:active{background:var(--tint)}
 .rsel-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
 .rsel-title{font-size:16px;font-weight:500;margin-bottom:4px}
 .rsel-sub{font-size:13px;color:var(--text-2)}
-.rsel-group{margin:0 16px 8px;border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer}
+.rsel-group{margin:0 16px 8px;border:1px solid #DADCE0;border-radius:12px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer}
 .rsel-group:active{background:var(--tint)}
 .rsel-group-bar{width:3px;height:36px;border-radius:2px;flex-shrink:0}
 .rsel-group-body{flex:1}
@@ -306,34 +314,28 @@ textarea.input-area:focus{border-color:var(--blue)}
 <div class="screen active" data-screen="home">
   <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">ReCallKit</div></div>
   <div class="screen-content">
-    <div class="today"><div class="today-circle">7</div><div><div class="today-weekday">Mon</div><div class="today-sub">8件の復習が待っています</div></div></div>
-    <div style="height:1px;background:var(--border);margin:0 16px"></div>
-    <div class="review-illust">
-      <svg viewBox="0 0 430 140" fill="none"><rect x="80" y="42" width="40" height="52" rx="6" fill="white" opacity=".9" transform="rotate(-8 80 42)"/><rect x="84" y="52" width="24" height="3" rx="1.5" fill="#1A73E8" opacity=".4" transform="rotate(-8 84 52)"/><rect x="110" y="38" width="40" height="52" rx="6" fill="white" transform="rotate(2 110 38)"/><rect x="116" y="48" width="24" height="3" rx="1.5" fill="#E8A000" opacity=".6" transform="rotate(2 116 48)"/><rect x="140" y="44" width="40" height="52" rx="6" fill="white" opacity=".85" transform="rotate(10 140 44)"/><rect x="148" y="54" width="24" height="3" rx="1.5" fill="#1E8E3E" opacity=".5" transform="rotate(10 148 54)"/><circle cx="300" cy="58" r="14" fill="#FFB74D" opacity=".7"/><rect x="288" y="74" width="24" height="32" rx="8" fill="#64B5F6" opacity=".6"/><circle cx="200" cy="30" r="2" fill="#E8A000" opacity=".4"/><circle cx="240" cy="50" r="1.5" fill="#1A73E8" opacity=".3"/><circle cx="350" cy="40" r="2.5" fill="#1E8E3E" opacity=".3"/></svg>
-    </div>
+    <div class="review-illust" id="heroIllust"></div>
     <div class="review-body">
       <div class="review-title">今日の復習 <strong>8件</strong></div>
       <div class="review-meta">推定 4分 · Programming, Design</div>
       <div class="overdue">期限切れ 3件</div>
       <button class="btn btn-primary" style="margin-top:16px" onclick="nav('reviewSession')"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>復習を始める</button>
     </div>
-    <div class="section-gap"></div>
-    <div class="stats"><div class="stat"><div class="stat-val">12</div><div class="stat-lbl">日連続</div></div><div class="stat"><div class="stat-val">38</div><div class="stat-lbl">習得済み</div></div><div class="stat"><div class="stat-val">124</div><div class="stat-lbl">カード</div></div></div>
-    <div class="sep"></div>
+    <div class="section-gap"><svg viewBox="0 0 430 20" preserveAspectRatio="none"><path d="M0 10 C55 18, 100 18, 145 10 S240 2, 285 10 S380 18, 430 10" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 4" fill="none"/></svg></div>
     <div class="week">
-      <div class="label-upper" style="margin-bottom:14px">This Week</div>
-      <div class="week-grid">
-        <div class="week-day"><div class="week-day-lbl">Mon</div><div class="wdot strong"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
-        <div class="week-day"><div class="week-day-lbl">Tue</div><div class="wdot done"><svg viewBox="0 0 24 24" fill="none" stroke="#1A73E8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
-        <div class="week-day"><div class="week-day-lbl">Wed</div><div class="wdot strong"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
-        <div class="week-day"><div class="week-day-lbl">Thu</div><div class="wdot"></div></div>
-        <div class="week-day"><div class="week-day-lbl">Fri</div><div class="wdot done"><svg viewBox="0 0 24 24" fill="none" stroke="#1A73E8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
-        <div class="week-day"><div class="week-day-lbl">Sat</div><div class="wdot strong"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
-        <div class="week-day"><div class="week-day-lbl today-l">Today</div><div class="wdot today-ring"></div></div>
+      <div class="label-upper" style="margin-bottom:12px">This Week</div>
+      <div class="week-boxes">
+        <div class="week-col"><div class="week-lbl">M</div><div class="week-box strong"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+        <div class="week-col"><div class="week-lbl">T</div><div class="week-box done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+        <div class="week-col"><div class="week-lbl">W</div><div class="week-box strong"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+        <div class="week-col"><div class="week-lbl">T</div><div class="week-box missed"></div></div>
+        <div class="week-col"><div class="week-lbl">F</div><div class="week-box done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+        <div class="week-col"><div class="week-lbl">S</div><div class="week-box strong"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+        <div class="week-col"><div class="week-lbl is-today">S</div><div class="week-box today"></div></div>
       </div>
-      <div class="week-sum"><span>今週 <strong>5 / 7日</strong></span><span>42枚 復習済み</span></div>
+      <div class="week-sum"><span>5/7日</span><span>42枚 復習済み</span></div>
     </div>
-    <div class="section-gap"></div>
+    <div class="section-gap"><svg viewBox="0 0 430 20" preserveAspectRatio="none"><path d="M0 10 C55 18, 100 18, 145 10 S240 2, 285 10 S380 18, 430 10" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 4" fill="none"/></svg></div>
     <div class="recent">
       <div class="label-upper" style="margin-bottom:14px">Recently Added</div>
       <div class="recent-scroll">
@@ -349,7 +351,7 @@ textarea.input-area:focus{border-color:var(--blue)}
       <div class="mastery-row"><div class="mastery-name">Design</div><div class="mastery-bar"><div class="mastery-fill" style="width:45%;background:#E8A000"></div></div><div class="mastery-pct">45%</div></div>
       <div class="mastery-row"><div class="mastery-name">Infrastructure</div><div class="mastery-bar"><div class="mastery-fill" style="width:82%;background:#1E8E3E"></div></div><div class="mastery-pct">82%</div></div>
     </div>
-    <div class="sep"></div>
+    <div class="sep"><svg viewBox="0 0 430 20" preserveAspectRatio="none"><path d="M0 10 C55 18, 100 18, 145 10 S240 2, 285 10 S380 18, 430 10" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 4" fill="none"/></svg></div>
     <div class="shortcuts">
       <div class="shortcut" onclick="nav('urlAnalysis')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><div><div class="shortcut-text">URLから学習カードを作成</div><div class="shortcut-sub">AIがQ&Aを自動生成します</div></div><svg class="shortcut-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
       <div class="shortcut"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><div><div class="shortcut-text">手動でカードを作成</div></div><svg class="shortcut-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
@@ -374,7 +376,7 @@ textarea.input-area:focus{border-color:var(--blue)}
     <div class="label-upper" style="margin-bottom:10px">解析するURL</div>
     <div class="input-group"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><input type="url" placeholder="https://..." id="urlInput" oninput="updateUrlBtn()"></div>
     <div class="url-desc">スタートするとバックグラウンドで解析が始まります。取り込み一覧で進捗を確認できます。</div>
-    <div style="margin-top:20px;padding:16px;border:1px solid var(--border);border-radius:12px">
+    <div style="margin-top:20px;padding:16px;border:1px solid #DADCE0;border-radius:12px">
       <div style="font-size:13px;color:var(--text-2);margin-bottom:4px">本日の残り回数</div>
       <div style="display:flex;align-items:center;gap:8px"><div style="font-size:20px;font-weight:500">2 / 3</div><div style="font-size:12px;color:var(--text-3)">広告視聴で追加可能</div></div>
     </div>
@@ -432,7 +434,7 @@ textarea.input-area:focus{border-color:var(--blue)}
       <div class="flip-face flip-back">
         <div class="flip-label">Question</div>
         <div class="flip-text" style="font-size:13px;color:var(--text-2);flex:none" id="flipQBack">React Server Componentsがクライアントコンポーネントと異なる点は？</div>
-        <div class="flip-sep"></div>
+        <div class="flip-sep"><svg viewBox="0 0 430 20" preserveAspectRatio="none"><path d="M0 10 C55 18, 100 18, 145 10 S240 2, 285 10 S380 18, 430 10" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 4" fill="none"/></svg></div>
         <div class="flip-label">Answer</div>
         <div class="flip-text" id="flipA" style="font-size:14px">RSCはサーバー上でのみレンダリングされ、クライアントにJavaScriptバンドルが送信されない。データフェッチをコンポーネント内で直接行え、バンドルサイズを削減できる。</div>
       </div>
@@ -466,18 +468,18 @@ textarea.input-area:focus{border-color:var(--blue)}
       <div class="detail-tags"><span class="pill pill-blue">Programming</span><span class="pill pill-gray">React</span></div>
       <div class="detail-title">React Server Componentsがクライアントコンポーネントと異なる点は？</div>
     </div>
-    <div class="sep"></div>
+    <div class="sep"><svg viewBox="0 0 430 20" preserveAspectRatio="none"><path d="M0 10 C55 18, 100 18, 145 10 S240 2, 285 10 S380 18, 430 10" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 4" fill="none"/></svg></div>
     <div class="detail-section">
       <div class="detail-section-title">Answer</div>
       <div class="detail-content">RSCはサーバー上でのみレンダリングされ、クライアントにJavaScriptバンドルが送信されない。データフェッチをコンポーネント内で直接行え、バンドルサイズを削減できる。<br><br>クライアントコンポーネントとは異なり、useState や useEffect などのReact Hooksは使用できないが、async/await を直接使用してデータベースやAPIにアクセスできる。</div>
     </div>
-    <div class="sep"></div>
+    <div class="sep"><svg viewBox="0 0 430 20" preserveAspectRatio="none"><path d="M0 10 C55 18, 100 18, 145 10 S240 2, 285 10 S380 18, 430 10" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 4" fill="none"/></svg></div>
     <div class="detail-section">
       <div class="detail-section-title">Review Info</div>
       <div style="display:flex;gap:12px">
-        <div style="flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;text-align:center"><div style="font-size:18px;font-weight:500">5</div><div style="font-size:11px;color:var(--text-3)">繰り返し</div></div>
-        <div style="flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;text-align:center"><div style="font-size:18px;font-weight:500">3日</div><div style="font-size:11px;color:var(--text-3)">次の復習</div></div>
-        <div style="flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;text-align:center"><div style="font-size:18px;font-weight:500">2.6</div><div style="font-size:11px;color:var(--text-3)">EF</div></div>
+        <div style="flex:1;padding:12px;border:1px solid #DADCE0;border-radius:10px;text-align:center"><div style="font-size:18px;font-weight:500">5</div><div style="font-size:11px;color:var(--text-3)">繰り返し</div></div>
+        <div style="flex:1;padding:12px;border:1px solid #DADCE0;border-radius:10px;text-align:center"><div style="font-size:18px;font-weight:500">3日</div><div style="font-size:11px;color:var(--text-3)">次の復習</div></div>
+        <div style="flex:1;padding:12px;border:1px solid #DADCE0;border-radius:10px;text-align:center"><div style="font-size:18px;font-weight:500">2.6</div><div style="font-size:11px;color:var(--text-3)">EF</div></div>
       </div>
     </div>
     <div class="detail-meta">
@@ -549,7 +551,7 @@ textarea.input-area:focus{border-color:var(--blue)}
         <div class="history-stat-box"><div class="history-stat-val">87%</div><div class="history-stat-lbl">正答率</div></div>
       </div>
     </div>
-    <div class="sep"></div>
+    <div class="sep"><svg viewBox="0 0 430 20" preserveAspectRatio="none"><path d="M0 10 C55 18, 100 18, 145 10 S240 2, 285 10 S380 18, 430 10" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 4" fill="none"/></svg></div>
     <div class="label-upper" style="padding:16px 16px 8px">Recent Reviews</div>
     <div class="history-item"><span class="history-badge pill-blue">URL</span><div class="history-body"><div class="history-title">React Server Componentsの特徴</div><div class="history-time">3分前</div><div class="history-preview">RSCはサーバー上でのみレンダリングされ、クライアントにJSバンドルが送信されない。</div></div></div>
     <div class="history-item"><span class="history-badge pill-blue">URL</span><div class="history-body"><div class="history-title">ゲシュタルトの法則：近接の法則</div><div class="history-time">5分前</div><div class="history-preview">近くに配置された要素はグループとして認識される傾向がある。</div></div></div>
@@ -696,7 +698,90 @@ function rateCard(rating) {
   setTimeout(updateReviewCard, 100);
 }
 
+// ── Hero Illustrations (6 patterns, SVG inline) ──
+const HEROES = [
+  // 1: Cards fanning from lower-left
+  `<svg viewBox="0 0 430 140" fill="none">
+    <rect x="20" y="60" width="48" height="64" rx="6" fill="white" stroke="#DADCE0" stroke-width="1" transform="rotate(-15 20 60)"/>
+    <rect x="55" y="50" width="48" height="64" rx="6" fill="white" stroke="#DADCE0" stroke-width="1" transform="rotate(-5 55 50)"/>
+    <rect x="62" y="62" width="28" height="2.5" rx="1" fill="#1A73E8" opacity=".4" transform="rotate(-5 62 62)"/>
+    <rect x="62" y="69" width="20" height="2.5" rx="1" fill="#1A73E8" opacity=".25" transform="rotate(-5 62 69)"/>
+    <rect x="90" y="42" width="48" height="64" rx="6" fill="white" stroke="#DADCE0" stroke-width="1" transform="rotate(3 90 42)"/>
+    <rect x="98" y="54" width="28" height="2.5" rx="1" fill="#1A73E8" opacity=".5" transform="rotate(3 98 54)"/>
+    <rect x="98" y="61" width="22" height="2.5" rx="1" fill="#1E8E3E" opacity=".35" transform="rotate(3 98 61)"/>
+    <circle cx="380" cy="30" r="3" fill="#E8F0FE"/>
+    <circle cx="360" cy="110" r="2" fill="#DADCE0"/>
+  </svg>`,
+
+  // 2: Checkbox row with wavy line
+  `<svg viewBox="0 0 430 140" fill="none">
+    <rect x="80" y="75" width="28" height="28" rx="6" fill="#1A73E8"/>
+    <polyline points="88,89 93,95 100,85" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <rect x="120" y="75" width="28" height="28" rx="6" fill="#1A73E8"/>
+    <polyline points="128,89 133,95 140,85" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <rect x="160" y="75" width="28" height="28" rx="6" fill="none" stroke="#DADCE0" stroke-width="1.5"/>
+    <rect x="200" y="75" width="28" height="28" rx="6" fill="#1A73E8"/>
+    <polyline points="208,89 213,95 220,85" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <rect x="240" y="75" width="28" height="28" rx="6" fill="none" stroke="#1A73E8" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <path d="M75 115 C120 125, 155 125, 190 115 S260 105, 295 115" stroke="#DADCE0" stroke-width="1.2" stroke-dasharray="3 4" stroke-linecap="round" fill="none"/>
+    <circle cx="340" cy="50" r="4" fill="#E8F0FE"/>
+    <circle cx="355" cy="42" r="2" fill="#DADCE0"/>
+  </svg>`,
+
+  // 3: Single floating card
+  `<svg viewBox="0 0 430 140" fill="none">
+    <rect x="150" y="28" width="130" height="80" rx="8" fill="white" stroke="#DADCE0" stroke-width="1" transform="rotate(3 215 68)"/>
+    <rect x="170" y="48" width="60" height="3" rx="1.5" fill="#5F6368" opacity=".2" transform="rotate(3 200 50)"/>
+    <rect x="170" y="57" width="45" height="3" rx="1.5" fill="#5F6368" opacity=".13" transform="rotate(3 193 59)"/>
+    <rect x="170" y="66" width="70" height="3" rx="1.5" fill="#5F6368" opacity=".08" transform="rotate(3 205 68)"/>
+    <circle cx="290" cy="35" r="4" fill="#1E8E3E" opacity=".5"/>
+    <line x1="160" y1="118" x2="280" y2="118" stroke="#1A73E8" stroke-width="1.5" opacity=".2" stroke-linecap="round"/>
+  </svg>`,
+
+  // 4: Dot cloud
+  `<svg viewBox="0 0 430 140" fill="none">
+    <circle cx="280" cy="55" r="18" fill="#E8F0FE"/>
+    <circle cx="320" cy="45" r="12" fill="#E8F0FE"/>
+    <circle cx="310" cy="80" r="14" fill="#E8F0FE"/>
+    <circle cx="350" cy="65" r="10" fill="#E8F0FE"/>
+    <circle cx="340" cy="90" r="8" fill="#DADCE0" opacity=".5"/>
+    <circle cx="295" cy="38" r="5" fill="#DADCE0" opacity=".4"/>
+    <circle cx="330" cy="55" r="5" fill="#1A73E8" opacity=".7"/>
+    <circle cx="370" cy="80" r="3" fill="#DADCE0" opacity=".3"/>
+  </svg>`,
+
+  // 5: Cards sorted across a wavy divider
+  `<svg viewBox="0 0 430 140" fill="none">
+    <path d="M30 70 C100 80, 170 80, 215 70 S330 60, 400 70" stroke="#DADCE0" stroke-width="1.2" stroke-dasharray="3 4" stroke-linecap="round" fill="none"/>
+    <rect x="90" y="24" width="42" height="32" rx="5" fill="white" stroke="#DADCE0" stroke-width="1" transform="rotate(-4 90 24)"/>
+    <rect x="98" y="33" width="20" height="2" rx="1" fill="#1A73E8" opacity=".35" transform="rotate(-4 98 33)"/>
+    <rect x="250" y="18" width="42" height="32" rx="5" fill="white" stroke="#DADCE0" stroke-width="1" transform="rotate(5 250 18)"/>
+    <rect x="258" y="27" width="22" height="2" rx="1" fill="#1E8E3E" opacity=".35" transform="rotate(5 258 27)"/>
+    <rect x="160" y="86" width="42" height="32" rx="5" fill="white" stroke="#DADCE0" stroke-width="1" transform="rotate(-2 160 86)"/>
+    <rect x="168" y="95" width="18" height="2" rx="1" fill="#5F6368" opacity=".25" transform="rotate(-2 168 95)"/>
+  </svg>`,
+
+  // 6: Minimal list lines with accent
+  `<svg viewBox="0 0 430 140" fill="none">
+    <line x1="100" y1="30" x2="280" y2="30" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="100" y1="52" x2="250" y2="52" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="100" y1="74" x2="300" y2="74" stroke="#1A73E8" stroke-width="1.5" stroke-linecap="round"/>
+    <rect x="306" y="68" width="12" height="12" rx="3" fill="#1A73E8" opacity=".15"/>
+    <line x1="100" y1="96" x2="230" y2="96" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="100" y1="118" x2="260" y2="118" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>`,
+];
+
+function renderHero() {
+  const el = document.getElementById('heroIllust');
+  const idx = Math.floor(Math.random() * HEROES.length);
+  el.innerHTML = HEROES[idx];
+}
+// Click to cycle
+document.getElementById('heroIllust').addEventListener('click', renderHero);
+
 // ── Init ──
+renderHero();
 renderLibrary();
 renderQA();
 </script>
