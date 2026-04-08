@@ -133,7 +133,7 @@ export function ReviewCTACard({
               <Ionicons name="checkmark-circle" size={32} color={colors.success} />
             </View>
             <View style={styles.doneTexts}>
-              <Text style={[styles.doneTitle, { color: colors.success }]}>本日分完了！</Text>
+              <Text style={[styles.doneTitle, { color: colors.label }]}>本日分完了！</Text>
               <Text style={[styles.doneSub, { color: colors.labelSecondary }]}>
                 今日 {todayCompleted} 件復習・{streakDays}日連続
               </Text>
@@ -142,13 +142,13 @@ export function ReviewCTACard({
           <Pressable
             style={({ pressed }) => [
               styles.extraBtn,
-              { borderColor: colors.accent, opacity: pressed ? 0.7 : 1 },
+              { borderColor: colors.label, opacity: pressed ? 0.7 : 1 },
             ]}
             onPress={onStartExtra}
             accessibilityRole="button"
             accessibilityLabel="追加学習を始める"
           >
-            <Text style={[styles.extraBtnText, { color: colors.accent }]}>
+            <Text style={[styles.extraBtnText, { color: colors.label }]}>
               追加学習を始める
             </Text>
           </Pressable>
