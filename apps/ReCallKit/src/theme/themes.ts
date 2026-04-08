@@ -100,8 +100,8 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
     sidebar: {
       backgroundSolid: '#FFFFFF',
       overlay: 'rgba(0,0,0,0.30)',
-      activeBackground: '#EEF2FF',
-      activeTint: '#6366F1',
+      activeBackground: 'rgba(0,0,0,0.06)',
+      activeTint: '#171717',
       inactiveTint: 'rgba(60,60,67,0.60)',
       sectionHeader: '#A3A3A3',
       separator: 'rgba(60,60,67,0.12)',
@@ -142,8 +142,8 @@ export const THEMES: Record<ThemeId, ThemeEntry> = {
     sidebar: {
       backgroundSolid: '#161618',
       overlay: 'rgba(0,0,0,0.50)',
-      activeBackground: 'rgba(129,140,248,0.15)',
-      activeTint: '#818CF8',
+      activeBackground: 'rgba(255,255,255,0.08)',
+      activeTint: '#FFFFFF',
       inactiveTint: 'rgba(235,235,245,0.60)',
       sectionHeader: 'rgba(235,235,245,0.50)',
       separator: 'rgba(84,84,88,0.65)',

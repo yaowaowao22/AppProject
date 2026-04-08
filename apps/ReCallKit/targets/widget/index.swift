@@ -42,7 +42,7 @@ struct ReviewProvider: TimelineProvider {
 
     private func loadEntry() -> ReviewEntry {
         let defaults = UserDefaults(suiteName: appGroupId)
-        let quizItem = loadRandomQuizItem(from: defaults)
+        let quizItem = loadRandomQuizItem(from: defaults) ?? loadQuizFromPeekItems(from: defaults)
         return ReviewEntry(
             date: Date(),
             reviewCount: defaults?.integer(forKey: "todayReviewCount") ?? 0,
@@ -64,6 +64,24 @@ struct ReviewProvider: TimelineProvider {
         guard
             let question = item?["question"], !question.isEmpty,
             let answer = item?["answer"]
+        else { return nil }
+
+        return QuizItem(question: question, answer: answer)
+    }
+
+    /// quizItems が空の場合、flashcardPeekItems からフォールバック取得
+    private func loadQuizFromPeekItems(from defaults: UserDefaults?) -> QuizItem? {
+        guard
+            let jsonString = defaults?.string(forKey: "flashcardPeekItems"),
+            let data = jsonString.data(using: .utf8),
+            let array = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+            !array.isEmpty
+        else { return nil }
+
+        let item = array.randomElement()
+        guard
+            let question = item?["question"] as? String, !question.isEmpty,
+            let answer = item?["hintAnswer"] as? String
         else { return nil }
 
         return QuizItem(question: question, answer: answer)
@@ -113,13 +131,12 @@ struct SmallWidgetView: View {
                     }
                 }
             } else {
-                // 復習カウントモード
-                Text("\(entry.reviewCount)")
-                    .font(.system(size: 42, weight: .bold, design: .rounded))
+                // データ未同期
+                Image(systemName: "brain.head.profile")
+                    .font(.system(size: 28))
                     .foregroundColor(accent)
-                    .minimumScaleFactor(0.6)
-                Text("件の復習")
-                    .font(.system(size: 12))
+                Text("アプリを開いて同期")
+                    .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }
 
@@ -186,11 +203,11 @@ struct MediumWidgetView: View {
                         }
                     }
                 } else {
-                    Text("\(entry.reviewCount)")
-                        .font(.system(size: 46, weight: .bold, design: .rounded))
+                    // データ未同期
+                    Image(systemName: "brain.head.profile")
+                        .font(.system(size: 32))
                         .foregroundColor(accent)
-                        .minimumScaleFactor(0.5)
-                    Text("件の復習待ち")
+                    Text("アプリを開いて同期")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                 }
@@ -693,16 +710,10 @@ struct ReCallWidget_Previews: PreviewProvider {
             .previewDisplayName("Small – Q&Aあり")
 
             ReCallWidgetEntryView(
-                entry: ReviewEntry(date: .now, reviewCount: 8, streak: 14, totalItems: 56, quizItem: nil)
-            )
-            .previewContext(WidgetPreviewContext(family: .systemSmall))
-            .previewDisplayName("Small – 復習あり")
-
-            ReCallWidgetEntryView(
                 entry: ReviewEntry(date: .now, reviewCount: 0, streak: 14, totalItems: 56, quizItem: nil)
             )
             .previewContext(WidgetPreviewContext(family: .systemSmall))
-            .previewDisplayName("Small – 0件")
+            .previewDisplayName("Small – 未同期")
 
             ReCallWidgetEntryView(
                 entry: ReviewEntry(
