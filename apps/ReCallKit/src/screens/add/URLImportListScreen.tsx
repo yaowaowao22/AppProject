@@ -50,7 +50,13 @@ import type { LibraryStackParamList } from '../../navigation/types';
 type Props = NativeStackScreenProps<LibraryStackParamList, 'URLImportList'>;
 
 // ---- チャンク進捗（モジュールレベル: 画面遷移しても消えない） ----
-type ChunkProgress = { jobId: number; current: number; total: number } | null;
+type ChunkProgress = {
+  jobId: number;
+  current: number;
+  total: number;
+  chunkQaCount?: number;   // 直近チャンクで生成されたQ&A数
+  totalQaCount?: number;   // 累計Q&A数
+} | null;
 let _chunkProgress: ChunkProgress = null;
 const _chunkProgressListeners = new Set<() => void>();
 function setActiveChunkProgress(p: ChunkProgress) {
@@ -128,7 +134,7 @@ const ERROR_RECOVERY: Record<ErrorType, ErrorRecoveryConfig> = {
 async function executeJob(
   db: import('expo-sqlite').SQLiteDatabase,
   job: UrlImportJob,
-  onChunkProgress?: (current: number, total: number) => void,
+  onChunkProgress?: (current: number, total: number, chunkQaCount?: number, totalQaCount?: number) => void,
 ): Promise<void> {
   await updateJob(db, job.id, { status: 'processing' });
 
@@ -290,8 +296,8 @@ export function URLImportListScreen({ navigation }: Props) {
     if (!pending) return;
 
     processingRef.current = true;
-    executeJob(db, pending, (current, total) => {
-      setActiveChunkProgress({ jobId: pending.id, current, total });
+    executeJob(db, pending, (current, total, chunkQaCount, totalQaCount) => {
+      setActiveChunkProgress({ jobId: pending.id, current, total, chunkQaCount, totalQaCount });
     }).finally(async () => {
       processingRef.current = false;
       setActiveChunkProgress(null);
@@ -346,8 +352,8 @@ export function URLImportListScreen({ navigation }: Props) {
       // 少し待ってから executeJob を呼ぶ（loadJobs の state 更新を待つ）
       setTimeout(async () => {
         try {
-          await executeJob(db, { ...stuckJob, status: 'pending' }, (current, total) => {
-            setActiveChunkProgress({ jobId: stuckJob.id, current, total });
+          await executeJob(db, { ...stuckJob, status: 'pending' }, (current, total, chunkQaCount, totalQaCount) => {
+            setActiveChunkProgress({ jobId: stuckJob.id, current, total, chunkQaCount, totalQaCount });
           });
           completeProcessingTask(true);
         } catch {
@@ -466,6 +472,18 @@ export function URLImportListScreen({ navigation }: Props) {
             </View>
             <Text style={[styles.chunkLabel, { color: statusColor }]}>
               {progress.current + 1} / {progress.total}
+            </Text>
+          </View>
+        )}
+        {/* チャンクごとのQ/A生成結果 */}
+        {progress && progress.totalQaCount != null && progress.totalQaCount > 0 && (
+          <View style={styles.chunkQaRow}>
+            <Ionicons name="help-circle-outline" size={12} color={colors.labelSecondary} />
+            <Text style={[styles.chunkQaText, { color: colors.labelSecondary }]}>
+              {progress.chunkQaCount != null
+                ? `チャンク${progress.current + 1}: +${progress.chunkQaCount}件`
+                : ''}
+              {' '}（累計 {progress.totalQaCount}件）
             </Text>
           </View>
         )}
@@ -832,6 +850,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     minWidth: 32,
     textAlign: 'right',
+  },
+  chunkQaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  chunkQaText: {
+    ...TypeScale.caption2,
   },
 
   // ---- インストールカード進捗バー ----

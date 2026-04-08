@@ -22,7 +22,7 @@ export type PipelineResult = AnalysisResult & { sourceUrl: string };
  */
 export async function analyzeUrlPipeline(
   url: string,
-  onProgress?: (currentChunk: number, totalChunks: number) => void,
+  onProgress?: (currentChunk: number, totalChunks: number, chunkQaCount?: number, totalQaCount?: number) => void,
   jobId?: number,
 ): Promise<PipelineResult> {
   let result: AnalysisResult;
