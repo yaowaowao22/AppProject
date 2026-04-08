@@ -21,19 +21,19 @@ export interface ModelDefinition {
 export const MODEL_CATALOG: ModelDefinition[] = [
   {
     id: 'qwen3-06b-q4km',
-    name: 'Qwen3 0.6B Q4_K_M',
+    name: 'ミニ',
     tag: '超軽量・日本語',
     description: '0.4GB・最軽量。Qwen3で日本語対応。iPhone 12以降',
     sizeGB: 0.4,
     sizeBytesEstimate: 397_000_000,
-    url: 'https://huggingface.co/unsloth/Qwen3-0.6B-GGUF/resolve/main/Q4_K_M.gguf',
+    url: 'https://huggingface.co/unsloth/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B-Q4_K_M.gguf',
     filename: 'Qwen3-0.6B-Q4_K_M.gguf',
     nGpuLayers: 99,
     nCtx: 4096,
   },
   {
     id: 'llama32-1b-q4km',
-    name: 'Llama 3.2 1B Q4_K_M',
+    name: 'ミニ+',
     tag: '超軽量',
     description: '最小クラス0.8GB。iPhone 12以降。日本語はやや苦手',
     sizeGB: 0.8,
@@ -47,7 +47,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
   },
   {
     id: 'qwen25-1b5-q4km',
-    name: 'Qwen2.5 1.5B Q4_K_M',
+    name: 'ライト',
     tag: '軽量・日本語',
     description: '1GB・日本語対応。URL解析向き。iPhone 12以降',
     sizeGB: 1.0,
@@ -59,9 +59,9 @@ export const MODEL_CATALOG: ModelDefinition[] = [
   },
   {
     id: 'qwen3-4b-q4km',
-    name: 'Qwen3 4B Q4_K_M',
+    name: 'スマート',
     tag: '日本語◎',
-    description: '2.5GB・日本語高精度。Qwen2.5から推論能力大幅向上。iPhone 14以降',
+    description: '2.5GB・日本語高精度。推論能力が高い。iPhone 14以降',
     sizeGB: 2.5,
     sizeBytesEstimate: 2_500_000_000,
     url: 'https://huggingface.co/unsloth/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf',
@@ -71,7 +71,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
   },
   {
     id: 'gemma4-iq2m',
-    name: 'Gemma 4 E2B UD-IQ2_M',
+    name: 'スピード',
     tag: '軽量',
     description: '最小サイズ・最速。iPhone 12以降で動作。精度はやや低下',
     sizeGB: 2.3,
@@ -83,7 +83,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
   },
   {
     id: 'gemma4-q3ks',
-    name: 'Gemma 4 E2B Q3_K_S',
+    name: 'バランス',
     tag: '推奨',
     description: '高速・省メモリ。iPhone 15 Pro / 16推奨',
     sizeGB: 2.3,
@@ -95,7 +95,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
   },
   {
     id: 'gemma4-q4km',
-    name: 'Gemma 4 E2B Q4_K_M',
+    name: 'プレミアム',
     tag: '高精度',
     description: 'より高品質な回答。iPhone 16推奨（要3GB空き）',
     sizeGB: 3.0,
