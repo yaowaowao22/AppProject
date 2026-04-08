@@ -14,6 +14,8 @@ export interface ModelDefinition {
   filename: string;
   nGpuLayers: number;
   nCtx: number;
+  deprecated?: boolean;               // true で新規インストール不可
+  deprecationMessage?: string;         // 廃止理由の表示メッセージ
 }
 
 export const MODEL_CATALOG: ModelDefinition[] = [
@@ -40,6 +42,8 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     filename: 'Llama-3.2-1B-Q4_K_M.gguf',
     nGpuLayers: 99,
     nCtx: 4096,
+    deprecated: true,
+    deprecationMessage: '日本語精度が他モデルより低いため、提供を終了しました。同サイズ帯の別モデルをお試しください。',
   },
   {
     id: 'qwen25-1b5-q4km',

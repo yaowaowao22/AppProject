@@ -168,6 +168,7 @@ export async function pauseDownload(): Promise<void> {
 /**
  * 指定モデルをインストール（ダウンロード）する。
  * 途中で pauseDownload() を呼ぶと一時停止、再度 installModel() で再開。
+ * バックグラウンド移行時も beginBackgroundTask で可能な限りDLを継続する。
  */
 export async function installModel(modelId: string): Promise<void> {
   const model = getModelById(modelId);
@@ -186,10 +187,17 @@ export async function installModel(modelId: string): Promise<void> {
     error: null,
   });
 
+  // バックグラウンドでもDLを継続するためにタスクを確保
+  const bgTaskKey = await beginBackgroundTask('ReCallKit Model Download');
+  if (bgTaskKey) {
+    console.log('[modelDownload] バックグラウンドタスク開始:', bgTaskKey);
+  }
+
   try {
     await FileSystem.makeDirectoryAsync(MODEL_DIR, { intermediates: true });
   } catch (err) {
     setDownloadState({ ...(_downloadState ?? { modelId, modelName: model.name, progress: 0, bytesWrittenMB: 0, totalMB, isPaused: false }), error: 'ディレクトリ作成に失敗しました' });
+    endBackgroundTask(bgTaskKey);
     throw err;
   }
 
@@ -212,33 +220,33 @@ export async function installModel(modelId: string): Promise<void> {
     });
   };
 
-  // 前回の中断データがあれば再開
-  const resumeInfo = await FileSystem.getInfoAsync(RESUME_DATA_PATH);
-  if (resumeInfo.exists) {
-    try {
-      const raw = await FileSystem.readAsStringAsync(RESUME_DATA_PATH);
-      const saved = JSON.parse(raw) as DownloadPauseState;
-      if (saved.url === model.url) {
-        activeDownload = FileSystem.createDownloadResumable(
-          saved.url, saved.fileUri, saved.options ?? {}, onProgress, saved.resumeData,
-        );
-        await FileSystem.deleteAsync(RESUME_DATA_PATH, { idempotent: true });
-        const result = await activeDownload.resumeAsync();
-        activeDownload = null;
-        if (result?.uri) {
-          await persistActiveModel(modelId);
-          setDownloadState(null);
-          return;
-        }
-      }
-    } catch {
-      await FileSystem.deleteAsync(RESUME_DATA_PATH, { idempotent: true });
-    }
-  }
-
-  // 新規ダウンロード
-  activeDownload = FileSystem.createDownloadResumable(model.url, destPath, {}, onProgress);
   try {
+    // 前回の中断データがあれば再開
+    const resumeInfo = await FileSystem.getInfoAsync(RESUME_DATA_PATH);
+    if (resumeInfo.exists) {
+      try {
+        const raw = await FileSystem.readAsStringAsync(RESUME_DATA_PATH);
+        const saved = JSON.parse(raw) as DownloadPauseState;
+        if (saved.url === model.url) {
+          activeDownload = FileSystem.createDownloadResumable(
+            saved.url, saved.fileUri, saved.options ?? {}, onProgress, saved.resumeData,
+          );
+          await FileSystem.deleteAsync(RESUME_DATA_PATH, { idempotent: true });
+          const result = await activeDownload.resumeAsync();
+          activeDownload = null;
+          if (result?.uri) {
+            await persistActiveModel(modelId);
+            setDownloadState(null);
+            return;
+          }
+        }
+      } catch {
+        await FileSystem.deleteAsync(RESUME_DATA_PATH, { idempotent: true });
+      }
+    }
+
+    // 新規ダウンロード
+    activeDownload = FileSystem.createDownloadResumable(model.url, destPath, {}, onProgress);
     const result = await activeDownload.downloadAsync();
     activeDownload = null;
     if (!result?.uri) throw new Error('ダウンロードに失敗しました');
@@ -254,6 +262,8 @@ export async function installModel(modelId: string): Promise<void> {
       });
     }
     throw err;
+  } finally {
+    endBackgroundTask(bgTaskKey);
   }
 }
 

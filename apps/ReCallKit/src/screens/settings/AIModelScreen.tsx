@@ -11,7 +11,6 @@ import {
   Pressable,
   StyleSheet,
   Alert,
-  AppState,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,7 +25,6 @@ import {
   deleteModel,
   getActiveModelId,
   setActiveModelId,
-  pauseDownload,
   subscribeDownloadState,
   type ModelDownloadState,
 } from '../../services/localAnalysisService';
@@ -65,19 +63,6 @@ export function AIModelScreen() {
     });
     return unsub;
   }, [refreshStatus]);
-
-  // バックグラウンド移行時に一時停止
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', async (appState) => {
-      if (appState === 'background' || appState === 'inactive') {
-        await pauseDownload();
-      } else if (appState === 'active' && downloadState?.isPaused) {
-        // 一時停止中なら自動再開
-        installModel(downloadState.modelId).catch(() => {});
-      }
-    });
-    return () => sub.remove();
-  }, [downloadState]);
 
   // インストールボタン
   const handleInstall = useCallback(async (modelId: string) => {
@@ -133,6 +118,7 @@ export function AIModelScreen() {
       {MODEL_CATALOG.map((model, index) => {
         const installed = installedMap[model.id] ?? false;
         const isActive = activeModelId === model.id;
+        const isDeprecated = model.deprecated === true;
         const isDownloading = downloadState?.modelId === model.id && !downloadState.isPaused;
         const isPaused = downloadState?.modelId === model.id && downloadState.isPaused;
         const hasError = downloadState?.modelId === model.id && !!downloadState.error;
@@ -140,22 +126,46 @@ export function AIModelScreen() {
         const mb = downloadState?.modelId === model.id ? downloadState.bytesWrittenMB : 0;
         const totalMB = downloadState?.modelId === model.id ? downloadState.totalMB : Math.round(model.sizeGB * 1000);
 
+        // 廃止 + 未インストール → 非表示
+        if (isDeprecated && !installed) return null;
+
         return (
           <View
             key={model.id}
             style={[
               styles.card,
-              { backgroundColor: colors.card, borderColor: isActive ? colors.accent : colors.separator, borderWidth: isActive ? 1.5 : StyleSheet.hairlineWidth },
+              {
+                backgroundColor: colors.card,
+                borderColor: isActive ? colors.accent : colors.separator,
+                borderWidth: isActive ? 1.5 : StyleSheet.hairlineWidth,
+                opacity: isDeprecated ? 0.6 : 1,
+              },
               CardShadow,
             ]}
           >
             {/* ヘッダー行 */}
             <View style={styles.cardHeader}>
               <View style={styles.titleRow}>
-                <Text style={[styles.modelName, { color: colors.label }]}>{model.name}</Text>
-                <View style={[styles.tag, { backgroundColor: isActive ? colors.accent + '22' : colors.labelTertiary + '22' }]}>
-                  <Text style={[styles.tagText, { color: isActive ? colors.accent : colors.labelTertiary }]}>
-                    {isActive ? '使用中' : model.tag}
+                <Text style={[styles.modelName, { color: isDeprecated ? colors.labelTertiary : colors.label }]}>
+                  {model.name}
+                </Text>
+                <View style={[
+                  styles.tag,
+                  {
+                    backgroundColor: isDeprecated
+                      ? colors.error + '18'
+                      : isActive ? colors.accent + '22' : colors.labelTertiary + '22',
+                  },
+                ]}>
+                  <Text style={[
+                    styles.tagText,
+                    {
+                      color: isDeprecated
+                        ? colors.error
+                        : isActive ? colors.accent : colors.labelTertiary,
+                    },
+                  ]}>
+                    {isDeprecated ? '提供終了' : isActive ? '使用中' : model.tag}
                   </Text>
                 </View>
               </View>
@@ -163,6 +173,16 @@ export function AIModelScreen() {
                 {model.description}
               </Text>
             </View>
+
+            {/* 廃止メッセージ */}
+            {isDeprecated && model.deprecationMessage && (
+              <View style={[styles.deprecationBanner, { backgroundColor: colors.error + '0C' }]}>
+                <Ionicons name="information-circle-outline" size={14} color={colors.error} />
+                <Text style={[styles.deprecationText, { color: colors.error }]}>
+                  {model.deprecationMessage}
+                </Text>
+              </View>
+            )}
 
             {/* ダウンロード進捗 */}
             {(isDownloading || isPaused) && (
@@ -195,7 +215,7 @@ export function AIModelScreen() {
 
             {/* アクションボタン */}
             <View style={styles.actions}>
-              {!installed && !isDownloading && !isPaused && (
+              {!installed && !isDownloading && !isPaused && !isDeprecated && (
                 <Pressable
                   style={({ pressed }) => [
                     styles.btn, styles.btnPrimary,
@@ -223,7 +243,7 @@ export function AIModelScreen() {
                 </View>
               )}
 
-              {installed && !isActive && !isDownloading && (
+              {installed && !isActive && !isDownloading && !isDeprecated && (
                 <Pressable
                   style={({ pressed }) => [
                     styles.btn,
@@ -321,6 +341,18 @@ const styles = StyleSheet.create({
   },
   progressText: {
     ...TypeScale.caption2,
+  },
+  deprecationBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    borderRadius: Radius.s,
+    padding: Spacing.s,
+  },
+  deprecationText: {
+    ...TypeScale.caption2,
+    flex: 1,
+    lineHeight: 16,
   },
   errorText: {
     ...TypeScale.caption1,
