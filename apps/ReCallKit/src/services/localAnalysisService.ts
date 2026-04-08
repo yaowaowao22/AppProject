@@ -838,6 +838,9 @@ export async function analyzeUrlLocal(
         baseResult = parseAnalysisResult(await runCompletion(firstPrompt, N_PREDICT_FIRST));
       }
       allQaPairs = [...baseResult.qa_pairs];
+      console.log(
+        `[localAnalysis] チャンク1/${chunks.length}: ${allQaPairs.length}件生成（初回）`,
+      );
       resumeFrom = 1;
 
       // 第1チャンク完了後にレジューム状態を保存（チャンクが複数ある場合のみ）
@@ -854,14 +857,37 @@ export async function analyzeUrlLocal(
 
     // ── フェーズ 2: 残りチャンクを処理（再開位置から継続） ──
     for (let i = resumeFrom; i < chunks.length; i++) {
-      if (allQaPairs.length >= MAX_QA_TOTAL) break;
+      if (allQaPairs.length >= MAX_QA_TOTAL) {
+        console.warn(
+          `[localAnalysis] QA上限(${MAX_QA_TOTAL})到達 → チャンク${i + 1}/${chunks.length}以降をスキップ`,
+        );
+        break;
+      }
       onProgress?.(i, chunks.length);
 
-      const chunkRaw = await runCompletion(
-        buildChunkPrompt(url, chunks[i], i, chunks.length),
-        N_PREDICT_CONTINUATION,
-      );
-      allQaPairs.push(...parseChunkQaPairs(chunkRaw));
+      try {
+        const chunkRaw = await runCompletion(
+          buildChunkPrompt(url, chunks[i], i, chunks.length),
+          N_PREDICT_CONTINUATION,
+        );
+        const chunkPairs = parseChunkQaPairs(chunkRaw);
+        if (chunkPairs.length === 0) {
+          console.warn(
+            `[localAnalysis] チャンク${i + 1}/${chunks.length}: QA生成0件（パース失敗の可能性）`,
+          );
+        } else {
+          console.log(
+            `[localAnalysis] チャンク${i + 1}/${chunks.length}: ${chunkPairs.length}件生成 / 累計${allQaPairs.length + chunkPairs.length}件`,
+          );
+        }
+        allQaPairs.push(...chunkPairs);
+      } catch (err) {
+        console.warn(
+          `[localAnalysis] チャンク${i + 1}/${chunks.length}の処理に失敗、スキップして継続:`,
+          err,
+        );
+        // 失敗したチャンクはスキップし、残りのチャンクの処理を継続
+      }
 
       // チャンク完了後にレジューム状態を更新（最終チャンクは不要）
       const isLastChunk = i === chunks.length - 1 || allQaPairs.length >= MAX_QA_TOTAL;
@@ -877,6 +903,9 @@ export async function analyzeUrlLocal(
     }
 
     // ── フェーズ 3: 最終結果を組み立て ──
+    console.log(
+      `[localAnalysis] 解析完了: 全${chunks.length}チャンク → QA合計${allQaPairs.length}件`,
+    );
     let finalResult: AnalysisResult = { ...baseResult, qa_pairs: allQaPairs };
 
     if (finalResult.title === '無題') {
