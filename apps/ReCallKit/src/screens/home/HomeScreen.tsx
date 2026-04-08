@@ -347,7 +347,7 @@ export function HomeScreen({ navigation }: Props) {
                   <Text
                     style={[
                       styles.dayLabel,
-                      { color: isToday ? colors.accent : colors.labelTertiary },
+                      { color: isToday ? colors.label : colors.labelTertiary },
                       isToday && { fontWeight: '500' as const },
                     ]}
                   >
@@ -356,11 +356,11 @@ export function HomeScreen({ navigation }: Props) {
                   <View
                     style={[
                       styles.checkbox,
-                      cbState === 'strong' && { backgroundColor: colors.accent },
+                      cbState === 'strong' && { backgroundColor: '#000000' },
                       cbState === 'done' && {
-                        backgroundColor: colors.accent + '1A',
+                        backgroundColor: '#E5E5E5',
                         borderWidth: 1.5,
-                        borderColor: colors.accent,
+                        borderColor: '#000000',
                       },
                       cbState === 'missed' && {
                         backgroundColor: '#FAFAFA',
@@ -370,7 +370,7 @@ export function HomeScreen({ navigation }: Props) {
                       cbState === 'today' && {
                         backgroundColor: 'transparent',
                         borderWidth: 1.5,
-                        borderColor: colors.accent,
+                        borderColor: '#000000',
                         borderStyle: 'dashed' as const,
                       },
                     ]}
@@ -379,7 +379,7 @@ export function HomeScreen({ navigation }: Props) {
                       <Ionicons name="checkmark" size={18} color="#FFFFFF" />
                     )}
                     {cbState === 'done' && (
-                      <Ionicons name="checkmark" size={18} color={colors.accent} />
+                      <Ionicons name="checkmark" size={18} color="#000000" />
                     )}
                   </View>
                 </View>
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 34,
     height: 34,
-    borderRadius: 8,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

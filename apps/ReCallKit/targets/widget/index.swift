@@ -112,7 +112,7 @@ struct SmallWidgetView: View {
                             .lineLimit(2)
                     }
                 }
-            } else if entry.reviewCount > 0 {
+            } else {
                 // 復習カウントモード
                 Text("\(entry.reviewCount)")
                     .font(.system(size: 42, weight: .bold, design: .rounded))
@@ -120,14 +120,6 @@ struct SmallWidgetView: View {
                     .minimumScaleFactor(0.6)
                 Text("件の復習")
                     .font(.system(size: 12))
-                    .foregroundColor(.secondary)
-            } else {
-                // 完了モード
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 34))
-                    .foregroundColor(.green)
-                Text("今日は完了！")
-                    .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
             }
 
@@ -193,20 +185,13 @@ struct MediumWidgetView: View {
                                 .lineLimit(3)
                         }
                     }
-                } else if entry.reviewCount > 0 {
+                } else {
                     Text("\(entry.reviewCount)")
                         .font(.system(size: 46, weight: .bold, design: .rounded))
                         .foregroundColor(accent)
                         .minimumScaleFactor(0.5)
                     Text("件の復習待ち")
                         .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                } else {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 36))
-                        .foregroundColor(.green)
-                    Text("今日の復習完了！")
-                        .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
                 }
             }
@@ -717,7 +702,7 @@ struct ReCallWidget_Previews: PreviewProvider {
                 entry: ReviewEntry(date: .now, reviewCount: 0, streak: 14, totalItems: 56, quizItem: nil)
             )
             .previewContext(WidgetPreviewContext(family: .systemSmall))
-            .previewDisplayName("Small – 完了")
+            .previewDisplayName("Small – 0件")
 
             ReCallWidgetEntryView(
                 entry: ReviewEntry(
