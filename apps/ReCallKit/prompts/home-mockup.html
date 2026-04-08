@@ -46,11 +46,15 @@ body{font-family:'Inter','Noto Sans JP',-apple-system,sans-serif;background:var(
 .drawer-tag-count{margin-left:auto;font-size:11px;color:var(--text-3)}
 
 /* ── Cards ── */
-.card-border{border:1px solid #DADCE0;border-radius:8px;overflow:hidden}
+.card-border{border:1px solid #DADCE0;border-radius:2px;overflow:hidden}
+/* ── Separator modes (toggle via body class) ── */
 .section-gap{height:20px;flex-shrink:0;margin:0 6px;overflow:visible}
 .section-gap svg{width:100%;height:20px;display:block}
 .sep{margin:0 6px;height:20px;overflow:visible}
 .sep svg{width:100%;height:20px;display:block}
+/* ── Separator: 1 line, left→right fade (L3) ── */
+.section-gap,.sep,.flip-sep{height:1px;margin:12px 16px;background:linear-gradient(90deg,var(--border) 0%,var(--border) 40%,transparent);overflow:hidden}
+.section-gap svg,.sep svg,.flip-sep svg{display:none}
 .label-upper{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3)}
 .pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
 .pill-blue{background:rgba(99,102,241,0.08);color:var(--blue)}
@@ -60,7 +64,7 @@ body{font-family:'Inter','Noto Sans JP',-apple-system,sans-serif;background:var(
 .pill-gray{background:var(--tint);color:var(--text-2)}
 
 /* ── Buttons ── */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;letter-spacing:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 18px;border:none;border-radius:2px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;letter-spacing:0}
 .btn:active{opacity:.85}
 .btn-primary{background:var(--text-1);color:#FFF}
 .btn-outline{background:none;border:1px solid var(--border);color:var(--text-1)}
@@ -69,19 +73,19 @@ body{font-family:'Inter','Noto Sans JP',-apple-system,sans-serif;background:var(
 .btn-lg{padding:14px 28px;font-size:15px}
 
 /* ── Inputs ── */
-.input-group{display:flex;align-items:center;gap:10px;padding:12px 16px;border:1px solid var(--border);border-radius:8px;background:var(--bg)}
+.input-group{display:flex;align-items:center;gap:10px;padding:12px 16px;border:1px solid var(--border);border-radius:2px;background:var(--bg)}
 .input-group:focus-within{border-color:var(--blue)}
 .input-group input{flex:1;border:none;outline:none;font-size:15px;font-family:inherit;background:none;color:var(--text-1)}
 .input-group input::placeholder{color:var(--text-3)}
 .input-group svg{width:20px;height:20px;color:var(--text-3);flex-shrink:0}
-textarea.input-area{width:100%;border:1px solid #DADCE0;border-radius:8px;padding:14px 16px;font-size:15px;font-family:inherit;resize:none;outline:none;background:var(--bg);color:var(--text-1);line-height:1.6}
+textarea.input-area{width:100%;border:1px solid #DADCE0;border-radius:2px;padding:14px 16px;font-size:15px;font-family:inherit;resize:none;outline:none;background:var(--bg);color:var(--text-1);line-height:1.6}
 textarea.input-area:focus{border-color:var(--blue)}
 
 /* ── List items ── */
 .list-item{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer;border-bottom:1px solid #F3F4F6}
 .list-item:active{background:var(--tint)}
 .list-item:last-child{border-bottom:none}
-.list-icon{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
+.list-icon{width:40px;height:40px;border-radius:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
 .list-body{flex:1;min-width:0}
 .list-title{font-size:14px;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .list-sub{font-size:12px;color:var(--text-3);margin-top:2px}
@@ -112,7 +116,7 @@ textarea.input-area:focus{border-color:var(--blue)}
 .week-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px}
 .week-lbl{font-size:10px;color:var(--text-3);font-weight:400}
 .week-lbl.is-today{color:var(--text-1);font-weight:600}
-.week-box{width:34px;height:34px;border-radius:8px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;position:relative;background:var(--bg)}
+.week-box{width:34px;height:34px;border-radius:2px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;position:relative;background:var(--bg)}
 .week-box.done{border-color:var(--text-1);background:var(--tint)}
 .week-box.done svg{color:var(--text-1)}
 .week-box.strong{border-color:var(--text-1);background:var(--text-1)}
@@ -124,7 +128,7 @@ textarea.input-area:focus{border-color:var(--blue)}
 .recent{padding:20px 0 0 16px}
 .recent-scroll{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
 .recent-scroll::-webkit-scrollbar{display:none}
-.rcard{flex-shrink:0;width:220px;padding:16px;border:1px solid var(--border);border-radius:8px;cursor:pointer}
+.rcard{flex-shrink:0;width:220px;padding:16px;border:1px solid var(--border);border-radius:2px;cursor:pointer;box-shadow:3px 3px 0 var(--border)}
 .rcard:last-child{margin-right:16px}
 .rcard-cat{font-size:11px;font-weight:500;color:var(--text-3);margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .rcard-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
@@ -161,18 +165,16 @@ textarea.input-area:focus{border-color:var(--blue)}
 .flip-container{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 16px;perspective:1200px}
 .flip-card{width:100%;max-width:360px;height:300px;position:relative;cursor:pointer;transform-style:preserve-3d;transition:transform .4s cubic-bezier(.4,0,.2,1)}
 .flip-card.flipped{transform:rotateY(180deg)}
-.flip-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:flex;flex-direction:column;padding:28px 24px;overflow:hidden}
-.card-deco{position:absolute;inset:0;pointer-events:none;z-index:0}
-.flip-face>*:not(.card-deco){position:relative;z-index:1}
+.flip-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:2px;background:var(--bg);border:1px solid var(--border);display:flex;flex-direction:column;padding:28px 24px;overflow:hidden;box-shadow:3px 3px 0 var(--border)}
 .flip-back{transform:rotateY(180deg)}
 .flip-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--text-3);margin-bottom:12px}
 .flip-text{font-size:16px;line-height:1.6;color:var(--text-1);flex:1}
 .flip-hint{text-align:center;font-size:12px;color:var(--text-3);margin-top:auto;padding-top:12px}
-.flip-sep{margin:14px 0;height:8px;overflow:visible}
-.flip-sep svg{width:100%;height:8px;display:block}
+.flip-sep{margin:14px 0;height:20px;overflow:visible}
+.flip-sep svg{width:100%;height:20px;display:block}
 .rating-area{padding:16px;display:none;gap:8px}
 .rating-area.visible{display:flex}
-.rate-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px;border:1px solid var(--border);border-radius:8px;background:var(--bg);cursor:pointer;font-family:inherit}
+.rate-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px;border:1px solid var(--border);border-radius:2px;background:var(--bg);cursor:pointer;font-family:inherit}
 .rate-btn:active{opacity:.8}
 .rate-dot{width:6px;height:6px;border-radius:50%}
 .rate-label{font-size:12px;font-weight:500;color:var(--text-1)}
@@ -202,7 +204,7 @@ textarea.input-area:focus{border-color:var(--blue)}
 .qa-mode-btn{padding:6px 16px;border-radius:20px;font-size:13px;border:1px solid #DADCE0;background:none;color:var(--text-2);cursor:pointer;font-family:inherit}
 .qa-mode-btn.active{background:var(--blue);color:#FFF;border-color:var(--blue)}
 .qa-card-view{padding:0 16px}
-.qa-item{border:1px solid #DADCE0;border-radius:8px;padding:16px;margin-bottom:12px}
+.qa-item{border:1px solid #DADCE0;border-radius:2px;padding:16px;margin-bottom:12px}
 .qa-q{font-size:14px;font-weight:500;color:var(--text-1);margin-bottom:8px}
 .qa-a{font-size:13px;color:var(--text-2);line-height:1.6}
 .qa-bottom{padding:16px;position:sticky;bottom:0;background:var(--bg);border-top:1px solid #DADCE0}
@@ -250,29 +252,29 @@ textarea.input-area:focus{border-color:var(--blue)}
 .streak-ring-num{font-size:20px;font-weight:500;color:var(--text-1)}
 .streak-ring-lbl{font-size:10px;color:var(--text-3)}
 .history-stat-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.history-stat-box{padding:10px;border:1px solid #DADCE0;border-radius:8px;text-align:center}
+.history-stat-box{padding:10px;border:1px solid #DADCE0;border-radius:2px;text-align:center}
 .history-stat-val{font-size:18px;font-weight:500;color:var(--text-1)}
 .history-stat-lbl{font-size:11px;color:var(--text-3);margin-top:2px}
 .history-item{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid #F3F4F6}
-.history-badge{padding:2px 8px;border-radius:8px;font-size:10px;font-weight:500;align-self:flex-start;margin-top:2px;flex-shrink:0}
+.history-badge{padding:2px 8px;border-radius:2px;font-size:10px;font-weight:500;align-self:flex-start;margin-top:2px;flex-shrink:0}
 .history-body{flex:1;min-width:0}
 .history-title{font-size:14px;color:var(--blue);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .history-time{font-size:11px;color:var(--text-3)}
 .history-preview{font-size:13px;color:var(--text-2);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 /* ── ReviewSelect ── */
-.rsel-card{margin:0 16px 12px;border:1px solid #DADCE0;border-radius:8px;padding:20px;cursor:pointer}
+.rsel-card{margin:0 16px 12px;border:1px solid #DADCE0;border-radius:2px;padding:20px;cursor:pointer}
 .rsel-card:active{background:var(--tint)}
-.rsel-icon{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.rsel-icon{width:44px;height:44px;border-radius:2px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
 .rsel-title{font-size:16px;font-weight:500;margin-bottom:4px}
 .rsel-sub{font-size:13px;color:var(--text-2)}
-.rsel-group{margin:0 16px 8px;border:1px solid #DADCE0;border-radius:8px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer}
+.rsel-group{margin:0 16px 8px;border:1px solid #DADCE0;border-radius:2px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer}
 .rsel-group:active{background:var(--tint)}
 .rsel-group-bar{width:3px;height:36px;border-radius:2px;flex-shrink:0}
 .rsel-group-body{flex:1}
 .rsel-group-name{font-size:14px;font-weight:500}
 .rsel-group-desc{font-size:12px;color:var(--text-3);margin-top:2px}
-.rsel-group-count{font-size:12px;font-weight:500;color:var(--blue);background:#E8F0FE;padding:2px 8px;border-radius:8px}
+.rsel-group-count{font-size:11px;font-weight:600;color:var(--text-1);background:var(--tint);padding:2px 8px;border-radius:4px}
 
 /* ── FAB ── */
 .fab{display:none}
@@ -284,6 +286,8 @@ textarea.input-area:focus{border-color:var(--blue)}
 </style>
 </head>
 <body>
+
+
 
 <!-- ════════════════════════ DRAWER ════════════════════════ -->
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
@@ -375,7 +379,7 @@ textarea.input-area:focus{border-color:var(--blue)}
     <div class="label-upper" style="margin-bottom:10px">解析するURL</div>
     <div class="input-group"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><input type="url" placeholder="https://..." id="urlInput" oninput="updateUrlBtn()"></div>
     <div class="url-desc">スタートするとバックグラウンドで解析が始まります。取り込み一覧で進捗を確認できます。</div>
-    <div style="margin-top:20px;padding:16px;border:1px solid #DADCE0;border-radius:8px">
+    <div style="margin-top:20px;padding:16px;border:1px solid #DADCE0;border-radius:2px">
       <div style="font-size:13px;color:var(--text-2);margin-bottom:4px">本日の残り回数</div>
       <div style="display:flex;align-items:center;gap:8px"><div style="font-size:20px;font-weight:500">2 / 3</div><div style="font-size:12px;color:var(--text-3)">広告視聴で追加可能</div></div>
     </div>
@@ -409,7 +413,7 @@ textarea.input-area:focus{border-color:var(--blue)}
   <div class="hdr"><button class="hdr-menu" onclick="openDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#525252" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/></svg></button><div class="hdr-title">復習</div></div>
   <div class="screen-content" style="padding-top:8px">
     <div class="rsel-card" onclick="nav('reviewSession')">
-      <div class="rsel-icon" style="background:#E8F0FE"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1A73E8" stroke-width="1.5"><rect x="3" y="4" rx="2" width="18" height="18"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg></div>
+      <div class="rsel-icon" style="background:#E8F0FE"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="1.5"><rect x="3" y="4" rx="2" width="18" height="18"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg></div>
       <div class="rsel-title">今日の復習</div>
       <div class="rsel-sub">8件が待機中 · 推定 4分</div>
     </div>
@@ -426,48 +430,11 @@ textarea.input-area:focus{border-color:var(--blue)}
   <div class="flip-container" id="flipContainer">
     <div class="flip-card" id="flipCard" onclick="flipCard()">
       <div class="flip-face">
-        <svg class="card-deco" viewBox="0 0 360 300" fill="none">
-          <!-- top-left: loose spiral -->
-          <path d="M18 22 C20 16, 28 14, 32 18 C36 22, 34 28, 28 30 C22 32, 16 28, 15 23" stroke="#DADCE0" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-          <!-- top-right: three dots -->
-          <circle cx="330" cy="20" r="2" fill="#DADCE0"/>
-          <circle cx="338" cy="16" r="1.5" fill="#DADCE0" opacity=".6"/>
-          <circle cx="336" cy="25" r="1.8" fill="#DADCE0" opacity=".4"/>
-          <!-- top edge: trailing dots -->
-          <circle cx="80" cy="10" r="1" fill="#DADCE0" opacity=".5"/>
-          <circle cx="95" cy="8" r="1.3" fill="#DADCE0" opacity=".35"/>
-          <circle cx="112" cy="11" r="0.8" fill="#DADCE0" opacity=".25"/>
-          <!-- left edge: tiny sprout -->
-          <path d="M8 150 C10 142, 16 140, 14 148" stroke="#DADCE0" stroke-width="1" stroke-linecap="round" fill="none"/>
-          <path d="M8 150 C6 142, 2 141, 4 149" stroke="#DADCE0" stroke-width="1" stroke-linecap="round" fill="none"/>
-          <line x1="8" y1="150" x2="8" y2="158" stroke="#DADCE0" stroke-width="1" stroke-linecap="round"/>
-          <!-- bottom-left: wavy bracket -->
-          <path d="M20 272 C16 274, 14 278, 16 282 C18 286, 16 290, 20 292" stroke="#DADCE0" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-          <!-- bottom-right: quotation marks -->
-          <line x1="332" y1="274" x2="332" y2="282" stroke="#DADCE0" stroke-width="1.3" stroke-linecap="round"/>
-          <line x1="338" y1="274" x2="338" y2="282" stroke="#DADCE0" stroke-width="1.3" stroke-linecap="round"/>
-          <!-- bottom edge: wavy line segment -->
-          <path d="M100 290 C115 294, 130 294, 145 290 S175 286, 190 290" stroke="#DADCE0" stroke-width="1" stroke-linecap="round" stroke-dasharray="3 4" fill="none"/>
-        </svg>
         <div class="flip-label">Question</div>
         <div class="flip-text" id="flipQ">React Server Componentsがクライアントコンポーネントと異なる点は？</div>
         <div class="flip-hint">タップしてめくる</div>
       </div>
       <div class="flip-face flip-back">
-        <svg class="card-deco" viewBox="0 0 360 300" fill="none">
-          <!-- top-right: small star -->
-          <path d="M335 18 L337 14 L339 18 L343 19 L339 21 L337 25 L335 21 L331 19 Z" fill="#DADCE0" opacity=".5"/>
-          <!-- top-left: tiny arc -->
-          <path d="M16 16 C24 10, 36 12, 38 20" stroke="#DADCE0" stroke-width="1" stroke-linecap="round" fill="none"/>
-          <!-- bottom-left: two small dots -->
-          <circle cx="18" cy="278" r="1.5" fill="#DADCE0" opacity=".5"/>
-          <circle cx="24" cy="282" r="1" fill="#DADCE0" opacity=".35"/>
-          <!-- bottom-right: tiny loop -->
-          <path d="M334 280 C338 276, 344 278, 342 284 C340 288, 334 288, 334 284" stroke="#DADCE0" stroke-width="1" stroke-linecap="round" fill="none"/>
-          <!-- right edge: small dash marks -->
-          <line x1="350" y1="120" x2="354" y2="118" stroke="#DADCE0" stroke-width="1" stroke-linecap="round" opacity=".4"/>
-          <line x1="350" y1="128" x2="354" y2="126" stroke="#DADCE0" stroke-width="1" stroke-linecap="round" opacity=".3"/>
-        </svg>
         <div class="flip-label">Question</div>
         <div class="flip-text" style="font-size:13px;color:var(--text-2);flex:none" id="flipQBack">React Server Componentsがクライアントコンポーネントと異なる点は？</div>
         <div class="flip-sep"><svg viewBox="0 0 430 20" preserveAspectRatio="none"><path d="M0 10 C55 18, 100 18, 145 10 S240 2, 285 10 S380 18, 430 10" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 4" fill="none"/></svg></div>
@@ -513,9 +480,9 @@ textarea.input-area:focus{border-color:var(--blue)}
     <div class="detail-section">
       <div class="detail-section-title">Review Info</div>
       <div style="display:flex;gap:12px">
-        <div style="flex:1;padding:12px;border:1px solid #DADCE0;border-radius:8px;text-align:center"><div style="font-size:18px;font-weight:500">5</div><div style="font-size:11px;color:var(--text-3)">繰り返し</div></div>
-        <div style="flex:1;padding:12px;border:1px solid #DADCE0;border-radius:8px;text-align:center"><div style="font-size:18px;font-weight:500">3日</div><div style="font-size:11px;color:var(--text-3)">次の復習</div></div>
-        <div style="flex:1;padding:12px;border:1px solid #DADCE0;border-radius:8px;text-align:center"><div style="font-size:18px;font-weight:500">2.6</div><div style="font-size:11px;color:var(--text-3)">EF</div></div>
+        <div style="flex:1;padding:12px;border:1px solid #DADCE0;border-radius:2px;text-align:center"><div style="font-size:18px;font-weight:500">5</div><div style="font-size:11px;color:var(--text-3)">繰り返し</div></div>
+        <div style="flex:1;padding:12px;border:1px solid #DADCE0;border-radius:2px;text-align:center"><div style="font-size:18px;font-weight:500">3日</div><div style="font-size:11px;color:var(--text-3)">次の復習</div></div>
+        <div style="flex:1;padding:12px;border:1px solid #DADCE0;border-radius:2px;text-align:center"><div style="font-size:18px;font-weight:500">2.6</div><div style="font-size:11px;color:var(--text-3)">EF</div></div>
       </div>
     </div>
     <div class="detail-meta">
@@ -577,7 +544,7 @@ textarea.input-area:focus{border-color:var(--blue)}
   <div class="screen-content">
     <div class="history-stats">
       <div class="streak-ring">
-        <svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" fill="none" stroke="#F3F4F6" stroke-width="6"/><circle cx="40" cy="40" r="34" fill="none" stroke="#1A73E8" stroke-width="6" stroke-linecap="round" stroke-dasharray="213.6" stroke-dashoffset="60" transform="rotate(-90 40 40)"/></svg>
+        <svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" fill="none" stroke="#F3F4F6" stroke-width="6"/><circle cx="40" cy="40" r="34" fill="none" stroke="#6366F1" stroke-width="6" stroke-linecap="round" stroke-dasharray="213.6" stroke-dashoffset="60" transform="rotate(-90 40 40)"/></svg>
         <div class="streak-ring-center"><div class="streak-ring-num">12</div><div class="streak-ring-lbl">日連続</div></div>
       </div>
       <div class="history-stat-grid">
@@ -598,7 +565,7 @@ textarea.input-area:focus{border-color:var(--blue)}
 
 <!-- ════════════════════════ FAB ════════════════════════ -->
 <button class="fab" id="fab" onclick="nav('urlAnalysis')">
-  <svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="#1A73E8" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="#E8A000" stroke-width="2" stroke-linecap="round"/></svg>
+  <svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="#6366F1" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="#E8A000" stroke-width="2" stroke-linecap="round"/></svg>
 </button>
 
 <!-- ════════════════════════ JS ════════════════════════ -->
@@ -734,6 +701,9 @@ function rateCard(rating) {
   setTimeout(updateReviewCard, 100);
 }
 
+// ── Separator Toggle ──
+
+
 // ── Hero Illustrations (6 patterns, SVG inline) ──
 const HEROES = [
   // 1: Cards fanning from lower-left
@@ -758,7 +728,7 @@ const HEROES = [
     <rect x="160" y="75" width="28" height="28" rx="6" fill="none" stroke="#DADCE0" stroke-width="1.5"/>
     <rect x="200" y="75" width="28" height="28" rx="6" fill="#1A73E8"/>
     <polyline points="208,89 213,95 220,85" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-    <rect x="240" y="75" width="28" height="28" rx="6" fill="none" stroke="#1A73E8" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <rect x="240" y="75" width="28" height="28" rx="6" fill="none" stroke="#6366F1" stroke-width="1.5" stroke-dasharray="4 3"/>
     <path d="M75 115 C120 125, 155 125, 190 115 S260 105, 295 115" stroke="#DADCE0" stroke-width="1.2" stroke-dasharray="3 4" stroke-linecap="round" fill="none"/>
     <circle cx="340" cy="50" r="4" fill="#E8F0FE"/>
     <circle cx="355" cy="42" r="2" fill="#DADCE0"/>
@@ -771,7 +741,7 @@ const HEROES = [
     <rect x="170" y="57" width="45" height="3" rx="1.5" fill="#5F6368" opacity=".13" transform="rotate(3 193 59)"/>
     <rect x="170" y="66" width="70" height="3" rx="1.5" fill="#5F6368" opacity=".08" transform="rotate(3 205 68)"/>
     <circle cx="290" cy="35" r="4" fill="#1E8E3E" opacity=".5"/>
-    <line x1="160" y1="118" x2="280" y2="118" stroke="#1A73E8" stroke-width="1.5" opacity=".2" stroke-linecap="round"/>
+    <line x1="160" y1="118" x2="280" y2="118" stroke="#6366F1" stroke-width="1.5" opacity=".2" stroke-linecap="round"/>
   </svg>`,
 
   // 4: Dot cloud
@@ -801,7 +771,7 @@ const HEROES = [
   `<svg viewBox="0 0 430 140" fill="none">
     <line x1="100" y1="30" x2="280" y2="30" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round"/>
     <line x1="100" y1="52" x2="250" y2="52" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="100" y1="74" x2="300" y2="74" stroke="#1A73E8" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="100" y1="74" x2="300" y2="74" stroke="#6366F1" stroke-width="1.5" stroke-linecap="round"/>
     <rect x="306" y="68" width="12" height="12" rx="3" fill="#1A73E8" opacity=".15"/>
     <line x1="100" y1="96" x2="230" y2="96" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round"/>
     <line x1="100" y1="118" x2="260" y2="118" stroke="#DADCE0" stroke-width="1.5" stroke-linecap="round"/>
