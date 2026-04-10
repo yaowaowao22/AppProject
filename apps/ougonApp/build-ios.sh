@@ -76,10 +76,11 @@ export LANG=en_US.UTF-8
 security unlock-keychain -p "$MAC_PASS" ~/Library/Keychains/login.keychain-db 2>/dev/null && echo "  ✓ keychain unlocked" || echo "  ⚠ keychain unlock failed (続行)"
 security set-keychain-settings -t 36000 ~/Library/Keychains/login.keychain-db 2>/dev/null || true
 
-# 競合ビルドプロセスを終了（build.db競合防止）
+# 競合ビルドプロセスを全停止（OOM防止 + build.db競合防止）
 pkill -9 -f xcodebuild 2>/dev/null || true
 pkill -9 -f SWBBuildService 2>/dev/null || true
-sleep 1
+pkill -9 -f ibtoold 2>/dev/null || true
+sleep 2
 
 # stale build.db を削除
 find "$MAC_BUILD_OUT" -name "build.db*" -delete 2>/dev/null || true
@@ -103,6 +104,7 @@ xcodebuild \\
   -derivedDataPath "$MAC_BUILD_OUT" \\
   -allowProvisioningUpdates \\
   -allowProvisioningDeviceRegistration \\
+  -jobs 2 \\
   CODE_SIGN_STYLE=Automatic \\
   DEVELOPMENT_TEAM=PVM8Q8HG54 \\
   "OTHER_CODE_SIGN_FLAGS=--keychain ~/Library/Keychains/login.keychain-db" \\
