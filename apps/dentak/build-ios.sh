@@ -119,8 +119,9 @@ echo "  workspace: \$WORKSPACE  scheme: \$SCHEME"
 echo "  free: \$(vm_stat | grep 'Pages free' | awk '{print int(\$3)*4/1024}') MB"
 
 BUILD_LOG=/tmp/dentak_xcode.log
-set +e
-xcodebuild \\
+: > \$BUILD_LOG
+
+nohup xcodebuild \\
   -workspace "\$WORKSPACE" \\
   -scheme "\$SCHEME" \\
   -configuration Release \\
@@ -132,17 +133,27 @@ xcodebuild \\
   CODE_SIGN_STYLE=Automatic \\
   CLANG_ENABLE_EXPLICIT_MODULES=NO \\
   COMPILER_INDEX_STORE_ENABLE=NO \\
-  build 2>&1 | tee \$BUILD_LOG
-BUILD_EXIT=\${PIPESTATUS[0]}
-set -e
+  build >> \$BUILD_LOG 2>&1 &
+XCODE_PID=\$!
+echo "  xcodebuild started (pid \$XCODE_PID)"
+
+while kill -0 \$XCODE_PID 2>/dev/null; do
+  sleep 30
+  FREE=\$(vm_stat | grep 'Pages free' | awk '{print int(\$3)*4/1024}')
+  LAST=\$(tail -1 \$BUILD_LOG 2>/dev/null | cut -c1-80)
+  echo "  [alive] free:\${FREE}MB  \$LAST"
+done
+
+wait \$XCODE_PID
+BUILD_EXIT=\$?
 echo "  xcodebuild exit: \$BUILD_EXIT"
 
 kill -CONT \$(pgrep -x mds_stores 2>/dev/null) 2>/dev/null || true
 kill -CONT \$(pgrep -x mediaanalysisd 2>/dev/null) 2>/dev/null || true
 
 if [ \$BUILD_EXIT -ne 0 ]; then
-  echo "  xcodebuild FAILED — last 20 lines:"
-  tail -20 \$BUILD_LOG
+  echo "  xcodebuild FAILED — last 30 lines:"
+  tail -30 \$BUILD_LOG
   exit 1
 fi
 echo "BUILD_DONE"
