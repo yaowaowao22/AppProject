@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Ratio",
+    "slug": "ratio",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.massapp.ratio",
+      "infoPlist": {
+        "NSCameraUsageDescription": "黄金比フェイス加工のために、カメラを使用します。",
+        "NSPhotoLibraryUsageDescription": "写真ライブラリから画像を選択するために使用します。",
+        "NSPhotoLibraryAddUsageDescription": "加工した画像をカメラロールに保存するために使用します."
+      }
+    },
+    "plugins": [
+      "expo-face-detector",
+      "expo-camera",
+      "expo-media-library",
+      "expo-image-picker"
+    ],
+    "extra": {
+      "eas": {}
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"react-native-skia\\\\|shopify/react-native-skia\" C:/Users/ytata/AppProject/baseProject/apps/*/package.json)"
+    ]
+  }
+}
