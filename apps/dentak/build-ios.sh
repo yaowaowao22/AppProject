@@ -141,7 +141,7 @@ for ATTEMPT in 1 2 3; do
   set -e
   echo "  xcodebuild exit: \$BUILD_EXIT (attempt \$ATTEMPT)"
   [ \$BUILD_EXIT -eq 0 ] && break
-  if [ \$BUILD_EXIT -eq 143 ] || [ \$BUILD_EXIT -eq 65 ]; then
+  if [ \$BUILD_EXIT -eq 137 ] || [ \$BUILD_EXIT -eq 143 ] || [ \$BUILD_EXIT -eq 65 ]; then
     echo "  build system crashed — retrying (keeping .o files)..."
     echo "$MAC_PASS" | sudo -S purge 2>/dev/null || true
     find "$MAC_BUILD_OUT/Build/Intermediates.noindex" -name "*.dia" -delete 2>/dev/null || true
