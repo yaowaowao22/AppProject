@@ -107,7 +107,6 @@ for i in 1 2 3 4 5; do
   sleep 1
 done
 find "$MAC_BUILD_OUT/Build/Intermediates.noindex" -name "*.dia" -delete 2>/dev/null || true
-rm -rf "$MAC_BUILD_OUT/Build/Intermediates.noindex/XCBuildData" 2>/dev/null || true
 
 echo "$MAC_PASS" | sudo -S purge 2>/dev/null && echo "  memory purged" || true
 echo "  free after purge: \$(vm_stat | grep 'Pages free' | awk '{print int(\$3)*4/1024}') MB"
