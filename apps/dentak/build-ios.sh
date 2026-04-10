@@ -94,6 +94,8 @@ SCHEME=\$(xcodebuild -list -workspace "\$WORKSPACE" 2>/dev/null | awk '/Schemes:
 echo "  workspace: \$WORKSPACE"
 echo "  scheme:    \$SCHEME"
 
+BUILD_LOG=/tmp/dentak_xcode.log
+set +e
 xcodebuild \\
   -workspace "\$WORKSPACE" \\
   -scheme "\$SCHEME" \\
@@ -103,11 +105,16 @@ xcodebuild \\
   -allowProvisioningUpdates \\
   DEVELOPMENT_TEAM=PVM8Q8HG54 \\
   CODE_SIGN_STYLE=Automatic \\
-  build 2>&1 | xcbeautify --quiet 2>&1 || {
-    echo "  ✗ xcodebuild FAILED — showing last 50 lines of build log:"
-    find "$MAC_BUILD_OUT/Logs/Build" -name "*.xcactivitylog" 2>/dev/null | sort | tail -1 | xargs gunzip -c 2>/dev/null | strings | tail -50
-    exit 1
-  }
+  build 2>&1 | xcbeautify --quiet 2>&1 | tee \$BUILD_LOG
+BUILD_EXIT=\${PIPESTATUS[0]}
+set -e
+
+if [ \$BUILD_EXIT -ne 0 ]; then
+  echo "  ✗ xcodebuild FAILED (exit \$BUILD_EXIT)"
+  echo "  --- Error lines from \$BUILD_LOG ---"
+  grep -E "❌|error:|Build FAILED" \$BUILD_LOG 2>/dev/null | head -30 || tail -30 \$BUILD_LOG
+  exit 1
+fi
 
 echo "BUILD_DONE"
 BUILD_EOF
