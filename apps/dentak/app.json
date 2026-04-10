@@ -1,30 +1,34 @@
 {
   "expo": {
-    "name": "dentak-tmp",
-    "slug": "dentak-tmp",
+    "name": "無音の演算",
+    "slug": "muon-no-enzan",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "userInterfaceStyle": "dark",
     "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#000000"
     },
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "jp.dentak.whisper-calc",
+      "buildNumber": "1",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "音声で計算式を入力するために使用します",
+        "NSUbiquitousItemIsExcludedFromBackup": true
+      }
     },
     "android": {
+      "package": "jp.dentak.whispercalc",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+        "backgroundColor": "#000000"
+      }
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "plugins": [
+      ["expo-av", { "microphonePermission": "音声で計算式を入力するために使用します" }],
+      "expo-file-system",
+      "expo-haptics",
+      ["whisper.rn", { "coremlModel": false }]
+    ]
   }
 }
