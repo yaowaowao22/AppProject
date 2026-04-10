@@ -98,10 +98,13 @@ security unlock-keychain -p "$MAC_PASS" ~/Library/Keychains/login.keychain-db 2>
 pkill -f xcodebuild 2>/dev/null || true
 pkill -f XCBBuildService 2>/dev/null || true
 pkill -f ibtoold 2>/dev/null || true
+kill -STOP \$(pgrep -x mds_stores 2>/dev/null) 2>/dev/null || true
+kill -STOP \$(pgrep -x mediaanalysisd 2>/dev/null) 2>/dev/null || true
 sleep 1
 rm -rf "$MAC_BUILD_OUT/Build/Intermediates.noindex" 2>/dev/null || true
 
 echo "$MAC_PASS" | sudo -S purge 2>/dev/null && echo "  memory purged" || true
+echo "  free after purge: \$(vm_stat | grep 'Pages free' | awk '{print int(\$3)*4/1024}') MB"
 
 cd "$IOS_DIR"
 
@@ -123,13 +126,16 @@ xcodebuild \\
   -destination "generic/platform=iOS" \\
   -derivedDataPath "$MAC_BUILD_OUT" \\
   -allowProvisioningUpdates \\
-  -jobs 2 \\
+  -jobs 1 \\
   DEVELOPMENT_TEAM=PVM8Q8HG54 \\
   CODE_SIGN_STYLE=Automatic \\
   build > \$BUILD_LOG 2>&1
 BUILD_EXIT=\$?
 set -e
 echo "  xcodebuild exit: \$BUILD_EXIT"
+
+kill -CONT \$(pgrep -x mds_stores 2>/dev/null) 2>/dev/null || true
+kill -CONT \$(pgrep -x mediaanalysisd 2>/dev/null) 2>/dev/null || true
 
 if [ \$BUILD_EXIT -ne 0 ]; then
   echo "  xcodebuild FAILED — last 40 lines:"
