@@ -126,13 +126,14 @@ xcodebuild \\
   -jobs 2 \\
   DEVELOPMENT_TEAM=PVM8Q8HG54 \\
   CODE_SIGN_STYLE=Automatic \\
-  build 2>&1 | xcbeautify --quiet 2>&1 | tee \$BUILD_LOG
-BUILD_EXIT=\${PIPESTATUS[0]}
+  build > \$BUILD_LOG 2>&1
+BUILD_EXIT=\$?
 set -e
+echo "  xcodebuild exit: \$BUILD_EXIT"
 
 if [ \$BUILD_EXIT -ne 0 ]; then
-  echo "  xcodebuild FAILED (exit \$BUILD_EXIT)"
-  grep -E "error:|Build FAILED" \$BUILD_LOG 2>/dev/null | grep -v "^note:" | head -30 || tail -30 \$BUILD_LOG
+  echo "  xcodebuild FAILED — last 40 lines:"
+  tail -40 \$BUILD_LOG
   exit 1
 fi
 echo "BUILD_DONE"
