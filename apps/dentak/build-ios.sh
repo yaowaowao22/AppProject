@@ -68,7 +68,7 @@ echo "  ✓ prebuild + pod install 完了"
 echo ""
 echo "▶ [4/5] Mac: xcodebuild (Release / real device → $MAC_BUILD_OUT)..."
 ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<BUILD_EOF
-set -euo pipefail
+set -euxo pipefail
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 # キーチェーンアンロック（SSH経由のコード署名に必要）
@@ -80,6 +80,8 @@ pkill -f XCBBuildService 2>/dev/null || true
 sleep 1
 rm -f "$MAC_BUILD_OUT/Build/Intermediates.noindex/XCBuildData/build.db" 2>/dev/null || true
 
+echo "  IOS_DIR: $IOS_DIR"
+ls "$IOS_DIR" 2>&1 || { echo "  ✗ IOS_DIR does not exist!"; exit 1; }
 cd "$IOS_DIR"
 
 # .xcworkspace と スキーム名を動的取得
