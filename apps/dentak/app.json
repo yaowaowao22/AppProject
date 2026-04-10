@@ -13,6 +13,7 @@
       "bundleIdentifier": "jp.dentak.whisper-calc",
       "buildNumber": "1",
       "supportsTablet": false,
+      "developmentTeam": "PVM8Q8HG54",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "音声で計算式を入力するために使用します",
         "NSUbiquitousItemIsExcludedFromBackup": true
