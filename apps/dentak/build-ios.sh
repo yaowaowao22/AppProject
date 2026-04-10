@@ -121,8 +121,8 @@ BUILD_LOG=/tmp/dentak_xcode.log
 : > \$BUILD_LOG
 BUILD_EXIT=1
 
-for ATTEMPT in 1 2 3; do
-  echo "  xcodebuild attempt \$ATTEMPT/3..."
+for ATTEMPT in 1 2 3 4 5; do
+  echo "  xcodebuild attempt \$ATTEMPT/5..."
   set +e
   xcodebuild \\
     -workspace "\$WORKSPACE" \\
