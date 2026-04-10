@@ -60,7 +60,9 @@ echo "  npm install..."
 npm install --prefer-offline 2>&1 | tail -3
 
 cd "$IOS_DIR"
-echo "  pod install..."
+echo "  pod deintegrate + pod install (clean)..."
+pod deintegrate 2>&1 | tail -3
+rm -rf Pods
 pod install 2>&1 | tail -5
 DEPS_EOF
 echo "  ✓ 依存関係インストール完了"
@@ -82,8 +84,9 @@ pkill -9 -f SWBBuildService 2>/dev/null || true
 pkill -9 -f ibtoold 2>/dev/null || true
 sleep 2
 
-# stale build.db を削除
-find "$MAC_BUILD_OUT" -name "build.db*" -delete 2>/dev/null || true
+# stale ビルド成果物を削除
+rm -rf "$MAC_BUILD_OUT" 2>/dev/null || true
+mkdir -p "$MAC_BUILD_OUT"
 
 cd "$IOS_DIR"
 WORKSPACE=\$(ls -d *.xcworkspace 2>/dev/null | head -1)
