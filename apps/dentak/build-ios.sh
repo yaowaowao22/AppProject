@@ -118,29 +118,43 @@ echo "  workspace: \$WORKSPACE  scheme: \$SCHEME"
 echo "  free: \$(vm_stat | grep 'Pages free' | awk '{print int(\$3)*4/1024}') MB"
 
 BUILD_LOG=/tmp/dentak_xcode.log
-set +e
-xcodebuild \\
-  -workspace "\$WORKSPACE" \\
-  -scheme "\$SCHEME" \\
-  -configuration Release \\
-  -destination "generic/platform=iOS" \\
-  -derivedDataPath "$MAC_BUILD_OUT" \\
-  -allowProvisioningUpdates \\
-  -jobs 1 \\
-  DEVELOPMENT_TEAM=PVM8Q8HG54 \\
-  CODE_SIGN_STYLE=Automatic \\
-  CLANG_ENABLE_EXPLICIT_MODULES=NO \\
-  COMPILER_INDEX_STORE_ENABLE=NO \\
-  build > \$BUILD_LOG 2>&1
-BUILD_EXIT=\$?
-set -e
-echo "  xcodebuild exit: \$BUILD_EXIT"
+: > \$BUILD_LOG
+BUILD_EXIT=1
+
+for ATTEMPT in 1 2 3; do
+  echo "  xcodebuild attempt \$ATTEMPT/3..."
+  set +e
+  xcodebuild \\
+    -workspace "\$WORKSPACE" \\
+    -scheme "\$SCHEME" \\
+    -configuration Release \\
+    -destination "generic/platform=iOS" \\
+    -derivedDataPath "$MAC_BUILD_OUT" \\
+    -allowProvisioningUpdates \\
+    -jobs 1 \\
+    DEVELOPMENT_TEAM=PVM8Q8HG54 \\
+    CODE_SIGN_STYLE=Automatic \\
+    CLANG_ENABLE_EXPLICIT_MODULES=NO \\
+    COMPILER_INDEX_STORE_ENABLE=NO \\
+    build >> \$BUILD_LOG 2>&1
+  BUILD_EXIT=\$?
+  set -e
+  echo "  xcodebuild exit: \$BUILD_EXIT (attempt \$ATTEMPT)"
+  [ \$BUILD_EXIT -eq 0 ] && break
+  if [ \$BUILD_EXIT -eq 143 ] || [ \$BUILD_EXIT -eq 65 ]; then
+    echo "  build system crashed — retrying (keeping .o files)..."
+    echo "$MAC_PASS" | sudo -S purge 2>/dev/null || true
+    find "$MAC_BUILD_OUT/Build/Intermediates.noindex" -name "*.dia" -delete 2>/dev/null || true
+    continue
+  fi
+  break
+done
 
 kill -CONT \$(pgrep -x mds_stores 2>/dev/null) 2>/dev/null || true
 kill -CONT \$(pgrep -x mediaanalysisd 2>/dev/null) 2>/dev/null || true
 
 if [ \$BUILD_EXIT -ne 0 ]; then
-  echo "  xcodebuild FAILED — last 40 lines:"
+  echo "  xcodebuild FAILED after all attempts — last 40 lines:"
   tail -40 \$BUILD_LOG
   exit 1
 fi
