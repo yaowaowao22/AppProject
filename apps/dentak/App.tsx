@@ -1,20 +1,28 @@
+import React, { useCallback } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
+
+import RootNavigator from './src/navigation/RootNavigator';
+
+// スプラッシュを自動非表示させない（NavigationContainer.onReady まで延長）
+SplashScreen.preventAutoHideAsync();
 
 export default function App() {
+  const handleNavigationReady = useCallback(() => {
+    SplashScreen.hideAsync();
+  }, []);
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <NavigationContainer onReady={handleNavigationReady}>
+          <RootNavigator />
+        </NavigationContainer>
+        <StatusBar style="light" />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
