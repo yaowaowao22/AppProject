@@ -26,8 +26,7 @@
     },
     "plugins": [
       ["expo-av", { "microphonePermission": "音声で計算式を入力するために使用します" }],
-      "expo-file-system",
-["whisper.rn", { "coremlModel": false }]
+      "expo-file-system"
     ]
   }
 }
