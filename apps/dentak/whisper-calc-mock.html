@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>無音の演算 — Whisper Scientific Calculator</title>
+<style>
+/* ══════════════════════════════════════════════
+   無音の演算 v2 — Redesigned for Scientific UX
+   KOKKAKU + MA / Müller-Brockmann × Hara × Rams
+   ══════════════════════════════════════════════ */
+:root {
+  --black:    #000;
+  --white:    #fff;
+  --g0:       #F5F5F5;  /* surface */
+  --g1:       #E0E0E0;  /* border / divider */
+  --g2:       #8E8E93;  /* secondary label */
+  --g3:       #3A3A3C;  /* dark element / func btn */
+  --num-bg:   #1C1C1E;  /* number btn */
+  --amber:    #FF9500;
+  --amber-bg: rgba(255,149,0,0.10);
+
+  --font-mono: 'SF Mono','Menlo','Courier New',monospace;
+  --font-ui:   -apple-system,'Helvetica Neue',sans-serif;
+
+  /* Button sizes (compact for scientific calc) */
+  --btn-sci:  50px;   /* science row height */
+  --btn-num:  62px;   /* number row height  */
+  --gap:      1px;
+
+  --ease-out: cubic-bezier(0.16,1,0.30,1);
+  --spring:   cubic-bezier(0.34,1.56,0.64,1);
+}
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+
+body {
+  background: #111;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: var(--font-ui);
+  gap: 16px;
+}
+
+/* ══ iPhone frame ══ */
+.iphone {
+  width: 393px;
+  height: 852px;
+  background: var(--black);
+  border-radius: 47px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 0 0 10px #1a1a1a, 0 40px 80px rgba(0,0,0,0.8);
+}
+
+/* Dynamic Island */
+.di {
+  position: absolute;
+  top: 14px; left: 50%;
+  transform: translateX(-50%);
+  width: 126px; height: 37px;
+  background: var(--black);
+  border-radius: 20px;
+  z-index: 200;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: width .4s var(--spring), height .35s var(--spring);
+  overflow: hidden;
+}
+.di.voice { width: 210px; height: 44px; }
+.di-mic  { display:none; color: var(--amber); }
+.di.voice .di-mic { display:flex; }
+.di-wave { display:none; align-items:center; gap:2px; height:22px; }
+.di.voice .di-wave { display:flex; }
+.di-wave span { width:2.5px; background:var(--amber); border-radius:2px; animation:diBeat 1s ease-in-out infinite; }
+.di-wave span:nth-child(1){height:6px;  animation-delay:0.00s}
+.di-wave span:nth-child(2){height:14px; animation-delay:0.10s}
+.di-wave span:nth-child(3){height:20px; animation-delay:0.20s}
+.di-wave span:nth-child(4){height:14px; animation-delay:0.12s}
+.di-wave span:nth-child(5){height:8px;  animation-delay:0.25s}
+@keyframes diBeat { 0%,100%{transform:scaleY(.3);opacity:.5}50%{transform:scaleY(1);opacity:1} }
+
+/* Status bar */
+.status-bar {
+  height: 59px;
+  background: var(--black);
+  display: flex; align-items: flex-end; justify-content: space-between;
+  padding: 0 28px 12px;
+  position: relative; z-index: 100; flex-shrink: 0;
+}
+.status-time { font-size:15px; font-weight:600; color:var(--white); letter-spacing:-.3px; }
+.status-icons { display:flex; align-items:center; gap:6px; }
+
+/* ══ App shell ══ */
+.app {
+  height: calc(852px - 59px);
+  background: var(--black);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ══════════════════════════════════════════════
+   Sidebar (left) — advanced / settings panel
+   ══════════════════════════════════════════════ */
+.overlay { position:absolute; inset:0; background:rgba(0,0,0,0); z-index:30; pointer-events:none; transition:background .3s; }
+.overlay.open { background:rgba(0,0,0,0.6); pointer-events:auto; }
+
+.sidebar {
+  position: absolute;
+  left: 0; top: 0;
+  width: 72%;   /* wider for better usability */
+  height: 100%;
+  background: var(--white);
+  z-index: 40;
+  transform: translateX(-100%);
+  transition: transform .35s var(--ease-out);
+  display: flex; flex-direction: column;
+}
+.sidebar.open { transform: translateX(0); }
+
+.sb-drag { width:32px; height:3px; background:var(--g1); border-radius:2px; margin:12px auto 0; flex-shrink:0; }
+.sb-top  { display:flex; align-items:center; justify-content:space-between; padding:12px 16px 10px; border-bottom:1px solid var(--g1); flex-shrink:0; }
+.sb-title-text { font-size:13px; font-weight:600; color:var(--black); letter-spacing:-.2px; }
+.sb-close { background:var(--g0); border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--g2); font-size:16px; }
+
+.sb-scroll { overflow-y:auto; flex:1; }
+
+/* Sidebar tabs */
+.sb-tabs { display:flex; border-bottom:1px solid var(--g1); }
+.sb-tab  { flex:1; height:36px; border:none; background:transparent; font-size:11px; font-weight:500; color:var(--g2); cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; }
+.sb-tab.on { color:var(--black); border-bottom-color:var(--black); }
+
+/* Sidebar content panes */
+.sb-pane { display:none; }
+.sb-pane.on { display:block; }
+
+.sb-section { padding-bottom:8px; border-bottom:1px solid var(--g0); }
+.sb-label { font-size:9px; font-weight:600; color:var(--g2); letter-spacing:.8px; text-transform:uppercase; padding:10px 16px 6px; }
+
+.sb-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px; background:var(--g1); }
+.sb-grid-2 { grid-template-columns:1fr 1fr; }
+
+.sb-btn {
+  background:var(--white); border:none;
+  height:44px;
+  font-family:var(--font-mono); font-size:13px; font-weight:500; color:var(--black);
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .08s, color .08s;
+}
+.sb-btn:active, .sb-btn.on { background:var(--black); color:var(--white); }
+
+/* Base info readout */
+.base-readout {
+  padding: 8px 16px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px; color: var(--g2); line-height: 2;
+}
+
+/* Settings controls */
+.setting-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--g0);
+}
+.setting-label { font-size:13px; color:var(--black); }
+.setting-sub   { font-size:11px; color:var(--g2); margin-top:2px; }
+.toggle {
+  width:44px; height:26px; border-radius:13px;
+  background:var(--g1); border:none; cursor:pointer;
+  position:relative; transition:background .25s;
+}
+.toggle.on { background:var(--black); }
+.toggle::after {
+  content:''; position:absolute;
+  top:3px; left:3px;
+  width:20px; height:20px; border-radius:50%;
+  background:var(--white);
+  transition:transform .25s var(--spring);
+}
+.toggle.on::after { transform:translateX(18px); }
+
+.seg-ctrl { display:flex; background:var(--g0); border-radius:7px; padding:2px; gap:2px; }
+.seg-opt  { border:none; background:transparent; height:26px; padding:0 10px; border-radius:6px; font-size:12px; color:var(--g2); cursor:pointer; font-weight:500; transition:all .15s; }
+.seg-opt.on { background:var(--white); color:var(--black); box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+
+/* Memory readout */
+.mem-readout { padding:8px 16px; font-family:var(--font-mono); font-size:12px; color:var(--g2); }
+
+/* ══════════════════════════════════════════════
+   Main calculator
+   ══════════════════════════════════════════════ */
+.calc { display:flex; flex-direction:column; height:100%; background:var(--black); }
+
+/* ── Top bar ── */
+.topbar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:6px 16px 0;
+  flex-shrink:0;
+}
+.topbar-left { display:flex; align-items:center; gap:12px; }
+
+.icon-btn { background:none; border:none; cursor:pointer; color:var(--g3); padding:6px; display:flex; align-items:center; justify-content:center; }
+.icon-btn:active { color:var(--white); }
+
+/* 2nd mode indicator */
+.second-badge {
+  font-family:var(--font-mono);
+  font-size:10px; font-weight:600;
+  color:var(--amber);
+  letter-spacing:.6px;
+  opacity:0; transition:opacity .2s;
+}
+.second-badge.on { opacity:1; }
+
+.angle-pill {
+  font-size:10px; font-weight:600;
+  color:var(--g2); letter-spacing:.6px;
+  cursor:pointer; padding:4px 0;
+}
+
+/* ── Display area ── */
+.display {
+  flex:1;
+  display:flex; flex-direction:column; justify-content:flex-end;
+  padding:4px 20px 10px;
+  position:relative;
+  overflow:hidden;
+  min-height: 0;
+}
+
+/* Voice overlay */
+.voice-overlay {
+  position:absolute; inset:0;
+  background:var(--black);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+  opacity:0; pointer-events:none;
+  transition:opacity .3s;
+}
+.voice-overlay.on { opacity:1; }
+.voice-prompt { font-size:12px; color:var(--g2); }
+.v-wave { display:flex; align-items:center; gap:3px; height:40px; }
+.v-wave span { width:3px; background:var(--amber); border-radius:3px; animation:vBeat 1.3s ease-in-out infinite; }
+.v-wave span:nth-child(1){height:8px;  animation-delay:0.00s}
+.v-wave span:nth-child(2){height:18px; animation-delay:0.08s}
+.v-wave span:nth-child(3){height:30px; animation-delay:0.16s}
+.v-wave span:nth-child(4){height:40px; animation-delay:0.24s}
+.v-wave span:nth-child(5){height:34px; animation-delay:0.20s}
+.v-wave span:nth-child(6){height:40px; animation-delay:0.28s}
+.v-wave span:nth-child(7){height:30px; animation-delay:0.16s}
+.v-wave span:nth-child(8){height:18px; animation-delay:0.08s}
+.v-wave span:nth-child(9){height:8px;  animation-delay:0.00s}
+@keyframes vBeat { 0%,100%{transform:scaleY(.25);opacity:.35}50%{transform:scaleY(1);opacity:1} }
+.voice-stat { font-family:var(--font-mono); font-size:10px; color:var(--amber); letter-spacing:1.2px; text-transform:uppercase; }
+
+/* History strip */
+.history { display:flex; flex-direction:column; gap:1px; min-height:30px; }
+.hist-item { font-family:var(--font-mono); font-size:11px; color:#2a2a2a; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* Expression */
+.expr { font-family:var(--font-mono); font-size:14px; color:var(--g3); text-align:right; min-height:18px; letter-spacing:-.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:4px; }
+
+/* Result */
+.result {
+  font-family:var(--font-mono); font-weight:200;
+  font-size:60px; line-height:1;
+  color:var(--white); text-align:right;
+  letter-spacing:-3px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  transition:font-size .12s;
+}
+.result.md { font-size:44px; letter-spacing:-2px; }
+.result.sm { font-size:30px; letter-spacing:-1px; }
+
+/* ── Keyboard ── */
+.keyboard {
+  flex-shrink:0;
+  display:flex; flex-direction:column;
+  gap: var(--gap);
+  background: var(--black);
+  padding-bottom: 28px;
+}
+
+/* Row types */
+.row { display:grid; gap:var(--gap); }
+.row-sci { grid-template-columns:repeat(5,1fr); }
+.row-num { grid-template-columns:repeat(5,1fr); }
+
+/* ── Button base ── */
+.btn {
+  border:none; cursor:pointer;
+  font-family:var(--font-ui);
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+  transition:transform .08s var(--spring);
+  font-size:16px;
+  letter-spacing:-.3px;
+}
+.btn:active { transform:scale(0.90); }
+
+/* Science row buttons — compact */
+.btn-sci {
+  height: var(--btn-sci);
+  background: var(--g3);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 400;
+  font-family: var(--font-mono);
+  flex-direction: column;
+  gap: 1px;
+}
+.btn-sci .lbl-2nd { font-size:8px; color:var(--amber); opacity:0; transition:opacity .2s; line-height:1; }
+.second-mode .btn-sci .lbl-2nd { opacity:1; }
+.btn-sci:active { background:var(--white); color:var(--black); }
+.btn-sci.highlight { background: #222; }
+
+/* 2nd button itself */
+.btn-2nd {
+  height: var(--btn-sci);
+  background: var(--g3);
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+.btn-2nd.on { background:var(--amber); color:var(--white); }
+.btn-2nd:active { transform:scale(0.90); }
+
+/* Operator buttons */
+.btn-op {
+  height: var(--btn-num);
+  background: var(--white);
+  color: var(--black);
+  font-size: 24px;
+  font-weight: 300;
+}
+.btn-op:active, .btn-op.sel { background:var(--g2); color:var(--white); }
+
+/* Number buttons */
+.btn-num {
+  height: var(--btn-num);
+  background: var(--num-bg);
+  color: var(--white);
+  font-size: 20px;
+}
+.btn-num:active { background:var(--g3); }
+
+/* Function keys (AC, ±, %) */
+.btn-fn {
+  height: var(--btn-num);
+  background: var(--g3);
+  color: var(--white);
+  font-size: 18px;
+}
+.btn-fn:active { background:var(--white); color:var(--black); }
+
+/* Zero — spans 2 */
+.btn-zero { grid-column:span 2; justify-content:flex-start; padding-left:22px; }
+
+/* Mic button */
+.btn-mic {
+  height: var(--btn-num);
+  background: var(--g3);
+  color: var(--white);
+}
+.btn-mic.rec { background:var(--amber-bg); }
+.btn-mic.rec .mic-ico { color:var(--amber); }
+.btn-mic.rec::after {
+  content:''; position:absolute; inset:0;
+  border:1.5px solid var(--amber);
+  animation:pulseRing 1.8s ease-in-out infinite;
+}
+@keyframes pulseRing { 0%,100%{opacity:.3}50%{opacity:1} }
+.mic-ico { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; pointer-events:none; }
+
+/* ── Parenthesis row top ── */
+.row-top {
+  grid-template-columns: repeat(5,1fr);
+  background: #0a0a0a;
+}
+.btn-util {
+  height: 38px;
+  background: #0a0a0a;
+  color: var(--g2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  border: none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition: color .1s;
+}
+.btn-util:active { color:var(--white); }
+.btn-util.active-op { color:var(--white); }
+
+/* ── Toast ── */
+.toast {
+  position:absolute; top:12px; left:50%;
+  transform:translateX(-50%) translateY(-60px);
+  background:var(--g3); color:var(--white);
+  font-size:12px; font-weight:500;
+  padding:9px 20px; border-radius:22px;
+  white-space:nowrap; z-index:300;
+  transition:transform .4s var(--spring);
+  pointer-events:none;
+}
+.toast.show { transform:translateX(-50%) translateY(0); }
+
+/* Swipe zone */
+.swipe-z { position:absolute; left:0; top:0; width:18px; height:100%; z-index:20; }
+
+/* ══ Settings sheet (bottom) ══ */
+.sheet-bg { position:absolute; inset:0; background:rgba(0,0,0,0); z-index:50; pointer-events:none; transition:background .3s; }
+.sheet-bg.on { background:rgba(0,0,0,0.5); pointer-events:auto; }
+
+.sheet {
+  position:absolute; left:0; right:0; bottom:0;
+  background:var(--white); border-radius:20px 20px 0 0;
+  z-index:60;
+  transform:translateY(100%);
+  transition:transform .4s var(--ease-out);
+  max-height:70%;
+  display:flex; flex-direction:column;
+}
+.sheet.on { transform:translateY(0); }
+.sheet-handle { width:36px; height:4px; background:var(--g1); border-radius:2px; margin:12px auto 0; flex-shrink:0; }
+.sheet-head { padding:12px 20px 14px; border-bottom:1px solid var(--g0); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.sheet-title { font-size:15px; font-weight:600; color:var(--black); }
+.sheet-done { background:none; border:none; font-size:15px; font-weight:600; color:var(--black); cursor:pointer; }
+.sheet-scroll { overflow-y:auto; flex:1; }
+
+/* Sheet section */
+.ss-head { font-size:11px; font-weight:600; color:var(--g2); letter-spacing:.6px; text-transform:uppercase; padding:14px 20px 6px; }
+</style>
+</head>
+<body>
+
+<div class="iphone">
+  <!-- Dynamic Island -->
+  <div class="di" id="di">
+    <svg class="di-mic" width="13" height="17" viewBox="0 0 13 17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+      <rect x="3.5" y="1" width="6" height="9" rx="3"/>
+      <path d="M1 8a5.5 5.5 0 0 0 11 0"/>
+      <line x1="6.5" y1="13.5" x2="6.5" y2="15.5"/>
+    </svg>
+    <div class="di-wave">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span class="status-time">9:41</span>
+    <div class="status-icons">
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="white">
+        <rect x="0"    y="7"   width="3" height="5" rx=".5"/>
+        <rect x="4.5"  y="4.5" width="3" height="7.5" rx=".5"/>
+        <rect x="9"    y="2"   width="3" height="10" rx=".5"/>
+        <rect x="13.5" y="0"   width="3" height="12" rx=".5"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round">
+        <path d="M1 4.5C3.7 1.8 8 1.5 8 1.5s4.3.3 7 3"/>
+        <path d="M3.5 7C5 5.5 8 5.2 8 5.2s3 .3 4.5 1.8"/>
+        <circle cx="8" cy="10" r="1.5" fill="white" stroke="none"/>
+      </svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+        <rect x=".5" y=".5" width="21" height="11" rx="3.5" stroke="white" stroke-opacity=".35"/>
+        <rect x="1.5" y="1.5" width="18" height="9" rx="2.5" fill="white"/>
+        <path d="M23 4v4a2 2 0 0 0 0-4z" fill="white" fill-opacity=".4"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div class="app" id="app">
+
+    <div class="swipe-z" id="swipeZ"></div>
+    <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+    <div class="toast" id="toast"></div>
+
+    <!-- ══ Sidebar ════════════════════════════ -->
+    <div class="sidebar" id="sidebar">
+      <div class="sb-drag"></div>
+      <div class="sb-top">
+        <span class="sb-title-text">Advanced</span>
+        <button class="sb-close" onclick="closeSidebar()">×</button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="sb-tabs">
+        <button class="sb-tab on"  onclick="sbTab('mem',this)">Memory</button>
+        <button class="sb-tab"     onclick="sbTab('const',this)">Consts</button>
+        <button class="sb-tab"     onclick="sbTab('base',this)">Base</button>
+        <button class="sb-tab"     onclick="sbTab('hist',this)">History</button>
+      </div>
+
+      <div class="sb-scroll">
+        <!-- Memory pane -->
+        <div class="sb-pane on" id="pane-mem">
+          <div class="sb-section">
+            <div class="sb-label">メモリ操作</div>
+            <div class="sb-grid sb-grid-2">
+              <button class="sb-btn" onclick="memOp('store')">M+</button>
+              <button class="sb-btn" onclick="memOp('sub')">M−</button>
+              <button class="sb-btn" onclick="memOp('recall')">MR</button>
+              <button class="sb-btn" onclick="memOp('clear')">MC</button>
+            </div>
+            <div class="mem-readout" id="memReadout">M = 0</div>
+          </div>
+          <div class="sb-section">
+            <div class="sb-label">スタック</div>
+            <div class="sb-grid" style="grid-template-columns:1fr 1fr 1fr">
+              <button class="sb-btn" onclick="stackOp('push')">PUSH</button>
+              <button class="sb-btn" onclick="stackOp('pop')">POP</button>
+              <button class="sb-btn" onclick="stackOp('swap')">SWAP</button>
+            </div>
+            <div class="mem-readout" id="stackReadout" style="font-size:10px;line-height:1.8;">Stack: 空</div>
+          </div>
+        </div>
+
+        <!-- Constants pane -->
+        <div class="sb-pane" id="pane-const">
+          <div class="sb-section">
+            <div class="sb-label">数学定数</div>
+            <div class="sb-grid">
+              <button class="sb-btn" onclick="insertConst(Math.PI,'π')">π</button>
+              <button class="sb-btn" onclick="insertConst(Math.E,'e')">e</button>
+              <button class="sb-btn" onclick="insertConst(1.6180339887,'φ')">φ</button>
+              <button class="sb-btn" onclick="insertConst(Math.SQRT2,'√2')">√2</button>
+              <button class="sb-btn" onclick="insertConst(Math.LOG2E,'log₂e')">log₂e</button>
+              <button class="sb-btn" onclick="insertConst(Math.LN2,'ln2')">ln 2</button>
+            </div>
+          </div>
+          <div class="sb-section">
+            <div class="sb-label">物理定数</div>
+            <div class="sb-grid">
+              <button class="sb-btn" style="font-size:11px" onclick="insertConst(299792458,'c')">c</button>
+              <button class="sb-btn" style="font-size:11px" onclick="insertConst(6.62607015e-34,'h')">h</button>
+              <button class="sb-btn" style="font-size:11px" onclick="insertConst(6.67430e-11,'G')">G</button>
+              <button class="sb-btn" style="font-size:11px" onclick="insertConst(1.380649e-23,'kB')">kB</button>
+              <button class="sb-btn" style="font-size:11px" onclick="insertConst(6.022e23,'NA')">NA</button>
+              <button class="sb-btn" style="font-size:11px" onclick="insertConst(8.314,'R')">R</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Base pane -->
+        <div class="sb-pane" id="pane-base">
+          <div class="sb-section">
+            <div class="sb-label">進数選択</div>
+            <div class="sb-grid sb-grid-2">
+              <button class="sb-btn on" id="b-dec" onclick="setBase('DEC')">DEC 10</button>
+              <button class="sb-btn"    id="b-hex" onclick="setBase('HEX')">HEX 16</button>
+              <button class="sb-btn"    id="b-oct" onclick="setBase('OCT')">OCT 8</button>
+              <button class="sb-btn"    id="b-bin" onclick="setBase('BIN')">BIN 2</button>
+            </div>
+          </div>
+          <div class="sb-section">
+            <div class="sb-label">現在値</div>
+            <div class="base-readout" id="baseReadout">
+              DEC: —<br>HEX: —<br>OCT: —<br>BIN: —
+            </div>
+          </div>
+        </div>
+
+        <!-- History pane -->
+        <div class="sb-pane" id="pane-hist">
+          <div class="sb-section">
+            <div class="sb-label">計算履歴</div>
+            <div id="histPane" style="padding:8px 0;"></div>
+          </div>
+          <div style="padding:8px 16px 16px;">
+            <button class="sb-btn" style="width:100%;background:var(--g0);color:var(--g2)" onclick="clearHist()">履歴を消去</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Settings sheet (bottom) ════════════ -->
+    <div class="sheet-bg" id="sheetBg" onclick="closeSheet()"></div>
+    <div class="sheet" id="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <span class="sheet-title">設定</span>
+        <button class="sheet-done" onclick="closeSheet()">完了</button>
+      </div>
+      <div class="sheet-scroll">
+
+        <div class="ss-head">角度モード</div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">単位</div>
+            <div class="setting-sub" id="angleSub">sin(90) = 1.0 のとき DEG</div>
+          </div>
+          <div class="seg-ctrl">
+            <button class="seg-opt on" id="s-deg" onclick="setAngle('DEG',this)">DEG</button>
+            <button class="seg-opt"    id="s-rad" onclick="setAngle('RAD',this)">RAD</button>
+            <button class="seg-opt"    id="s-grad" onclick="setAngle('GRAD',this)">GRAD</button>
+          </div>
+        </div>
+
+        <div class="ss-head">表示</div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">小数点以下桁数</div>
+            <div class="setting-sub" id="decSub">自動</div>
+          </div>
+          <div class="seg-ctrl">
+            <button class="seg-opt on" id="d-auto" onclick="setDecimals('auto',this)">Auto</button>
+            <button class="seg-opt"    id="d-4"    onclick="setDecimals(4,this)">4</button>
+            <button class="seg-opt"    id="d-8"    onclick="setDecimals(8,this)">8</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">指数表記</div>
+            <div class="setting-sub">大きな数を 1.2×10⁸ 形式で表示</div>
+          </div>
+          <button class="toggle on" id="t-exp" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">千の位区切り</div>
+            <div class="setting-sub">1,000,000 形式</div>
+          </div>
+          <button class="toggle" id="t-sep" onclick="toggleSep(this)"></button>
+        </div>
+
+        <div class="ss-head">音声入力 (Whisper)</div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">言語</div>
+          </div>
+          <div class="seg-ctrl">
+            <button class="seg-opt on">日本語</button>
+            <button class="seg-opt">English</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">認識結果を音読</div>
+          </div>
+          <button class="toggle" onclick="this.classList.toggle('on')"></button>
+        </div>
+
+        <div class="ss-head">操作</div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">ハプティクス</div>
+          </div>
+          <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">サウンドフィードバック</div>
+          </div>
+          <button class="toggle" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div style="height:20px;"></div>
+      </div>
+    </div>
+
+    <!-- ══ Calculator main ════════════════════ -->
+    <div class="calc" id="calcMain">
+
+      <!-- Topbar -->
+      <div class="topbar">
+        <div class="topbar-left">
+          <!-- Hamburger -->
+          <button class="icon-btn" onclick="openSidebar()" aria-label="Advanced panel">
+            <svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <line x1="0" y1="2"  x2="18" y2="2"/>
+              <line x1="0" y1="7"  x2="18" y2="7"/>
+              <line x1="0" y1="12" x2="18" y2="12"/>
+            </svg>
+          </button>
+          <span class="second-badge" id="secondBadge">2ND</span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span class="angle-pill" id="anglePill" onclick="cycleAngle()">DEG</span>
+          <!-- Settings gear -->
+          <button class="icon-btn" onclick="openSheet()" aria-label="Settings">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <circle cx="9" cy="9" r="2.5"/>
+              <path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.1 3.1l1.4 1.4M13.5 13.5l1.4 1.4M3.1 14.9l1.4-1.4M13.5 4.5l1.4-1.4"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Display -->
+      <div class="display">
+        <!-- Voice overlay -->
+        <div class="voice-overlay" id="voiceOverlay">
+          <div class="voice-prompt">話しかけてください</div>
+          <div class="v-wave">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="voice-stat" id="voiceStat">WHISPER LISTENING</div>
+        </div>
+
+        <div class="history" id="history"></div>
+        <div class="expr"   id="expr"></div>
+        <div class="result" id="result">0</div>
+      </div>
+
+      <!-- Keyboard -->
+      <div class="keyboard" id="keyboard">
+
+        <!-- Utility micro-row: parens + backspace -->
+        <div class="row row-top">
+          <button class="btn-util" onclick="insertParen('(')">（</button>
+          <button class="btn-util" onclick="insertParen(')')">）</button>
+          <button class="btn-util" id="u-eq" onclick="toggleEEMode()">EE</button>
+          <button class="btn-util" onclick="inputBin()" id="u-ans">ANS</button>
+          <button class="btn-util" onclick="backspace()">⌫</button>
+        </div>
+
+        <!-- Sci row 1 -->
+        <div class="row row-sci">
+          <button class="btn btn-2nd" id="btn2nd" onclick="toggle2nd()">2nd</button>
+          <button class="btn btn-sci" data-fn="sin"  data-2nd="asin"  onclick="sciBtn(this)">
+            <span class="lbl-1st">sin</span><span class="lbl-2nd">sin⁻¹</span>
+          </button>
+          <button class="btn btn-sci" data-fn="cos"  data-2nd="acos"  onclick="sciBtn(this)">
+            <span class="lbl-1st">cos</span><span class="lbl-2nd">cos⁻¹</span>
+          </button>
+          <button class="btn btn-sci" data-fn="tan"  data-2nd="atan"  onclick="sciBtn(this)">
+            <span class="lbl-1st">tan</span><span class="lbl-2nd">tan⁻¹</span>
+          </button>
+          <button class="btn btn-sci" data-fn="log10" data-2nd="10^x"  onclick="sciBtn(this)">
+            <span class="lbl-1st">log</span><span class="lbl-2nd">10ˣ</span>
+          </button>
+        </div>
+
+        <!-- Sci row 2 -->
+        <div class="row row-sci">
+          <button class="btn btn-sci" data-fn="x2"   data-2nd="x3"   onclick="sciBtn(this)">
+            <span class="lbl-1st">x²</span><span class="lbl-2nd">x³</span>
+          </button>
+          <button class="btn btn-sci" data-fn="sqrt" data-2nd="cbrt"  onclick="sciBtn(this)">
+            <span class="lbl-1st">√x</span><span class="lbl-2nd">∛x</span>
+          </button>
+          <button class="btn btn-sci" data-fn="pow"  data-2nd="exp"   onclick="sciBtn(this)">
+            <span class="lbl-1st">xⁿ</span><span class="lbl-2nd">eˣ</span>
+          </button>
+          <button class="btn btn-sci" data-fn="ln"   data-2nd="fact"  onclick="sciBtn(this)">
+            <span class="lbl-1st">ln</span><span class="lbl-2nd">n!</span>
+          </button>
+          <button class="btn btn-sci" data-fn="pi"   data-2nd="euler" onclick="sciBtn(this)">
+            <span class="lbl-1st">π</span><span class="lbl-2nd">e</span>
+          </button>
+        </div>
+
+        <!-- Num row 1 -->
+        <div class="row row-num">
+          <button class="btn btn-fn"  onclick="clearAll()">AC</button>
+          <button class="btn btn-fn"  onclick="toggleSign()">±</button>
+          <button class="btn btn-fn"  onclick="percent()">%</button>
+          <button class="btn btn-fn"  onclick="insertConst(Math.PI,'π')" style="font-family:var(--font-mono);font-size:16px">π</button>
+          <button class="btn btn-op" id="op-div" onclick="setOp('÷')">÷</button>
+        </div>
+
+        <!-- Num row 2 -->
+        <div class="row row-num">
+          <button class="btn btn-num" onclick="inputNum('7')">7</button>
+          <button class="btn btn-num" onclick="inputNum('8')">8</button>
+          <button class="btn btn-num" onclick="inputNum('9')">9</button>
+          <button class="btn btn-fn"  onclick="sci_direct('sqrt')" style="font-family:var(--font-mono);font-size:14px">√x</button>
+          <button class="btn btn-op" id="op-mul" onclick="setOp('×')">×</button>
+        </div>
+
+        <!-- Num row 3 -->
+        <div class="row row-num">
+          <button class="btn btn-num" onclick="inputNum('4')">4</button>
+          <button class="btn btn-num" onclick="inputNum('5')">5</button>
+          <button class="btn btn-num" onclick="inputNum('6')">6</button>
+          <button class="btn btn-fn"  onclick="sci_direct('x2')" style="font-family:var(--font-mono);font-size:14px">x²</button>
+          <button class="btn btn-op" id="op-sub" onclick="setOp('−')">−</button>
+        </div>
+
+        <!-- Num row 4 -->
+        <div class="row row-num">
+          <button class="btn btn-num" onclick="inputNum('1')">1</button>
+          <button class="btn btn-num" onclick="inputNum('2')">2</button>
+          <button class="btn btn-num" onclick="inputNum('3')">3</button>
+          <button class="btn btn-fn"  onclick="sci_direct('log10')" style="font-family:var(--font-mono);font-size:14px">log</button>
+          <button class="btn btn-op" id="op-add" onclick="setOp('+')">+</button>
+        </div>
+
+        <!-- Num row 5 (bottom) -->
+        <div class="row row-num">
+          <button class="btn btn-num btn-zero" onclick="inputNum('0')">0</button>
+          <button class="btn btn-num" onclick="inputDot()">.</button>
+          <button class="btn btn-mic" id="micBtn" onclick="toggleVoice()">
+            <svg class="mic-ico" id="micSvg" viewBox="0 0 24 24">
+              <rect x="9" y="2" width="6" height="12" rx="3"/>
+              <path d="M5 12a7 7 0 0 0 14 0"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8"  y1="23" x2="16" y2="23"/>
+            </svg>
+          </button>
+          <button class="btn btn-op" style="background:var(--white)" onclick="calculate()">=</button>
+        </div>
+
+      </div><!-- /keyboard -->
+    </div><!-- /calc -->
+  </div><!-- /app -->
+</div><!-- /iphone -->
+
+<div style="color:#444;font-size:11px;text-align:center;line-height:1.9">
+  ← スワイプ / ☰ で Memory・Consts・Base・History &nbsp;|&nbsp;
+  ⚙ で設定 &nbsp;|&nbsp; 🎤 Whisper音声入力 &nbsp;|&nbsp; PC: キーボード対応
+</div>
+
+<script>
+/* ════════════════════════════════════════════
+   State
+   ════════════════════════════════════════════ */
+let cur    = '0';
+let expr   = '';
+let op     = null;
+let prev   = null;
+let doReset = false;
+let isSecond = false;
+let angleMode = 'DEG';   // DEG | RAD | GRAD
+let decimals  = 'auto';
+let useSep    = false;
+let mem       = 0;
+let stack     = [];
+let recMode   = false;
+let voiceTimer = null;
+let histList  = [];
+let curBase   = 'DEC';
+let ans       = 0;       // last answer
+
+/* ════════════════════════════════════════════
+   Helpers
+   ════════════════════════════════════════════ */
+const $  = id => document.getElementById(id);
+const kb = () => $('keyboard');
+
+function toRad(v) {
+  if (angleMode === 'RAD')  return v;
+  if (angleMode === 'GRAD') return v * Math.PI / 200;
+  return v * Math.PI / 180;
+}
+function fromRad(v) {
+  if (angleMode === 'RAD')  return v;
+  if (angleMode === 'GRAD') return v * 200 / Math.PI;
+  return v * 180 / Math.PI;
+}
+function round10(x) { return Math.round(x * 1e10) / 1e10; }
+
+function fmt(n) {
+  if (n === 'Error' || n === '∞') return n;
+  const v = parseFloat(n);
+  if (!isFinite(v)) return '∞';
+  if (decimals !== 'auto') return v.toFixed(parseInt(decimals));
+  if (Math.abs(v) >= 1e13 || (Math.abs(v) !== 0 && Math.abs(v) < 1e-7))
+    return v.toExponential(6);
+  if (useSep) return v.toLocaleString('ja-JP', { maximumSignificantDigits: 14 });
+  return n;
+}
+
+/* ════════════════════════════════════════════
+   Display
+   ════════════════════════════════════════════ */
+function refresh() {
+  const rd = $('result');
+  const len = cur.replace(/[-.]/, '').length;
+  rd.className = 'result';
+  if (len > 13) rd.classList.add('sm');
+  else if (len > 9) rd.classList.add('md');
+  rd.textContent = fmt(cur);
+  $('expr').textContent = expr;
+  refreshBase();
+}
+
+function refreshBase() {
+  const n = parseInt(parseFloat(cur));
+  if (isNaN(n)) { $('baseReadout').innerHTML='DEC: —<br>HEX: —<br>OCT: —<br>BIN: —'; return; }
+  const abs = Math.abs(n);
+  $('baseReadout').innerHTML =
+    `DEC: ${n.toLocaleString()}<br>` +
+    `HEX: ${n < 0 ? '-' : ''}0x${abs.toString(16).toUpperCase()}<br>` +
+    `OCT: ${n < 0 ? '-' : ''}0o${abs.toString(8)}<br>` +
+    `BIN: ${n < 0 ? '-' : ''}0b${abs.toString(2)}`;
+}
+
+function pushHistory(line) {
+  histList.unshift(line);
+  if (histList.length > 50) histList.pop();
+  // History strip in display (last 2)
+  $('history').innerHTML = histList.slice(0,2)
+    .map(h => `<div class="hist-item">${h}</div>`).join('');
+  // Sidebar history pane
+  $('histPane').innerHTML = histList
+    .map((h,i) => `<div style="padding:9px 16px;border-bottom:1px solid #f0f0f0;font-family:var(--font-mono);font-size:11px;color:var(--g2);cursor:pointer" onclick="recallHist('${i}')">${h}</div>`)
+    .join('');
+}
+
+function recallHist(i) {
+  const line = histList[parseInt(i)];
+  const m = line.match(/= (.+)$/);
+  if (m) { cur = m[1]; doReset = false; refresh(); closeSidebar(); }
+}
+
+function clearHist() {
+  histList = [];
+  $('history').innerHTML = '';
+  $('histPane').innerHTML = '<div style="padding:16px;color:var(--g2);font-size:12px;text-align:center">履歴なし</div>';
+}
+
+/* ════════════════════════════════════════════
+   Input
+   ════════════════════════════════════════════ */
+function inputNum(d) {
+  if (doReset) { cur = d; doReset = false; }
+  else          { cur = (cur === '0') ? d : cur + d; }
+  refresh();
+}
+
+function inputDot() {
+  if (doReset) { cur = '0.'; doReset = false; }
+  else if (!cur.includes('.')) cur += '.';
+  refresh();
+}
+
+function backspace() {
+  if (cur.length > 1) cur = cur.slice(0, -1);
+  else cur = '0';
+  refresh();
+}
+
+function insertParen(p) {
+  // Simplified: just append to expression display for now
+  if (p === '(') { expr += '('; }
+  else           { expr += ')'; }
+  $('expr').textContent = expr;
+}
+
+function toggleEEMode() {
+  // Append E to current number for scientific notation input
+  if (!cur.includes('e')) { cur += 'e'; }
+  refresh();
+}
+
+function inputBin() {
+  cur = String(ans);
+  doReset = false;
+  refresh();
+  showToast('ANS = ' + fmt(cur));
+}
+
+/* ════════════════════════════════════════════
+   Clear / sign / percent
+   ════════════════════════════════════════════ */
+function clearAll() {
+  cur = '0'; expr = ''; op = null; prev = null; doReset = false;
+  clearOpHL();
+  refresh();
+}
+
+function toggleSign() {
+  if (cur !== '0' && cur !== 'Error')
+    cur = cur.startsWith('-') ? cur.slice(1) : '-' + cur;
+  refresh();
+}
+
+function percent() {
+  cur = String(round10(parseFloat(cur) / 100));
+  refresh();
+}
+
+/* ════════════════════════════════════════════
+   Operators
+   ════════════════════════════════════════════ */
+function clearOpHL() {
+  document.querySelectorAll('.btn-op').forEach(b => b.classList.remove('sel'));
+}
+
+function setOp(o) {
+  if (op && !doReset) calculate();
+  prev   = parseFloat(cur);
+  op     = o;
+  expr   = fmt(cur) + ' ' + o;
+  doReset = true;
+  clearOpHL();
+  const map = {'÷':'op-div','×':'op-mul','−':'op-sub','+':'op-add'};
+  if (map[o]) $(map[o]).classList.add('sel');
+  refresh();
+}
+
+function calculate() {
+  if (!op || prev === null) return;
+  const a = prev, b = parseFloat(cur);
+  let res;
+  switch(op) {
+    case '+': res = a + b; break;
+    case '−': res = a - b; break;
+    case '×': res = a * b; break;
+    case '÷': res = b === 0 ? 'Error' : a / b; break;
+    case '^': res = Math.pow(a, b); break;
+    case '%': res = a % b; break;
+    default: return;
+  }
+  const line = `${fmt(String(a))} ${op} ${fmt(String(b))} = ${fmt(String(res))}`;
+  pushHistory(line);
+  ans  = res;
+  expr = line;
+  cur  = (res === 'Error') ? 'Error' : String(round10(res));
+  op = null; prev = null; doReset = true;
+  clearOpHL();
+  refresh();
+}
+
+/* ════════════════════════════════════════════
+   2nd mode toggle
+   ════════════════════════════════════════════ */
+function toggle2nd() {
+  isSecond = !isSecond;
+  $('btn2nd').classList.toggle('on', isSecond);
+  $('secondBadge').classList.toggle('on', isSecond);
+  // Toggle label visibility in sci buttons
+  document.querySelectorAll('.btn-sci .lbl-1st').forEach(el => {
+    el.style.display = isSecond ? 'none' : '';
+  });
+  document.querySelectorAll('.btn-sci .lbl-2nd').forEach(el => {
+    el.style.opacity = isSecond ? '1' : '0';
+    el.style.display = isSecond ? '' : 'none';
+  });
+}
+
+/* ════════════════════════════════════════════
+   Scientific functions
+   ════════════════════════════════════════════ */
+function sciBtn(el) {
+  const fn = isSecond ? el.dataset['2nd'] : el.dataset.fn;
+  sci_direct(fn);
+  // Auto-exit 2nd mode
+  if (isSecond) toggle2nd();
+}
+
+function sci_direct(fn) {
+  const v = parseFloat(cur);
+  let res, label;
+  switch(fn) {
+    case 'sin':   res=Math.sin(toRad(v));   label=`sin(${v})`; break;
+    case 'cos':   res=Math.cos(toRad(v));   label=`cos(${v})`; break;
+    case 'tan':   res=Math.tan(toRad(v));   label=`tan(${v})`; break;
+    case 'asin':  res=fromRad(Math.asin(v)); label=`asin(${v})`; break;
+    case 'acos':  res=fromRad(Math.acos(v)); label=`acos(${v})`; break;
+    case 'atan':  res=fromRad(Math.atan(v)); label=`atan(${v})`; break;
+    case 'log10': res=Math.log10(v);         label=`log(${v})`; break;
+    case '10^x':  res=Math.pow(10,v);        label=`10^${v}`; break;
+    case 'x2':    res=v*v;                   label=`${v}²`; break;
+    case 'x3':    res=v*v*v;                 label=`${v}³`; break;
+    case 'sqrt':  res=Math.sqrt(v);          label=`√(${v})`; break;
+    case 'cbrt':  res=Math.cbrt(v);          label=`∛(${v})`; break;
+    case 'pow':   prev=v; op='^'; expr=fmt(cur)+' ^'; doReset=true; refresh(); return;
+    case 'exp':   res=Math.exp(v);           label=`e^${v}`; break;
+    case 'ln':    res=Math.log(v);           label=`ln(${v})`; break;
+    case 'fact':  res=factorial(v);          label=`${v}!`; break;
+    case 'pi':    cur=String(Math.PI); expr='π'; doReset=false; refresh(); return;
+    case 'euler': cur=String(Math.E);  expr='e'; doReset=false; refresh(); return;
+    default: return;
+  }
+  if (!isFinite(res) || isNaN(res)) { cur='Error'; expr=label+' = Error'; doReset=true; refresh(); return; }
+  const r = round10(res);
+  const line = `${label} = ${fmt(String(r))}`;
+  pushHistory(line);
+  ans  = r;
+  expr = label + ' =';
+  cur  = String(r);
+  doReset = true;
+  refresh();
+}
+
+function factorial(n) {
+  n = Math.round(n);
+  if (n < 0 || !isFinite(n)) return NaN;
+  if (n > 170) return Infinity;
+  let r = 1;
+  for (let i = 2; i <= n; i++) r *= i;
+  return r;
+}
+
+function insertConst(val, name) {
+  closeSidebar();
+  cur = String(val);
+  expr = name;
+  doReset = false;
+  refresh();
+}
+
+/* ════════════════════════════════════════════
+   Angle mode
+   ════════════════════════════════════════════ */
+function cycleAngle() {
+  const modes = ['DEG','RAD','GRAD'];
+  angleMode = modes[(modes.indexOf(angleMode) + 1) % 3];
+  $('anglePill').textContent = angleMode;
+  updateAngleSettings();
+  showToast(angleMode + ' モード');
+}
+
+function setAngle(m, el) {
+  angleMode = m;
+  $('anglePill').textContent = m;
+  document.querySelectorAll('.seg-opt[id^="s-"]').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  updateAngleSettings();
+}
+
+function updateAngleSettings() {
+  $('angleSub').textContent = angleMode === 'DEG'
+    ? 'sin(90) = 1.0 のとき DEG'
+    : angleMode === 'RAD'
+    ? 'sin(π/2) = 1.0 のとき RAD'
+    : 'sin(100) = 1.0 のとき GRAD';
+  // Sync setting seg
+  ['deg','rad','grad'].forEach(m => {
+    const el = $('s-'+m);
+    if(el) el.classList.toggle('on', m.toUpperCase() === angleMode);
+  });
+}
+
+/* ════════════════════════════════════════════
+   Settings
+   ════════════════════════════════════════════ */
+function setDecimals(d, el) {
+  decimals = d;
+  document.querySelectorAll('.seg-opt[id^="d-"]').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  $('decSub').textContent = d === 'auto' ? '自動' : `${d} 桁固定`;
+  refresh();
+}
+
+function toggleSep(btn) {
+  btn.classList.toggle('on');
+  useSep = btn.classList.contains('on');
+  refresh();
+}
+
+/* ════════════════════════════════════════════
+   Base conversion
+   ════════════════════════════════════════════ */
+function setBase(b) {
+  ['dec','hex','oct','bin'].forEach(x => {
+    const el = $('b-'+x);
+    if (el) el.classList.toggle('on', x === b.toLowerCase());
+  });
+  curBase = b;
+  refreshBase();
+}
+
+/* ════════════════════════════════════════════
+   Memory
+   ════════════════════════════════════════════ */
+function memOp(t) {
+  const v = parseFloat(cur);
+  switch(t) {
+    case 'store':  mem += v;  break;
+    case 'sub':    mem -= v;  break;
+    case 'recall': cur = String(mem); doReset = false; refresh(); break;
+    case 'clear':  mem = 0;   break;
+  }
+  $('memReadout').textContent = `M = ${round10(mem)}`;
+  if (t !== 'recall') showToast(`M = ${round10(mem)}`);
+}
+
+/* Stack */
+function stackOp(t) {
+  switch(t) {
+    case 'push': stack.push(parseFloat(cur)); break;
+    case 'pop':
+      if (stack.length) { cur = String(stack.pop()); doReset = false; refresh(); }
+      break;
+    case 'swap':
+      if (stack.length) {
+        const top = stack[stack.length-1];
+        stack[stack.length-1] = parseFloat(cur);
+        cur = String(top);
+        doReset = false; refresh();
+      }
+      break;
+  }
+  $('stackReadout').innerHTML = stack.length
+    ? stack.map((v,i)=>`[${i}]: ${v}`).join('<br>')
+    : 'Stack: 空';
+}
+
+/* ════════════════════════════════════════════
+   Sidebar
+   ════════════════════════════════════════════ */
+function openSidebar() {
+  $('sidebar').classList.add('open');
+  $('overlay').classList.add('open');
+}
+function closeSidebar() {
+  $('sidebar').classList.remove('open');
+  $('overlay').classList.remove('open');
+}
+
+function sbTab(pane, el) {
+  document.querySelectorAll('.sb-pane').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.sb-tab').forEach(t => t.classList.remove('on'));
+  $('pane-' + pane).classList.add('on');
+  el.classList.add('on');
+}
+
+/* Swipe to open sidebar */
+let tx0=0, ty0=0, swiping=false;
+$('swipeZ').addEventListener('touchstart', e => {
+  tx0=e.touches[0].clientX; ty0=e.touches[0].clientY; swiping=true;
+}, {passive:true});
+document.addEventListener('touchmove', e => {
+  if (!swiping) return;
+  const dx=e.touches[0].clientX-tx0, dy=Math.abs(e.touches[0].clientY-ty0);
+  if (dx>36 && dy<70 && tx0<28) { openSidebar(); swiping=false; }
+}, {passive:true});
+document.addEventListener('touchend', ()=>swiping=false);
+let mx0=0, mdrag=false;
+$('swipeZ').addEventListener('mousedown', e=>{mx0=e.clientX; mdrag=true;});
+document.addEventListener('mousemove', e=>{ if(!mdrag)return; if(e.clientX-mx0>36){openSidebar();mdrag=false;} });
+document.addEventListener('mouseup', ()=>mdrag=false);
+
+/* ════════════════════════════════════════════
+   Settings sheet
+   ════════════════════════════════════════════ */
+function openSheet() {
+  $('sheet').classList.add('on');
+  $('sheetBg').classList.add('on');
+}
+function closeSheet() {
+  $('sheet').classList.remove('on');
+  $('sheetBg').classList.remove('on');
+}
+
+/* ════════════════════════════════════════════
+   Voice (Whisper mock)
+   ════════════════════════════════════════════ */
+const SAMPLES = [
+  {heard:'45かける37',   expr:'45 × 37 =',  val: String(45*37) },
+  {heard:'sin 30度',     expr:'sin(30°) =', val: String(round10(Math.sin(30*Math.PI/180))) },
+  {heard:'2の10乗',      expr:'2 ^ 10 =',   val: '1024' },
+  {heard:'ルート 144',   expr:'√(144) =',   val: '12' },
+  {heard:'100割る7',     expr:'100 ÷ 7 =',  val: String(round10(100/7)) },
+  {heard:'5の階乗',      expr:'5! =',        val: '120' },
+  {heard:'円周率',       expr:'π =',         val: String(round10(Math.PI)) },
+  {heard:'eの2乗',       expr:'e² =',        val: String(round10(Math.E*Math.E)) },
+];
+
+function toggleVoice() { recMode ? stopVoice() : startVoice(); }
+
+function startVoice() {
+  recMode=true;
+  $('micBtn').classList.add('rec');
+  $('voiceOverlay').classList.add('on');
+  $('di').classList.add('voice');
+  $('voiceStat').textContent='WHISPER LISTENING';
+  voiceTimer=setTimeout(()=>{
+    $('voiceStat').textContent='PROCESSING...';
+    setTimeout(()=>{
+      const s=SAMPLES[Math.floor(Math.random()*SAMPLES.length)];
+      stopVoice(s);
+    },1400);
+  },2200);
+}
+
+function stopVoice(result) {
+  recMode=false; clearTimeout(voiceTimer);
+  $('micBtn').classList.remove('rec');
+  $('voiceOverlay').classList.remove('on');
+  $('di').classList.remove('voice');
+  $('voiceStat').textContent='WHISPER LISTENING';
+  if(result){
+    cur=result.val; expr=result.expr; doReset=true;
+    pushHistory(result.expr+' '+result.val);
+    refresh();
+    showToast('「'+result.heard+'」');
+  }
+}
+
+/* ════════════════════════════════════════════
+   Toast
+   ════════════════════════════════════════════ */
+let _tt;
+function showToast(msg) {
+  const t=$('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ════════════════════════════════════════════
+   Keyboard shortcuts (desktop)
+   ════════════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  if (e.key>='0'&&e.key<='9') { inputNum(e.key); return; }
+  switch(e.key){
+    case '.': inputDot();break;
+    case '+': setOp('+');break;
+    case '-': setOp('−');break;
+    case '*': setOp('×');break;
+    case '/': e.preventDefault(); setOp('÷');break;
+    case 'Enter': case '=': calculate();break;
+    case 'Escape': clearAll();break;
+    case 'Backspace': backspace();break;
+    case 's': sci_direct('sin');break;
+    case 'c': sci_direct('cos');break;
+    case 't': sci_direct('tan');break;
+    case 'l': sci_direct('log10');break;
+    case 'n': sci_direct('ln');break;
+    case 'r': sci_direct('sqrt');break;
+    case 'p': cur=String(Math.PI);expr='π';doReset=false;refresh();break;
+  }
+});
+
+/* ════════════════════════════════════════════
+   Init
+   ════════════════════════════════════════════ */
+// Init 2nd button labels
+document.querySelectorAll('.btn-sci .lbl-2nd').forEach(el => {
+  el.style.display = 'none';
+});
+refresh();
+</script>
+</body>
+</html>
