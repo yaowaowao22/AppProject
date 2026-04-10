@@ -90,7 +90,7 @@ if [ -z "\$WORKSPACE" ]; then
   echo "  ✗ .xcworkspace が見つかりません"
   exit 1
 fi
-SCHEME=\$(xcodebuild -list -workspace "\$WORKSPACE" 2>/dev/null | awk '/Schemes:/,0' | grep -v 'Schemes:' | grep -v '^\$' | head -1 | xargs)
+SCHEME=\${WORKSPACE%.xcworkspace}
 echo "  workspace: \$WORKSPACE  scheme: \$SCHEME"
 
 # xcodebuild — ログファイルに全出力、フィルタ表示は別途
