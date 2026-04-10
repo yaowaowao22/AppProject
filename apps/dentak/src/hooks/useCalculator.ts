@@ -47,6 +47,7 @@ export function useCalculator() {
     memory,
     stack,
     openParens,
+    isSecond,
   } = useCalculatorStore(
     useShallow((s) => ({
       current:    s.current,
@@ -75,6 +76,7 @@ export function useCalculator() {
     backspace,
     toggleSign,
     percent,
+    toggleIsSecond,
   } = useCalculatorStore(
     useShallow((s) => ({
       inputDigit:       s.inputDigit,
