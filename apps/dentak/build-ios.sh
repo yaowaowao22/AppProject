@@ -96,12 +96,16 @@ export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 security unlock-keychain -p "$MAC_PASS" ~/Library/Keychains/login.keychain-db 2>/dev/null && echo "  keychain unlocked" || echo "  keychain unlock failed (continuing)"
 
-pkill -f xcodebuild 2>/dev/null || true
-pkill -f XCBBuildService 2>/dev/null || true
-pkill -f ibtoold 2>/dev/null || true
+pkill -9 -f xcodebuild 2>/dev/null || true
+pkill -9 -f SWBBuildService 2>/dev/null || true
+pkill -9 -f XCBBuildService 2>/dev/null || true
+pkill -9 -f ibtoold 2>/dev/null || true
 kill -STOP \$(pgrep -x mds_stores 2>/dev/null) 2>/dev/null || true
 kill -STOP \$(pgrep -x mediaanalysisd 2>/dev/null) 2>/dev/null || true
-sleep 1
+for i in 1 2 3 4 5; do
+  pgrep -f xcodebuild >/dev/null 2>&1 || break
+  sleep 1
+done
 find "$MAC_BUILD_OUT/Build/Intermediates.noindex" -name "*.dia" -delete 2>/dev/null || true
 rm -rf "$MAC_BUILD_OUT/Build/Intermediates.noindex/XCBuildData" 2>/dev/null || true
 
@@ -122,7 +126,7 @@ echo "  free: \$(vm_stat | grep 'Pages free' | awk '{print int(\$3)*4/1024}') MB
 BUILD_LOG=/tmp/dentak_xcode.log
 : > \$BUILD_LOG
 
-nohup xcodebuild \\
+xcodebuild \\
   -workspace "\$WORKSPACE" \\
   -scheme "\$SCHEME" \\
   -configuration Release \\
