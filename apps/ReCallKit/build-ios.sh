@@ -6,10 +6,10 @@
 set -euo pipefail
 
 SSH_KEY="$HOME/.ssh/id_ed25519_mac"
-SSH_HOST="mac@192.168.11.10"
-MAC_PROJECT="/Users/mac/Desktop/APPProject/APP/AppProject"
-IOS_DIR="/Users/mac/Desktop/APPProject/APP/AppProject/apps/ReCallKit/ios"
-MAC_BUILD_OUT="/Users/mac/Desktop/ReCallKit-ssh-build"  # Xcode GUIと競合しない別フォルダ
+SSH_HOST="mac@macnoMac-mini.local"
+MAC_PROJECT="/Users/mac/AppProject/APP/AppProject"
+IOS_DIR="/Users/mac/AppProject/APP/AppProject/apps/ReCallKit/ios"
+MAC_BUILD_OUT="/Users/mac/builds/ReCallKit-ssh-build"  # Xcode GUIと競合しない別フォルダ
 SCHEME="ReCallKit"
 DEVICE_ID="2291EDE3-F144-5AE0-BE21-DF702A7E69DB"  # iPhone 13
 REPO_ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
