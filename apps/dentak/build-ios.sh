@@ -51,14 +51,16 @@ echo ""
 echo "▶ [3/5] Mac: pnpm install + expo prebuild --clean + pod install..."
 ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<PREBUILD_EOF
 set -euo pipefail
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 echo "  pnpm install (workspace root)..."
 cd $MAC_PROJECT && pnpm install
 echo "  expo prebuild --clean..."
-cd $APP_DIR && npx expo prebuild --platform ios --clean
+cd $APP_DIR && npx expo prebuild --platform ios --clean --no-install
 echo "  pod install..."
-cd ios && pod install
+cd $APP_DIR/ios && pod install
 echo "PREBUILD_DONE"
 PREBUILD_EOF
 echo "  ✓ prebuild + pod install 完了"
