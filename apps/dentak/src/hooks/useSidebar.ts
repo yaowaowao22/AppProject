@@ -146,9 +146,6 @@ export function useSidebar(): SidebarHook {
 
   const overlayStyle = useAnimatedStyle(() => ({
     opacity: overlayOpacity.value,
-    // RN 0.76 以降: style 上の pointerEvents が有効
-    // opacity=0 の時はタッチ貫通、opacity>0 の時は遮蔽
-    pointerEvents: overlayOpacity.value > 0 ? 'auto' : 'none',
   }));
 
   return {

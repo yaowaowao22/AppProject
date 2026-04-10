@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   Dimensions,
   ScrollView,
@@ -193,8 +193,7 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ isVisible, onClose }) => 
 
   const overlayStyle = useAnimatedStyle(() => ({
     opacity: overlayOpacity.value,
-    pointerEvents: overlayOpacity.value > 0 ? 'auto' : 'none',
-  } as any));
+  }));
 
   const handleClose = useCallback(() => {
     overlayOpacity.value = withTiming(0, { duration: SHEET_DURATION, easing: EASING_OUT });
@@ -205,7 +204,13 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ isVisible, onClose }) => 
     );
   }, [onClose, overlayOpacity, translateY]);
 
+  // 初回マウント時は isVisible=false でも handleClose() を呼ばない
+  const hasMountedRef = useRef(false);
   useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
     if (isVisible) {
       translateY.value = withTiming(0, { duration: SHEET_DURATION, easing: EASING_OUT });
       overlayOpacity.value = withTiming(1, { duration: SHEET_DURATION, easing: EASING_OUT });

@@ -56,8 +56,8 @@ const VoiceOverlay = memo(function VoiceOverlay({
       {/* Prompt label */}
       <Text style={styles.prompt}>話しかけてください</Text>
 
-      {/* Waveform */}
-      <WaveformView size="large" />
+      {/* Waveform — isVisible のときだけ描画（18本の無限アニメーションを抑制） */}
+      {isVisible && <WaveformView size="large" />}
 
       {/* Partial transcription text — shown while Whisper streams results */}
       {partialText.length > 0 && (
