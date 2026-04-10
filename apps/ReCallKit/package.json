@@ -8,7 +8,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "build:ios": "bash build-ios.sh"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity": "^3.1020.0",

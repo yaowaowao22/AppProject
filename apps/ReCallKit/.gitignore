@@ -6,3 +6,7 @@ package-lock.json
 *.gguf
 *.bin
 lambda/models/
+
+# デバッグ用スクリーンショット
+mac_*.png
+ws*.png
