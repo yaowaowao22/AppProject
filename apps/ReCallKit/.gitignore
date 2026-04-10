@@ -10,3 +10,6 @@ lambda/models/
 # デバッグ用スクリーンショット
 mac_*.png
 ws*.png
+
+# ローカル秘密情報（gitに入れない）
+.env.local
