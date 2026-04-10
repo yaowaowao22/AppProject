@@ -26,7 +26,6 @@
       }
     },
     "plugins": [
-      "expo-face-detector",
       "expo-camera",
       "expo-media-library",
       "expo-image-picker"
