@@ -37,6 +37,7 @@ echo ">> [2/4] Mac: git pull..."
 # shellcheck disable=SC2086
 ssh $SSH_OPTS "$SSH_HOST" "bash -s" <<PULL_EOF
 cd $MAC_PROJECT
+git checkout -- apps/dentak/build-ios.sh 2>/dev/null || true
 if ! git diff --quiet; then
   echo "(stashing local changes...)"
   git stash push -m "build-ios auto-stash"
@@ -102,7 +103,7 @@ kill -STOP \$(pgrep -x mds_stores 2>/dev/null) 2>/dev/null || true
 kill -STOP \$(pgrep -x mediaanalysisd 2>/dev/null) 2>/dev/null || true
 sleep 1
 find "$MAC_BUILD_OUT/Build/Intermediates.noindex" -name "*.dia" -delete 2>/dev/null || true
-rm -f "$MAC_BUILD_OUT/Build/Intermediates.noindex/XCBuildData/build.db" 2>/dev/null || true
+rm -rf "$MAC_BUILD_OUT/Build/Intermediates.noindex/XCBuildData" 2>/dev/null || true
 
 echo "$MAC_PASS" | sudo -S purge 2>/dev/null && echo "  memory purged" || true
 echo "  free after purge: \$(vm_stat | grep 'Pages free' | awk '{print int(\$3)*4/1024}') MB"
