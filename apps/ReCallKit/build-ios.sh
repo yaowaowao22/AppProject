@@ -14,6 +14,16 @@ SCHEME="ReCallKit"
 DEVICE_ID="2291EDE3-F144-5AE0-BE21-DF702A7E69DB"  # iPhone 13
 REPO_ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 
+# .env.local からパスワード読み込み（MAC_PASS 環境変数で上書き可）
+ENV_FILE="$(dirname "$0")/.env.local"
+if [ -f "$ENV_FILE" ]; then
+  source "$ENV_FILE"
+fi
+if [ -z "${MAC_PASS:-}" ]; then
+  echo "⚠ MAC_PASS が未設定です。.env.local に MAC_PASS=<password> を追加してください。"
+  exit 1
+fi
+
 echo ""
 echo "▶ [1/4] git push..."
 git -C "$REPO_ROOT" push
@@ -38,20 +48,30 @@ PULL_EOF
 echo "  ✓ pull 完了"
 
 echo ""
-echo "▶ [3/4] Mac: xcodebuild (Debug / real device → $MAC_BUILD_OUT)..."
+echo "▶ [3/4] Mac: xcodebuild (Release / real device → $MAC_BUILD_OUT)..."
 ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<BUILD_EOF
 set -euo pipefail
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
+# キーチェーンアンロック（SSH経由のコード署名に必要）
+security unlock-keychain -p "$MAC_PASS" ~/Library/Keychains/login.keychain-db 2>/dev/null && echo "  ✓ keychain unlocked" || echo "  ⚠ keychain unlock failed (続行)"
+
+# ロック中のビルドプロセスを事前に終了（build.db競合防止）
+pkill -f xcodebuild 2>/dev/null || true
+pkill -f XCBBuildService 2>/dev/null || true
+sleep 1
+rm -f "$MAC_BUILD_OUT/Build/Intermediates.noindex/XCBuildData/build.db" 2>/dev/null || true
+
 cd "$IOS_DIR"
 
 xcodebuild \\
   -workspace ReCallKit.xcworkspace \\
   -scheme $SCHEME \\
-  -configuration Debug \\
+  -configuration Release \\
   -destination "generic/platform=iOS" \\
   -derivedDataPath "$MAC_BUILD_OUT" \\
   -allowProvisioningUpdates \\
-  build 2>&1 | grep -E "error:|warning: |BUILD |Compiling|Linking|^\*\*" | tail -40
+  build 2>&1 | xcbeautify --quiet
 
 echo "BUILD_DONE"
 BUILD_EOF
@@ -63,7 +83,7 @@ ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<INSTALL_EOF
 set -euo pipefail
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
-APP_PATH=\$(find "$MAC_BUILD_OUT" -name "ReCallKit.app" -path "*/Debug-iphoneos/*" 2>/dev/null | head -1)
+APP_PATH=\$(find "$MAC_BUILD_OUT" -name "ReCallKit.app" -path "*/Release-iphoneos/*" 2>/dev/null | head -1)
 if [ -z "\$APP_PATH" ]; then
   echo "  ✗ .app ファイルが見つかりません"
   exit 1
