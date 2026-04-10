@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# build-ios.sh  -- push → Mac pull → xcodebuild build → iPhone install
+# build-ios.sh  -- push → Mac pull → npm/pod install → xcodebuild → iPhone install
 # 使い方: bash apps/ougonApp/build-ios.sh
 # ============================================================
 set -euo pipefail
@@ -11,6 +11,7 @@ MAC_PROJECT="/Users/mac/AppProject/baseProject"
 APP_DIR="$MAC_PROJECT/apps/ougonApp"
 IOS_DIR="$APP_DIR/ios"
 MAC_BUILD_OUT="/Users/mac/builds/ougonApp-build"
+BUILD_LOG="/tmp/xcodebuild-ougonApp.log"
 DEVICE_ID="2291EDE3-F144-5AE0-BE21-DF702A7E69DB"  # iPhone 13
 REPO_ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 
@@ -25,12 +26,12 @@ if [ -z "${MAC_PASS:-}" ]; then
 fi
 
 echo ""
-echo "▶ [1/4] git push..."
+echo "▶ [1/5] git push..."
 git -C "$REPO_ROOT" push
 echo "  ✓ push 完了"
 
 echo ""
-echo "▶ [2/4] Mac: git pull..."
+echo "▶ [2/5] Mac: git pull..."
 ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<PULL_EOF
 cd $MAC_PROJECT
 if ! git diff --quiet; then
@@ -48,7 +49,24 @@ PULL_EOF
 echo "  ✓ pull 完了"
 
 echo ""
-echo "▶ [3/4] Mac: xcodebuild build (Release / real device)..."
+echo "▶ [3/5] Mac: npm install + pod install..."
+ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<DEPS_EOF
+set -euo pipefail
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+export LANG=en_US.UTF-8
+
+cd "$APP_DIR"
+echo "  npm install..."
+npm install --prefer-offline 2>&1 | tail -3
+
+cd "$IOS_DIR"
+echo "  pod install..."
+pod install 2>&1 | tail -5
+DEPS_EOF
+echo "  ✓ 依存関係インストール完了"
+
+echo ""
+echo "▶ [4/5] Mac: xcodebuild build (Release / real device)..."
 ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<BUILD_EOF
 set -euo pipefail
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -67,7 +85,7 @@ sleep 1
 find "$MAC_BUILD_OUT" -name "build.db*" -delete 2>/dev/null || true
 
 cd "$IOS_DIR"
-WORKSPACE=\$(ls *.xcworkspace 2>/dev/null | head -1)
+WORKSPACE=\$(ls -d *.xcworkspace 2>/dev/null | head -1)
 if [ -z "\$WORKSPACE" ]; then
   echo "  ✗ .xcworkspace が見つかりません"
   exit 1
@@ -75,6 +93,8 @@ fi
 SCHEME=\$(xcodebuild -list -workspace "\$WORKSPACE" 2>/dev/null | awk '/Schemes:/,0' | grep -v 'Schemes:' | grep -v '^\$' | head -1 | xargs)
 echo "  workspace: \$WORKSPACE  scheme: \$SCHEME"
 
+# xcodebuild — ログファイルに全出力、フィルタ表示は別途
+set +e
 xcodebuild \\
   -workspace "\$WORKSPACE" \\
   -scheme "\$SCHEME" \\
@@ -88,19 +108,26 @@ xcodebuild \\
   "OTHER_CODE_SIGN_FLAGS=--keychain ~/Library/Keychains/login.keychain-db" \\
   COMPILER_INDEX_STORE_ENABLE=NO \\
   GCC_GENERATE_DEBUGGING_SYMBOLS=NO \\
-  2>&1 | grep -E "^(Build|Compile|Link|Sign|error:|warning: .*error|PhaseScript|Bundle|SUCCEEDED|FAILED)" || true
+  > "$BUILD_LOG" 2>&1
+STATUS=\$?
+set -e
 
-STATUS=\${PIPESTATUS[0]}
+# ビルド結果のフィルタ表示
+grep -E "(error:|warning:.*error|SUCCEEDED|FAILED|BUILD)" "$BUILD_LOG" | tail -20 || true
+
 if [ \$STATUS -ne 0 ]; then
+  echo ""
   echo "  ✗ xcodebuild FAILED (exit \$STATUS)"
+  echo "  --- last 40 lines of build log ---"
+  tail -40 "$BUILD_LOG"
   exit 1
 fi
-echo "BUILD_DONE"
+echo "  ✓ BUILD SUCCEEDED"
 BUILD_EOF
 echo "  ✓ ビルド完了"
 
 echo ""
-echo "▶ [4/4] Mac: iPhone にインストール..."
+echo "▶ [5/5] Mac: iPhone にインストール..."
 ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<INSTALL_EOF
 set -euo pipefail
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -116,7 +143,7 @@ xcrun devicectl device install app \\
   --device $DEVICE_ID \\
   "\$APP_PATH" 2>&1
 
-echo "INSTALL_DONE"
+echo "  ✓ INSTALL DONE"
 INSTALL_EOF
 
 echo ""
