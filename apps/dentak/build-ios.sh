@@ -103,6 +103,7 @@ xcodebuild \\
   -destination "generic/platform=iOS" \\
   -derivedDataPath "$MAC_BUILD_OUT" \\
   -allowProvisioningUpdates \\
+  -jobs 2 \\
   DEVELOPMENT_TEAM=PVM8Q8HG54 \\
   CODE_SIGN_STYLE=Automatic \\
   build 2>&1 | xcbeautify --quiet 2>&1 | tee \$BUILD_LOG
