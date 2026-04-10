@@ -240,6 +240,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.xs,
     marginTop: 16,
+    alignSelf: 'center',
+    width: '50%',
   },
   startButtonText: {
     color: '#FFFFFF',
