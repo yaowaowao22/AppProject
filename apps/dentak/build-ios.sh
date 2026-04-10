@@ -129,6 +129,8 @@ xcodebuild \\
   -jobs 1 \\
   DEVELOPMENT_TEAM=PVM8Q8HG54 \\
   CODE_SIGN_STYLE=Automatic \\
+  CLANG_ENABLE_EXPLICIT_MODULES=NO \\
+  COMPILER_INDEX_STORE_ENABLE=NO \\
   build > \$BUILD_LOG 2>&1
 BUILD_EXIT=\$?
 set -e
