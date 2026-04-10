@@ -6,9 +6,9 @@
 set -euo pipefail
 
 SSH_KEY="$HOME/.ssh/id_ed25519_mac"
-SSH_HOST="mac@192.168.11.10"
-MAC_PROJECT="/Users/mac/Desktop/APPProject/APP/AppProject"
-IPA_OUT="/Users/mac/Desktop/ReCallKit-release.ipa"
+SSH_HOST="mac@macnoMac-mini.local"
+MAC_PROJECT="/Users/mac/AppProject/APP/AppProject"
+IPA_OUT="/Users/mac/builds/ReCallKit-release.ipa"
 REPO_ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 
 # .env.local からパスワード読み込み
