@@ -1,4 +1,4 @@
-import { create, all, BigNumber } from 'mathjs';
+import { create, all } from 'mathjs';
 
 const math = create(all);
 math.config({ number: 'BigNumber', precision: 64 });
@@ -71,8 +71,8 @@ export function evaluate(expr: string, angleUnit: AngleUnit): string {
     if (typeof result === 'boolean') return result.toString();
 
     const num: number =
-      result instanceof math.BigNumber
-        ? (result as BigNumber).toNumber()
+      math.isBigNumber(result)
+        ? result.toNumber()
         : typeof result === 'number'
         ? result
         : Number(result);
@@ -82,8 +82,8 @@ export function evaluate(expr: string, angleUnit: AngleUnit): string {
     }
 
     // BigNumber の精度を保ったまま文字列化
-    if (result instanceof math.BigNumber) {
-      return (result as BigNumber).toString();
+    if (math.isBigNumber(result)) {
+      return result.toString();
     }
 
     return String(num);
