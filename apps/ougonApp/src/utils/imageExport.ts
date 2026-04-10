@@ -1,6 +1,6 @@
 import * as MediaLibrary from 'expo-media-library';
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
 /**
@@ -17,8 +17,8 @@ export async function saveToGallery(uri: string): Promise<string> {
     throw new Error('メディアライブラリへのアクセスが許可されていません');
   }
 
-  const asset = await MediaLibrary.saveToLibraryAsync(safeUri);
-  return asset?.uri ?? safeUri;
+  await MediaLibrary.saveToLibraryAsync(safeUri);
+  return safeUri;
 }
 
 /**
