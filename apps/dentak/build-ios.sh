@@ -8,6 +8,7 @@ set -euo pipefail
 
 SSH_KEY="$HOME/.ssh/id_ed25519_mac"
 SSH_HOST="mac@macnoMac-mini.local"
+SSH_OPTS="-i $HOME/.ssh/id_ed25519_mac -o IdentitiesOnly=yes -o ServerAliveInterval=60 -o ServerAliveCountMax=30"
 MAC_PROJECT="/Users/mac/AppProject/APP/AppProject"
 APP_DIR="$MAC_PROJECT/apps/dentak"
 IOS_DIR="$APP_DIR/ios"
@@ -34,7 +35,7 @@ echo "  ✓ push 完了"
 
 echo ""
 echo "▶ [2/4] Mac: git pull..."
-ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<PULL_EOF
+ssh $SSH_OPTS "$SSH_HOST" "bash -s" <<PULL_EOF
 cd $MAC_PROJECT
 if ! git diff --quiet; then
   echo "  (ローカル変更をstash中...)"
@@ -55,7 +56,7 @@ echo "  ✓ pull 完了"
 # --force-prebuild フラグまたは ios/ が存在しない場合は実行
 NEED_PREBUILD=$FORCE_PREBUILD
 if [ "$NEED_PREBUILD" -eq 0 ]; then
-  IOS_EXISTS=$(ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" \
+  IOS_EXISTS=$(ssh $SSH_OPTS "$SSH_HOST" \
     "[ -f '$IOS_DIR/Podfile.lock' ] && echo yes || echo no" 2>/dev/null)
   if [ "$IOS_EXISTS" != "yes" ]; then
     echo "  ios/Podfile.lock が存在しないため prebuild を実行します"
@@ -66,7 +67,7 @@ fi
 if [ "$NEED_PREBUILD" -eq 1 ]; then
   echo ""
   echo "▶ [3/4-pre] Mac: pnpm install + expo prebuild + pod install..."
-  ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<PREBUILD_EOF
+  ssh $SSH_OPTS "$SSH_HOST" "bash -s" <<PREBUILD_EOF
 set -euo pipefail
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
@@ -88,7 +89,7 @@ fi
 
 echo ""
 echo "▶ [3/4] Mac: xcodebuild (Release / real device → $MAC_BUILD_OUT)..."
-ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<BUILD_EOF
+ssh $SSH_OPTS "$SSH_HOST" "bash -s" <<BUILD_EOF
 set -euo pipefail
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
@@ -100,7 +101,8 @@ pkill -f xcodebuild 2>/dev/null || true
 pkill -f XCBBuildService 2>/dev/null || true
 pkill -f ibtoold 2>/dev/null || true
 sleep 1
-rm -f "$MAC_BUILD_OUT/Build/Intermediates.noindex/XCBuildData/build.db" 2>/dev/null || true
+# 前回のOOMkillで壊れた中間ファイルを削除
+rm -rf "$MAC_BUILD_OUT/Build/Intermediates.noindex" 2>/dev/null || true
 
 # メモリ解放
 echo "$MAC_PASS" | sudo -S purge 2>/dev/null && echo "  ✓ memory purged" || true
@@ -143,7 +145,7 @@ echo "  ✓ ビルド完了"
 
 echo ""
 echo "▶ [4/4] Mac: iPhone にインストール..."
-ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<INSTALL_EOF
+ssh $SSH_OPTS "$SSH_HOST" "bash -s" <<INSTALL_EOF
 set -euo pipefail
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
