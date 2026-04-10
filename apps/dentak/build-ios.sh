@@ -85,7 +85,7 @@ ls "$IOS_DIR" 2>&1 || { echo "  ✗ IOS_DIR does not exist!"; exit 1; }
 cd "$IOS_DIR"
 
 # .xcworkspace と スキーム名を動的取得
-WORKSPACE=\$(ls *.xcworkspace 2>/dev/null | head -1)
+WORKSPACE=\$(ls -d *.xcworkspace 2>/dev/null | head -1)
 if [ -z "\$WORKSPACE" ]; then
   echo "  ✗ .xcworkspace が見つかりません（expo prebuild 失敗の可能性）"
   exit 1
