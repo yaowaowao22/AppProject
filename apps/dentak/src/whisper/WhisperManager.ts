@@ -39,7 +39,7 @@ class WhisperManager {
         return;
       }
 
-      this.context = await initWhisper(modelPath);
+      this.context = await initWhisper({ filePath: modelPath });
       console.log('[WhisperManager] initialized with model:', modelPath);
     } catch (err) {
       console.warn('[WhisperManager] initialize failed:', err);

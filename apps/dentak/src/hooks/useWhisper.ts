@@ -97,59 +97,65 @@ export function useWhisper(): UseWhisperReturn {
   }, [processAndApply, clearTimer]);
 
   const startListening = useCallback(async () => {
-    // ── リセット ──────────────────────────────────────
-    setError(null);
-    setPartialText('');
-    setFinalText('');
-    partialTextRef.current = '';
-    processedRef.current   = false;
-
-    setVoiceState('requesting_permission');
-
-    // ── マイク権限 (Just-in-Time) ─────────────────────
-    const { status } = await Audio.requestPermissionsAsync();
-    if (status !== 'granted') {
-      setVoiceState('idle');
-      setError('マイク権限が必要です');
-      return;
-    }
-
-    setVoiceState('listening');
-
-    // ── 30 秒タイムアウト ─────────────────────────────
-    // stopListening に依存させず、refs を直接参照してインライン実行
-    timeoutRef.current = setTimeout(() => {
-      if (sessionRef.current) {
-        sessionRef.current.stop();
-        sessionRef.current = null;
-      }
-      processAndApply(partialTextRef.current);
-    }, TIMEOUT_MS);
-
-    // ── ストリーミング開始 ────────────────────────────
     try {
-      const session = await WhisperManager.getInstance().startStreaming({
-        language:        voiceLang,
-        maxDurationSec:  30,
-        onPartialResult: (text) => {
-          setPartialText(text);
-          partialTextRef.current = text;
-        },
-        onFinalResult: (text) => {
-          // ネイティブ whisper.rn がストリーム完了時にここを呼ぶ
-          partialTextRef.current = text;
-          processAndApply(text);
-        },
-        onError: (_err) => {
-          clearTimer();
-          processedRef.current = true; // 以降の processAndApply 呼び出しを封鎖
-          setError('認識に失敗しました');
-          setVoiceState('idle');
-        },
-      });
-      sessionRef.current = session;
+      // ── リセット ──────────────────────────────────────
+      setError(null);
+      setPartialText('');
+      setFinalText('');
+      partialTextRef.current = '';
+      processedRef.current   = false;
+
+      setVoiceState('requesting_permission');
+
+      // ── マイク権限 (Just-in-Time) ─────────────────────
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        setVoiceState('idle');
+        setError('マイク権限が必要です');
+        return;
+      }
+
+      setVoiceState('listening');
+
+      // ── 30 秒タイムアウト ─────────────────────────────
+      // stopListening に依存させず、refs を直接参照してインライン実行
+      timeoutRef.current = setTimeout(() => {
+        if (sessionRef.current) {
+          sessionRef.current.stop();
+          sessionRef.current = null;
+        }
+        processAndApply(partialTextRef.current);
+      }, TIMEOUT_MS);
+
+      // ── ストリーミング開始 ────────────────────────────
+      try {
+        const session = await WhisperManager.getInstance().startStreaming({
+          language:        voiceLang,
+          maxDurationSec:  30,
+          onPartialResult: (text) => {
+            setPartialText(text);
+            partialTextRef.current = text;
+          },
+          onFinalResult: (text) => {
+            // ネイティブ whisper.rn がストリーム完了時にここを呼ぶ
+            partialTextRef.current = text;
+            processAndApply(text);
+          },
+          onError: (_err) => {
+            clearTimer();
+            processedRef.current = true; // 以降の processAndApply 呼び出しを封鎖
+            setError('認識に失敗しました');
+            setVoiceState('idle');
+          },
+        });
+        sessionRef.current = session;
+      } catch (_err) {
+        clearTimer();
+        setError('録音を開始できませんでした');
+        setVoiceState('idle');
+      }
     } catch (_err) {
-      clearTimer();
+      // Audio.requestPermissionsAsync などの予期しない例外をキャッチ
       setError('録音を開始できませんでした');
       setVoiceState('idle');
     }

@@ -120,6 +120,9 @@ export function useModelManager(): UseModelManagerReturn {
         downloadedModels: [...s.downloadedModels, id],
         downloadProgress: { ...s.downloadProgress, [id]: null },
       }));
+
+      // WhisperManager を初期化（非同期・失敗してもDL完了扱いは維持）
+      void WhisperManager.getInstance().initialize(destPath);
     } catch (err) {
       // 失敗: 進捗リセットのみ（ファイルが残っていれば次回 DL で上書き）
       useModelStore.setState((s) => ({

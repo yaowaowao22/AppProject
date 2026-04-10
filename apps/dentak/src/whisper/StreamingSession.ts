@@ -9,6 +9,8 @@ export class StreamingSession {
   private options: StreamingOptions;
   private stopFlag: boolean = false;
   private mockTimer: ReturnType<typeof setTimeout> | null = null;
+  /** whisper.rn transcribeRealtime の stop 関数（ネイティブ停止用） */
+  private nativeStop: (() => Promise<void>) | null = null;
 
   constructor(context: WhisperContext, options: StreamingOptions) {
     this.context = context;
@@ -24,46 +26,35 @@ export class StreamingSession {
     }
 
     try {
-      const { promise, stop } = await this.context.transcribeRealtime({
-        realtimeAudioSec: 3,
+      // whisper.rn 0.5.5: transcribeRealtime は { stop, subscribe } を返す
+      const { stop, subscribe } = await this.context.transcribeRealtime({
+        realtimeAudioSec: this.options.maxDurationSec ?? 30,
         language: this.options.language === 'auto' ? undefined : this.options.language,
-        maxLen: 0,
       });
 
-      // セグメント更新をサブスクライブ
-      let lastText = '';
-      promise
-        .then((result: any) => {
-          const finalText: string = result?.result ?? '';
-          this.options.onFinalResult(finalText);
-        })
-        .catch((err: Error) => {
-          this.options.onError(err);
-        });
+      this.nativeStop = stop;
 
-      // onNewSegments / subscribe パターンに対応
-      if (typeof promise.subscribe === 'function') {
-        promise.subscribe(({ isCapturing, segments }: any) => {
-          const partial: string = (segments ?? [])
-            .map((s: any) => s.text ?? '')
-            .join(' ')
-            .trim();
-
-          if (partial !== lastText) {
-            lastText = partial;
-            this.options.onPartialResult(partial);
-          }
-
-          if (!isCapturing) {
-            this.options.onFinalResult(partial);
-          }
-        });
-      }
+      // subscribe コールバックで部分結果・完了結果を受信
+      subscribe((event: any) => {
+        if (event.error) {
+          this.options.onError(new Error(event.error));
+          return;
+        }
+        const text: string = event.data?.result ?? '';
+        if (!event.isCapturing) {
+          // ストリーミング完了
+          this.options.onFinalResult(text);
+        } else if (text) {
+          // 部分認識結果
+          this.options.onPartialResult(text);
+        }
+      });
 
       // タイムアウト制御
       const maxMs = (this.options.maxDurationSec ?? 30) * 1000;
       this.mockTimer = setTimeout(() => {
-        if (typeof stop === 'function') stop();
+        void this.nativeStop?.();
+        this.nativeStop = null;
       }, maxMs);
     } catch (err) {
       console.warn('[StreamingSession] transcribeRealtime failed, falling back to mock:', err);
@@ -76,6 +67,10 @@ export class StreamingSession {
     if (this.mockTimer !== null) {
       clearTimeout(this.mockTimer);
       this.mockTimer = null;
+    }
+    if (this.nativeStop) {
+      void this.nativeStop();
+      this.nativeStop = null;
     }
   }
 
