@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 import { useCalculatorStore } from '../store/calculatorStore';
@@ -35,9 +35,6 @@ function countDisplayDigits(formatted: string): number {
 // ── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useCalculator() {
-  // ── Local UI state ───────────────────────────────────────────────────────
-  const [isSecond, setIsSecond] = useState(false);
-
   // ── Calculator store (state only, shallow for minimal re-renders) ────────
   const {
     current,
@@ -62,6 +59,7 @@ export function useCalculator() {
       memory:     s.memory,
       stack:      s.stack,
       openParens: s.openParens,
+      isSecond:   s.isSecond,
     })),
   );
 
@@ -89,6 +87,7 @@ export function useCalculator() {
       backspace:        s.backspace,
       toggleSign:       s.toggleSign,
       percent:          s.percent,
+      toggleIsSecond:   s.toggleIsSecond,
     })),
   );
 
@@ -126,11 +125,6 @@ export function useCalculator() {
     if (digits <= 12) return 'md';
     return 'sm';
   }, [formattedDisplay]);
-
-  // ── Toggle isSecond ──────────────────────────────────────────────────────
-  const toggleIsSecond = useCallback(() => {
-    setIsSecond((v) => !v);
-  }, []);
 
   // ── Real function evaluation (bypasses store stub) ───────────────────────
   /**

@@ -41,6 +41,10 @@ export interface CalculatorStore {
   backspace:        () => void;
   toggleSign:       () => void;
   percent:          () => void;
+
+  // 2nd モード (SciRow ラベル切り替え / Keyboard → SciRow へ伝播)
+  isSecond:         boolean;
+  toggleIsSecond:   () => void;
 }
 
 const INITIAL_STATE = {
@@ -54,6 +58,7 @@ const INITIAL_STATE = {
   memory:      0,
   stack:       [] as number[],
   openParens:  0,
+  isSecond:    false,
 };
 
 export const useCalculatorStore = create<CalculatorStore>((set, get) => ({
@@ -213,4 +218,6 @@ export const useCalculatorStore = create<CalculatorStore>((set, get) => ({
       return { current: next };
     });
   },
+
+  toggleIsSecond: () => set((s) => ({ isSecond: !s.isSecond })),
 }));
