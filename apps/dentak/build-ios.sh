@@ -101,6 +101,8 @@ xcodebuild \\
   -destination "generic/platform=iOS" \\
   -derivedDataPath "$MAC_BUILD_OUT" \\
   -allowProvisioningUpdates \\
+  DEVELOPMENT_TEAM=PVM8Q8HG54 \\
+  CODE_SIGN_STYLE=Automatic \\
   build 2>&1 | xcbeautify 2>&1 || {
     echo "  ✗ xcodebuild FAILED — showing last 50 lines of build log:"
     find "$MAC_BUILD_OUT/Logs/Build" -name "*.xcactivitylog" 2>/dev/null | sort | tail -1 | xargs gunzip -c 2>/dev/null | strings | tail -50
