@@ -8,7 +8,8 @@ set -euo pipefail
 SSH_KEY="$HOME/.ssh/id_ed25519_mac"
 SSH_HOST="mac@192.168.11.10"
 MAC_PROJECT="/Users/mac/Desktop/APPProject/APP/AppProject"
-IOS_DIR="$MAC_PROJECT/apps/ReCallKit/ios"
+IOS_DIR="/Users/mac/Desktop/APPProject/APP/AppProject/apps/ReCallKit/ios"
+MAC_BUILD_OUT="/Users/mac/Desktop/ReCallKit-ssh-build"  # Xcode GUIと競合しない別フォルダ
 SCHEME="ReCallKit"
 DEVICE_ID="2291EDE3-F144-5AE0-BE21-DF702A7E69DB"  # iPhone 13
 REPO_ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
@@ -37,7 +38,7 @@ PULL_EOF
 echo "  ✓ pull 完了"
 
 echo ""
-echo "▶ [3/4] Mac: xcodebuild (Debug / real device)..."
+echo "▶ [3/4] Mac: xcodebuild (Debug / real device → $MAC_BUILD_OUT)..."
 ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<BUILD_EOF
 set -euo pipefail
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -48,8 +49,9 @@ xcodebuild \\
   -scheme $SCHEME \\
   -configuration Debug \\
   -destination "generic/platform=iOS" \\
+  -derivedDataPath "$MAC_BUILD_OUT" \\
   -allowProvisioningUpdates \\
-  build 2>&1 | grep -E "error:|warning: |BUILD |Compiling|Linking|^\\*\\*" | tail -40
+  build 2>&1 | grep -E "error:|warning: |BUILD |Compiling|Linking|^\*\*" | tail -40
 
 echo "BUILD_DONE"
 BUILD_EOF
@@ -61,7 +63,7 @@ ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<INSTALL_EOF
 set -euo pipefail
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
-APP_PATH=\$(find ~/Library/Developer/Xcode/DerivedData -name "ReCallKit.app" -path "*/Debug-iphoneos/*" 2>/dev/null | head -1)
+APP_PATH=\$(find "$MAC_BUILD_OUT" -name "ReCallKit.app" -path "*/Debug-iphoneos/*" 2>/dev/null | head -1)
 if [ -z "\$APP_PATH" ]; then
   echo "  ✗ .app ファイルが見つかりません"
   exit 1
