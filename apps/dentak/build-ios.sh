@@ -53,11 +53,10 @@ ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<PREBUILD_EOF
 set -euo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
-cd $APP_DIR
-echo "  pnpm install..."
-pnpm install
+echo "  pnpm install (workspace root)..."
+cd $MAC_PROJECT && pnpm install
 echo "  expo prebuild --clean..."
-npx expo prebuild --platform ios --clean
+cd $APP_DIR && npx expo prebuild --platform ios --clean
 echo "  pod install..."
 cd ios && pod install
 echo "PREBUILD_DONE"
