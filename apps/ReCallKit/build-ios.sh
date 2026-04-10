@@ -19,8 +19,20 @@ echo "  ✓ push 完了"
 
 echo ""
 echo "▶ [2/3] Mac: git pull..."
-ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" \
-  "cd $MAC_PROJECT && git pull --ff-only 2>&1"
+ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<PULL_EOF
+cd $MAC_PROJECT
+STASHED=0
+if ! git diff --quiet; then
+  echo "  (ローカル変更をstash中...)"
+  git stash push -m "build-ios auto-stash"
+  STASHED=1
+fi
+git pull --ff-only 2>&1
+if [ "\$STASHED" -eq 1 ]; then
+  echo "  (stash復元中...)"
+  git stash pop || echo "  ⚠ stash pop failed (競合の可能性)"
+fi
+PULL_EOF
 echo "  ✓ pull 完了"
 
 echo ""
