@@ -9,13 +9,17 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
+import type { CompositeNavigationProp } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useHistory } from '../../hooks/useHistory';
 import type { HistoryRecord } from '../../types/history';
+import type { HistoryStackParamList, RootTabParamList } from '../../navigation/types';
 
-// --- Navigation types (inline until RootNavigator is wired up) ---
-type NavProp = {
-  navigate: (screen: string, params?: Record<string, unknown>) => void;
-};
+type NavProp = CompositeNavigationProp<
+  NativeStackNavigationProp<HistoryStackParamList, 'History'>,
+  BottomTabNavigationProp<RootTabParamList>
+>;
 
 type Props = {
   navigation: NavProp;
@@ -169,7 +173,7 @@ export default function HistoryScreen({ navigation }: Props) {
 
   const handlePress = useCallback(
     (record: HistoryRecord) => {
-      navigation.navigate('Editor', { record: record as unknown as Record<string, unknown> });
+      navigation.navigate('HistoryDetail', { record });
     },
     [navigation],
   );
@@ -184,7 +188,7 @@ export default function HistoryScreen({ navigation }: Props) {
         <Text style={styles.navTitle}>加工履歴</Text>
         <TouchableOpacity
           style={styles.navBtn}
-          onPress={() => navigation.navigate('Upload')}
+          onPress={() => navigation.navigate('EditorStack', { screen: 'Upload' })}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Text style={styles.navBtnPlus}>＋</Text>
