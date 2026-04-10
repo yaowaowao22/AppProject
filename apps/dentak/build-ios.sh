@@ -101,7 +101,7 @@ pkill -f ibtoold 2>/dev/null || true
 kill -STOP \$(pgrep -x mds_stores 2>/dev/null) 2>/dev/null || true
 kill -STOP \$(pgrep -x mediaanalysisd 2>/dev/null) 2>/dev/null || true
 sleep 1
-rm -rf "$MAC_BUILD_OUT/Build/Intermediates.noindex" 2>/dev/null || true
+find "$MAC_BUILD_OUT/Build/Intermediates.noindex" -name "*.dia" -delete 2>/dev/null || true
 
 echo "$MAC_PASS" | sudo -S purge 2>/dev/null && echo "  memory purged" || true
 echo "  free after purge: \$(vm_stat | grep 'Pages free' | awk '{print int(\$3)*4/1024}') MB"
