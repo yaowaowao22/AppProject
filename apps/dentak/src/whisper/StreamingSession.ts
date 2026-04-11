@@ -37,7 +37,7 @@ export class StreamingSession {
       // transcribeRealtime が resolve した後に stop() が呼ばれていた場合は即座に停止する
       // （start() 待機中に stop() → nativeStop が null のまま終わる競合を防ぐ）
       if (this.stopFlag) {
-        void this.nativeStop();
+        void stop();
         this.nativeStop = null;
         return;
       }
