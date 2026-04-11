@@ -11,6 +11,7 @@ import {
   Pressable,
   StyleSheet,
   Alert,
+  TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,6 +29,10 @@ import {
   subscribeDownloadState,
   type ModelDownloadState,
 } from '../../services/localAnalysisService';
+import { getDatabase } from '../../db/connection';
+import { getSetting, setSetting, type LlmProvider } from '../../db/settingsRepository';
+import { GROQ_MODELS, GROQ_DEFAULT_MODEL_ID, isValidGroqApiKey } from '../../config/groq';
+import { LOCAL_AI_ENABLED } from '../../config/localAI';
 
 // ============================================================
 // コンポーネント
@@ -41,6 +46,31 @@ export function AIModelScreen() {
   const [activeModelId, setActiveModelIdState] = useState<string>('');
   const [downloadState, setDownloadState] = useState<ModelDownloadState | null>(null);
 
+  // ── LLMプロバイダー設定 ──
+  const [provider, setProvider] = useState<LlmProvider>('local');
+  const [groqApiKey, setGroqApiKey] = useState<string>('');
+  const [groqApiKeyDraft, setGroqApiKeyDraft] = useState<string>('');
+  const [groqModel, setGroqModel] = useState<string>(GROQ_DEFAULT_MODEL_ID);
+  const [showGroqKey, setShowGroqKey] = useState(false);
+
+  // プロバイダー設定を DB から読み込む
+  const loadProviderSettings = useCallback(async () => {
+    const db = await getDatabase();
+    const rawProvider = (await getSetting(db, 'llm_provider')).trim();
+    const resolved: LlmProvider =
+      rawProvider === 'local' || rawProvider === 'bedrock' || rawProvider === 'groq'
+        ? rawProvider
+        : LOCAL_AI_ENABLED
+          ? 'local'
+          : 'bedrock';
+    setProvider(resolved);
+    const key = await getSetting(db, 'groq_api_key');
+    setGroqApiKey(key);
+    setGroqApiKeyDraft(key);
+    const model = (await getSetting(db, 'groq_model')).trim();
+    setGroqModel(model.length > 0 ? model : GROQ_DEFAULT_MODEL_ID);
+  }, []);
+
   // インストール状態を再読み込み
   const refreshStatus = useCallback(async () => {
     const activeId = await getActiveModelId();
@@ -53,7 +83,45 @@ export function AIModelScreen() {
 
   useEffect(() => {
     refreshStatus();
-  }, [refreshStatus]);
+    loadProviderSettings();
+  }, [refreshStatus, loadProviderSettings]);
+
+  // プロバイダー切替
+  const handleProviderChange = useCallback(async (next: LlmProvider) => {
+    if (next === 'groq' && !isValidGroqApiKey(groqApiKey)) {
+      Alert.alert(
+        'Groq APIキーが未設定です',
+        '下のGroq設定欄にAPIキー（gsk_...）を入力して「キーを保存」を押してから、Groqを選択してください。',
+      );
+      return;
+    }
+    const db = await getDatabase();
+    await setSetting(db, 'llm_provider', next);
+    setProvider(next);
+  }, [groqApiKey]);
+
+  // Groq APIキー保存
+  const handleSaveGroqKey = useCallback(async () => {
+    const trimmed = groqApiKeyDraft.trim();
+    if (trimmed.length > 0 && !isValidGroqApiKey(trimmed)) {
+      Alert.alert(
+        'APIキー形式が不正です',
+        'Groq の API キーは "gsk_" で始まる英数字です。コピペミスがないか確認してください。',
+      );
+      return;
+    }
+    const db = await getDatabase();
+    await setSetting(db, 'groq_api_key', trimmed);
+    setGroqApiKey(trimmed);
+    Alert.alert('保存しました', trimmed.length > 0 ? 'Groq APIキーを保存しました' : 'Groq APIキーをクリアしました');
+  }, [groqApiKeyDraft]);
+
+  // Groq モデル切替
+  const handleGroqModelChange = useCallback(async (modelId: string) => {
+    const db = await getDatabase();
+    await setSetting(db, 'groq_model', modelId);
+    setGroqModel(modelId);
+  }, []);
 
   // グローバルダウンロード状態を購読
   useEffect(() => {
@@ -106,11 +174,141 @@ export function AIModelScreen() {
     setActiveModelIdState(modelId);
   }, []);
 
+  const providerOptions: { id: LlmProvider; label: string; desc: string }[] = [
+    { id: 'local', label: 'ローカルAI', desc: 'デバイス内で実行（オフライン可・初回DL必要）' },
+    { id: 'bedrock', label: 'AWS Bedrock', desc: 'Claude 3 Haiku（Lambda経由）' },
+    { id: 'groq', label: 'Groq API', desc: 'Llama 3.3 70B（要APIキー・高速）' },
+  ];
+
   return (
     <ScrollView
       style={{ backgroundColor: colors.backgroundGrouped }}
       contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + Spacing.xl }]}
     >
+      {/* ── プロバイダー選択 ───────────────────────────────── */}
+      <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
+        解析プロバイダー
+      </Text>
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.separator, borderWidth: StyleSheet.hairlineWidth }, CardShadow]}>
+        {providerOptions.map((opt, idx) => {
+          const isSelected = provider === opt.id;
+          return (
+            <React.Fragment key={opt.id}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.providerRow,
+                  { opacity: pressed ? 0.6 : 1 },
+                ]}
+                onPress={() => handleProviderChange(opt.id)}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.modelName, { color: colors.label }]}>{opt.label}</Text>
+                  <Text style={[styles.description, { color: colors.labelSecondary }]}>
+                    {opt.desc}
+                  </Text>
+                </View>
+                <Ionicons
+                  name={isSelected ? 'radio-button-on' : 'radio-button-off'}
+                  size={22}
+                  color={isSelected ? colors.accent : colors.labelTertiary}
+                />
+              </Pressable>
+              {idx < providerOptions.length - 1 && (
+                <View style={[styles.providerDivider, { backgroundColor: colors.separator }]} />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </View>
+
+      {/* ── Groq 詳細設定 (Groq 選択時 または APIキー未設定時に表示) ── */}
+      {(provider === 'groq' || groqApiKey.length === 0) && (
+        <>
+          <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
+            Groq 設定
+          </Text>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.separator, borderWidth: StyleSheet.hairlineWidth }, CardShadow]}>
+            <Text style={[styles.description, { color: colors.labelSecondary }]}>
+              Groq Cloud の API キーを貼り付けてください (console.groq.com で無料作成可)。キーは端末内 SQLite に保存されます。
+            </Text>
+
+            <View style={[styles.keyInputWrap, { borderColor: colors.separator, backgroundColor: colors.backgroundGrouped }]}>
+              <TextInput
+                style={[styles.keyInput, { color: colors.label }]}
+                placeholder="gsk_..."
+                placeholderTextColor={colors.labelTertiary}
+                value={groqApiKeyDraft}
+                onChangeText={setGroqApiKeyDraft}
+                autoCapitalize="none"
+                autoCorrect={false}
+                secureTextEntry={!showGroqKey}
+                spellCheck={false}
+              />
+              <Pressable
+                onPress={() => setShowGroqKey((v) => !v)}
+                style={({ pressed }) => [styles.eyeBtn, { opacity: pressed ? 0.5 : 1 }]}
+                hitSlop={8}
+              >
+                <Ionicons
+                  name={showGroqKey ? 'eye-off-outline' : 'eye-outline'}
+                  size={18}
+                  color={colors.labelSecondary}
+                />
+              </Pressable>
+            </View>
+
+            <View style={styles.keyButtonRow}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.btn,
+                  { backgroundColor: colors.accent, opacity: pressed ? 0.7 : 1 },
+                ]}
+                onPress={handleSaveGroqKey}
+              >
+                <Ionicons name="save-outline" size={15} color="#fff" />
+                <Text style={styles.btnTextLight}>キーを保存</Text>
+              </Pressable>
+            </View>
+
+            {/* モデルピッカー */}
+            <Text style={[styles.description, { color: colors.labelSecondary, marginTop: Spacing.xs }]}>
+              使用モデル
+            </Text>
+            <View style={styles.modelSelectWrap}>
+              {GROQ_MODELS.map((m) => {
+                const isActive = groqModel === m.id;
+                return (
+                  <Pressable
+                    key={m.id}
+                    style={({ pressed }) => [
+                      styles.groqModelChip,
+                      {
+                        backgroundColor: isActive ? colors.accent + '14' : colors.backgroundGrouped,
+                        borderColor: isActive ? colors.accent : colors.separator,
+                        opacity: pressed ? 0.7 : 1,
+                      },
+                    ]}
+                    onPress={() => handleGroqModelChange(m.id)}
+                  >
+                    <Text
+                      style={[
+                        TypeScale.caption1,
+                        { color: isActive ? colors.accent : colors.label, fontWeight: '600' },
+                      ]}
+                    >
+                      {m.name}
+                    </Text>
+                    <Text style={[TypeScale.caption2, { color: colors.labelSecondary }]}>
+                      {m.description}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </>
+      )}
+
       <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
         使用モデル
       </Text>
@@ -395,5 +593,53 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.m,
     marginTop: Spacing.s,
     lineHeight: 16,
+  },
+
+  // ── プロバイダー選択 ──
+  providerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.s,
+    paddingVertical: Spacing.s,
+  },
+  providerDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 2,
+  },
+
+  // ── Groq 設定 ──
+  keyInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.s,
+    paddingHorizontal: Spacing.s,
+    marginTop: Spacing.xs,
+  },
+  keyInput: {
+    flex: 1,
+    ...TypeScale.body,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+  },
+  eyeBtn: {
+    padding: 6,
+  },
+  keyButtonRow: {
+    flexDirection: 'row',
+    marginTop: Spacing.xs,
+  },
+  modelSelectWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginTop: 2,
+  },
+  groqModelChip: {
+    borderRadius: Radius.s,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.s,
+    paddingVertical: 6,
+    minWidth: 140,
   },
 });

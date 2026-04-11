@@ -1,36 +1,62 @@
 // ============================================================
 // URL解析統合パイプライン
-// LOCAL_AI_ENABLED = true  → llama.rn（デバイス内Gemma 4 on-device）
-// LOCAL_AI_ENABLED = false → Bedrock（Claude 3 Haiku via Lambda）
+//
+// 実行時プロバイダー選択 (DB設定 llm_provider):
+//   'local'   → llama.rn (デバイス内 Gemma 4 / Llama 3.2 等)
+//   'bedrock' → AWS Lambda + Claude 3 Haiku
+//   'groq'    → Groq API + Llama 3.3 70B (BYOK)
+//   ''        → DB未設定。compile-time LOCAL_AI_ENABLED にフォールバック
+//                (既存ユーザーの挙動を変えないための後方互換)
 // ============================================================
 
+import { getDatabase } from '../db/connection';
+import { getSetting, type LlmProvider } from '../db/settingsRepository';
 import { isAwsConfigured } from '../config/aws';
 import { LOCAL_AI_ENABLED } from '../config/localAI';
 import { analyzeUrl } from './bedrockAnalysisService';
+import { analyzeUrlGroq } from './groqAnalysisService';
 import { analyzeUrlLocal } from './localAnalysisService';
 import type { AnalysisResult } from '../types/analysis';
 
 export type PipelineResult = AnalysisResult & { sourceUrl: string };
 
 /**
- * URLを受け取り、設定に応じてローカルAIまたはBedrock経由でQ&A解析する。
- *
- * LOCAL_AI_ENABLED = true の場合:
- *   App → HTML取得 → Ollama（Gemma 4）→ JSON
- * LOCAL_AI_ENABLED = false の場合:
- *   App → Lambda → Bedrock（Claude 3 Haiku）→ JSON
+ * 現在選択されているプロバイダーを解決する。
+ * DB未設定 (空文字) なら LOCAL_AI_ENABLED で決定する後方互換。
+ */
+async function resolveProvider(): Promise<LlmProvider> {
+  const db = await getDatabase();
+  const raw = (await getSetting(db, 'llm_provider')).trim();
+  if (raw === 'local' || raw === 'bedrock' || raw === 'groq') {
+    return raw;
+  }
+  return LOCAL_AI_ENABLED ? 'local' : 'bedrock';
+}
+
+/**
+ * URLを受け取り、設定に応じて local / Bedrock / Groq のいずれかで Q&A 解析する。
  */
 export async function analyzeUrlPipeline(
   url: string,
-  onProgress?: (currentChunk: number, totalChunks: number, chunkQaCount?: number, totalQaCount?: number) => void,
+  onProgress?: (
+    currentChunk: number,
+    totalChunks: number,
+    chunkQaCount?: number,
+    totalQaCount?: number,
+  ) => void,
   jobId?: number,
 ): Promise<PipelineResult> {
+  const provider = await resolveProvider();
   let result: AnalysisResult;
 
-  if (LOCAL_AI_ENABLED) {
-    console.log('[urlAnalysisPipeline] ローカルAI（llama.rn + Gemma 4）モードで解析:', url);
+  if (provider === 'local') {
+    console.log('[urlAnalysisPipeline] ローカルAI（llama.rn）モードで解析:', url);
     result = await analyzeUrlLocal(url, onProgress, jobId);
+  } else if (provider === 'groq') {
+    console.log('[urlAnalysisPipeline] Groq APIモードで解析:', url);
+    result = await analyzeUrlGroq(url, onProgress);
   } else {
+    // bedrock
     if (!isAwsConfigured()) {
       throw new Error(
         'AWS設定が未完了です。Cognito Identity Pool IDとLambda Function URLを設定してください',
