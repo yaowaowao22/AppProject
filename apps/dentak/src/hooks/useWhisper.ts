@@ -10,7 +10,6 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system/legacy';
 import WhisperManager from '../whisper/WhisperManager';
-import { StreamingSession } from '../whisper/StreamingSession';
 import { parseVoiceInput } from '../whisper/voiceParser';
 import type { ParseResult } from '../whisper/voiceParser';
 import { useSettingsStore } from '../store/settingsStore';
@@ -28,19 +27,14 @@ export type VoiceState =
 
 export interface UseWhisperReturn {
   voiceState:     VoiceState;
-  /** ストリーミング中の部分認識テキスト */
   partialText:    string;
-  /** 確定テキスト（processing 完了後にセット） */
   finalText:      string;
-  /** エラーメッセージ（null = エラーなし） */
   error:          string | null;
   startListening: () => Promise<void>;
   stopListening:  () => void;
 }
 
-/** タイムアウト: settingsStore 由来ではなくハードコード 30 秒 */
 const TIMEOUT_MS = 30_000;
-/** applied → idle の遷移待機時間 */
 const APPLIED_LINGER_MS = 800;
 
 export function useWhisper(): UseWhisperReturn {
@@ -49,19 +43,16 @@ export function useWhisper(): UseWhisperReturn {
   const [finalText, setFinalText]     = useState('');
   const [error, setError]             = useState<string | null>(null);
 
-  // Mutable refs — コールバック内で最新値を参照（再レンダリング不要）
-  const sessionRef     = useRef<StreamingSession | null>(null);
-  const recordingRef   = useRef<Audio.Recording | null>(null);
   const partialTextRef = useRef('');
-  /** 二重実行防止フラグ: onFinalResult / stopListening / timeout の競合を抑制 */
   const processedRef   = useRef(false);
   const timeoutRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** transcribeRealtime の stop 関数 */
+  const nativeStopRef  = useRef<(() => Promise<void>) | null>(null);
+  /** 診断用イベントカウント */
+  const eventCountRef  = useRef(0);
 
-  const voiceLang       = useSettingsStore((s) => s.voiceLang);
+  const voiceLang        = useSettingsStore((s) => s.voiceLang);
   const applyVoiceResult = useCalculatorStore((s) => s.applyVoiceResult);
-
-  // stopListening を ref 経由でタイムアウトから参照（useCallback の依存循環を避ける）
-  const stopListeningRef = useRef<() => Promise<void>>(async () => {});
 
   const clearTimer = useCallback(() => {
     if (timeoutRef.current !== null) {
@@ -70,22 +61,14 @@ export function useWhisper(): UseWhisperReturn {
     }
   }, []);
 
-  /**
-   * テキストをパースして calculatorStore に反映する。
-   * processedRef で二重実行を防止（onFinalResult / timeout / stopListening のいずれが
-   * 最初に呼んでも 1 回だけ実行される）。
-   */
   const processAndApply = useCallback(
     (text: string) => {
       if (processedRef.current) return;
       processedRef.current = true;
-
       clearTimer();
 
-      // 空文字 = Whisper が何も認識できなかった → セッション診断付きエラー
       if (!text.trim()) {
-        const diag = sessionRef.current?.getDiag() ?? 'session=null';
-        setError(`空結果 [${diag}]`);
+        setError(`空結果 (events=${eventCountRef.current})`);
         setVoiceState('idle');
         return;
       }
@@ -102,54 +85,18 @@ export function useWhisper(): UseWhisperReturn {
     [applyVoiceResult, clearTimer],
   );
 
-  /** 手動停止: 録音停止 → whisper.rn transcribe → 結果を反映 */
-  const stopListening = useCallback(async () => {
+  const stopListening = useCallback(() => {
     clearTimer();
-
-    const recording = recordingRef.current;
-    recordingRef.current = null;
-
-    if (!recording) {
+    if (nativeStopRef.current) {
+      void nativeStopRef.current();
+      nativeStopRef.current = null;
+    }
+    // native stop 後に onFinalResult が呼ばれるので、
+    // そこで processAndApply が走る。ただし即座に呼ばれない場合の保険:
+    setTimeout(() => {
       processAndApply(partialTextRef.current);
-      return;
-    }
-
-    try {
-      setVoiceState('processing');
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      if (!uri) {
-        setError('録音ファイルが見つかりません');
-        setVoiceState('idle');
-        return;
-      }
-
-      // whisper.rn の file transcribe で認識
-      const manager = WhisperManager.getInstance();
-      const ctx = manager.getContext();
-      if (!ctx || typeof ctx.transcribe !== 'function') {
-        setError(`transcribe未対応 (ctx=${!!ctx})`);
-        setVoiceState('idle');
-        return;
-      }
-
-      const { promise } = ctx.transcribe(uri, {
-        language: voiceLang === 'auto' ? undefined : voiceLang,
-      });
-      const result = await promise;
-      const text = result?.data?.result?.trim() ?? '';
-
-      processAndApply(text);
-    } catch (err) {
-      setError(`認識失敗: ${err instanceof Error ? err.message : String(err)}`);
-      setVoiceState('idle');
-    }
-  }, [voiceLang, processAndApply, clearTimer]);
-
-  // ref を最新の stopListening に同期（タイムアウト用）
-  useEffect(() => {
-    stopListeningRef.current = stopListening;
-  }, [stopListening]);
+    }, 500);
+  }, [processAndApply, clearTimer]);
 
   const startListening = useCallback(async () => {
     try {
@@ -159,10 +106,12 @@ export function useWhisper(): UseWhisperReturn {
       setFinalText('');
       partialTextRef.current = '';
       processedRef.current   = false;
+      eventCountRef.current  = 0;
+      nativeStopRef.current  = null;
 
       setVoiceState('requesting_permission');
 
-      // ── マイク権限 (Just-in-Time) ─────────────────────
+      // ── マイク権限 ─────────────────────────────────────
       const { status } = await Audio.requestPermissionsAsync();
       if (status !== 'granted') {
         setVoiceState('idle');
@@ -173,25 +122,26 @@ export function useWhisper(): UseWhisperReturn {
       setVoiceState('listening');
 
       // ── 30 秒タイムアウト ─────────────────────────────
-      // stopListening に依存させず、refs を直接参照してインライン実行
       timeoutRef.current = setTimeout(() => {
-        // タイムアウト時は stopListening を直接呼ぶ（録音停止→transcribe）
-        void stopListeningRef.current();
+        if (nativeStopRef.current) {
+          void nativeStopRef.current();
+          nativeStopRef.current = null;
+        }
+        processAndApply(partialTextRef.current);
       }, TIMEOUT_MS);
 
-      // ── WhisperManager 未初期化時の自動初期化 ────────────
+      // ── WhisperManager 自動初期化 ────────────────────
       const manager = WhisperManager.getInstance();
       const { activeModelId, downloadedModels } = useModelStore.getState();
       const modelPath = downloadedModels.includes(activeModelId)
         ? getLocalModelPath(activeModelId)
         : null;
 
-      // モデルファイル実在チェック
       if (modelPath) {
         const fileInfo = await FileSystem.getInfoAsync(modelPath);
         if (!fileInfo.exists) {
           clearTimer();
-          setError(`モデルファイル不在: ${activeModelId} @ ${modelPath}`);
+          setError(`モデルファイル不在: ${activeModelId}`);
           setVoiceState('idle');
           return;
         }
@@ -200,7 +150,7 @@ export function useWhisper(): UseWhisperReturn {
       if (!manager.isReady()) {
         if (!modelPath) {
           clearTimer();
-          setError(`モデル未DL (models=${JSON.stringify(downloadedModels)}, active=${activeModelId})`);
+          setError(`モデル未DL (active=${activeModelId})`);
           setVoiceState('idle');
           return;
         }
@@ -216,67 +166,64 @@ export function useWhisper(): UseWhisperReturn {
 
       if (!manager.isReady()) {
         clearTimer();
-        setError(`whisper.rn未リンク (model=${activeModelId}, path=${modelPath ?? 'none'})`);
+        setError('whisper.rn未リンク');
         setVoiceState('idle');
         return;
       }
 
-      // ── 録音＋認識（expo-av録音 → whisper.rn file transcribe） ──
-      // transcribeRealtime が AVAudioEngine 起動に失敗するため、
-      // expo-av で録音 → ファイルを whisper.rn の transcribe() に渡す方式にフォールバック
+      // ── transcribeRealtime（audioSessionOnStartIos で録音セッション設定）──
+      const ctx = manager.getContext();
       try {
-        const recording = new Audio.Recording();
-        recordingRef.current = recording;
-        await recording.prepareToRecordAsync({
-          isMeteringEnabled: false,
-          android: {
-            extension: '.wav',
-            outputFormat: 3, // THREE_GPP -> PCM container
-            audioEncoder: 1, // DEFAULT
-            sampleRate: 16000,
-            numberOfChannels: 1,
-            bitRate: 256000,
+        const { stop, subscribe } = await ctx.transcribeRealtime({
+          language: voiceLang === 'auto' ? undefined : voiceLang,
+          realtimeAudioSec: 30,
+          // whisper.rn 自身に iOS AudioSession を PlayAndRecord に設定させる
+          audioSessionOnStartIos: {
+            category: 'PlayAndRecord',
+            options: ['DefaultToSpeaker', 'AllowBluetooth'],
+            mode: 'Default',
+            active: true,
           },
-          ios: {
-            extension: '.wav',
-            outputFormat: 'linearPCM' as any,
-            audioQuality: 127, // MAX
-            sampleRate: 16000,
-            numberOfChannels: 1,
-            bitRate: 256000,
-            linearPCMBitDepth: 16,
-            linearPCMIsBigEndian: false,
-            linearPCMIsFloat: false,
-          },
-          web: {},
+          audioSessionOnStopIos: 'restore',
         });
-        await recording.startAsync();
-      } catch (recErr) {
+
+        nativeStopRef.current = stop;
+
+        subscribe((event: any) => {
+          eventCountRef.current++;
+          if (event.error) {
+            clearTimer();
+            processedRef.current = true;
+            setError(`認識エラー: ${event.error}`);
+            setVoiceState('idle');
+            return;
+          }
+          const text: string = event.data?.result ?? '';
+          if (!event.isCapturing) {
+            partialTextRef.current = text;
+            processAndApply(text);
+          } else if (text.trim()) {
+            setPartialText(text);
+            partialTextRef.current = text;
+          }
+        });
+      } catch (rtErr) {
         clearTimer();
-        setError(`録音開始失敗: ${recErr instanceof Error ? recErr.message : String(recErr)}`);
+        setError(`realtime失敗: ${rtErr instanceof Error ? rtErr.message : String(rtErr)}`);
         setVoiceState('idle');
       }
     } catch (_err) {
-      // Audio.requestPermissionsAsync などの予期しない例外をキャッチ
       setError('録音を開始できませんでした');
       setVoiceState('idle');
     }
   }, [voiceLang, processAndApply, clearTimer]);
 
-  // アンマウント時のクリーンアップ
-  // ⚠️ WhisperManager.release() はここで呼ばない。
-  // release() を呼ぶと context が null になり、次回マウント時に startStreaming() が
-  // モックモードへフォールバックしてしまう（モデル切替時は switchModel() 経由で release → initialize）。
   useEffect(() => {
     return () => {
       clearTimer();
-      if (sessionRef.current) {
-        sessionRef.current.stop();
-        sessionRef.current = null;
-      }
-      if (recordingRef.current) {
-        recordingRef.current.stopAndUnloadAsync().catch(() => {});
-        recordingRef.current = null;
+      if (nativeStopRef.current) {
+        void nativeStopRef.current();
+        nativeStopRef.current = null;
       }
     };
   }, [clearTimer]);
