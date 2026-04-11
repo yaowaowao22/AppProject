@@ -19,3 +19,5 @@ ios/
 !apps/*/modules/**/ios/
 # Lambda デプロイアーティファクト (aws lambda update-function-code で生成される zip)
 apps/*/lambda/*/*.zip
+# ビルドスクリプトのネイティブ変化検出キャッシュ (build-ios.sh が書き込む)
+apps/*/.build-cache/
