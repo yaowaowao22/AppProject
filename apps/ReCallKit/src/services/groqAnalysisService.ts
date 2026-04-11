@@ -477,17 +477,31 @@ async function callGroqViaLambda(
 }
 
 // ============================================================
-// レート制限対策: call間最小間隔の強制
+// レート制限対策 — 2段構え
 //
-// Groq Free Tier: 30 RPM (requests per minute) = 2 秒/req が上限
-// 多段補填ループで連続 call すると瞬時に 429 を食らうため、前回 call 時刻を
-// モジュールレベルで保持し、次 call 前に GROQ_MIN_CALL_INTERVAL_MS を保証する。
+// Groq Free Tier: 30 RPM (requests per minute) = 2 秒/req が上限。
+// 多段補填ループで連続 call すると瞬時に 429 を食らう。
 //
-// BYOK Dev Tier でも保守的に同じ間隔を守る (実害は最大 2.5 秒の遅延のみ)。
+// [1] 事前間隔制御 (enforceGroqRateLimit):
+//     前回 call から GROQ_MIN_CALL_INTERVAL_MS 経過していない場合は sleep。
+//     正常系で 429 を発生させない防御策。
+//
+// [2] 429 検出時の指数バックオフ retry (callGroq のループ):
+//     それでも 429 が返った場合は exponential backoff で最大 MAX_RETRIES 回
+//     再試行する。並行する他プロセス (別端末等) が Groq を叩いていた場合や
+//     サーバー側の一時的な混雑に対応するための「再送処理」。
+//
+// BYOK Dev Tier でも保守的に同じ扱い (実害は待機時間のみ)。
 // ============================================================
 
-/** call間の最小間隔 (ms)。30 RPM = 2 秒 + 0.5 秒の安全マージン */
+/** call 間の最小間隔 (ms)。30 RPM = 2 秒 + 0.5 秒の安全マージン */
 const GROQ_MIN_CALL_INTERVAL_MS = 2_500;
+
+/** 429 発生時の retry 最大回数 */
+const GROQ_MAX_RETRIES = 4;
+
+/** retry 初回 backoff (ms)。attempt 毎に 2 倍される (5s → 10s → 20s → 40s) */
+const GROQ_INITIAL_BACKOFF_MS = 5_000;
 
 /** 最後に Groq API を叩いた epoch ms。プロセス起動時は 0 */
 let lastGroqCallAt = 0;
@@ -499,25 +513,89 @@ async function enforceGroqRateLimit(): Promise<void> {
   const wait = GROQ_MIN_CALL_INTERVAL_MS - elapsed;
   if (wait > 0) {
     console.log(
-      `[groqAnalysis] rate limit: 前回 call から ${elapsed}ms → ${wait}ms 待機`,
+      `[groqAnalysis] rate limit (pre): 前回 call から ${elapsed}ms → ${wait}ms 待機`,
     );
     await new Promise((resolve) => setTimeout(resolve, wait));
   }
   lastGroqCallAt = Date.now();
 }
 
-/** 統合 callGroq: レート制限遵守 + モードに応じて直接 or Lambda に振り分け */
+/** エラーが Groq の 429 / レート制限系かどうか判定 */
+function isGroqRateLimitError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const msg = err.message;
+  // throwHttpError が投げる日本語メッセージ、または Groq 側の英語メッセージを検出
+  return (
+    msg.includes('レート上限') ||
+    msg.includes('429') ||
+    /rate[\s_-]?limit/i.test(msg) ||
+    /too many requests/i.test(msg)
+  );
+}
+
+/**
+ * 統合 callGroq: 事前間隔制御 + モード振り分け + 429 時の指数バックオフ retry
+ *
+ * 再試行ポリシー:
+ *   attempt 0 → 失敗(429) → 5 秒待機
+ *   attempt 1 → 失敗(429) → 10 秒待機
+ *   attempt 2 → 失敗(429) → 20 秒待機
+ *   attempt 3 → 失敗(429) → 40 秒待機
+ *   attempt 4 → 失敗(429) → 諦めて throw
+ *
+ * 合計最大待機 = 75 秒 (Lambda 55s timeout とは独立、クライアント側での待機)
+ */
 async function callGroq(
   config: GroqRuntimeConfig,
   systemPrompt: string,
   userMessage: string,
   maxTokens: number,
 ): Promise<string> {
-  await enforceGroqRateLimit();
-  if (config.mode === 'byok') {
-    return callGroqDirect(config.apiKey, config.model, systemPrompt, userMessage, maxTokens);
+  let lastErr: unknown = null;
+
+  for (let attempt = 0; attempt <= GROQ_MAX_RETRIES; attempt++) {
+    await enforceGroqRateLimit();
+
+    try {
+      if (config.mode === 'byok') {
+        return await callGroqDirect(
+          config.apiKey,
+          config.model,
+          systemPrompt,
+          userMessage,
+          maxTokens,
+        );
+      }
+      return await callGroqViaLambda(config.model, systemPrompt, userMessage, maxTokens);
+    } catch (err) {
+      lastErr = err;
+
+      // 429 以外はリトライしない (認証エラー・サイズオーバー等は retry しても無駄)
+      if (!isGroqRateLimitError(err)) {
+        throw err;
+      }
+
+      // 429: リトライ上限到達なら諦める
+      if (attempt >= GROQ_MAX_RETRIES) {
+        console.warn(
+          `[groqAnalysis] 429 retry 上限到達 (${GROQ_MAX_RETRIES + 1} 回試行失敗)`,
+        );
+        break;
+      }
+
+      // 429: 指数バックオフで待機
+      const backoff = GROQ_INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+      console.warn(
+        `[groqAnalysis] 429 検出 (attempt ${attempt + 1}/${GROQ_MAX_RETRIES + 1}) → ${backoff}ms 待機して再試行`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, backoff));
+    }
   }
-  return callGroqViaLambda(config.model, systemPrompt, userMessage, maxTokens);
+
+  // retry 上限到達。最後のエラーを投げる
+  throw lastErr instanceof Error
+    ? lastErr
+    : new Error('Groq API呼び出しが失敗しました (retry 上限到達)');
 }
 
 // ============================================================
