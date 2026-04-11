@@ -33,6 +33,7 @@ import { getDatabase } from '../../db/connection';
 import { getSetting, setSetting, type LlmProvider } from '../../db/settingsRepository';
 import { GROQ_MODELS, GROQ_DEFAULT_MODEL_ID, isValidGroqApiKey } from '../../config/groq';
 import { LOCAL_AI_ENABLED } from '../../config/localAI';
+import { getSecureValue, setSecureValue } from '../../services/secureStorage';
 
 // ============================================================
 // コンポーネント
@@ -48,12 +49,13 @@ export function AIModelScreen() {
 
   // ── LLMプロバイダー設定 ──
   const [provider, setProvider] = useState<LlmProvider>('local');
-  const [groqApiKey, setGroqApiKey] = useState<string>('');
+  const [groqUseByok, setGroqUseByok] = useState<boolean>(false);  // false=Lambda proxy
+  const [groqApiKey, setGroqApiKey] = useState<string>('');         // SecureStoreから読み込み
   const [groqApiKeyDraft, setGroqApiKeyDraft] = useState<string>('');
   const [groqModel, setGroqModel] = useState<string>(GROQ_DEFAULT_MODEL_ID);
   const [showGroqKey, setShowGroqKey] = useState(false);
 
-  // プロバイダー設定を DB から読み込む
+  // プロバイダー設定を DB + SecureStore から読み込む
   const loadProviderSettings = useCallback(async () => {
     const db = await getDatabase();
     const rawProvider = (await getSetting(db, 'llm_provider')).trim();
@@ -64,9 +66,15 @@ export function AIModelScreen() {
           ? 'local'
           : 'bedrock';
     setProvider(resolved);
-    const key = await getSetting(db, 'groq_api_key');
+
+    const byokRaw = (await getSetting(db, 'groq_use_byok')).trim().toLowerCase();
+    setGroqUseByok(byokRaw === 'true');
+
+    // 機微なキーは SecureStore から (SQLiteには無い)
+    const key = await getSecureValue('groq_api_key');
     setGroqApiKey(key);
     setGroqApiKeyDraft(key);
+
     const model = (await getSetting(db, 'groq_model')).trim();
     setGroqModel(model.length > 0 ? model : GROQ_DEFAULT_MODEL_ID);
   }, []);
@@ -87,20 +95,35 @@ export function AIModelScreen() {
   }, [refreshStatus, loadProviderSettings]);
 
   // プロバイダー切替
+  // Lambda proxy モード (default) なら キー不要で即切替可能。
+  // BYOK モード時だけ SecureStore に有効なキーが入っているか検証。
   const handleProviderChange = useCallback(async (next: LlmProvider) => {
-    if (next === 'groq' && !isValidGroqApiKey(groqApiKey)) {
+    if (next === 'groq' && groqUseByok && !isValidGroqApiKey(groqApiKey)) {
       Alert.alert(
-        'Groq APIキーが未設定です',
-        '下のGroq設定欄にAPIキー（gsk_...）を入力して「キーを保存」を押してから、Groqを選択してください。',
+        '自前の Groq APIキーが未設定です',
+        '上級者モードでは自前の gsk_ キーが必須です。キーを保存するか、上級者モードをOFFにして Lambda 経由に戻してください。',
       );
       return;
     }
     const db = await getDatabase();
     await setSetting(db, 'llm_provider', next);
     setProvider(next);
+  }, [groqUseByok, groqApiKey]);
+
+  // 上級者モード (BYOK) トグル
+  const handleToggleByok = useCallback(async (next: boolean) => {
+    const db = await getDatabase();
+    await setSetting(db, 'groq_use_byok', next ? 'true' : 'false');
+    setGroqUseByok(next);
+    if (next && groqApiKey.length === 0) {
+      Alert.alert(
+        '自前キーを入力してください',
+        '上級者モードをONにしました。下の入力欄に Groq の自前キー (gsk_...) を入力して保存してください。',
+      );
+    }
   }, [groqApiKey]);
 
-  // Groq APIキー保存
+  // Groq APIキー保存 (SecureStore 経由)
   const handleSaveGroqKey = useCallback(async () => {
     const trimmed = groqApiKeyDraft.trim();
     if (trimmed.length > 0 && !isValidGroqApiKey(trimmed)) {
@@ -110,10 +133,15 @@ export function AIModelScreen() {
       );
       return;
     }
-    const db = await getDatabase();
-    await setSetting(db, 'groq_api_key', trimmed);
+    // SecureStore (iOS Keychain / Android Keystore) に保存。SQLite には入れない。
+    await setSecureValue('groq_api_key', trimmed);
     setGroqApiKey(trimmed);
-    Alert.alert('保存しました', trimmed.length > 0 ? 'Groq APIキーを保存しました' : 'Groq APIキーをクリアしました');
+    Alert.alert(
+      '保存しました',
+      trimmed.length > 0
+        ? 'Groq APIキーを SecureStore に保存しました (Keychain/Keystore 暗号化)'
+        : 'Groq APIキーをクリアしました',
+    );
   }, [groqApiKeyDraft]);
 
   // Groq モデル切替
@@ -177,7 +205,7 @@ export function AIModelScreen() {
   const providerOptions: { id: LlmProvider; label: string; desc: string }[] = [
     { id: 'local', label: 'ローカルAI', desc: 'デバイス内で実行（オフライン可・初回DL必要）' },
     { id: 'bedrock', label: 'AWS Bedrock', desc: 'Claude 3 Haiku（Lambda経由）' },
-    { id: 'groq', label: 'Groq API', desc: 'Llama 3.3 70B（要APIキー・高速）' },
+    { id: 'groq', label: 'Groq API', desc: 'Llama 3.1 8B（Lambda経由・設定不要）' },
   ];
 
   return (
@@ -221,90 +249,135 @@ export function AIModelScreen() {
         })}
       </View>
 
-      {/* ── Groq 詳細設定 (Groq 選択時 または APIキー未設定時に表示) ── */}
-      {(provider === 'groq' || groqApiKey.length === 0) && (
+      {/* ── Groq 詳細設定 (Groq 選択時のみ表示) ── */}
+      {provider === 'groq' && (
         <>
           <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
             Groq 設定
           </Text>
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.separator, borderWidth: StyleSheet.hairlineWidth }, CardShadow]}>
-            <Text style={[styles.description, { color: colors.labelSecondary }]}>
-              Groq Cloud の API キーを貼り付けてください (console.groq.com で無料作成可)。キーは端末内 SQLite に保存されます。
-            </Text>
-
-            <View style={[styles.keyInputWrap, { borderColor: colors.separator, backgroundColor: colors.backgroundGrouped }]}>
-              <TextInput
-                style={[styles.keyInput, { color: colors.label }]}
-                placeholder="gsk_..."
-                placeholderTextColor={colors.labelTertiary}
-                value={groqApiKeyDraft}
-                onChangeText={setGroqApiKeyDraft}
-                autoCapitalize="none"
-                autoCorrect={false}
-                secureTextEntry={!showGroqKey}
-                spellCheck={false}
+            {/* 現在の動作モード表示 */}
+            <View style={styles.groqStatusRow}>
+              <Ionicons
+                name={groqUseByok ? 'key-outline' : 'shield-checkmark-outline'}
+                size={16}
+                color={groqUseByok ? colors.accent : '#30D158'}
               />
-              <Pressable
-                onPress={() => setShowGroqKey((v) => !v)}
-                style={({ pressed }) => [styles.eyeBtn, { opacity: pressed ? 0.5 : 1 }]}
-                hitSlop={8}
-              >
-                <Ionicons
-                  name={showGroqKey ? 'eye-off-outline' : 'eye-outline'}
-                  size={18}
-                  color={colors.labelSecondary}
-                />
-              </Pressable>
+              <Text style={[styles.description, { color: colors.label, fontWeight: '600' }]}>
+                {groqUseByok ? '上級者モード: 自前のAPIキー使用中' : 'Lambda経由で動作中 (キー設定不要)'}
+              </Text>
             </View>
-
-            <View style={styles.keyButtonRow}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.btn,
-                  { backgroundColor: colors.accent, opacity: pressed ? 0.7 : 1 },
-                ]}
-                onPress={handleSaveGroqKey}
-              >
-                <Ionicons name="save-outline" size={15} color="#fff" />
-                <Text style={styles.btnTextLight}>キーを保存</Text>
-              </Pressable>
-            </View>
-
-            {/* モデルピッカー */}
-            <Text style={[styles.description, { color: colors.labelSecondary, marginTop: Spacing.xs }]}>
-              使用モデル
+            <Text style={[styles.description, { color: colors.labelSecondary }]}>
+              {groqUseByok
+                ? 'デバイス内 SecureStore (Keychain/Keystore) に保存された自前の Groq APIキーで直接呼び出します。'
+                : 'サーバー側 Lambda が Groq APIキーを保持し、透過プロキシします。アプリ配布物にキーは含まれません。'}
             </Text>
-            <View style={styles.modelSelectWrap}>
-              {GROQ_MODELS.map((m) => {
-                const isActive = groqModel === m.id;
-                return (
+
+            {/* 上級者モード トグル */}
+            <Pressable
+              style={({ pressed }) => [styles.advancedToggleRow, { opacity: pressed ? 0.6 : 1 }]}
+              onPress={() => handleToggleByok(!groqUseByok)}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.description, { color: colors.label, fontWeight: '600' }]}>
+                  上級者モード: 自前のキーを使う
+                </Text>
+                <Text style={[styles.description, { color: colors.labelSecondary }]}>
+                  自分の Groq Dev Tier キーで直接呼び出したい場合のみON
+                </Text>
+              </View>
+              <Ionicons
+                name={groqUseByok ? 'toggle' : 'toggle-outline'}
+                size={32}
+                color={groqUseByok ? colors.accent : colors.labelTertiary}
+              />
+            </Pressable>
+
+            {/* BYOKキー入力 (上級者モード時のみ表示) */}
+            {groqUseByok && (
+              <>
+                <Text style={[styles.description, { color: colors.labelSecondary, marginTop: Spacing.xs }]}>
+                  Groq APIキー (console.groq.com で発行)
+                </Text>
+                <View style={[styles.keyInputWrap, { borderColor: colors.separator, backgroundColor: colors.backgroundGrouped }]}>
+                  <TextInput
+                    style={[styles.keyInput, { color: colors.label }]}
+                    placeholder="gsk_..."
+                    placeholderTextColor={colors.labelTertiary}
+                    value={groqApiKeyDraft}
+                    onChangeText={setGroqApiKeyDraft}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    secureTextEntry={!showGroqKey}
+                    spellCheck={false}
+                  />
                   <Pressable
-                    key={m.id}
-                    style={({ pressed }) => [
-                      styles.groqModelChip,
-                      {
-                        backgroundColor: isActive ? colors.accent + '14' : colors.backgroundGrouped,
-                        borderColor: isActive ? colors.accent : colors.separator,
-                        opacity: pressed ? 0.7 : 1,
-                      },
-                    ]}
-                    onPress={() => handleGroqModelChange(m.id)}
+                    onPress={() => setShowGroqKey((v) => !v)}
+                    style={({ pressed }) => [styles.eyeBtn, { opacity: pressed ? 0.5 : 1 }]}
+                    hitSlop={8}
                   >
-                    <Text
-                      style={[
-                        TypeScale.caption1,
-                        { color: isActive ? colors.accent : colors.label, fontWeight: '600' },
-                      ]}
-                    >
-                      {m.name}
-                    </Text>
-                    <Text style={[TypeScale.caption2, { color: colors.labelSecondary }]}>
-                      {m.description}
-                    </Text>
+                    <Ionicons
+                      name={showGroqKey ? 'eye-off-outline' : 'eye-outline'}
+                      size={18}
+                      color={colors.labelSecondary}
+                    />
                   </Pressable>
-                );
-              })}
-            </View>
+                </View>
+
+                <View style={styles.keyButtonRow}>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.btn,
+                      { backgroundColor: colors.accent, opacity: pressed ? 0.7 : 1 },
+                    ]}
+                    onPress={handleSaveGroqKey}
+                  >
+                    <Ionicons name="lock-closed-outline" size={15} color="#fff" />
+                    <Text style={styles.btnTextLight}>キーを SecureStore に保存</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
+
+            {/* モデル表示 (現在1モデルのみ。将来複数モデル時のピッカー) */}
+            {GROQ_MODELS.length > 1 && (
+              <>
+                <Text style={[styles.description, { color: colors.labelSecondary, marginTop: Spacing.xs }]}>
+                  使用モデル
+                </Text>
+                <View style={styles.modelSelectWrap}>
+                  {GROQ_MODELS.map((m) => {
+                    const isActive = groqModel === m.id;
+                    return (
+                      <Pressable
+                        key={m.id}
+                        style={({ pressed }) => [
+                          styles.groqModelChip,
+                          {
+                            backgroundColor: isActive ? colors.accent + '14' : colors.backgroundGrouped,
+                            borderColor: isActive ? colors.accent : colors.separator,
+                            opacity: pressed ? 0.7 : 1,
+                          },
+                        ]}
+                        onPress={() => handleGroqModelChange(m.id)}
+                      >
+                        <Text
+                          style={[
+                            TypeScale.caption1,
+                            { color: isActive ? colors.accent : colors.label, fontWeight: '600' },
+                          ]}
+                        >
+                          {m.name}
+                        </Text>
+                        <Text style={[TypeScale.caption2, { color: colors.labelSecondary }]}>
+                          {m.description}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            )}
           </View>
         </>
       )}
@@ -608,6 +681,21 @@ const styles = StyleSheet.create({
   },
 
   // ── Groq 設定 ──
+  groqStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginBottom: 2,
+  },
+  advancedToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.s,
+    paddingVertical: Spacing.s,
+    marginTop: Spacing.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(128,128,128,0.2)',
+  },
   keyInputWrap: {
     flexDirection: 'row',
     alignItems: 'center',

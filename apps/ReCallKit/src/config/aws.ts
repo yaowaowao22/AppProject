@@ -17,6 +17,14 @@ export const LAMBDA_FUNCTION_URL =
 export const LAMBDA_FUNCTION_NAME = 'recall-kit-url-analyzer' as const;
 
 /**
+ * Groq プロキシ Lambda 関数名。
+ * この Lambda が Groq API キー (gsk_...) を環境変数で保持し、
+ * Cognito unauth identity から呼ばれて Groq chat completions API を透過プロキシする。
+ * (lambda/groq_proxy/handler.py に実装)
+ */
+export const GROQ_LAMBDA_FUNCTION_NAME = 'recall-kit-groq-proxy' as const;
+
+/**
  * AWSの設定値がプレースホルダのままでないかを確認する。
  * 両方の値が実際の値に置換されている場合のみ true を返す。
  */

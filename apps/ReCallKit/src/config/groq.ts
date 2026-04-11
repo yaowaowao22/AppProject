@@ -25,36 +25,23 @@ export interface GroqModelDef {
 
 export const GROQ_MODELS: GroqModelDef[] = [
   {
-    id: 'llama-3.3-70b-versatile',
-    name: 'Llama 3.3 70B Versatile',
-    description: '高品質・日本語◯ (推奨)',
-    priceNote: '高精度',
-    // 131k context & 70B。1万文字なら1チャンクで完結可能。
-    // max_tokens は 70B の最大 32k を活かして多めに確保。
-    profile: {
-      chunkSize: 10_000,
-      maxQaTotal: 50,
-      maxTokensFirst: 4_000,
-      maxTokensChunk: 3_000,
-    },
-  },
-  {
     id: 'llama-3.1-8b-instant',
     name: 'Llama 3.1 8B Instant',
     description: '高速・軽量 (8Bパラ)',
     priceNote: '高速',
-    // 131k context だが 8B なので一括生成の品質がやや不安。
-    // 1万文字を ~2 チャンクで割って QA を安定生成する設定。
+    // Free Tier TPM 6000 制限に合わせて縮小。
+    // 日本語は ~1 tok/char のため chunkSize=4500 で ~4500 tok、
+    // プロンプトテンプレ + 出力 ~1000 tok の余裕を確保して 6000 TPM に収める。
     profile: {
-      chunkSize: 8_000,
+      chunkSize: 4_500,
       maxQaTotal: 40,
-      maxTokensFirst: 3_500,
-      maxTokensChunk: 2_500,
+      maxTokensFirst: 2_500,
+      maxTokensChunk: 1_800,
     },
   },
 ];
 
-export const GROQ_DEFAULT_MODEL_ID = 'llama-3.3-70b-versatile';
+export const GROQ_DEFAULT_MODEL_ID = 'llama-3.1-8b-instant';
 
 /** Groq モデルIDからプロファイルを取得。未知IDならデフォルトモデルにフォールバック */
 export function getGroqProfile(modelId: string): AnalysisProfile {

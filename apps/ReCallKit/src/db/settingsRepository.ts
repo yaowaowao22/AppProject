@@ -9,6 +9,9 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 export type LlmProvider = 'local' | 'bedrock' | 'groq';
 
 // 設定キーの一覧（型安全）
+//
+// ⚠️ 機微情報 (groq_api_key など) は SecureStore (Keychain/Keystore) へ移管。
+// SQLite の app_settings には保存しない。src/services/secureStorage.ts 参照。
 export type SettingKey =
   | 'review_time'           // "08:00"
   | 'daily_review_count'    // "5"
@@ -16,8 +19,8 @@ export type SettingKey =
   | 'onboarding_completed'  // "true" | "false"
   | 'notifications_enabled' // "true" | "false"
   | 'llm_provider'          // "local" | "bedrock" | "groq"
-  | 'groq_api_key'          // Groq API key (gsk_...)
-  | 'groq_model';           // "llama-3.3-70b-versatile" | "llama-3.1-8b-instant"
+  | 'groq_use_byok'         // "true" = 自前キー直接呼び出し / "false" = Lambda proxy (default)
+  | 'groq_model';           // "llama-3.1-8b-instant" (現在の唯一モデル)
 
 // デフォルト値
 export const SETTING_DEFAULTS: Record<SettingKey, string> = {
@@ -27,8 +30,8 @@ export const SETTING_DEFAULTS: Record<SettingKey, string> = {
   onboarding_completed: 'false',
   notifications_enabled: 'false',
   llm_provider: '',  // 空文字 = DB未設定 → pipeline 側で LOCAL_AI_ENABLED にフォールバック
-  groq_api_key: '',
-  groq_model: 'llama-3.3-70b-versatile',
+  groq_use_byok: 'false',  // デフォルトは Lambda proxy 経由
+  groq_model: 'llama-3.1-8b-instant',
 };
 
 // 全設定をまとめた型
@@ -39,7 +42,7 @@ export interface AppSettings {
   onboarding_completed: string;
   notifications_enabled: string;
   llm_provider: string;  // '' | 'local' | 'bedrock' | 'groq'
-  groq_api_key: string;
+  groq_use_byok: string;  // 'true' | 'false'
   groq_model: string;
 }
 
@@ -63,7 +66,7 @@ export async function getAllSettings(db: SQLiteDatabase): Promise<AppSettings> {
     onboarding_completed: map.onboarding_completed ?? SETTING_DEFAULTS.onboarding_completed,
     notifications_enabled: map.notifications_enabled ?? SETTING_DEFAULTS.notifications_enabled,
     llm_provider: map.llm_provider ?? SETTING_DEFAULTS.llm_provider,
-    groq_api_key: map.groq_api_key ?? SETTING_DEFAULTS.groq_api_key,
+    groq_use_byok: map.groq_use_byok ?? SETTING_DEFAULTS.groq_use_byok,
     groq_model: map.groq_model ?? SETTING_DEFAULTS.groq_model,
   };
 }
