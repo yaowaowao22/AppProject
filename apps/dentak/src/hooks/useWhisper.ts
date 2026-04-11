@@ -77,9 +77,6 @@ export function useWhisper(): UseWhisperReturn {
 
       clearTimer();
 
-      // 録音終了 → オーディオセッションを通常モードに戻す
-      Audio.setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {});
-
       // 空文字 = Whisper が何も認識できなかった → セッション診断付きエラー
       if (!text.trim()) {
         const diag = sessionRef.current?.getDiag() ?? 'session=null';
@@ -129,14 +126,6 @@ export function useWhisper(): UseWhisperReturn {
         setError('マイク権限が必要です');
         return;
       }
-
-      // ── iOS オーディオセッション設定 ───────────────────
-      // allowsRecordingIOS=true で AVAudioSession カテゴリを .playAndRecord に切替。
-      // これがないと whisper.rn 内部の AVAudioEngine がサイレンスを拾う。
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
 
       setVoiceState('listening');
 
