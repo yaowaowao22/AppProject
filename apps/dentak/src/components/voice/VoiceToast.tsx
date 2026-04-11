@@ -24,7 +24,7 @@ export interface VoiceToastProps {
   onDismiss?: () => void;
 }
 
-const SHOW_DURATION_MS = 3000;
+const SHOW_DURATION_MS = 4000;
 
 const VoiceToast = memo(function VoiceToast({
   text,
@@ -66,7 +66,7 @@ const VoiceToast = memo(function VoiceToast({
   return (
     <Animated.View style={[styles.container, animStyle]}>
       <Animated.View style={[styles.pill, isError && styles.pillError]}>
-        <Text style={[styles.label, isError && styles.labelError]} numberOfLines={2}>
+        <Text style={[styles.label, isError && styles.labelError]} numberOfLines={4}>
           {isError ? '⚠ ' : '🎙 '}{text}
         </Text>
       </Animated.View>
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 12,
-    maxWidth: '85%',
+    maxWidth: '92%',
   },
   pillError: {
     backgroundColor: 'rgba(255,59,48,0.18)',

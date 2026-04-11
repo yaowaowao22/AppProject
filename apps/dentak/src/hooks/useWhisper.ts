@@ -77,9 +77,10 @@ export function useWhisper(): UseWhisperReturn {
 
       clearTimer();
 
-      // 空文字 = Whisper が何も認識できなかった → エラーフィードバック
+      // 空文字 = Whisper が何も認識できなかった → 診断付きエラー
       if (!text.trim()) {
-        setError('音声を認識できませんでした');
+        const mgr = WhisperManager.getInstance();
+        setError(`認識結果が空 (ready=${mgr.isReady()}, partial="${partialTextRef.current}")`);
         setVoiceState('idle');
         return;
       }
@@ -138,23 +139,40 @@ export function useWhisper(): UseWhisperReturn {
       }, TIMEOUT_MS);
 
       // ── WhisperManager 未初期化時の自動初期化 ────────────
-      // アプリ再起動後、modelStore は永続化済みだが WhisperManager.context は null。
-      // startStreaming 前に初期化することで mock モードへのフォールバックを防ぐ。
       const manager = WhisperManager.getInstance();
+      const { activeModelId, downloadedModels } = useModelStore.getState();
+      const modelPath = downloadedModels.includes(activeModelId)
+        ? getLocalModelPath(activeModelId)
+        : null;
+
       if (!manager.isReady()) {
-        const { activeModelId, downloadedModels } = useModelStore.getState();
-        if (downloadedModels.includes(activeModelId)) {
-          try {
-            await manager.initialize(getLocalModelPath(activeModelId));
-          } catch {
-            // 初期化失敗 — startStreaming 側で mock フォールバックが動く
-          }
+        if (!modelPath) {
+          clearTimer();
+          setError(`モデル未DL (models=${JSON.stringify(downloadedModels)}, active=${activeModelId})`);
+          setVoiceState('idle');
+          return;
         }
+        try {
+          await manager.initialize(modelPath);
+        } catch (initErr) {
+          clearTimer();
+          setError(`初期化失敗: ${initErr instanceof Error ? initErr.message : String(initErr)}`);
+          setVoiceState('idle');
+          return;
+        }
+      }
+
+      // 初期化後もまだ ready でない = whisper.rn ネイティブモジュール欠損
+      if (!manager.isReady()) {
+        clearTimer();
+        setError(`whisper.rn未リンク (model=${activeModelId}, path=${modelPath ?? 'none'})`);
+        setVoiceState('idle');
+        return;
       }
 
       // ── ストリーミング開始 ────────────────────────────
       try {
-        const session = await WhisperManager.getInstance().startStreaming({
+        const session = await manager.startStreaming({
           language:        voiceLang,
           maxDurationSec:  30,
           onPartialResult: (text) => {
@@ -162,21 +180,20 @@ export function useWhisper(): UseWhisperReturn {
             partialTextRef.current = text;
           },
           onFinalResult: (text) => {
-            // ネイティブ whisper.rn がストリーム完了時にここを呼ぶ
             partialTextRef.current = text;
             processAndApply(text);
           },
-          onError: (_err) => {
+          onError: (err) => {
             clearTimer();
-            processedRef.current = true; // 以降の processAndApply 呼び出しを封鎖
-            setError('認識に失敗しました');
+            processedRef.current = true;
+            setError(`認識エラー: ${err.message}`);
             setVoiceState('idle');
           },
         });
         sessionRef.current = session;
-      } catch (_err) {
+      } catch (streamErr) {
         clearTimer();
-        setError('録音を開始できませんでした');
+        setError(`録音開始失敗: ${streamErr instanceof Error ? streamErr.message : String(streamErr)}`);
         setVoiceState('idle');
       }
     } catch (_err) {
