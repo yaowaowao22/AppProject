@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-// Stage 2の計算エンジン実装後に差し替え:
-// import { evaluate } from '../engine/calculator';
-import type { AngleUnit } from '../engine/calculator';
+import { evaluate } from '../engine/calculator';
+import { normalizeExpression } from '../engine/expressionParser';
+import { useSettingsStore } from './settingsStore';
 export type { HistoryEntry } from '../engine/calculator';
 import type { HistoryEntry } from '../engine/calculator';
 
@@ -111,12 +111,8 @@ export const useCalculatorStore = create<CalculatorStore>((set, get) => ({
       const fullExpr = s.expression + s.current;
       if (!fullExpr.trim()) return {};
 
-      // ── Stage 2の計算エンジン実装後に差し替え ──────────────────────────
-      // import { evaluate } from '../engine/calculator';
-      // const resultStr = evaluate(fullExpr, angleUnit);
-      // ────────────────────────────────────────────────────────────────────
-      // スタブ: 計算エンジン未統合のため 'Error' を返す
-      const resultStr = 'Error';
+      const angleUnit = useSettingsStore.getState().angleUnit;
+      const resultStr = evaluate(normalizeExpression(fullExpr), angleUnit);
 
       const entry: HistoryEntry = {
         expression: fullExpr,
@@ -139,8 +135,8 @@ export const useCalculatorStore = create<CalculatorStore>((set, get) => ({
   applyFunction: (fn: string) => {
     set((s) => {
       const expr = `${fn}(${s.current})`;
-      // Stage 2の計算エンジン実装後に差し替え
-      const resultStr = 'Error';
+      const angleUnit = useSettingsStore.getState().angleUnit;
+      const resultStr = evaluate(normalizeExpression(expr), angleUnit);
 
       const entry: HistoryEntry = {
         expression: expr,
