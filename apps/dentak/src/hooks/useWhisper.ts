@@ -177,10 +177,10 @@ export function useWhisper(): UseWhisperReturn {
         const { stop, subscribe } = await ctx.transcribeRealtime({
           language: voiceLang === 'auto' ? undefined : voiceLang,
           realtimeAudioSec: 30,
-          // initial_prompt: 数学・計算用語にWhisper認識を強力に誘導
+          // initial_prompt: 関数電卓の全機能をカバーする数学用語でWhisper認識を誘導
           prompt: voiceLang === 'en'
-            ? '1 plus 2, 10 times 5, 100 divided by 3, square root of 9, 3.14, sin 45, log 10, factorial of 5, 3 squared, 2 cubed, 5 to the power of 3, absolute value of -7'
-            : '1たす2、10かける5、100わる3、5かける3の2乗、ルート9、3.14、サイン45、コサイン60、タンジェント30、ログ10、5の階乗、円周率、3の2乗、二十三、四十五、3分の1、絶対値マイナス7、二乗、三乗、平方根',
+            ? '1 plus 2, 10 times 5, 100 divided by 3, square root of 9, 3 squared, 2 cubed, 5 to the power of 3, sin 45, cos 60, tan 30, asin 0.5, acos 0.5, atan 1, log 100, ln 2.718, factorial of 5, absolute value of -7, pi, 3 times 4 squared, 5P2 permutations, 10C3 combinations, round 3.7, floor 4.9, ceil 2.1, e to the power of 2, 10 to the power of 3, cube root of 27, sinh 1, cosh 1, tanh 0.5, 50 percent'
+            : '1たす2、10かける5、100わる3、5かける3の2乗、3の二乗、2の三乗、5の4乗、ルート9、立方根27、3分の1、サイン45、コサイン60、タンジェント30、アークサイン、アークコサイン、アークタンジェント、自然対数、常用対数、ログ10、5の階乗、円周率、ネイピア数、絶対値マイナス7、二十三、四十五、百、千、逆数、パーセント、四捨五入、切り捨て、切り上げ、eの2乗、10の3乗、順列、組み合わせ、カッコ開き、カッコ閉じ',
           // whisper.rn 自身に iOS AudioSession を PlayAndRecord に設定させる
           audioSessionOnStartIos: {
             category: 'PlayAndRecord',
