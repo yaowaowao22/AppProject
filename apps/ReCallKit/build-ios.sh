@@ -245,11 +245,17 @@ cd "$IOS_DIR"
 BUILD_LOG=/tmp/recallkit_xcode.log
 : > \$BUILD_LOG
 
-# xcodebuild — OOM-safe flags
-# -jobs 1                             : 並列コンパイル無効 (メモリ圧迫防止)
-# COMPILER_INDEX_STORE_ENABLE=NO       : インデックス生成スキップ
-# GCC_GENERATE_DEBUGGING_SYMBOLS=NO    : dSYM 生成スキップ
-# CLANG_ENABLE_EXPLICIT_MODULES=NO     : explicit modules 無効化 (メモリ節約)
+# xcodebuild — OOM対策は -jobs 1 (並列度制限) のみで十分。
+#
+# ⚠️ 過去の実装では COMPILER_INDEX_STORE_ENABLE=NO / GCC_GENERATE_DEBUGGING_SYMBOLS=NO /
+#    CLANG_ENABLE_EXPLICIT_MODULES=NO を追加していたが、これらを指定すると
+#    xcodebuild の incremental build で「前回の .o と build settings が不一致」と
+#    判定され、広範囲の pod が再コンパイル対象になっていた (Build #3 実測で 8 分)。
+#    143f04c (build-ios.sh v3 初版) ではこれらを付けておらず、JS のみ変更時は
+#    約 1 分で incremental が完走していた。本版ではそちらに揃える。
+#
+#    DEVELOPMENT_TEAM と CODE_SIGN_STYLE も project.pbxproj 側で設定済みなので
+#    コマンドラインでの再指定は不要 (変わると pbxproj と diff が出て署名再計算)。
 set +e
 xcodebuild \\
   -workspace ReCallKit.xcworkspace \\
@@ -259,11 +265,6 @@ xcodebuild \\
   -derivedDataPath "$MAC_BUILD_OUT" \\
   -allowProvisioningUpdates \\
   -jobs 1 \\
-  DEVELOPMENT_TEAM=PVM8Q8HG54 \\
-  CODE_SIGN_STYLE=Automatic \\
-  COMPILER_INDEX_STORE_ENABLE=NO \\
-  GCC_GENERATE_DEBUGGING_SYMBOLS=NO \\
-  CLANG_ENABLE_EXPLICIT_MODULES=NO \\
   build >> \$BUILD_LOG 2>&1 &
 XCODE_PID=\$!
 echo "  xcodebuild started (pid \$XCODE_PID)"
