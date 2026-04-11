@@ -117,7 +117,7 @@ export function useCalculator() {
   const formattedExpression = useMemo<string>(() => {
     return expression
       .replace(/\*/g, '×')
-      .replace(/(?<!\d)\/(?!\d)/g, '÷');
+      .replace(/\//g, '÷');  // 数字に挟まれた '/' も含め全て変換 (BUG-005)
   }, [expression]);
 
   // ── Derived: font size tier based on digit count ─────────────────────────
@@ -286,10 +286,10 @@ export function useCalculator() {
     } else if (key === 'e') {
       inputDigit('e');
 
-    // ANS — recall last answer
+    // ANS — recall last answer (直接 setState で置換; inputDigit は1文字想定のため連結バグを回避)
     } else if (key === 'ANS') {
       const s = useCalculatorStore.getState();
-      inputDigit(String(s.lastAnswer));
+      useCalculatorStore.setState({ current: String(s.lastAnswer), shouldReset: false });
 
     // 2nd toggle
     } else if (key === '2nd') {

@@ -87,6 +87,7 @@ export const useCalculatorStore = create<CalculatorStore>((set, get) => ({
   setOperator: (op: string) => {
     set((s) => {
       const val = parseFloat(s.current);
+      if (isNaN(val)) return {};  // 'Error' 等の無効値は演算子を無視 (BUG-011)
       if (s.pendingOp !== null && !s.shouldReset) {
         // チェーン演算子: 前の演算を先に評価（スタブ実装）
         // Stage 2の計算エンジン実装後に evaluate() で正式評価

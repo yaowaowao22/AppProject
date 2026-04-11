@@ -23,11 +23,14 @@ export function normalizeExpression(raw: string): string {
   let expr = raw.trim();
   if (expr === '') return '';
 
-  // 1. ln は log に変換（先に処理しないと次の log10 変換に巻き込まれる）
-  expr = expr.replace(/\bln\(/g, 'log(');
+  // 1. ln を一時マーカーに退避（Step2のlog10変換に巻き込まれないよう先に逃がす）
+  expr = expr.replace(/\bln\(/g, '__LN__(');
 
-  // 2. log → log10 (ln変換後に実施)
+  // 2. log → log10 (mathjs の常用対数)
   expr = expr.replace(/\blog\(/g, 'log10(');
+
+  // 3. マーカー → log( (mathjs の log = 自然対数)
+  expr = expr.replace(/__LN__\(/g, 'log(');
 
   // 3. 乗除演算子
   expr = expr.replace(/×/g, '*');
@@ -38,8 +41,8 @@ export function normalizeExpression(raw: string): string {
 
   // 5. √( → sqrt(
   expr = expr.replace(/√\(/g, 'sqrt(');
-  // √ 単体（括弧なし）の場合も対応
-  expr = expr.replace(/√(\d)/g, 'sqrt($1');
+  // √ 単体（括弧なし）の場合も対応（整数・小数どちらも）
+  expr = expr.replace(/√([\d.]+)/g, 'sqrt($1');
 
   // 6. π → pi（暗黙の乗算挿入より先に変換）
   expr = expr.replace(/π/g, 'pi');

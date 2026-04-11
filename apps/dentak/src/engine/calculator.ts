@@ -35,17 +35,24 @@ function wrapTrigFunctions(expr: string, angleUnit: AngleUnit): string {
 
   const divisor = angleUnit === 'deg' ? '180' : '200';
 
-  // 対象: sin, cos, tan, asin, acos, atan, atan2, sinh, cosh, tanh, asinh, acosh, atanh
-  // 逆三角関数の結果は rad で返るため、asin/acos/atan は出力側も変換が必要だが
-  // ここでは入力ラップのみ実施（表示フォーマット側で対応する設計）
+  // 順三角関数: 引数を deg/grad → rad に変換してから渡す
+  // sin(x) → sin((pi / 180) * x)
   const trigInputFunctions = ['sin', 'cos', 'tan'];
 
   let result = expr;
   for (const fn of trigInputFunctions) {
-    // "sin(" を "sin(x * pi / 180)" のパターンに変換
-    // 対象: sin( cos( tan( （asin/acos/atan は含まない）
     const regex = new RegExp(`\\b${fn}\\(`, 'g');
     result = result.replace(regex, `${fn}((pi / ${divisor}) * `);
+  }
+
+  // 逆三角関数: 結果(rad)を deg/grad に変換する
+  // asin(x) → asin(x) * (180 / pi)
+  // 引数は無次元比なので入力変換は不要
+  const invTrigFunctions = ['asin', 'acos', 'atan'];
+  for (const fn of invTrigFunctions) {
+    // パターン: fn(引数) ※引数に括弧を含まない前提（_applyFnReal の呼び出し形式に対応）
+    const regex = new RegExp(`\\b${fn}\\(([^)]+)\\)`, 'g');
+    result = result.replace(regex, `${fn}($1) * (${divisor} / pi)`);
   }
 
   return result;
