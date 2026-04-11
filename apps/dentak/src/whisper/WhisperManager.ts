@@ -14,6 +14,10 @@ type WhisperContext = any;
 class WhisperManager {
   private static instance: WhisperManager | null = null;
   private context: WhisperContext = null;
+  /** 最後に初期化したモデルのファイルパス（同一パスの再初期化を skip するため） */
+  private modelPath: string | null = null;
+  /** 並行初期化を防ぐためのロック用 Promise */
+  private initializingPromise: Promise<void> | null = null;
 
   private constructor() {}
 
@@ -24,7 +28,29 @@ class WhisperManager {
     return WhisperManager.instance;
   }
 
+  /** Whisper コンテキストが有効かどうかを返す */
+  isReady(): boolean {
+    return this.context !== null;
+  }
+
   async initialize(modelPath: string): Promise<void> {
+    // 同一モデルで既に初期化済みなら skip
+    if (this.context !== null && this.modelPath === modelPath) return;
+
+    // 並行初期化ガード: 進行中の初期化があればそれを待つ
+    if (this.initializingPromise) {
+      return this.initializingPromise;
+    }
+
+    this.initializingPromise = this._doInitialize(modelPath);
+    try {
+      await this.initializingPromise;
+    } finally {
+      this.initializingPromise = null;
+    }
+  }
+
+  private async _doInitialize(modelPath: string): Promise<void> {
     try {
       // whisper.rn を動的インポート（ネイティブモジュール未リンク時はエラーになる）
       const whisperRn = await import('whisper.rn').catch(() => null);
@@ -39,7 +65,8 @@ class WhisperManager {
         return;
       }
 
-      this.context = await initWhisper({ filePath: modelPath });
+      this.context   = await initWhisper({ filePath: modelPath });
+      this.modelPath = modelPath;
       console.log('[WhisperManager] initialized with model:', modelPath);
     } catch (err) {
       console.warn('[WhisperManager] initialize failed:', err);
@@ -52,16 +79,6 @@ class WhisperManager {
     return session;
   }
 
-  async stop(): Promise<void> {
-    try {
-      if (this.context && typeof this.context.stopTranscribeRealtime === 'function') {
-        await this.context.stopTranscribeRealtime();
-      }
-    } catch (err) {
-      console.warn('[WhisperManager] stop failed:', err);
-    }
-  }
-
   async release(): Promise<void> {
     try {
       if (this.context && typeof this.context.release === 'function') {
@@ -70,7 +87,8 @@ class WhisperManager {
     } catch (err) {
       console.warn('[WhisperManager] release failed:', err);
     } finally {
-      this.context = null;
+      this.context   = null;
+      this.modelPath = null;
     }
   }
 }

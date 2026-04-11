@@ -1,17 +1,15 @@
-// mathjs を動的インポート（未インストール時のフォールバック対応）
+// mathjs を同期 require でロード（Metro bundler では require は同期実行）
+// async IIFE を使うと parseVoiceInput() 呼び出し時点で null のまま残る競合状態が発生するため
+// 同期ロードに統一する（BUG-006）
 let mathEvaluate: ((expr: string) => number) | null = null;
-(async () => {
-  try {
-    const mathjs = await import('mathjs').catch(() => null);
-    if (mathjs) {
-      const { create, all } = mathjs as any;
-      const math = create(all);
-      mathEvaluate = (expr: string) => math.evaluate(expr);
-    }
-  } catch {
-    // mathjs 未インストール時は null のまま
-  }
-})();
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { create, all } = require('mathjs') as typeof import('mathjs');
+  const math = create(all);
+  mathEvaluate = (expr: string) => math.evaluate(expr);
+} catch {
+  // mathjs 未インストール時は null のまま
+}
 
 export interface ParseResult {
   expression: string;

@@ -162,6 +162,9 @@ export function useWhisper(): UseWhisperReturn {
   }, [voiceLang, processAndApply, clearTimer]);
 
   // アンマウント時のクリーンアップ
+  // ⚠️ WhisperManager.release() はここで呼ばない。
+  // release() を呼ぶと context が null になり、次回マウント時に startStreaming() が
+  // モックモードへフォールバックしてしまう（モデル切替時は switchModel() 経由で release → initialize）。
   useEffect(() => {
     return () => {
       clearTimer();
@@ -169,7 +172,6 @@ export function useWhisper(): UseWhisperReturn {
         sessionRef.current.stop();
         sessionRef.current = null;
       }
-      void WhisperManager.getInstance().release();
     };
   }, [clearTimer]);
 
