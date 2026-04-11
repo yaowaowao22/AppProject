@@ -219,14 +219,19 @@ security unlock-keychain -p "$MAC_PASS" ~/Library/Keychains/login.keychain-db 2>
   || echo "  ⚠ keychain unlock failed (続行)"
 security set-keychain-settings -t 36000 ~/Library/Keychains/login.keychain-db 2>/dev/null || true
 
-# 競合ビルドプロセス停止 + build.db lockfile 除去
-pkill -9 -f xcodebuild 2>/dev/null || true
-pkill -9 -f SWBBuildService 2>/dev/null || true
-pkill -9 -f XCBBuildService 2>/dev/null || true
-pkill -9 -f ibtoold 2>/dev/null || true
+# 競合ビルドプロセス停止 (graceful: SIGTERM)
+#
+# ⚠️ ここで build.db や .dia を消してはいけない:
+#   build.db は xcodebuild の incremental build state DB で、削除すると
+#   前回ビルド状態が失われて全 target の依存再評価が走り、毎回擬似フル
+#   リビルド状態になる (ReactCodegen の C++ が全部再コンパイル)。
+#   dentak の build-ios.sh は削除しないため incremental 1 分で終わる。
+#   ReCallKit も同じ挙動にするためこの 2 行は意図的に残さない。
+pkill -f xcodebuild 2>/dev/null || true
+pkill -f SWBBuildService 2>/dev/null || true
+pkill -f XCBBuildService 2>/dev/null || true
+pkill -f ibtoold 2>/dev/null || true
 sleep 2
-rm -f "$MAC_BUILD_OUT/Build/Intermediates.noindex/XCBuildData/build.db" 2>/dev/null || true
-find "$MAC_BUILD_OUT/Build/Intermediates.noindex" -name "*.dia" -delete 2>/dev/null || true
 
 # ── メモリ確保: Spotlight と Media インデクサを一時停止 + purge ──
 kill -STOP \$(pgrep -x mds_stores 2>/dev/null) 2>/dev/null || true
