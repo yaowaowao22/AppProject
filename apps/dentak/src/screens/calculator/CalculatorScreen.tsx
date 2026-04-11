@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
 import {
   SafeAreaView,
   View,
@@ -13,6 +13,7 @@ import { UtilBar } from '../../components/calculator/UtilBar';
 import { SciRow } from '../../components/calculator/SciRow';
 import VoiceOverlay from '../../components/voice/VoiceOverlay';
 import DynamicIsland from '../../components/voice/DynamicIsland';
+import VoiceToast from '../../components/voice/VoiceToast';
 import Sidebar from '../../components/sidebar/Sidebar';
 import SettingsSheet from '../../components/settings/SettingsSheet';
 
@@ -142,14 +143,44 @@ export default function CalculatorScreen() {
   const {
     voiceState,
     partialText,
+    finalText,
+    error: voiceError,
     startListening,
     stopListening,
   } = useWhisper();
+
+  // ── VoiceToast 表示テキスト管理 ─────────────────────────────────────────
+  const [toastText, setToastText]     = useState('');
+  const [toastIsError, setToastIsError] = useState(false);
 
   const sidebar = useSidebar();
 
   const angleUnit    = useSettingsStore((s) => s.angleUnit);
   const setAngleUnit = useSettingsStore((s) => s.setAngleUnit);
+
+  // ── VoiceToast: finalText / error 変化時にトースト表示 ─────────────────
+  const prevFinalText = useRef('');
+  const prevError     = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (finalText && finalText !== prevFinalText.current) {
+      setToastText(finalText);
+      setToastIsError(false);
+    }
+    prevFinalText.current = finalText;
+  }, [finalText]);
+
+  useEffect(() => {
+    if (voiceError && voiceError !== prevError.current) {
+      setToastText(voiceError);
+      setToastIsError(true);
+    }
+    prevError.current = voiceError;
+  }, [voiceError]);
+
+  const handleToastDismiss = useCallback(() => {
+    setToastText('');
+  }, []);
 
   // ── Derived state ─────────────────────────────────────────────────────────
   const isVoiceActive =
@@ -331,6 +362,13 @@ export default function CalculatorScreen() {
 
       {/* ── DynamicIsland — absolute at top (self-positioning) ─────────── */}
       <DynamicIsland isVoiceActive={isVoiceActive} />
+
+      {/* ── VoiceToast — 認識テキスト表示（DI の下に出現） ──────────── */}
+      <VoiceToast
+        text={toastText}
+        isError={toastIsError}
+        onDismiss={handleToastDismiss}
+      />
 
       {/* ── Sidebar — absolute overlay ──────────────────────────────────── */}
       <Sidebar
