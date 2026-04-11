@@ -49,7 +49,7 @@ PULL_EOF
 echo "  ✓ pull 完了"
 
 echo ""
-echo "▶ [3/5] Mac: npm install + pod install..."
+echo "▶ [3/6] Mac: npm install + expo prebuild + pod install..."
 ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<DEPS_EOF
 set -euo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -58,6 +58,9 @@ export LANG=en_US.UTF-8
 cd "$APP_DIR"
 echo "  npm install..."
 npm install --prefer-offline 2>&1 | tail -3
+
+echo "  expo prebuild --platform ios --clean..."
+npx expo prebuild --platform ios --clean 2>&1 | tail -10
 
 cd "$IOS_DIR"
 echo "  pod deintegrate + pod install (clean)..."
@@ -68,7 +71,7 @@ DEPS_EOF
 echo "  ✓ 依存関係インストール完了"
 
 echo ""
-echo "▶ [4/5] Mac: xcodebuild build (Release / real device)..."
+echo "▶ [4/6] Mac: xcodebuild build (Release / real device)..."
 ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<BUILD_EOF
 set -euo pipefail
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -132,7 +135,7 @@ BUILD_EOF
 echo "  ✓ ビルド完了"
 
 echo ""
-echo "▶ [5/5] Mac: iPhone にインストール..."
+echo "▶ [5/6] Mac: iPhone にインストール..."
 ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<INSTALL_EOF
 set -euo pipefail
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
