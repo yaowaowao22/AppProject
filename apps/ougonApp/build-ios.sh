@@ -115,7 +115,7 @@ xcodebuild \\
   -derivedDataPath "$MAC_BUILD_OUT" \\
   -allowProvisioningUpdates \\
   -allowProvisioningDeviceRegistration \\
-  -jobs 2 \\
+  -jobs 1 \\
   CODE_SIGN_STYLE=Automatic \\
   DEVELOPMENT_TEAM=PVM8Q8HG54 \\
   "OTHER_CODE_SIGN_FLAGS=--keychain ~/Library/Keychains/login.keychain-db" \\
