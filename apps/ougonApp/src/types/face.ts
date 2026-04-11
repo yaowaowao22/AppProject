@@ -4,7 +4,7 @@ export type Point = {
   y: number;
 };
 
-/** expo-face-detector が返す顔ランドマーク座標セット */
+/** @react-native-ml-kit/face-detection が返す顔ランドマーク座標セット */
 export interface FaceLandmarks {
   /** 左目中心座標 */
   leftEyePosition: Point;

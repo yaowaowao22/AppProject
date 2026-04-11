@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { manipulateAsync } from 'expo-image-manipulator';
-import { FaceLandmarks } from '../../types/face';
+import FaceDetection from '@react-native-ml-kit/face-detection';
+import type { FaceLandmarks } from '../../types/face';
 
 export interface UseFaceDetectResult {
   landmarks: FaceLandmarks | null;
@@ -29,19 +30,10 @@ export function useFaceDetect(imageUri: string | null): UseFaceDetectResult {
       setImageWidth(imgResult.width);
       setImageHeight(imgResult.height);
 
-      // expo-face-detector は実機依存のため require で遅延ロード＋フォールバック
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const FaceDetector = require('expo-face-detector');
-      const { detectFacesAsync, FaceDetectorMode, FaceDetectorLandmarks } = FaceDetector;
-
-      const detection = await detectFacesAsync(uri, {
-        mode: FaceDetectorMode.accurate,
-        detectLandmarks: FaceDetectorLandmarks.all,
+      const faces = await FaceDetection.detect(uri, {
+        landmarkMode: 'all',
+        performanceMode: 'accurate',
       });
-
-      type RawPoint = { x: number; y: number };
-      type RawFace = Partial<Record<keyof FaceLandmarks, RawPoint>>;
-      const faces: RawFace[] = detection?.faces ?? [];
 
       if (faces.length === 0) {
         setError('顔が検出できませんでした');
@@ -49,16 +41,21 @@ export function useFaceDetect(imageUri: string | null): UseFaceDetectResult {
       }
 
       const face = faces[0];
-      const fallback: RawPoint = { x: 0, y: 0 };
+      const lm = face.landmarks ?? [];
+      const fallback = { x: 0, y: 0 };
+
+      const findPos = (type: string) =>
+        lm.find((l) => l.type === type)?.position ?? fallback;
+
       const mapped: FaceLandmarks = {
-        leftEyePosition:     face.leftEyePosition     ?? fallback,
-        rightEyePosition:    face.rightEyePosition    ?? fallback,
-        noseBasePosition:    face.noseBasePosition     ?? fallback,
-        bottomMouthPosition: face.bottomMouthPosition  ?? fallback,
-        leftEarPosition:     face.leftEarPosition      ?? fallback,
-        rightEarPosition:    face.rightEarPosition     ?? fallback,
-        leftCheekPosition:   face.leftCheekPosition    ?? fallback,
-        rightCheekPosition:  face.rightCheekPosition   ?? fallback,
+        leftEyePosition:     findPos('leftEye'),
+        rightEyePosition:    findPos('rightEye'),
+        noseBasePosition:    findPos('noseBase'),
+        bottomMouthPosition: findPos('mouthBottom'),
+        leftEarPosition:     findPos('leftEar'),
+        rightEarPosition:    findPos('rightEar'),
+        leftCheekPosition:   findPos('leftCheek'),
+        rightCheekPosition:  findPos('rightCheek'),
       };
 
       setLandmarks(mapped);
