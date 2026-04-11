@@ -96,6 +96,11 @@ echo "▶ [3/5] Mac: pnpm install + ネイティブ変化検出..."
 ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<INSTALL_EOF
 set -euo pipefail
 export PATH="\$HOME/.npm-global/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+# ⚠️ 必須: CocoaPods 1.16.x は String#unicode_normalize を呼ぶため LANG が
+#    未設定だと Encoding::CompatibilityError で pod install が失敗する
+#    (dentak/ougonApp の build-ios.sh にも同じ export が入っている)
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
 
 # ── 1. pnpm install (monorepo root) ──
 # package.json 変更を反映。lockfile 一致なら早期終了するため idempotent で高速。
@@ -193,27 +198,54 @@ INSTALL_EOF
 echo "  ✓ [3/5] 完了"
 
 # ============================================================
-# [4/5] Mac: xcodebuild (Release / real device)
+# [4/5] Mac: xcodebuild (Release / real device) — OOM 対策有り
+#
+# Mac mini (Intel) は llama.rn 等の C++ 重量ビルドで簡単に OOM する。
+# 以下のガード: -jobs 1 / COMPILER_INDEX_STORE_ENABLE=NO /
+# GCC_GENERATE_DEBUGGING_SYMBOLS=NO / CLANG_ENABLE_EXPLICIT_MODULES=NO
+# + Spotlight/mediaanalysisd STOP + sudo purge
 # ============================================================
 echo ""
 echo "▶ [4/5] Mac: xcodebuild (Release / real device → $MAC_BUILD_OUT)..."
 ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<BUILD_EOF
 set -euo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
 
 # キーチェーンアンロック
 security unlock-keychain -p "$MAC_PASS" ~/Library/Keychains/login.keychain-db 2>/dev/null \\
   && echo "  ✓ keychain unlocked" \\
   || echo "  ⚠ keychain unlock failed (続行)"
+security set-keychain-settings -t 36000 ~/Library/Keychains/login.keychain-db 2>/dev/null || true
 
-# build.db 競合防止
-pkill -f xcodebuild 2>/dev/null || true
-pkill -f XCBBuildService 2>/dev/null || true
-sleep 1
+# 競合ビルドプロセス停止 + build.db lockfile 除去
+pkill -9 -f xcodebuild 2>/dev/null || true
+pkill -9 -f SWBBuildService 2>/dev/null || true
+pkill -9 -f XCBBuildService 2>/dev/null || true
+pkill -9 -f ibtoold 2>/dev/null || true
+sleep 2
 rm -f "$MAC_BUILD_OUT/Build/Intermediates.noindex/XCBuildData/build.db" 2>/dev/null || true
+find "$MAC_BUILD_OUT/Build/Intermediates.noindex" -name "*.dia" -delete 2>/dev/null || true
+
+# ── メモリ確保: Spotlight と Media インデクサを一時停止 + purge ──
+kill -STOP \$(pgrep -x mds_stores 2>/dev/null) 2>/dev/null || true
+kill -STOP \$(pgrep -x mediaanalysisd 2>/dev/null) 2>/dev/null || true
+echo "$MAC_PASS" | sudo -S purge 2>/dev/null && echo "  ✓ memory purged" || echo "  ⚠ purge skipped"
+FREE_MB=\$(vm_stat | grep 'Pages free' | awk '{print int(\$3)*4/1024}')
+echo "  free memory: \${FREE_MB} MB"
 
 cd "$IOS_DIR"
 
+BUILD_LOG=/tmp/recallkit_xcode.log
+: > \$BUILD_LOG
+
+# xcodebuild — OOM-safe flags
+# -jobs 1                             : 並列コンパイル無効 (メモリ圧迫防止)
+# COMPILER_INDEX_STORE_ENABLE=NO       : インデックス生成スキップ
+# GCC_GENERATE_DEBUGGING_SYMBOLS=NO    : dSYM 生成スキップ
+# CLANG_ENABLE_EXPLICIT_MODULES=NO     : explicit modules 無効化 (メモリ節約)
+set +e
 xcodebuild \\
   -workspace ReCallKit.xcworkspace \\
   -scheme $SCHEME \\
@@ -221,8 +253,38 @@ xcodebuild \\
   -destination "generic/platform=iOS" \\
   -derivedDataPath "$MAC_BUILD_OUT" \\
   -allowProvisioningUpdates \\
-  build 2>&1 | xcbeautify --quiet
+  -jobs 1 \\
+  DEVELOPMENT_TEAM=PVM8Q8HG54 \\
+  CODE_SIGN_STYLE=Automatic \\
+  COMPILER_INDEX_STORE_ENABLE=NO \\
+  GCC_GENERATE_DEBUGGING_SYMBOLS=NO \\
+  CLANG_ENABLE_EXPLICIT_MODULES=NO \\
+  build >> \$BUILD_LOG 2>&1 &
+XCODE_PID=\$!
+echo "  xcodebuild started (pid \$XCODE_PID)"
 
+# Alive check: 60 秒ごとに free memory と最終行を表示
+while kill -0 \$XCODE_PID 2>/dev/null; do
+  sleep 60
+  FREE=\$(vm_stat | grep 'Pages free' | awk '{print int(\$3)*4/1024}')
+  LAST=\$(tail -1 \$BUILD_LOG 2>/dev/null | cut -c1-100)
+  echo "  [alive] free:\${FREE}MB  \$LAST"
+done
+
+wait \$XCODE_PID
+BUILD_EXIT=\$?
+set -e
+
+# Spotlight/Media インデクサを再開
+kill -CONT \$(pgrep -x mds_stores 2>/dev/null) 2>/dev/null || true
+kill -CONT \$(pgrep -x mediaanalysisd 2>/dev/null) 2>/dev/null || true
+
+if [ \$BUILD_EXIT -ne 0 ]; then
+  echo "  ✗ xcodebuild FAILED (exit \$BUILD_EXIT) — last 40 lines:"
+  tail -40 \$BUILD_LOG
+  exit 1
+fi
+echo "  ✓ BUILD SUCCEEDED"
 echo "BUILD_DONE"
 BUILD_EOF
 echo "  ✓ ビルド完了"
