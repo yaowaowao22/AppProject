@@ -191,17 +191,22 @@ export function useWhisper(): UseWhisperReturn {
 
         subscribe((event: any) => {
           eventCountRef.current++;
-          if (event.error) {
-            clearTimer();
-            processedRef.current = true;
-            setError(`認識エラー: ${event.error}`);
-            setVoiceState('idle');
-            return;
-          }
+          const code: number = event.code ?? 0;
           const text: string = event.data?.result ?? '';
+
           if (!event.isCapturing) {
-            partialTextRef.current = text;
-            processAndApply(text);
+            // ストリーミング完了（stop押下 or バッファ満杯）
+            // code -999 = ユーザーstopによるabort → パーシャルテキストを使う
+            const finalText = (code === -999 || !text.trim())
+              ? partialTextRef.current
+              : text;
+            processAndApply(finalText);
+          } else if (event.error) {
+            // キャプチャ中のエラー（致命的ではない、次のスライスで回復する可能性）
+            // code -999 は中断なので無視
+            if (code !== -999) {
+              setPartialText(`[err: ${event.error}]`);
+            }
           } else if (text.trim()) {
             setPartialText(text);
             partialTextRef.current = text;
