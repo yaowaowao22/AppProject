@@ -87,12 +87,15 @@ fi
 echo "  .app: $APP_PATH (\$(stat -f '%Sm' "$APP_PATH"))"
 
 # ── main.jsbundle 再生成 ──
-# Metro bundler で JS を 1 ファイルに統合
+# Expo プロジェクトでは npx react-native bundle は使えない
+# (@react-native-community/cli が未依存)。代わりに npx expo export:embed を
+# 使う。これは Xcode の script phase "Bundle React Native code and images" が
+# 内部で呼ぶコマンドと同じで、Expo SDK が Metro を正しく設定してくれる。
 BUNDLE_JS=/tmp/recallkit-main.jsbundle
 rm -f "\$BUNDLE_JS"
 
-echo "  → npx react-native bundle (minified)..."
-npx react-native bundle \\
+echo "  → npx expo export:embed (minified)..."
+npx expo export:embed \\
   --platform ios \\
   --dev false \\
   --minify true \\
@@ -101,41 +104,53 @@ npx react-native bundle \\
   --assets-dest /tmp/recallkit-assets 2>&1 | tail -15
 
 if [ ! -s "\$BUNDLE_JS" ]; then
-  echo "  ✗ react-native bundle が失敗 (空ファイル or 生成されず)"
+  echo "  ✗ expo export:embed が失敗 (空ファイル or 生成されず)"
   exit 1
 fi
 JS_SIZE=\$(wc -c < "\$BUNDLE_JS")
 echo "  → JS bundle: \$JS_SIZE bytes"
 
-# ── Hermes bytecode 変換 ──
-# Hermes が有効な場合 .app/main.jsbundle は HBC 形式である必要がある
-# hermesc のパスは RN バージョンによって微妙に異なるので複数候補を探す
-HERMESC=""
-for candidate in \\
-  node_modules/react-native/sdks/hermesc/osx-bin/hermesc \\
-  node_modules/hermes-engine/osx-bin/hermesc \\
-  node_modules/react-native/sdks/hermes/osx-bin/hermesc \\
-  ios/Pods/hermes-engine/destroot/bin/hermesc \\
-; do
-  if [ -x "\$candidate" ]; then
-    HERMESC="\$candidate"
-    break
-  fi
-done
-
-BUNDLE_FINAL=\$BUNDLE_JS
-if [ -n "\$HERMESC" ]; then
-  echo "  → hermesc で bytecode 変換: \$HERMESC"
-  "\$HERMESC" -emit-binary -O -out /tmp/recallkit-main.hbc "\$BUNDLE_JS" 2>&1 | tail -5
-  if [ -s /tmp/recallkit-main.hbc ]; then
-    HBC_SIZE=\$(wc -c < /tmp/recallkit-main.hbc)
-    echo "  → HBC bundle: \$HBC_SIZE bytes"
-    BUNDLE_FINAL=/tmp/recallkit-main.hbc
-  else
-    echo "  ⚠ hermesc 変換結果が空、plain JS を使用"
-  fi
+# 出力形式の判定: Hermes bytecode なら先頭 8 バイトが 0xC61FBC03C103191F
+# (Hermes magic number)。plain JS なら普通の ASCII 文字から始まる。
+BUNDLE_MAGIC=\$(head -c 8 "\$BUNDLE_JS" | od -An -tx1 | tr -d ' \\n')
+echo "  → bundle magic: \$BUNDLE_MAGIC"
+if [[ "\$BUNDLE_MAGIC" == c61fbc03c103191f* ]]; then
+  echo "  → 既に Hermes bytecode 形式 (変換不要)"
+  IS_HBC=1
 else
-  echo "  ⚠ hermesc が見つからず plain JS bundle を使用 (Hermes 無効環境?)"
+  echo "  → plain JS 形式 (hermesc 変換が必要)"
+  IS_HBC=0
+fi
+
+# ── Hermes bytecode 変換 (必要なら) ──
+BUNDLE_FINAL=\$BUNDLE_JS
+if [ "\$IS_HBC" = "0" ]; then
+  HERMESC=""
+  for candidate in \\
+    node_modules/react-native/sdks/hermesc/osx-bin/hermesc \\
+    node_modules/hermes-engine/osx-bin/hermesc \\
+    node_modules/react-native/sdks/hermes/osx-bin/hermesc \\
+    ios/Pods/hermes-engine/destroot/bin/hermesc \\
+  ; do
+    if [ -x "\$candidate" ]; then
+      HERMESC="\$candidate"
+      break
+    fi
+  done
+
+  if [ -n "\$HERMESC" ]; then
+    echo "  → hermesc で bytecode 変換: \$HERMESC"
+    "\$HERMESC" -emit-binary -O -out /tmp/recallkit-main.hbc "\$BUNDLE_JS" 2>&1 | tail -5
+    if [ -s /tmp/recallkit-main.hbc ]; then
+      HBC_SIZE=\$(wc -c < /tmp/recallkit-main.hbc)
+      echo "  → HBC bundle: \$HBC_SIZE bytes"
+      BUNDLE_FINAL=/tmp/recallkit-main.hbc
+    else
+      echo "  ⚠ hermesc 変換結果が空、plain JS を使用"
+    fi
+  else
+    echo "  ⚠ hermesc が見つからず plain JS bundle を使用 (Hermes 無効環境?)"
+  fi
 fi
 
 # ── .app に差し替え ──
