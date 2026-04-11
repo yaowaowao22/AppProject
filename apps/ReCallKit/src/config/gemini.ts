@@ -113,3 +113,64 @@ export function getGeminiProfile(modelId: string): AnalysisProfile {
 export function isValidGeminiApiKey(key: string): boolean {
   return /^AIza[A-Za-z0-9_-]{30,}$/.test(key.trim());
 }
+
+// ============================================================
+// 使用量制限 (Gemini API の悪用/暴走防止)
+//
+// サブスク会員でも 1 日あたりの上限を設ける。無料 / 有料問わず同じ上限で
+// 運用コストの天井を確定させる。
+//
+// 天井のコスト試算 (gemini-2.0-flash-lite Tier 1, output = input × 1.33 実測比):
+//   入力 100,000 文字/日 × 30日 × $0.075/1M = $0.225/月
+//   出力 133,000 tok/日 × 30日 × $0.30/1M = $1.197/月
+//   合計 $1.42/月 ≒ 213 円/月/人 (理論最大)
+//   → 月 400 円サブスクの粗利が 50% 確保できる水準
+//
+// 実測的な平均ユーザー (1 日 3-5 URL) ならこの上限には届かない。
+// 暴走・botnet 的悪用を防ぐためのセーフティネット。
+// ============================================================
+
+/** 1 日あたりの合計入力文字数上限 (本文) */
+export const GEMINI_DAILY_CHAR_LIMIT = 100_000;
+
+/** 1 URL あたりの本文文字数上限 (超過分は先頭からトリム) */
+export const GEMINI_PER_URL_CHAR_LIMIT = 30_000;
+
+// ============================================================
+// 動的 QA 予算計算
+//
+// 本文の情報密度に応じて QA 数と output tokens を動的決定する。
+// 固定値 (maxTokensFirst=5000) では短い記事でも出力枠を使い切ろうとして
+// モデルが水増しするため output コストが跳ね上がる。動的化で節約する。
+//
+// ルール (Qiita 実測より):
+//   - 日本語 Web 記事は 150 字につき 1 事実 (学習カード 1 枚分) が自然
+//   - 1 QA = 平均 60 output tokens (question + answer + JSON overhead)
+//   - 最低 5 QA、最大 60 QA (多すぎると復習効率が下がる)
+//
+// これで output は input のおよそ半分程度に収まり、Gemini の output 料金
+// (input の 4 倍) による過剰課金を回避できる。
+// ============================================================
+
+export interface QaBudget {
+  /** 目標 QA 数 */
+  targetQaCount: number;
+  /** maxOutputTokens として渡す値 */
+  maxOutputTokens: number;
+}
+
+/**
+ * 本文文字数から動的に QA 数と output token 予算を算出。
+ *
+ * @param bodyChars 本文の文字数 (チャンク分割前の全体、or 第1チャンク)
+ */
+export function computeDynamicQaBudget(bodyChars: number): QaBudget {
+  // 目標 QA 数: 本文 150 字につき 1 個、5〜60 でクランプ
+  const targetQaCount = Math.max(
+    5,
+    Math.min(60, Math.round(bodyChars / 150)),
+  );
+  // 1 QA 平均 60 tok + title/summary/tags overhead 200 tok + 20% 安全マージン
+  const maxOutputTokens = Math.round((targetQaCount * 60 + 200) * 1.2);
+  return { targetQaCount, maxOutputTokens };
+}

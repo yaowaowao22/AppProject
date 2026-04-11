@@ -33,14 +33,21 @@ import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import { getDatabase } from '../db/connection';
 import { getSetting } from '../db/settingsRepository';
 import {
+  assertWithinDailyLimit,
+  incrementTodayUsage,
+} from '../db/usageRepository';
+import {
   AWS_REGION,
   COGNITO_IDENTITY_POOL_ID,
   GEMINI_LAMBDA_FUNCTION_NAME,
 } from '../config/aws';
 import {
   GEMINI_API_BASE_URL,
+  GEMINI_DAILY_CHAR_LIMIT,
   GEMINI_DEFAULT_MODEL_ID,
+  GEMINI_PER_URL_CHAR_LIMIT,
   GEMINI_TIMEOUT_MS,
+  computeDynamicQaBudget,
   getGeminiProfile,
 } from '../config/gemini';
 import type { AnalysisProfile } from '../config/analysisProfile';
@@ -186,6 +193,7 @@ function buildFirstChunkUserMessage(
   url: string,
   text: string,
   totalChunks: number,
+  targetQaCount: number,
 ): string {
   const chunkNote = totalChunks > 1 ? `（第1部 / 全${totalChunks}部）` : '';
   return `以下はWebページの本文テキスト${chunkNote}です。
@@ -206,9 +214,9 @@ JSONオブジェクトのみ（説明文・マークダウン不要）:
 }
 
 【生成数の目標】
-- Q&Aペアは **必ず40個以上** 作ること（理想は50〜60個）
-- 本文から抽出できる情報をすべて拾う意識で生成すること
-- 40個に満たない場合は上の観点リストを順番に適用して追加すること
+- Q&Aペアは **${targetQaCount}個** 作ること（多すぎても少なすぎてもNG）
+- 本文の情報密度に合わせて設定されているので、水増ししない・削りすぎない
+- 観点リストを活用して ${targetQaCount} 個まで多様な切り口を作ること
 
 ${QA_RULES}
 
@@ -236,6 +244,7 @@ function buildChunkUserMessage(
   chunkIndex: number,
   totalChunks: number,
   existingQuestions: string[],
+  targetQaCount: number,
 ): string {
   const existingList =
     existingQuestions.length > 0
@@ -255,7 +264,7 @@ JSONオブジェクトのみ（説明文・マークダウン不要）:
 }
 
 【生成数の目標】
-- このセクションから **必ず30個以上** のQ&Aを生成すること（理想は40個）
+- このセクションから **${targetQaCount}個** のQ&Aを生成すること
 - 既出の質問は絶対に繰り返さないこと
 
 ${QA_RULES}
@@ -569,13 +578,38 @@ export async function analyzeUrlGemini(
 ): Promise<AnalysisResult> {
   const config = await loadGeminiConfig();
   const { mode, model, profile } = config;
+
+  // ── フェーズ 0: 日次使用量チェック ──
+  // 先に上限確認 (本文取得前に弾くことでユーザー体感を速く)
+  const db = await getDatabase();
+  await assertWithinDailyLimit(db, GEMINI_DAILY_CHAR_LIMIT);
+
   console.log(
-    `[geminiAnalysis] 開始: ${url} (mode=${mode} model=${model} chunkSize=${profile.chunkSize} maxQa=${profile.maxQaTotal} maxTokFirst=${profile.maxTokensFirst} maxTokChunk=${profile.maxTokensChunk})`,
+    `[geminiAnalysis] 開始: ${url} (mode=${mode} model=${model})`,
   );
 
-  // ── フェーズ 1: HTML取得 + チャンク分割 ──
+  // ── フェーズ 1: HTML取得 + URL単位の文字数キャップ ──
   onProgress?.(-1, 0);
-  const text = await fetchAndExtractText(url);
+  let text = await fetchAndExtractText(url);
+
+  // 1 URL あたりの上限超過時は先頭からトリム (後ろを捨てる)。
+  // エラーにしない方針 (ユーザー体験を優先、本文の先頭が最も情報量多いケースが多い)。
+  if (text.length > GEMINI_PER_URL_CHAR_LIMIT) {
+    console.warn(
+      `[geminiAnalysis] 本文が上限 ${GEMINI_PER_URL_CHAR_LIMIT} 文字を超過 (${text.length} 字) → トリム`,
+    );
+    text = text.slice(0, GEMINI_PER_URL_CHAR_LIMIT);
+  }
+
+  // ── フェーズ 1-b: 動的 QA 予算計算 ──
+  // 本文文字数から目標 QA 数と maxOutputTokens を決定。
+  // これで output コスト (input の 4 倍単価) を抑制する。
+  const firstBudget = computeDynamicQaBudget(text.length);
+  console.log(
+    `[geminiAnalysis] 動的予算: 本文${text.length}字 → 目標${firstBudget.targetQaCount}QA, maxOutputTokens=${firstBudget.maxOutputTokens}`,
+  );
+
+  // ── フェーズ 1-c: チャンク分割 ──
   const chunks = splitTextIntoChunks(text, profile.chunkSize);
   console.log(
     `[geminiAnalysis] ${chunks.length}チャンク / ${text.length}文字 / URL: ${url}`,
@@ -583,17 +617,22 @@ export async function analyzeUrlGemini(
 
   // ── フェーズ 2: 第1チャンク (メタ情報 + QA) ──
   onProgress?.(0, chunks.length);
-  const firstMessage = buildFirstChunkUserMessage(url, chunks[0], chunks.length);
+  const firstMessage = buildFirstChunkUserMessage(
+    url,
+    chunks[0],
+    chunks.length,
+    firstBudget.targetQaCount,
+  );
 
   let baseResult: AnalysisResult;
   try {
     baseResult = parseAnalysisResult(
-      await callGemini(config, SYSTEM_PROMPT, firstMessage, profile.maxTokensFirst),
+      await callGemini(config, SYSTEM_PROMPT, firstMessage, firstBudget.maxOutputTokens),
     );
   } catch (err) {
     console.warn('[geminiAnalysis] 第1チャンクパース失敗、1回リトライします:', err);
     baseResult = parseAnalysisResult(
-      await callGemini(config, SYSTEM_PROMPT, firstMessage, profile.maxTokensFirst),
+      await callGemini(config, SYSTEM_PROMPT, firstMessage, firstBudget.maxOutputTokens),
     );
   }
 
@@ -604,6 +643,7 @@ export async function analyzeUrlGemini(
   onProgress?.(0, chunks.length, allQaPairs.length, allQaPairs.length);
 
   // ── フェーズ 3: 残りチャンク (QAのみ追加生成) ──
+  // 継続チャンクも動的予算で小さく呼ぶ
   for (let i = 1; i < chunks.length; i++) {
     if (allQaPairs.length >= profile.maxQaTotal) {
       console.warn(
@@ -613,8 +653,8 @@ export async function analyzeUrlGemini(
     }
     onProgress?.(i, chunks.length);
 
+    const chunkBudget = computeDynamicQaBudget(chunks[i].length);
     try {
-      // Gemini は TPM 4M あるので既出質問リストをフルで渡してもOK (groq 版は 20 個制限)
       const existingQuestions = allQaPairs.map((qa) => qa.question);
       const userMessage = buildChunkUserMessage(
         url,
@@ -622,12 +662,13 @@ export async function analyzeUrlGemini(
         i,
         chunks.length,
         existingQuestions,
+        chunkBudget.targetQaCount,
       );
       const chunkRaw = await callGemini(
         config,
         SYSTEM_PROMPT,
         userMessage,
-        profile.maxTokensChunk,
+        chunkBudget.maxOutputTokens,
       );
       const chunkPairs = parseChunkQaPairs(chunkRaw);
       if (chunkPairs.length === 0) {
@@ -649,81 +690,9 @@ export async function analyzeUrlGemini(
     }
   }
 
-  // ── フェーズ 4-a: 中間重複排除 ──
-  const beforeMidDedup = allQaPairs.length;
-  allQaPairs = deduplicateQaPairs(allQaPairs);
-  if (beforeMidDedup !== allQaPairs.length) {
-    console.log(
-      `[geminiAnalysis] 中間dedup: ${beforeMidDedup}件 → ${allQaPairs.length}件（${beforeMidDedup - allQaPairs.length}件除去）`,
-    );
-  }
-
-  // ── フェーズ 4-b: 目標未達時の多段補填ループ ──
-  // Gemini は 1 call で 40+ 件生成できることが多いので通常は 1 パスで十分。
-  // 念のため最大 2 パスまで補填可能にしておく。
-  const QA_TARGET_COUNT = 40;
-  const MAX_TOP_UP_PASSES = 2;
-  const TOP_UP_BATCH_SIZE = 20;
-
-  for (let pass = 0; pass < MAX_TOP_UP_PASSES; pass++) {
-    const deficit = QA_TARGET_COUNT - allQaPairs.length;
-    if (deficit <= 0) break;
-    if (allQaPairs.length >= profile.maxQaTotal) {
-      console.log(
-        `[geminiAnalysis] 補填スキップ: 上限(${profile.maxQaTotal})到達済`,
-      );
-      break;
-    }
-
-    const targetAdditional = Math.max(deficit, TOP_UP_BATCH_SIZE);
-    console.log(
-      `[geminiAnalysis] 補填パス${pass + 1}/${MAX_TOP_UP_PASSES}: 現在${allQaPairs.length}件 / 目標${QA_TARGET_COUNT}件 → 追加${targetAdditional}件要求`,
-    );
-
-    try {
-      const topUpMessage = buildTopUpUserMessage(
-        url,
-        chunks[0],
-        allQaPairs.map((qa) => qa.question),
-        targetAdditional,
-      );
-      const topUpRaw = await callGemini(
-        config,
-        SYSTEM_PROMPT,
-        topUpMessage,
-        profile.maxTokensChunk,
-      );
-      const topUpPairs = parseChunkQaPairs(topUpRaw);
-      console.log(
-        `[geminiAnalysis] 補填パス${pass + 1}: ${topUpPairs.length}件生成`,
-      );
-      if (topUpPairs.length === 0) {
-        console.warn(
-          `[geminiAnalysis] 補填パス${pass + 1}: 0件 → ループ打ち切り`,
-        );
-        break;
-      }
-      allQaPairs.push(...topUpPairs);
-
-      // 各補填パス後に即座にdedup
-      const beforePassDedup = allQaPairs.length;
-      allQaPairs = deduplicateQaPairs(allQaPairs);
-      if (beforePassDedup !== allQaPairs.length) {
-        console.log(
-          `[geminiAnalysis] 補填パス${pass + 1}後dedup: ${beforePassDedup}件 → ${allQaPairs.length}件`,
-        );
-      }
-      onProgress?.(chunks.length - 1, chunks.length, topUpPairs.length, allQaPairs.length);
-    } catch (err) {
-      console.warn(
-        `[geminiAnalysis] 補填パス${pass + 1}失敗、ループ打ち切り:`,
-        err,
-      );
-      break;
-    }
-  }
-
-  // ── フェーズ 4-c: 最終重複排除 + 上限キャップ ──
+  // ── フェーズ 4: 重複排除 + 最終結果 (多段補填ループは無効化) ──
+  // 動的予算で「多すぎず少なすぎず」を実現したので、補填ループは不要。
+  // 目標件数を下回っていたら 1 QA 足りないと出るだけでコスト増は避ける。
   const beforeFinalDedup = allQaPairs.length;
   allQaPairs = deduplicateQaPairs(allQaPairs);
   if (beforeFinalDedup !== allQaPairs.length) {
@@ -738,8 +707,16 @@ export async function analyzeUrlGemini(
     allQaPairs = allQaPairs.slice(0, profile.maxQaTotal);
   }
   console.log(
-    `[geminiAnalysis] 解析完了: 全${chunks.length}チャンク → QA合計${allQaPairs.length}件（目標${QA_TARGET_COUNT}件）`,
+    `[geminiAnalysis] 解析完了: 全${chunks.length}チャンク → QA合計${allQaPairs.length}件（目標${firstBudget.targetQaCount}件）`,
   );
+
+  // ── フェーズ 5: 使用量記録 (成功時のみ) ──
+  // 失敗時は記録しない (ユーザー側の不公平を避ける)。
+  try {
+    await incrementTodayUsage(db, text.length, 1);
+  } catch (err) {
+    console.warn('[geminiAnalysis] 使用量記録に失敗:', err);
+  }
 
   let finalResult: AnalysisResult = { ...baseResult, qa_pairs: allQaPairs };
   if (finalResult.title === '無題') {

@@ -3,7 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 // ============================================================
 // スキーマバージョン管理
 // ============================================================
-const SCHEMA_VERSION = 12;
+const SCHEMA_VERSION = 13;
 
 const CREATE_TABLES_SQL = `
   -- アイテム（URL・テキスト・メモ）
@@ -287,6 +287,27 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
     }
     await db.execAsync(`CREATE INDEX IF NOT EXISTS idx_deep_dives_status ON deep_dives(status);`);
     await setSchemaVersion(db, 12);
+  }
+
+  if (currentVersion < 13) {
+    // URL 解析の日次使用量ログ (Gemini 使用量制限のため)
+    //   date         : YYYY-MM-DD (ローカルタイム)
+    //   input_chars  : その日処理した本文の合計文字数 (日本語 1文字 ≒ 1 token)
+    //   url_count    : その日処理した URL 数
+    //   updated_at   : 最終更新時刻
+    //
+    // 制限チェック: geminiAnalysisService の analyzeUrlGemini 開始時に今日の
+    // input_chars を取得し、DAILY_CHAR_LIMIT を超えていれば throw。
+    // 成功時に実測文字数を追加して更新する。
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS usage_log (
+        date         TEXT PRIMARY KEY,
+        input_chars  INTEGER NOT NULL DEFAULT 0,
+        url_count    INTEGER NOT NULL DEFAULT 0,
+        updated_at   TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+      );
+    `);
+    await setSchemaVersion(db, 13);
   }
 }
 
