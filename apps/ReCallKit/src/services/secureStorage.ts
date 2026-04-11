@@ -22,7 +22,7 @@ import * as SecureStore from 'expo-secure-store';
  * SecureStorage に保存可能なキーのユニオン型。
  * 新しいキーを追加する場合はこのユニオンに追記する。
  */
-export type SecureKey = 'groq_api_key';
+export type SecureKey = 'groq_api_key' | 'gemini_api_key';
 
 /**
  * キー名前空間プレフィックス。

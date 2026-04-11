@@ -32,6 +32,11 @@ import {
 import { getDatabase } from '../../db/connection';
 import { getSetting, setSetting, type LlmProvider } from '../../db/settingsRepository';
 import { GROQ_MODELS, GROQ_DEFAULT_MODEL_ID, isValidGroqApiKey } from '../../config/groq';
+import {
+  GEMINI_MODELS,
+  GEMINI_DEFAULT_MODEL_ID,
+  isValidGeminiApiKey,
+} from '../../config/gemini';
 import { LOCAL_AI_ENABLED } from '../../config/localAI';
 import { getSecureValue, setSecureValue } from '../../services/secureStorage';
 
@@ -49,34 +54,51 @@ export function AIModelScreen() {
 
   // ── LLMプロバイダー設定 ──
   const [provider, setProvider] = useState<LlmProvider>('local');
+  // Groq
   const [groqUseByok, setGroqUseByok] = useState<boolean>(false);  // false=Lambda proxy
   const [groqApiKey, setGroqApiKey] = useState<string>('');         // SecureStoreから読み込み
   const [groqApiKeyDraft, setGroqApiKeyDraft] = useState<string>('');
   const [groqModel, setGroqModel] = useState<string>(GROQ_DEFAULT_MODEL_ID);
   const [showGroqKey, setShowGroqKey] = useState(false);
+  // Gemini
+  const [geminiUseByok, setGeminiUseByok] = useState<boolean>(false);
+  const [geminiApiKey, setGeminiApiKey] = useState<string>('');
+  const [geminiApiKeyDraft, setGeminiApiKeyDraft] = useState<string>('');
+  const [geminiModel, setGeminiModel] = useState<string>(GEMINI_DEFAULT_MODEL_ID);
+  const [showGeminiKey, setShowGeminiKey] = useState(false);
 
   // プロバイダー設定を DB + SecureStore から読み込む
   const loadProviderSettings = useCallback(async () => {
     const db = await getDatabase();
     const rawProvider = (await getSetting(db, 'llm_provider')).trim();
     const resolved: LlmProvider =
-      rawProvider === 'local' || rawProvider === 'bedrock' || rawProvider === 'groq'
+      rawProvider === 'local' ||
+      rawProvider === 'bedrock' ||
+      rawProvider === 'groq' ||
+      rawProvider === 'gemini'
         ? rawProvider
         : LOCAL_AI_ENABLED
           ? 'local'
           : 'bedrock';
     setProvider(resolved);
 
-    const byokRaw = (await getSetting(db, 'groq_use_byok')).trim().toLowerCase();
-    setGroqUseByok(byokRaw === 'true');
+    // ── Groq ──
+    const groqByokRaw = (await getSetting(db, 'groq_use_byok')).trim().toLowerCase();
+    setGroqUseByok(groqByokRaw === 'true');
+    const groqKey = await getSecureValue('groq_api_key');
+    setGroqApiKey(groqKey);
+    setGroqApiKeyDraft(groqKey);
+    const gModel = (await getSetting(db, 'groq_model')).trim();
+    setGroqModel(gModel.length > 0 ? gModel : GROQ_DEFAULT_MODEL_ID);
 
-    // 機微なキーは SecureStore から (SQLiteには無い)
-    const key = await getSecureValue('groq_api_key');
-    setGroqApiKey(key);
-    setGroqApiKeyDraft(key);
-
-    const model = (await getSetting(db, 'groq_model')).trim();
-    setGroqModel(model.length > 0 ? model : GROQ_DEFAULT_MODEL_ID);
+    // ── Gemini ──
+    const geminiByokRaw = (await getSetting(db, 'gemini_use_byok')).trim().toLowerCase();
+    setGeminiUseByok(geminiByokRaw === 'true');
+    const geminiKey = await getSecureValue('gemini_api_key');
+    setGeminiApiKey(geminiKey);
+    setGeminiApiKeyDraft(geminiKey);
+    const geModel = (await getSetting(db, 'gemini_model')).trim();
+    setGeminiModel(geModel.length > 0 ? geModel : GEMINI_DEFAULT_MODEL_ID);
   }, []);
 
   // インストール状態を再読み込み
@@ -105,13 +127,20 @@ export function AIModelScreen() {
       );
       return;
     }
+    if (next === 'gemini' && geminiUseByok && !isValidGeminiApiKey(geminiApiKey)) {
+      Alert.alert(
+        '自前の Gemini APIキーが未設定です',
+        '上級者モードでは自前の AIza... キーが必須です。キーを保存するか、上級者モードをOFFにして Lambda 経由に戻してください。',
+      );
+      return;
+    }
     const db = await getDatabase();
     await setSetting(db, 'llm_provider', next);
     setProvider(next);
-  }, [groqUseByok, groqApiKey]);
+  }, [groqUseByok, groqApiKey, geminiUseByok, geminiApiKey]);
 
-  // 上級者モード (BYOK) トグル
-  const handleToggleByok = useCallback(async (next: boolean) => {
+  // ── Groq ハンドラ ──
+  const handleToggleGroqByok = useCallback(async (next: boolean) => {
     const db = await getDatabase();
     await setSetting(db, 'groq_use_byok', next ? 'true' : 'false');
     setGroqUseByok(next);
@@ -123,7 +152,6 @@ export function AIModelScreen() {
     }
   }, [groqApiKey]);
 
-  // Groq APIキー保存 (SecureStore 経由)
   const handleSaveGroqKey = useCallback(async () => {
     const trimmed = groqApiKeyDraft.trim();
     if (trimmed.length > 0 && !isValidGroqApiKey(trimmed)) {
@@ -133,7 +161,6 @@ export function AIModelScreen() {
       );
       return;
     }
-    // SecureStore (iOS Keychain / Android Keystore) に保存。SQLite には入れない。
     await setSecureValue('groq_api_key', trimmed);
     setGroqApiKey(trimmed);
     Alert.alert(
@@ -144,11 +171,48 @@ export function AIModelScreen() {
     );
   }, [groqApiKeyDraft]);
 
-  // Groq モデル切替
   const handleGroqModelChange = useCallback(async (modelId: string) => {
     const db = await getDatabase();
     await setSetting(db, 'groq_model', modelId);
     setGroqModel(modelId);
+  }, []);
+
+  // ── Gemini ハンドラ ──
+  const handleToggleGeminiByok = useCallback(async (next: boolean) => {
+    const db = await getDatabase();
+    await setSetting(db, 'gemini_use_byok', next ? 'true' : 'false');
+    setGeminiUseByok(next);
+    if (next && geminiApiKey.length === 0) {
+      Alert.alert(
+        '自前キーを入力してください',
+        '上級者モードをONにしました。下の入力欄に Gemini の自前キー (AIza...) を入力して保存してください。',
+      );
+    }
+  }, [geminiApiKey]);
+
+  const handleSaveGeminiKey = useCallback(async () => {
+    const trimmed = geminiApiKeyDraft.trim();
+    if (trimmed.length > 0 && !isValidGeminiApiKey(trimmed)) {
+      Alert.alert(
+        'APIキー形式が不正です',
+        'Gemini の API キーは "AIza" で始まる英数字です。Google AI Studio で発行できます。',
+      );
+      return;
+    }
+    await setSecureValue('gemini_api_key', trimmed);
+    setGeminiApiKey(trimmed);
+    Alert.alert(
+      '保存しました',
+      trimmed.length > 0
+        ? 'Gemini APIキーを SecureStore に保存しました (Keychain/Keystore 暗号化)'
+        : 'Gemini APIキーをクリアしました',
+    );
+  }, [geminiApiKeyDraft]);
+
+  const handleGeminiModelChange = useCallback(async (modelId: string) => {
+    const db = await getDatabase();
+    await setSetting(db, 'gemini_model', modelId);
+    setGeminiModel(modelId);
   }, []);
 
   // グローバルダウンロード状態を購読
@@ -206,6 +270,7 @@ export function AIModelScreen() {
     { id: 'local', label: 'ローカルAI', desc: 'デバイス内で実行（オフライン可・初回DL必要）' },
     { id: 'bedrock', label: 'AWS Bedrock', desc: 'Claude 3 Haiku（Lambda経由）' },
     { id: 'groq', label: 'Groq API', desc: 'Llama 3.1 8B（Lambda経由・設定不要）' },
+    { id: 'gemini', label: 'Gemini API', desc: 'Gemini 1.5 Flash 8B（Lambda経由・設定不要）' },
   ];
 
   return (
@@ -276,7 +341,7 @@ export function AIModelScreen() {
             {/* 上級者モード トグル */}
             <Pressable
               style={({ pressed }) => [styles.advancedToggleRow, { opacity: pressed ? 0.6 : 1 }]}
-              onPress={() => handleToggleByok(!groqUseByok)}
+              onPress={() => handleToggleGroqByok(!groqUseByok)}
             >
               <View style={{ flex: 1 }}>
                 <Text style={[styles.description, { color: colors.label, fontWeight: '600' }]}>
@@ -360,6 +425,139 @@ export function AIModelScreen() {
                           },
                         ]}
                         onPress={() => handleGroqModelChange(m.id)}
+                      >
+                        <Text
+                          style={[
+                            TypeScale.caption1,
+                            { color: isActive ? colors.accent : colors.label, fontWeight: '600' },
+                          ]}
+                        >
+                          {m.name}
+                        </Text>
+                        <Text style={[TypeScale.caption2, { color: colors.labelSecondary }]}>
+                          {m.description}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+          </View>
+        </>
+      )}
+
+      {/* ── Gemini 詳細設定 (Gemini 選択時のみ表示) ── */}
+      {provider === 'gemini' && (
+        <>
+          <Text style={[styles.sectionHeader, { color: colors.labelTertiary }]}>
+            Gemini 設定
+          </Text>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.separator, borderWidth: StyleSheet.hairlineWidth }, CardShadow]}>
+            {/* 現在の動作モード表示 */}
+            <View style={styles.groqStatusRow}>
+              <Ionicons
+                name={geminiUseByok ? 'key-outline' : 'shield-checkmark-outline'}
+                size={16}
+                color={geminiUseByok ? colors.accent : '#30D158'}
+              />
+              <Text style={[styles.description, { color: colors.label, fontWeight: '600' }]}>
+                {geminiUseByok ? '上級者モード: 自前のAPIキー使用中' : 'Lambda経由で動作中 (キー設定不要)'}
+              </Text>
+            </View>
+            <Text style={[styles.description, { color: colors.labelSecondary }]}>
+              {geminiUseByok
+                ? 'デバイス内 SecureStore (Keychain/Keystore) に保存された自前の Gemini APIキーで直接呼び出します。'
+                : 'サーバー側 Lambda が Gemini APIキーを保持し、透過プロキシします。アプリ配布物にキーは含まれません。'}
+            </Text>
+
+            {/* 上級者モード トグル */}
+            <Pressable
+              style={({ pressed }) => [styles.advancedToggleRow, { opacity: pressed ? 0.6 : 1 }]}
+              onPress={() => handleToggleGeminiByok(!geminiUseByok)}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.description, { color: colors.label, fontWeight: '600' }]}>
+                  上級者モード: 自前のキーを使う
+                </Text>
+                <Text style={[styles.description, { color: colors.labelSecondary }]}>
+                  自分の Google AI Studio キー (AIza...) で直接呼び出したい場合のみON
+                </Text>
+              </View>
+              <Ionicons
+                name={geminiUseByok ? 'toggle' : 'toggle-outline'}
+                size={32}
+                color={geminiUseByok ? colors.accent : colors.labelTertiary}
+              />
+            </Pressable>
+
+            {/* BYOKキー入力 (上級者モード時のみ表示) */}
+            {geminiUseByok && (
+              <>
+                <Text style={[styles.description, { color: colors.labelSecondary, marginTop: Spacing.xs }]}>
+                  Gemini APIキー (aistudio.google.com で発行)
+                </Text>
+                <View style={[styles.keyInputWrap, { borderColor: colors.separator, backgroundColor: colors.backgroundGrouped }]}>
+                  <TextInput
+                    style={[styles.keyInput, { color: colors.label }]}
+                    placeholder="AIza..."
+                    placeholderTextColor={colors.labelTertiary}
+                    value={geminiApiKeyDraft}
+                    onChangeText={setGeminiApiKeyDraft}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    secureTextEntry={!showGeminiKey}
+                    spellCheck={false}
+                  />
+                  <Pressable
+                    onPress={() => setShowGeminiKey((v) => !v)}
+                    style={({ pressed }) => [styles.eyeBtn, { opacity: pressed ? 0.5 : 1 }]}
+                    hitSlop={8}
+                  >
+                    <Ionicons
+                      name={showGeminiKey ? 'eye-off-outline' : 'eye-outline'}
+                      size={18}
+                      color={colors.labelSecondary}
+                    />
+                  </Pressable>
+                </View>
+
+                <View style={styles.keyButtonRow}>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.btn,
+                      { backgroundColor: colors.accent, opacity: pressed ? 0.7 : 1 },
+                    ]}
+                    onPress={handleSaveGeminiKey}
+                  >
+                    <Ionicons name="lock-closed-outline" size={15} color="#fff" />
+                    <Text style={styles.btnTextLight}>キーを SecureStore に保存</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
+
+            {/* モデル切替 (複数モデルの場合) */}
+            {GEMINI_MODELS.length > 1 && (
+              <>
+                <Text style={[styles.description, { color: colors.labelSecondary, marginTop: Spacing.xs }]}>
+                  使用モデル
+                </Text>
+                <View style={styles.modelSelectWrap}>
+                  {GEMINI_MODELS.map((m) => {
+                    const isActive = geminiModel === m.id;
+                    return (
+                      <Pressable
+                        key={m.id}
+                        style={({ pressed }) => [
+                          styles.groqModelChip,
+                          {
+                            backgroundColor: isActive ? colors.accent + '14' : colors.backgroundGrouped,
+                            borderColor: isActive ? colors.accent : colors.separator,
+                            opacity: pressed ? 0.7 : 1,
+                          },
+                        ]}
+                        onPress={() => handleGeminiModelChange(m.id)}
                       >
                         <Text
                           style={[

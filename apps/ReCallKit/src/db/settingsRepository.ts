@@ -6,11 +6,11 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 // LLMプロバイダー識別子（URL解析の実行経路）
-export type LlmProvider = 'local' | 'bedrock' | 'groq';
+export type LlmProvider = 'local' | 'bedrock' | 'groq' | 'gemini';
 
 // 設定キーの一覧（型安全）
 //
-// ⚠️ 機微情報 (groq_api_key など) は SecureStore (Keychain/Keystore) へ移管。
+// ⚠️ 機微情報 (groq_api_key / gemini_api_key など) は SecureStore (Keychain/Keystore) へ移管。
 // SQLite の app_settings には保存しない。src/services/secureStorage.ts 参照。
 export type SettingKey =
   | 'review_time'           // "08:00"
@@ -18,9 +18,11 @@ export type SettingKey =
   | 'theme'                 // "system" | "light" | "dark"
   | 'onboarding_completed'  // "true" | "false"
   | 'notifications_enabled' // "true" | "false"
-  | 'llm_provider'          // "local" | "bedrock" | "groq"
+  | 'llm_provider'          // "local" | "bedrock" | "groq" | "gemini"
   | 'groq_use_byok'         // "true" = 自前キー直接呼び出し / "false" = Lambda proxy (default)
-  | 'groq_model';           // "llama-3.1-8b-instant" (現在の唯一モデル)
+  | 'groq_model'            // "llama-3.1-8b-instant"
+  | 'gemini_use_byok'       // "true" = 自前キー直接呼び出し / "false" = Lambda proxy (default)
+  | 'gemini_model';         // "gemini-1.5-flash-8b" (default)
 
 // デフォルト値
 export const SETTING_DEFAULTS: Record<SettingKey, string> = {
@@ -32,6 +34,8 @@ export const SETTING_DEFAULTS: Record<SettingKey, string> = {
   llm_provider: '',  // 空文字 = DB未設定 → pipeline 側で LOCAL_AI_ENABLED にフォールバック
   groq_use_byok: 'false',  // デフォルトは Lambda proxy 経由
   groq_model: 'llama-3.1-8b-instant',
+  gemini_use_byok: 'false',  // デフォルトは Lambda proxy 経由
+  gemini_model: 'gemini-1.5-flash-8b',  // 最安モデル
 };
 
 // 全設定をまとめた型
@@ -41,9 +45,11 @@ export interface AppSettings {
   theme: 'system' | 'light' | 'dark';
   onboarding_completed: string;
   notifications_enabled: string;
-  llm_provider: string;  // '' | 'local' | 'bedrock' | 'groq'
+  llm_provider: string;  // '' | 'local' | 'bedrock' | 'groq' | 'gemini'
   groq_use_byok: string;  // 'true' | 'false'
   groq_model: string;
+  gemini_use_byok: string;  // 'true' | 'false'
+  gemini_model: string;
 }
 
 /**
@@ -68,6 +74,8 @@ export async function getAllSettings(db: SQLiteDatabase): Promise<AppSettings> {
     llm_provider: map.llm_provider ?? SETTING_DEFAULTS.llm_provider,
     groq_use_byok: map.groq_use_byok ?? SETTING_DEFAULTS.groq_use_byok,
     groq_model: map.groq_model ?? SETTING_DEFAULTS.groq_model,
+    gemini_use_byok: map.gemini_use_byok ?? SETTING_DEFAULTS.gemini_use_byok,
+    gemini_model: map.gemini_model ?? SETTING_DEFAULTS.gemini_model,
   };
 }
 
