@@ -95,11 +95,13 @@ BUNDLE_JS=/tmp/recallkit-main.jsbundle
 rm -f "\$BUNDLE_JS"
 
 echo "  → npx expo export:embed (minified)..."
+# Expo は monorepo root を project root と認識するため、相対パス "index.ts" では
+# monorepo root から解決しようとして失敗する。entry file は絶対パスで指定する。
 npx expo export:embed \\
   --platform ios \\
   --dev false \\
   --minify true \\
-  --entry-file index.ts \\
+  --entry-file "$MAC_RECALLKIT/index.ts" \\
   --bundle-output "\$BUNDLE_JS" \\
   --assets-dest /tmp/recallkit-assets 2>&1 | tail -15
 
