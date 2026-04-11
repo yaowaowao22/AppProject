@@ -420,7 +420,7 @@ const CHUNK_OVERLAP_FALLBACK = 50;
  *   - 文中断ちきれ削減 → LLM が断片を補完する無駄トークンを削減
  *   - オーバーラップ 200 → 0〜50 に削減 → チャンク数・入力トークン削減
  */
-function splitTextIntoChunks(text: string): string[] {
+export function splitTextIntoChunks(text: string): string[] {
   if (text.length <= CHUNK_SIZE) return [text];
 
   const chunks: string[] = [];
@@ -606,7 +606,7 @@ function normalizeQuestion(q: string): string {
  * - 一方の質問文が他方に含まれる（部分一致率80%以上）ものを除去
  * 先に出現したペアを優先して残す。
  */
-function deduplicateQaPairs(pairs: QAPair[]): QAPair[] {
+export function deduplicateQaPairs(pairs: QAPair[]): QAPair[] {
   const seen: string[] = [];
   const result: QAPair[] = [];
 
@@ -663,7 +663,7 @@ function stripCodeBlock(raw: string): string {
   return lines.slice(1, endIdx > 0 ? endIdx : undefined).join('\n').trim();
 }
 
-function parseAnalysisResult(raw: string): AnalysisResult {
+export function parseAnalysisResult(raw: string): AnalysisResult {
   const text = stripCodeBlock(raw);
 
   // 1. 直接パース
@@ -686,7 +686,7 @@ function parseAnalysisResult(raw: string): AnalysisResult {
 }
 
 /** チャンクの Q&A のみパース。失敗時は空配列を返して処理を継続する */
-function parseChunkQaPairs(raw: string): QAPair[] {
+export function parseChunkQaPairs(raw: string): QAPair[] {
   const text = stripCodeBlock(raw);
   const tryParse = (s: string): QAPair[] | null => {
     try {
