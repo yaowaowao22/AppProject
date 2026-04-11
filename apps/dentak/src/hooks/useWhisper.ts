@@ -8,6 +8,7 @@
 
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system/legacy';
 import WhisperManager from '../whisper/WhisperManager';
 import { StreamingSession } from '../whisper/StreamingSession';
 import { parseVoiceInput } from '../whisper/voiceParser';
@@ -50,6 +51,7 @@ export function useWhisper(): UseWhisperReturn {
 
   // Mutable refs — コールバック内で最新値を参照（再レンダリング不要）
   const sessionRef     = useRef<StreamingSession | null>(null);
+  const recordingRef   = useRef<Audio.Recording | null>(null);
   const partialTextRef = useRef('');
   /** 二重実行防止フラグ: onFinalResult / stopListening / timeout の競合を抑制 */
   const processedRef   = useRef(false);
@@ -57,6 +59,9 @@ export function useWhisper(): UseWhisperReturn {
 
   const voiceLang       = useSettingsStore((s) => s.voiceLang);
   const applyVoiceResult = useCalculatorStore((s) => s.applyVoiceResult);
+
+  // stopListening を ref 経由でタイムアウトから参照（useCallback の依存循環を避ける）
+  const stopListeningRef = useRef<() => Promise<void>>(async () => {});
 
   const clearTimer = useCallback(() => {
     if (timeoutRef.current !== null) {
@@ -97,16 +102,54 @@ export function useWhisper(): UseWhisperReturn {
     [applyVoiceResult, clearTimer],
   );
 
-  /** 手動停止: セッション停止 → 現在の partialText で即時処理 */
-  const stopListening = useCallback(() => {
+  /** 手動停止: 録音停止 → whisper.rn transcribe → 結果を反映 */
+  const stopListening = useCallback(async () => {
     clearTimer();
-    if (sessionRef.current) {
-      sessionRef.current.stop();
-      // sessionRef は processAndApply 内の診断で参照するため、ここでは null にしない
+
+    const recording = recordingRef.current;
+    recordingRef.current = null;
+
+    if (!recording) {
+      processAndApply(partialTextRef.current);
+      return;
     }
-    processAndApply(partialTextRef.current);
-    sessionRef.current = null;
-  }, [processAndApply, clearTimer]);
+
+    try {
+      setVoiceState('processing');
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      if (!uri) {
+        setError('録音ファイルが見つかりません');
+        setVoiceState('idle');
+        return;
+      }
+
+      // whisper.rn の file transcribe で認識
+      const manager = WhisperManager.getInstance();
+      const ctx = manager.getContext();
+      if (!ctx || typeof ctx.transcribe !== 'function') {
+        setError(`transcribe未対応 (ctx=${!!ctx})`);
+        setVoiceState('idle');
+        return;
+      }
+
+      const { promise } = ctx.transcribe(uri, {
+        language: voiceLang === 'auto' ? undefined : voiceLang,
+      });
+      const result = await promise;
+      const text = result?.data?.result?.trim() ?? '';
+
+      processAndApply(text);
+    } catch (err) {
+      setError(`認識失敗: ${err instanceof Error ? err.message : String(err)}`);
+      setVoiceState('idle');
+    }
+  }, [voiceLang, processAndApply, clearTimer]);
+
+  // ref を最新の stopListening に同期（タイムアウト用）
+  useEffect(() => {
+    stopListeningRef.current = stopListening;
+  }, [stopListening]);
 
   const startListening = useCallback(async () => {
     try {
@@ -132,11 +175,8 @@ export function useWhisper(): UseWhisperReturn {
       // ── 30 秒タイムアウト ─────────────────────────────
       // stopListening に依存させず、refs を直接参照してインライン実行
       timeoutRef.current = setTimeout(() => {
-        if (sessionRef.current) {
-          sessionRef.current.stop();
-        }
-        processAndApply(partialTextRef.current);
-        sessionRef.current = null;
+        // タイムアウト時は stopListening を直接呼ぶ（録音停止→transcribe）
+        void stopListeningRef.current();
       }, TIMEOUT_MS);
 
       // ── WhisperManager 未初期化時の自動初期化 ────────────
@@ -145,6 +185,17 @@ export function useWhisper(): UseWhisperReturn {
       const modelPath = downloadedModels.includes(activeModelId)
         ? getLocalModelPath(activeModelId)
         : null;
+
+      // モデルファイル実在チェック
+      if (modelPath) {
+        const fileInfo = await FileSystem.getInfoAsync(modelPath);
+        if (!fileInfo.exists) {
+          clearTimer();
+          setError(`モデルファイル不在: ${activeModelId} @ ${modelPath}`);
+          setVoiceState('idle');
+          return;
+        }
+      }
 
       if (!manager.isReady()) {
         if (!modelPath) {
@@ -163,7 +214,6 @@ export function useWhisper(): UseWhisperReturn {
         }
       }
 
-      // 初期化後もまだ ready でない = whisper.rn ネイティブモジュール欠損
       if (!manager.isReady()) {
         clearTimer();
         setError(`whisper.rn未リンク (model=${activeModelId}, path=${modelPath ?? 'none'})`);
@@ -171,30 +221,39 @@ export function useWhisper(): UseWhisperReturn {
         return;
       }
 
-      // ── ストリーミング開始 ────────────────────────────
+      // ── 録音＋認識（expo-av録音 → whisper.rn file transcribe） ──
+      // transcribeRealtime が AVAudioEngine 起動に失敗するため、
+      // expo-av で録音 → ファイルを whisper.rn の transcribe() に渡す方式にフォールバック
       try {
-        const session = await manager.startStreaming({
-          language:        voiceLang,
-          maxDurationSec:  30,
-          onPartialResult: (text) => {
-            setPartialText(text);
-            partialTextRef.current = text;
+        const recording = new Audio.Recording();
+        recordingRef.current = recording;
+        await recording.prepareToRecordAsync({
+          isMeteringEnabled: false,
+          android: {
+            extension: '.wav',
+            outputFormat: 3, // THREE_GPP -> PCM container
+            audioEncoder: 1, // DEFAULT
+            sampleRate: 16000,
+            numberOfChannels: 1,
+            bitRate: 256000,
           },
-          onFinalResult: (text) => {
-            partialTextRef.current = text;
-            processAndApply(text);
+          ios: {
+            extension: '.wav',
+            outputFormat: 'linearPCM' as any,
+            audioQuality: 127, // MAX
+            sampleRate: 16000,
+            numberOfChannels: 1,
+            bitRate: 256000,
+            linearPCMBitDepth: 16,
+            linearPCMIsBigEndian: false,
+            linearPCMIsFloat: false,
           },
-          onError: (err) => {
-            clearTimer();
-            processedRef.current = true;
-            setError(`認識エラー: ${err.message}`);
-            setVoiceState('idle');
-          },
+          web: {},
         });
-        sessionRef.current = session;
-      } catch (streamErr) {
+        await recording.startAsync();
+      } catch (recErr) {
         clearTimer();
-        setError(`録音開始失敗: ${streamErr instanceof Error ? streamErr.message : String(streamErr)}`);
+        setError(`録音開始失敗: ${recErr instanceof Error ? recErr.message : String(recErr)}`);
         setVoiceState('idle');
       }
     } catch (_err) {
@@ -214,6 +273,10 @@ export function useWhisper(): UseWhisperReturn {
       if (sessionRef.current) {
         sessionRef.current.stop();
         sessionRef.current = null;
+      }
+      if (recordingRef.current) {
+        recordingRef.current.stopAndUnloadAsync().catch(() => {});
+        recordingRef.current = null;
       }
     };
   }, [clearTimer]);

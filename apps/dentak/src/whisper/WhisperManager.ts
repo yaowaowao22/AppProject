@@ -33,6 +33,11 @@ class WhisperManager {
     return this.context !== null;
   }
 
+  /** whisper.rn の WhisperContext を直接取得（file transcribe 用） */
+  getContext(): WhisperContext {
+    return this.context;
+  }
+
   async initialize(modelPath: string): Promise<void> {
     // 同一モデルで既に初期化済みなら skip
     if (this.context !== null && this.modelPath === modelPath) return;
