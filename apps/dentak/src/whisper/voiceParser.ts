@@ -17,11 +17,55 @@ export interface ParseResult {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// Phase 0: Whisperノイズ除去（フィラー語・敬語・接続詞）
+// 入力は必ず数式なので、数学に無関係な日本語は全て除去する
+// ═══════════════════════════════════════════════════════════════
+
+function removeWhisperNoise(text: string): string {
+  let s = text;
+
+  // フィラー・感嘆詞
+  s = s.replace(/えーと|えっと|あのー|あの|うーん|うん|えー|ええと|んー|んーと|まあ|まぁ/g, '');
+
+  // 敬語・丁寧語の語尾
+  s = s.replace(/でございます|ございます/g, '');
+  s = s.replace(/になります/g, '');
+  s = s.replace(/ですね|ですよ|ですか|です|だね|だよ|だな/g, '');
+  s = s.replace(/ました|ません|ます/g, '');
+
+  // Whisperが付加する定型句
+  s = s.replace(/ご視聴ありがとうございました/g, '');
+  s = s.replace(/チャンネル登録お願いします/g, '');
+  s = s.replace(/お疲れ様でした|お疲れ様/g, '');
+  s = s.replace(/よろしくお願いします/g, '');
+  s = s.replace(/ありがとうございます|ありがとう/g, '');
+
+  // 計算指示フレーズ（意図は正しいが数式ではない）
+  s = s.replace(/計算して|計算する|計算は|計算/g, '');
+  s = s.replace(/答えは|答え|こたえ/g, '');
+  s = s.replace(/いくつ|いくら|なんぼ/g, '');
+  s = s.replace(/教えて|おしえて/g, '');
+  s = s.replace(/お願い|おねがい/g, '');
+  s = s.replace(/してください|ください/g, '');
+  s = s.replace(/それから|そして|次に|つぎに/g, '');
+  s = s.replace(/最初に|まず/g, '');
+
+  // 助詞・接続（数学キーワードの「の」「は」は別途Phase 2で処理）
+  s = s.replace(/だから|なので|けど|けれど|しかし|でも/g, '');
+  s = s.replace(/って|という|といった/g, '');
+  s = s.replace(/を|が|は|に|で|と|も|へ|から|まで|より|か|な|よ|ね|わ|ぞ|さ|ぜ|の(?!\d|平方|階乗|逆|自乗|二乗|三乗|四乗)/g, '');
+
+  // 連続スペースを整理
+  s = s.replace(/\s+/g, ' ').trim();
+  return s;
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Phase 1: ひらがな / カタカナ / 漢字 数字 → 算用数字
 // ═══════════════════════════════════════════════════════════════
 
-const KANA_NUM_MAP: [string, string][] = [
-  // 長い方を先に（「きゅう」を「く」の前に）
+// 安全なひらがな/カタカナ数字（2文字以上、誤マッチしにくい）
+const KANA_NUM_SAFE: [string, string][] = [
   ['きゅう', '9'], ['じゅう', '10'],
   ['ひゃく', '100'], ['びゃく', '100'], ['ぴゃく', '100'],
   ['せん', '1000'], ['ぜん', '1000'],
@@ -31,7 +75,14 @@ const KANA_NUM_MAP: [string, string][] = [
   ['ゼロ', '0'], ['ワン', '1'], ['ツー', '2'], ['スリー', '3'],
   ['フォー', '4'], ['ファイブ', '5'], ['シックス', '6'], ['セブン', '7'],
   ['エイト', '8'], ['ナイン', '9'], ['テン', '10'],
-  ['に', '2'], ['し', '4'], ['ご', '5'], ['く', '9'],
+];
+
+// 危険な1文字ひらがな数字 — 数学コンテキスト（前後に数字or演算キーワード）でのみ変換
+const KANA_NUM_SHORT: [RegExp, string][] = [
+  [/(?<=\d[\s]*|かける|たす|ひく|わる|ルート|の)に(?=[\s]*\d|乗|かける|たす|ひく|わる|パーセント|$)/g, '2'],
+  [/(?<=\d[\s]*|かける|たす|ひく|わる|ルート|の)し(?=[\s]*\d|乗|かける|たす|ひく|わる|$)/g, '4'],
+  [/(?<=\d[\s]*|かける|たす|ひく|わる|ルート|の)ご(?=[\s]*\d|乗|かける|たす|ひく|わる|$)/g, '5'],
+  [/(?<=\d[\s]*|かける|たす|ひく|わる|ルート|の)く(?=[\s]*\d|乗|かける|たす|ひく|わる|$)/g, '9'],
 ];
 
 const KANJI_DIGIT: Record<string, number> = {
@@ -63,12 +114,17 @@ function replaceSpokenNumbers(text: string): string {
     s = s.replaceAll(kanji, String(val));
   }
 
-  // ── ひらがな / カタカナ数字 ────────────────────────────
-  for (const [kana, num] of KANA_NUM_MAP) {
+  // ── ひらがな / カタカナ数字（安全な2文字以上）────────────
+  for (const [kana, num] of KANA_NUM_SAFE) {
     s = s.replaceAll(kana, num);
   }
 
-  // 隣接する数字の間にスペースがある場合は結合（「1 0」→「10」にはしない、意図が曖昧なため）
+  // ── 危険な1文字ひらがな（数学コンテキストでのみ変換）────
+  for (const [pattern, replacement] of KANA_NUM_SHORT) {
+    pattern.lastIndex = 0;
+    s = s.replace(pattern, replacement);
+  }
+
   return s;
 }
 
@@ -278,8 +334,11 @@ function applyCompoundPatterns(text: string): string {
 }
 
 export function parseVoiceInput(text: string): ParseResult {
+  // Phase 0: Whisperノイズ除去
+  const denoised = removeWhisperNoise(text.trim());
+
   // Phase 1: 数字変換
-  const withNumbers = replaceSpokenNumbers(text.trim());
+  const withNumbers = replaceSpokenNumbers(denoised);
 
   // Phase 2: 複合パターン
   const afterPatterns = applyCompoundPatterns(withNumbers);
