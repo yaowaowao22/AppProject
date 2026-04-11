@@ -17,7 +17,7 @@
     "@shopify/react-native-skia": "2.2.12",
     "expo": "~54.0.33",
     "expo-camera": "~17.0.10",
-    "@react-native-ml-kit/face-detection": "^16.0.0",
+    "@react-native-ml-kit/face-detection": "^2.0.1",
     "expo-file-system": "~19.0.21",
     "expo-image-manipulator": "~14.0.8",
     "expo-image-picker": "~17.0.10",
