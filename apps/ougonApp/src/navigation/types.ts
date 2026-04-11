@@ -8,6 +8,8 @@ export type EditorStackParamList = {
   Editor: {
     imageUri: string;
     landmarks: FaceLandmarks;
+    imageWidth: number;
+    imageHeight: number;
   };
 };
 

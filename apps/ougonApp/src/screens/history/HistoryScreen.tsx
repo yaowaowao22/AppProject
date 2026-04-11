@@ -8,6 +8,7 @@ import {
   SectionList,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -85,8 +86,8 @@ function formatDateTime(iso: string): string {
 function ThumbnailPhiLines() {
   return (
     <View style={styles.thumbLines} pointerEvents="none">
-      <View style={[styles.thumbLineV, { left: '61.8%' as unknown as number }]} />
-      <View style={[styles.thumbLineH, { top: '38.2%' as unknown as number }]} />
+      <View style={[styles.thumbLineV, styles.thumbLineVPos]} />
+      <View style={[styles.thumbLineH, styles.thumbLineHPos]} />
     </View>
   );
 }
@@ -181,7 +182,7 @@ export default function HistoryScreen({ navigation }: Props) {
   const sections = groupByDate(records);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* NavBar */}
       <View style={styles.navBar}>
         <View style={styles.navBtnEmpty} />
@@ -222,7 +223,7 @@ export default function HistoryScreen({ navigation }: Props) {
           stickySectionHeadersEnabled={false}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -330,6 +331,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#C8A96E',
     opacity: 0.5,
   },
+  thumbLineVPos: {
+    left: '61.8%',
+  },
   thumbLineH: {
     position: 'absolute',
     height: 0.5,
@@ -337,6 +341,9 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: '#C8A96E',
     opacity: 0.5,
+  },
+  thumbLineHPos: {
+    top: '38.2%',
   },
   afterBadge: {
     position: 'absolute',

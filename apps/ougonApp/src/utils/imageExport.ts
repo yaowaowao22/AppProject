@@ -22,7 +22,8 @@ export async function saveToGallery(uri: string): Promise<string> {
 }
 
 /**
- * 指定 URI の画像を 200×200 にリサイズし、documentDirectory/thumbnails/{id}.jpg に保存する。
+ * 指定 URI の画像を幅 200px に収まるようリサイズ（アスペクト比維持）し、
+ * documentDirectory/thumbnails/{id}.jpg に保存する。
  * @returns 保存先のローカルパス
  */
 export async function saveThumbnail(uri: string, id: string): Promise<string> {
@@ -32,7 +33,7 @@ export async function saveThumbnail(uri: string, id: string): Promise<string> {
 
   const result = await ImageManipulator.manipulateAsync(
     safeUri,
-    [{ resize: { width: 200, height: 200 } }],
+    [{ resize: { width: 200 } }],
     { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG },
   );
 

@@ -29,7 +29,7 @@ export default function BeforeAfterToggle({ value, onChange }: Props) {
   // We use percentage-based translation via interpolation on a fixed-width container
   const thumbTranslate = animX.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
+    outputRange: ['0%', '50%'],
   });
 
   return (

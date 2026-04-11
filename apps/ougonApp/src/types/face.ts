@@ -22,6 +22,10 @@ export interface FaceLandmarks {
   leftCheekPosition: Point;
   /** 右頬座標（顔輪郭幅計算に使用） */
   rightCheekPosition: Point;
+  /** 口の左端座標（口幅計算に使用） */
+  leftMouthPosition: Point;
+  /** 口の右端座標（口幅計算に使用） */
+  rightMouthPosition: Point;
 }
 
 /** 各部位における黄金比（φ）からの乖離量と補正スコア */

@@ -61,6 +61,8 @@ const EMPTY_DEVIATIONS: PhiDeviations = {
 type EditorParams = {
   imageUri: string;
   landmarks: FaceLandmarks | null;
+  imageWidth: number;
+  imageHeight: number;
 };
 
 type EditorRouteProp = RouteProp<{ Editor: EditorParams }, 'Editor'>;
@@ -68,6 +70,28 @@ type EditorRouteProp = RouteProp<{ Editor: EditorParams }, 'Editor'>;
 // ─────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────
+
+/** 画像ピクセル空間のランドマークをviewport座標空間にスケール変換する */
+function scaleLandmarksToViewport(
+  lm: FaceLandmarks,
+  scaleX: number,
+  scaleY: number,
+): FaceLandmarks {
+  const s = (p: { x: number; y: number }) => ({ x: p.x * scaleX, y: p.y * scaleY });
+  return {
+    leftEyePosition:     s(lm.leftEyePosition),
+    rightEyePosition:    s(lm.rightEyePosition),
+    noseBasePosition:    s(lm.noseBasePosition),
+    bottomMouthPosition: s(lm.bottomMouthPosition),
+    leftEarPosition:     s(lm.leftEarPosition),
+    rightEarPosition:    s(lm.rightEarPosition),
+    leftCheekPosition:   s(lm.leftCheekPosition),
+    rightCheekPosition:  s(lm.rightCheekPosition),
+    leftMouthPosition:   s(lm.leftMouthPosition),
+    rightMouthPosition:  s(lm.rightMouthPosition),
+  };
+}
+
 function clampAdjust(v: number): number {
   return Math.max(-20, Math.min(20, Math.round(v)));
 }
@@ -86,7 +110,20 @@ export default function EditorScreen() {
   const route = useRoute<EditorRouteProp>();
 
   const imageUri = route.params?.imageUri ?? '';
-  const landmarks = route.params?.landmarks ?? null;
+  const rawLandmarks = route.params?.landmarks ?? null;
+  const imageWidth = route.params?.imageWidth ?? 0;
+  const imageHeight = route.params?.imageHeight ?? 0;
+
+  // ── ランドマークを画像ピクセル空間→viewport座標空間へスケール変換 ──
+  // ML Kit は実画像ピクセル座標でランドマークを返す。
+  // Skia Canvas / フック内の計算はすべて viewport 空間（screenWidth × VIEWPORT_HEIGHT）で動作するため、
+  // ここで一度変換してから各フックに渡す。
+  const landmarks = useMemo<FaceLandmarks | null>(() => {
+    if (rawLandmarks == null || imageWidth === 0 || imageHeight === 0) return rawLandmarks;
+    const scaleX = screenWidth / imageWidth;
+    const scaleY = VIEWPORT_HEIGHT / imageHeight;
+    return scaleLandmarksToViewport(rawLandmarks, scaleX, scaleY);
+  }, [rawLandmarks, imageWidth, imageHeight, screenWidth]);
 
   // ── State ──
   const [toggle, setToggle] = useState<'before' | 'after'>('after');

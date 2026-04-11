@@ -136,6 +136,8 @@ export function useSkiaWarp(
       rightEarPosition: { x: w * 0.90, y: h * 0.45 },
       leftCheekPosition:  { x: w * 0.25, y: h * 0.55 },
       rightCheekPosition: { x: w * 0.75, y: h * 0.55 },
+      leftMouthPosition:  { x: w * 0.40, y: h * 0.65 },
+      rightMouthPosition: { x: w * 0.60, y: h * 0.65 },
     };
 
     const normalizedIntensity = intensity / 100;

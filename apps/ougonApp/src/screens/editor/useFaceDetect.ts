@@ -56,6 +56,8 @@ export function useFaceDetect(imageUri: string | null): UseFaceDetectResult {
         rightEarPosition:    findPos('rightEar'),
         leftCheekPosition:   findPos('leftCheek'),
         rightCheekPosition:  findPos('rightCheek'),
+        leftMouthPosition:   findPos('mouthLeft'),
+        rightMouthPosition:  findPos('mouthRight'),
       };
 
       setLandmarks(mapped);

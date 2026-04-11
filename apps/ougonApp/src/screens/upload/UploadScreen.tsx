@@ -23,14 +23,19 @@ const TEN_MB = 10 * 1024 * 1024;
 
 export function UploadScreen({ navigation }: Props) {
   const [selectedUri, setSelectedUri] = useState<string | null>(null);
-  const { landmarks, loading, error } = useFaceDetect(selectedUri);
+  const { landmarks, imageWidth, imageHeight, loading, error } = useFaceDetect(selectedUri);
 
   // 顔検出完了後のハンドリング
   useEffect(() => {
     if (!selectedUri || loading) return;
 
     if (landmarks != null) {
-      navigation.navigate('Editor', { imageUri: selectedUri, landmarks });
+      navigation.navigate('Editor', {
+        imageUri: selectedUri,
+        landmarks,
+        imageWidth,
+        imageHeight,
+      });
       setSelectedUri(null);
     } else if (error != null) {
       Alert.alert('顔が検出できませんでした');

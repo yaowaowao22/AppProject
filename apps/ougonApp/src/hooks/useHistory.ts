@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 import { HistoryRecord } from '../types/history';
@@ -20,6 +20,11 @@ export type UseHistoryResult = {
 export function useHistory(): UseHistoryResult {
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const recordsRef = useRef<HistoryRecord[]>([]);
+
+  useEffect(() => {
+    recordsRef.current = records;
+  }, [records]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -55,19 +60,23 @@ export function useHistory(): UseHistoryResult {
         id: generateId(),
         createdAt: new Date().toISOString(),
       };
-      const updated = [newRecord, ...records];
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      setRecords(updated);
+      setRecords(prev => {
+        const updated = [newRecord, ...prev];
+        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+      });
     },
-    [records],
+    [],
   );
 
   const deleteRecord = useCallback(
     async (id: string) => {
-      const target = records.find(r => r.id === id);
-      const updated = records.filter(r => r.id !== id);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      setRecords(updated);
+      const target = recordsRef.current.find(r => r.id === id);
+      setRecords(prev => {
+        const updated = prev.filter(r => r.id !== id);
+        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+      });
 
       if (target) {
         const deleteIfExists = async (path: string) => {
@@ -87,7 +96,7 @@ export function useHistory(): UseHistoryResult {
         ]);
       }
     },
-    [records],
+    [],
   );
 
   return { records, loading, addRecord, deleteRecord, refresh };

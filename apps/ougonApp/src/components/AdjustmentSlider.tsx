@@ -29,6 +29,7 @@ export default function AdjustmentSlider({
   isIntensity = false,
 }: Props) {
   const [trackWidth, setTrackWidth] = useState(0);
+  const trackWidthRef = useRef(0);
   const startX = useRef(0);
   const startValue = useRef(value);
 
@@ -39,7 +40,9 @@ export default function AdjustmentSlider({
   const thumbLeft = fillWidth;
 
   const handleLayout = useCallback((e: LayoutChangeEvent) => {
-    setTrackWidth(e.nativeEvent.layout.width);
+    const w = e.nativeEvent.layout.width;
+    setTrackWidth(w);
+    trackWidthRef.current = w;
   }, []);
 
   // PanResponder created once; read latest value via ref on each grant
@@ -55,9 +58,9 @@ export default function AdjustmentSlider({
         startValue.current = valueRef.current;
       },
       onPanResponderMove: (_, gs) => {
-        if (trackWidth <= 0) return;
+        if (trackWidthRef.current <= 0) return;
         const delta = gs.moveX - startX.current;
-        const deltaRatio = delta / trackWidth;
+        const deltaRatio = delta / trackWidthRef.current;
         const newValue = startValue.current + deltaRatio * (max - min);
         const clamped = Math.round(Math.max(min, Math.min(max, newValue)));
         onChange(clamped);

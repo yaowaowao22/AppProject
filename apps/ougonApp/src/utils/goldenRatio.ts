@@ -41,6 +41,8 @@ export function calcDeviations(
   const rightEye = lm.rightEyePosition ?? { x: w * 0.7, y: h * 0.4 };
   const noseBase = lm.noseBasePosition ?? { x: w * 0.5, y: h * 0.55 };
   const bottomMouth = lm.bottomMouthPosition ?? { x: w * 0.5, y: h * 0.65 };
+  const leftMouth = lm.leftMouthPosition ?? { x: w * 0.43, y: h * 0.65 };
+  const rightMouth = lm.rightMouthPosition ?? { x: w * 0.57, y: h * 0.65 };
 
   const faceWidth = dist(leftEar, rightEar) || 1;
 
@@ -56,10 +58,11 @@ export function calcDeviations(
   const faceHeight = dist(topOfHead, bottomMouth) || 1;
   const eyeWidth = dist(leftEye, rightEye) || 1;
 
-  // noseWidth / mouthWidth 推定 (expo-face-detector は直接提供しない)
-  // 人体測定の平均比率: 鼻幅≈顔幅×0.25、口幅≈顔幅×0.375
+  // mouthWidth: mouthLeft/mouthRight ランドマークから実測値を取得
+  // noseWidth: ML Kitは鼻幅ランドマークを提供しないため顔幅の比率推定
+  // 人体測定の平均比率: 鼻幅≈顔幅×0.25
+  const mouthWidth = dist(leftMouth, rightMouth) || 1;
   const noseWidth = faceWidth * 0.25;
-  const mouthWidth = faceWidth * 0.375;
 
   // 眉間 (midEye) → 鼻先 (noseBase) → 顎 (bottomMouth)
   const midEye: Point = {
