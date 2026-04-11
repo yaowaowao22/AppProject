@@ -22,6 +22,7 @@ import {
   getModelById,
   type ModelDefinition,
 } from '../config/modelCatalog';
+import { DEFAULT_LOCAL_PROFILE, type AnalysisProfile } from '../config/analysisProfile';
 import { fetchAndExtractText } from './htmlExtractorService';
 import { beginBackgroundTask, endBackgroundTask, getBackgroundTimeRemaining } from 'background-task';
 import {
@@ -396,11 +397,11 @@ export async function downloadModel(): Promise<void> {
 }
 
 // ============================================================
-// テキスト分割（nCtx=4096 対応）
+// テキスト分割（プロファイルの chunkSize に合わせる）
 // ============================================================
 
-/** チャンクあたりの文字数。プロンプト指示 + テキスト + 出力が 4096 トークン内に収まるよう設定 */
-const CHUNK_SIZE = 1_500;
+/** デフォルトチャンクサイズ。profile 未指定時のフォールバック (4k contextローカルモデル互換) */
+const DEFAULT_CHUNK_SIZE = 1_500;
 
 /**
  * 自然な区切りが見つからないときのフォールバック重複文字数。
@@ -416,18 +417,20 @@ const CHUNK_OVERLAP_FALLBACK = 50;
  *   2. 見つかった場合 → その位置で分割し、オーバーラップなし（重複ゼロ）
  *   3. 見つからない場合 → hardEnd で分割し、CHUNK_OVERLAP_FALLBACK 文字だけ重複
  *
- * 効果:
- *   - 文中断ちきれ削減 → LLM が断片を補完する無駄トークンを削減
- *   - オーバーラップ 200 → 0〜50 に削減 → チャンク数・入力トークン削減
+ * @param chunkSize 1チャンクあたりの最大文字数。モデルのcontext窓に合わせる。
+ *                  Groq (131k context) なら8000〜10000、ローカル4k contextなら1500前後。
  */
-export function splitTextIntoChunks(text: string): string[] {
-  if (text.length <= CHUNK_SIZE) return [text];
+export function splitTextIntoChunks(
+  text: string,
+  chunkSize: number = DEFAULT_CHUNK_SIZE,
+): string[] {
+  if (text.length <= chunkSize) return [text];
 
   const chunks: string[] = [];
   let pos = 0;
 
   while (pos < text.length) {
-    const hardEnd = Math.min(pos + CHUNK_SIZE, text.length);
+    const hardEnd = Math.min(pos + chunkSize, text.length);
 
     if (hardEnd === text.length) {
       chunks.push(text.slice(pos));
@@ -435,7 +438,7 @@ export function splitTextIntoChunks(text: string): string[] {
     }
 
     // チャンク末尾 35% の範囲で自然な区切りを後ろから探す
-    const searchStart = pos + Math.floor(CHUNK_SIZE * 0.65);
+    const searchStart = pos + Math.floor(chunkSize * 0.65);
     let naturalEnd = -1;
 
     for (let i = hardEnd - 1; i >= searchStart; i--) {
@@ -715,16 +718,11 @@ function normalize(parsed: Partial<AnalysisResult>): AnalysisResult {
 // LLM推論ヘルパー（タイムアウト付き + 排他ロック）
 // ============================================================
 
-/**
- * n_ctx=4096、入力プロンプト ~700トークンの場合、出力上限は ~3300トークン。
- * モデルは <end_of_turn> で自然に止まるため n_predict を大きく設定してもコストゼロ。
- * JSON が途中で切れないよう n_ctx の実質上限に合わせる。
+/*
+ * N_PREDICT / MAX_QA_TOTAL はモデル固有の AnalysisProfile から読む
+ * (modelCatalog.ts → ModelDefinition.profile)。
+ * profile 未指定のモデルは DEFAULT_LOCAL_PROFILE にフォールバック。
  */
-const N_PREDICT_FIRST        = 3000;
-const N_PREDICT_CONTINUATION = 3000;
-
-/** 1URL あたりの Q&A 上限。超えたらチャンク処理を打ち切る */
-const MAX_QA_TOTAL = 50;
 
 /**
  * LLM排他ロック — llama.rn は同一コンテキストへの並行 completion を
@@ -789,7 +787,7 @@ async function doCompletion(
  */
 async function runCompletion(
   prompt: string,
-  nPredict: number = N_PREDICT_FIRST,
+  nPredict: number = DEFAULT_LOCAL_PROFILE.maxTokensFirst,
 ): Promise<string> {
   return withCompletionLock(async () => {
     const ctx = await getLlamaContext();
@@ -859,6 +857,16 @@ export async function analyzeUrlLocal(
   }
 
   try {
+    // ── アクティブモデルのプロファイル解決 ──
+    // profile 未指定モデルは DEFAULT_LOCAL_PROFILE にフォールバック。
+    // レジューム時はチャンクは保存済みだが、maxQa/maxTokens は現在のプロファイルを使う。
+    const activeId = await getActiveModelId();
+    const activeModel = getModelById(activeId);
+    const profile: AnalysisProfile = activeModel?.profile ?? DEFAULT_LOCAL_PROFILE;
+    console.log(
+      `[localAnalysis] profile (${activeId}): chunkSize=${profile.chunkSize} maxQa=${profile.maxQaTotal} maxTokFirst=${profile.maxTokensFirst} maxTokChunk=${profile.maxTokensChunk}`,
+    );
+
     // ── フェーズ 1: チャンクとベース結果を取得（新規 or レジューム） ──
 
     let text: string;
@@ -888,22 +896,22 @@ export async function analyzeUrlLocal(
       onProgress?.(-1, 0);
       text = await fetchAndExtractText(url);
 
-      const installed = await isModelInstalled(await getActiveModelId());
+      const installed = await isModelInstalled(activeId);
       if (!installed) {
         throw new Error('AIモデルが未インストールです。設定 → AIモデル からインストールしてください');
       }
 
-      chunks = splitTextIntoChunks(text);
+      chunks = splitTextIntoChunks(text, profile.chunkSize);
       console.log(`[localAnalysis] ${chunks.length}チャンク / ${text.length}文字 / URL: ${url}`);
 
       // 第1チャンク処理（パース失敗時1回リトライ）
       onProgress?.(0, chunks.length);
       const firstPrompt = buildFirstChunkPrompt(url, chunks[0], chunks.length);
       try {
-        baseResult = parseAnalysisResult(await runCompletion(firstPrompt, N_PREDICT_FIRST));
+        baseResult = parseAnalysisResult(await runCompletion(firstPrompt, profile.maxTokensFirst));
       } catch (err) {
         console.warn('[localAnalysis] 第1チャンクパース失敗、リトライします:', err);
-        baseResult = parseAnalysisResult(await runCompletion(firstPrompt, N_PREDICT_FIRST));
+        baseResult = parseAnalysisResult(await runCompletion(firstPrompt, profile.maxTokensFirst));
       }
       allQaPairs = [...baseResult.qa_pairs];
       console.log(
@@ -926,9 +934,9 @@ export async function analyzeUrlLocal(
 
     // ── フェーズ 2: 残りチャンクを処理（再開位置から継続） ──
     for (let i = resumeFrom; i < chunks.length; i++) {
-      if (allQaPairs.length >= MAX_QA_TOTAL) {
+      if (allQaPairs.length >= profile.maxQaTotal) {
         console.warn(
-          `[localAnalysis] QA上限(${MAX_QA_TOTAL})到達 → チャンク${i + 1}/${chunks.length}以降をスキップ`,
+          `[localAnalysis] QA上限(${profile.maxQaTotal})到達 → チャンク${i + 1}/${chunks.length}以降をスキップ`,
         );
         break;
       }
@@ -938,7 +946,7 @@ export async function analyzeUrlLocal(
         const existingQuestions = allQaPairs.map(qa => qa.question);
         const chunkRaw = await runCompletion(
           buildChunkPrompt(url, chunks[i], i, chunks.length, existingQuestions),
-          N_PREDICT_CONTINUATION,
+          profile.maxTokensChunk,
         );
         const chunkPairs = parseChunkQaPairs(chunkRaw);
         if (chunkPairs.length === 0) {
@@ -961,7 +969,7 @@ export async function analyzeUrlLocal(
       }
 
       // チャンク完了後にレジューム状態を更新（最終チャンクは不要）
-      const isLastChunk = i === chunks.length - 1 || allQaPairs.length >= MAX_QA_TOTAL;
+      const isLastChunk = i === chunks.length - 1 || allQaPairs.length >= profile.maxQaTotal;
       if (jobId && !isLastChunk) {
         await saveResumptionState({
           version: 1, url, jobId, savedAt: Date.now(), text, chunks,

@@ -17,11 +17,10 @@ import { getSetting } from '../db/settingsRepository';
 import {
   GROQ_API_ENDPOINT,
   GROQ_DEFAULT_MODEL_ID,
-  GROQ_MAX_QA_TOTAL,
-  GROQ_MAX_TOKENS_CONTINUATION,
-  GROQ_MAX_TOKENS_FIRST,
   GROQ_TIMEOUT_MS,
+  getGroqProfile,
 } from '../config/groq';
+import type { AnalysisProfile } from '../config/analysisProfile';
 import { fetchAndExtractText } from './htmlExtractorService';
 import {
   deduplicateQaPairs,
@@ -35,7 +34,11 @@ import type { AnalysisResult, QAPair } from '../types/analysis';
 // 設定読み込み
 // ============================================================
 
-async function loadGroqConfig(): Promise<{ apiKey: string; model: string }> {
+async function loadGroqConfig(): Promise<{
+  apiKey: string;
+  model: string;
+  profile: AnalysisProfile;
+}> {
   const db = await getDatabase();
   const apiKey = (await getSetting(db, 'groq_api_key')).trim();
   const modelRaw = (await getSetting(db, 'groq_model')).trim();
@@ -46,7 +49,8 @@ async function loadGroqConfig(): Promise<{ apiKey: string; model: string }> {
       'Groq APIキーが未設定です。設定 → AIモデル → Groq APIキー からキーを入力してください',
     );
   }
-  return { apiKey, model };
+  const profile = getGroqProfile(model);
+  return { apiKey, model, profile };
 }
 
 // ============================================================
@@ -239,13 +243,15 @@ export async function analyzeUrlGroq(
     totalQaCount?: number,
   ) => void,
 ): Promise<AnalysisResult> {
-  const { apiKey, model } = await loadGroqConfig();
-  console.log(`[groqAnalysis] 開始: ${url} (model=${model})`);
+  const { apiKey, model, profile } = await loadGroqConfig();
+  console.log(
+    `[groqAnalysis] 開始: ${url} (model=${model} profile: chunkSize=${profile.chunkSize} maxQa=${profile.maxQaTotal} maxTokFirst=${profile.maxTokensFirst} maxTokChunk=${profile.maxTokensChunk})`,
+  );
 
-  // ── フェーズ 1: HTML取得 + チャンク分割 ──
+  // ── フェーズ 1: HTML取得 + チャンク分割 (profile.chunkSize) ──
   onProgress?.(-1, 0);
   const text = await fetchAndExtractText(url);
-  const chunks = splitTextIntoChunks(text);
+  const chunks = splitTextIntoChunks(text, profile.chunkSize);
   console.log(
     `[groqAnalysis] ${chunks.length}チャンク / ${text.length}文字 / URL: ${url}`,
   );
@@ -257,12 +263,12 @@ export async function analyzeUrlGroq(
   let baseResult: AnalysisResult;
   try {
     baseResult = parseAnalysisResult(
-      await callGroq(apiKey, model, SYSTEM_PROMPT, firstMessage, GROQ_MAX_TOKENS_FIRST),
+      await callGroq(apiKey, model, SYSTEM_PROMPT, firstMessage, profile.maxTokensFirst),
     );
   } catch (err) {
     console.warn('[groqAnalysis] 第1チャンクパース失敗、1回リトライします:', err);
     baseResult = parseAnalysisResult(
-      await callGroq(apiKey, model, SYSTEM_PROMPT, firstMessage, GROQ_MAX_TOKENS_FIRST),
+      await callGroq(apiKey, model, SYSTEM_PROMPT, firstMessage, profile.maxTokensFirst),
     );
   }
 
@@ -274,9 +280,9 @@ export async function analyzeUrlGroq(
 
   // ── フェーズ 3: 残りチャンク (QAのみ追加生成) ──
   for (let i = 1; i < chunks.length; i++) {
-    if (allQaPairs.length >= GROQ_MAX_QA_TOTAL) {
+    if (allQaPairs.length >= profile.maxQaTotal) {
       console.warn(
-        `[groqAnalysis] QA上限(${GROQ_MAX_QA_TOTAL})到達 → チャンク${i + 1}/${chunks.length}以降をスキップ`,
+        `[groqAnalysis] QA上限(${profile.maxQaTotal})到達 → チャンク${i + 1}/${chunks.length}以降をスキップ`,
       );
       break;
     }
@@ -296,7 +302,7 @@ export async function analyzeUrlGroq(
         model,
         SYSTEM_PROMPT,
         userMessage,
-        GROQ_MAX_TOKENS_CONTINUATION,
+        profile.maxTokensChunk,
       );
       const chunkPairs = parseChunkQaPairs(chunkRaw);
       if (chunkPairs.length === 0) {
