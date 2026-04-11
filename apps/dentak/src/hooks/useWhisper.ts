@@ -177,10 +177,10 @@ export function useWhisper(): UseWhisperReturn {
         const { stop, subscribe } = await ctx.transcribeRealtime({
           language: voiceLang === 'auto' ? undefined : voiceLang,
           realtimeAudioSec: 30,
-          // initial_prompt: 数学・計算用語に認識を誘導する
+          // initial_prompt: 数学・計算用語にWhisper認識を強力に誘導
           prompt: voiceLang === 'en'
-            ? '1 plus 2, 10 times 5, 100 divided by 3, square root of 9, 3.14, sin 45, log 10, factorial of 5'
-            : '1たす2、10かける5、100わる3、ルート9、3.14、サイン45、ログ10、5の階乗、円周率、二十三、四十五',
+            ? '1 plus 2, 10 times 5, 100 divided by 3, square root of 9, 3.14, sin 45, log 10, factorial of 5, 3 squared, 2 cubed, 5 to the power of 3, absolute value of -7'
+            : '1たす2、10かける5、100わる3、5かける3の2乗、ルート9、3.14、サイン45、コサイン60、タンジェント30、ログ10、5の階乗、円周率、3の2乗、二十三、四十五、3分の1、絶対値マイナス7、二乗、三乗、平方根',
           // whisper.rn 自身に iOS AudioSession を PlayAndRecord に設定させる
           audioSessionOnStartIos: {
             category: 'PlayAndRecord',
