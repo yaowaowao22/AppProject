@@ -84,10 +84,12 @@ function formatFixed(
 }
 
 function formatExp(num: number, decimals: DecimalMode): string {
-  const precision = decimals === 'auto' ? MAX_DIGITS : (decimals as number) + 1;
-  // toPrecision gives "1.23456789012345e+20" style
-  const raw = num.toPrecision(precision);
-  // Parse to ensure consistent output then rebuild
+  // toExponential always produces "X.Ye±N" form regardless of magnitude
+  // toPrecision の代わりに使う: toPrecision は 0 や小数で 'e' なしの文字列を返し
+  // split('e') の結果が [mantissa, undefined] になって startsWith クラッシュする
+  const fractionDigits =
+    decimals === 'auto' ? MAX_DIGITS - 1 : (decimals as number);
+  const raw = num.toExponential(fractionDigits);
   const [mantissa, exp] = raw.toLowerCase().split('e');
   const cleanMantissa =
     decimals === 'auto' ? trimTrailingZeros(mantissa) : mantissa;
