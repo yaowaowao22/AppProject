@@ -111,6 +111,10 @@ def _call_groq(api_key: str, payload: dict) -> tuple[int, str]:
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
+        # デフォルトの "Python-urllib/3.x" は Groq の CDN/WAF でブロックされる (403)。
+        # 明示的に UA を指定することでプロキシとして受け入れてもらう。
+        "User-Agent": "recall-kit-groq-proxy/1.0 (Lambda)",
+        "Accept": "application/json",
     }
     req = urllib.request.Request(GROQ_ENDPOINT, data=data, headers=headers, method="POST")
 
@@ -123,6 +127,8 @@ def _call_groq(api_key: str, payload: dict) -> tuple[int, str]:
         # ステータス・ボディを保持して返すため、呼び出し側で処理。
         body_bytes = e.read() if hasattr(e, "read") else b""
         body_str = body_bytes.decode("utf-8", errors="replace") if body_bytes else ""
+        # デバッグ用に生ボディを print (CloudWatch にだけ出る)
+        print(f"[groq_proxy] upstream HTTP {e.code}: body={body_str[:300]}")
         return e.code, body_str
 
 
