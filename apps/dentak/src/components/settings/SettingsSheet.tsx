@@ -17,6 +17,9 @@ import Animated, {
 import { useShallow } from 'zustand/react/shallow';
 import { useSettingsStore } from '../../store/settingsStore';
 import type { AngleUnit, DecimalMode, VoiceLang } from '../../store/settingsStore';
+import { useModelStore } from '../../store/modelStore';
+import { useModelManager } from '../../hooks/useModelManager';
+import type { AvailableModel } from '../../hooks/useModelManager';
 import { colors } from '../../theme/tokens';
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -125,6 +128,96 @@ const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
   <Text style={styles.ssHead}>{title}</Text>
 );
 
+// ── Model Row ─────────────────────────────────────────────────────────────────
+
+const ACCURACY_LABEL: Record<string, string> = {
+  fast:     '高速',
+  balanced: 'バランス',
+  accurate: '高精度',
+  best:     '最高精度',
+};
+
+interface ModelRowProps {
+  model:      AvailableModel;
+  isActive:   boolean;
+  onDownload: () => void;
+  onDelete:   () => void;
+  onSwitch:   () => void;
+  noBorder?:  boolean;
+}
+
+const ModelRow: React.FC<ModelRowProps> = ({
+  model, isActive, onDownload, onDelete, onSwitch, noBorder,
+}) => {
+  let actionArea: React.ReactNode;
+
+  if (model.progress !== null) {
+    // ダウンロード中
+    actionArea = (
+      <Text style={styles.modelProgress}>
+        {Math.round(model.progress * 100)}%
+      </Text>
+    );
+  } else if (model.isDownloaded) {
+    // DL済み
+    actionArea = (
+      <View style={styles.modelActions}>
+        {isActive ? (
+          <View style={styles.activeBadge}>
+            <Text style={styles.activeBadgeText}>使用中</Text>
+          </View>
+        ) : (
+          <TouchableOpacity onPress={onSwitch} style={styles.modelBtn} activeOpacity={0.75}>
+            <Text style={styles.modelBtnText}>切替</Text>
+          </TouchableOpacity>
+        )}
+        {model.id !== 'tiny' && (
+          <TouchableOpacity
+            onPress={onDelete}
+            style={[styles.modelBtn, styles.modelBtnDanger]}
+            activeOpacity={0.75}
+          >
+            <Text style={[styles.modelBtnText, styles.modelBtnDangerText]}>削除</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  } else {
+    // 未ダウンロード
+    actionArea = (
+      <TouchableOpacity
+        onPress={onDownload}
+        style={[styles.modelBtn, styles.modelBtnDownload]}
+        activeOpacity={0.75}
+      >
+        <Text style={styles.modelBtnDownloadText}>{model.sizeMB}MB</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <View style={[styles.modelRow, noBorder && styles.settingRowNoBorder]}>
+      <View style={styles.modelRowLeft}>
+        <Text style={styles.settingLabel}>{model.label}</Text>
+        <Text style={styles.settingSub}>
+          {ACCURACY_LABEL[model.accuracy]}・RAM {model.minRAM_MB}MB
+        </Text>
+        {model.progress !== null && (
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${Math.round(model.progress * 100)}%` as `${number}%` },
+              ]}
+            />
+          </View>
+        )}
+      </View>
+      {actionArea}
+    </View>
+  );
+};
+
 // ── Angle sub text ────────────────────────────────────────────────────────────
 
 function angleSubText(unit: AngleUnit): string {
@@ -182,6 +275,10 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ isVisible, onClose }) => 
       setSoundFeedback: s.setSoundFeedback,
     })),
   );
+
+  // ── Model management ───────────────────────────────────────────────────────
+  const { availableModels, downloadModel, deleteModel, switchModel } = useModelManager();
+  const activeModelId = useModelStore((s) => s.activeModelId);
 
   // ── Sheet animation ────────────────────────────────────────────────────────
   const translateY = useSharedValue(SCREEN_HEIGHT);
@@ -316,6 +413,20 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ isVisible, onClose }) => 
               />
             }
           />
+
+          {/* ── 音声モデル ────────────────────────────── */}
+          <SectionHeader title="音声モデル (Whisper)" />
+          {availableModels.map((model, idx) => (
+            <ModelRow
+              key={model.id}
+              model={model}
+              isActive={model.id === activeModelId}
+              onDownload={() => { void downloadModel(model.id); }}
+              onDelete={() => { void deleteModel(model.id); }}
+              onSwitch={() => { void switchModel(model.id); }}
+              noBorder={idx === availableModels.length - 1}
+            />
+          ))}
 
           {/* ── 操作 ─────────────────────────────────── */}
           <SectionHeader title="操作" />
@@ -495,5 +606,83 @@ const styles = StyleSheet.create({
   },
   segOptTextOn: {
     color: colors.black,
+  },
+
+  // ── Model row ──────────────────────────────────────────────────────────────
+  modelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 13,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.g0,
+  },
+  modelRowLeft: {
+    flex: 1,
+    marginRight: 8,
+  },
+  modelActions: {
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+  },
+  modelBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.g1,
+    alignItems: 'center',
+  },
+  modelBtnText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.black,
+  },
+  modelBtnDanger: {
+    borderColor: '#FF3B30',
+  },
+  modelBtnDangerText: {
+    color: '#FF3B30',
+  },
+  modelBtnDownload: {
+    borderColor: colors.amber,
+    paddingHorizontal: 12,
+  },
+  modelBtnDownloadText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.amber,
+  },
+  activeBadge: {
+    backgroundColor: colors.amberBg,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  activeBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.amber,
+  },
+  modelProgress: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.amber,
+    minWidth: 36,
+    textAlign: 'right',
+  },
+  progressTrack: {
+    height: 3,
+    backgroundColor: colors.g0,
+    borderRadius: 2,
+    marginTop: 6,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 3,
+    backgroundColor: colors.amber,
+    borderRadius: 2,
   },
 });
