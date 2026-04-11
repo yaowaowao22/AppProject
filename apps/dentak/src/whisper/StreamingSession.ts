@@ -50,10 +50,10 @@ export class StreamingSession {
         }
         const text: string = event.data?.result ?? '';
         if (!event.isCapturing) {
-          // ストリーミング完了
+          // ストリーミング完了 — 空文字でも呼び出す（呼び出し側で処理判断）
           this.options.onFinalResult(text);
-        } else if (text) {
-          // 部分認識結果
+        } else if (text.trim()) {
+          // 部分認識結果（空白のみは無視）
           this.options.onPartialResult(text);
         }
       });

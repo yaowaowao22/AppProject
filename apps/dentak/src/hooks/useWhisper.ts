@@ -14,6 +14,8 @@ import { parseVoiceInput } from '../whisper/voiceParser';
 import type { ParseResult } from '../whisper/voiceParser';
 import { useSettingsStore } from '../store/settingsStore';
 import { useCalculatorStore } from '../store/calculatorStore';
+import { useModelStore } from '../store/modelStore';
+import { getLocalModelPath } from '../whisper/modelRegistry';
 
 /** DESIGN.md §8 VoiceOverlay 状態遷移の 5 状態 */
 export type VoiceState =
@@ -74,6 +76,14 @@ export function useWhisper(): UseWhisperReturn {
       processedRef.current = true;
 
       clearTimer();
+
+      // 空文字 = Whisper が何も認識できなかった → エラーフィードバック
+      if (!text.trim()) {
+        setError('音声を認識できませんでした');
+        setVoiceState('idle');
+        return;
+      }
+
       setVoiceState('processing');
       setFinalText(text);
 
@@ -126,6 +136,21 @@ export function useWhisper(): UseWhisperReturn {
         }
         processAndApply(partialTextRef.current);
       }, TIMEOUT_MS);
+
+      // ── WhisperManager 未初期化時の自動初期化 ────────────
+      // アプリ再起動後、modelStore は永続化済みだが WhisperManager.context は null。
+      // startStreaming 前に初期化することで mock モードへのフォールバックを防ぐ。
+      const manager = WhisperManager.getInstance();
+      if (!manager.isReady()) {
+        const { activeModelId, downloadedModels } = useModelStore.getState();
+        if (downloadedModels.includes(activeModelId)) {
+          try {
+            await manager.initialize(getLocalModelPath(activeModelId));
+          } catch {
+            // 初期化失敗 — startStreaming 側で mock フォールバックが動く
+          }
+        }
+      }
 
       // ── ストリーミング開始 ────────────────────────────
       try {
