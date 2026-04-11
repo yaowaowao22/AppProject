@@ -80,6 +80,46 @@ const EN_PATTERNS: [RegExp, string][] = [
   [/absolute value of ([+-]?\d+(?:\.\d+)?)/gi,       'abs($1)'],
 ];
 
+// 数学キーワード → 演算子/関数に置換（パターンマッチ前の前処理）
+// 数字が隣接していなくても置換する（後段の applyPatterns で数字と結合）
+const MATH_KEYWORD_MAP: [RegExp, string][] = [
+  [/掛ける|かける|掛け|かけ/g,   '*'],
+  [/割る|わる/g,                  '/'],
+  [/足す|たす|プラス/g,           '+'],
+  [/引く|ひく|マイナス/g,         '-'],
+  [/ルート/g,                     'sqrt '],
+  [/サイン/g,                     'sin '],
+  [/コサイン/g,                   'cos '],
+  [/タンジェント/g,               'tan '],
+  [/ログ/g,                       'log10 '],
+  [/階乗/g,                       ' factorial'],
+  [/円周率|パイ/g,                'pi'],
+  [/ネイピア数/g,                 'e'],
+  [/絶対値/g,                     'abs '],
+  [/乗/g,                         '^'],
+  [/点|てん/g,                    '.'],
+  [/イコール|は/g,                '='],
+];
+
+/**
+ * 数学に無関係な日本語テキストを除去し、数字・演算子・数学キーワードだけ残す。
+ * Whisperが「えーと10たす5です」と返した場合→「10+5」に変換。
+ */
+function stripNonMath(text: string): string {
+  let s = text;
+  // まず数学キーワードを演算子に置換
+  for (const [pattern, replacement] of MATH_KEYWORD_MAP) {
+    s = s.replace(pattern, replacement);
+  }
+  // 数字・演算子・数学関数名・小数点・スペースだけ残し、それ以外の文字を除去
+  s = s.replace(/[^0-9+\-*/.()^,%\s a-zA-Z]/g, '');
+  // 数学関数名以外のアルファベット列を除去（pi, e, sin, cos, tan, log10, sqrt, abs, factorial, pow のみ残す）
+  s = s.replace(/\b(?!pi\b|e\b|sin\b|cos\b|tan\b|log10\b|sqrt\b|abs\b|factorial\b|pow\b)[a-df-oq-zA-DF-OQ-Z][a-zA-Z]*\b/g, '');
+  // 連続スペースを1つに
+  s = s.replace(/\s+/g, ' ').trim();
+  return s;
+}
+
 function applyPatterns(text: string): string | null {
   let expr = text;
   let matched = false;
@@ -110,9 +150,12 @@ function tryEvaluate(expr: string): number | null {
 
 export function parseVoiceInput(text: string): ParseResult {
   // 1. 漢字数字を算用数字に変換
-  const normalized = replaceKanjiNumbers(text.trim());
+  const withKanji = replaceKanjiNumbers(text.trim());
 
-  // 2. パターンマッチング
+  // 2. 数学キーワード置換 + 非数学テキスト除去
+  const normalized = stripNonMath(withKanji);
+
+  // 3. パターンマッチング（日本語/英語）
   const matched = applyPatterns(normalized);
 
   if (matched !== null) {
@@ -125,7 +168,7 @@ export function parseVoiceInput(text: string): ParseResult {
     };
   }
 
-  // 3. フォールバック: 数字と演算子のみの文字列を直接評価
+  // 4. フォールバック: 数字と演算子のみの文字列を直接評価
   const directExpr = normalized.replace(/[^0-9+\-*/.()^,%\s]/g, '').trim();
   if (directExpr.length > 0) {
     const result = tryEvaluate(directExpr);
@@ -139,9 +182,9 @@ export function parseVoiceInput(text: string): ParseResult {
     }
   }
 
-  // 4. 完全フォールバック: 元テキストをそのまま返す
+  // 5. 完全フォールバック
   return {
-    expression: text,
+    expression: normalized || text,
     result:     null,
     confidence: 'low',
     rawText:    text,

@@ -17,3 +17,5 @@ android/
 ios/
 # ローカル Expo モジュールの ios ソースは追跡対象
 !apps/*/modules/**/ios/
+# Lambda デプロイアーティファクト (aws lambda update-function-code で生成される zip)
+apps/*/lambda/*/*.zip
