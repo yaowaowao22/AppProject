@@ -59,14 +59,26 @@ cd "$APP_DIR"
 echo "  npm install..."
 npm install --prefer-offline 2>&1 | tail -3
 
-echo "  expo prebuild --platform ios --clean..."
-npx expo prebuild --platform ios --clean 2>&1 | tail -10
+echo "  expo prebuild --platform ios --no-install..."
+npx expo prebuild --platform ios --clean --no-install 2>&1 | tail -10
+
+# Podfile.properties.json に ios.deploymentTarget を設定
+# (GoogleMLKit/FaceDetection が iOS 15.5+ を要求するため 16.0 に設定)
+echo "  setting ios.deploymentTarget=16.0 in Podfile.properties.json..."
+python3 -c "
+import json, os
+fp = os.path.join('$IOS_DIR', 'Podfile.properties.json')
+with open(fp, 'r') as f:
+    props = json.load(f)
+props['ios.deploymentTarget'] = '16.0'
+with open(fp, 'w') as f:
+    json.dump(props, f, indent=2)
+print('  ✓ deploymentTarget set')
+"
 
 cd "$IOS_DIR"
-echo "  pod deintegrate + pod install (clean)..."
-pod deintegrate 2>&1 | tail -3
-rm -rf Pods
-pod install 2>&1 | tail -5
+echo "  pod install --repo-update..."
+pod install --repo-update 2>&1 | tail -5
 DEPS_EOF
 echo "  ✓ 依存関係インストール完了"
 
