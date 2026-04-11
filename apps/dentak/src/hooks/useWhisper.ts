@@ -9,7 +9,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { Audio } from 'expo-av';
 import WhisperManager from '../whisper/WhisperManager';
-import type { StreamingSession } from '../whisper/StreamingSession';
+import { StreamingSession } from '../whisper/StreamingSession';
 import { parseVoiceInput } from '../whisper/voiceParser';
 import type { ParseResult } from '../whisper/voiceParser';
 import { useSettingsStore } from '../store/settingsStore';
@@ -80,10 +80,10 @@ export function useWhisper(): UseWhisperReturn {
       // 録音終了 → オーディオセッションを通常モードに戻す
       Audio.setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {});
 
-      // 空文字 = Whisper が何も認識できなかった → 診断付きエラー
+      // 空文字 = Whisper が何も認識できなかった → セッション診断付きエラー
       if (!text.trim()) {
-        const mgr = WhisperManager.getInstance();
-        setError(`認識結果が空 (ready=${mgr.isReady()}, partial="${partialTextRef.current}")`);
+        const diag = sessionRef.current?.getDiag() ?? 'session=null';
+        setError(`空結果 [${diag}]`);
         setVoiceState('idle');
         return;
       }
@@ -105,9 +105,10 @@ export function useWhisper(): UseWhisperReturn {
     clearTimer();
     if (sessionRef.current) {
       sessionRef.current.stop();
-      sessionRef.current = null;
+      // sessionRef は processAndApply 内の診断で参照するため、ここでは null にしない
     }
     processAndApply(partialTextRef.current);
+    sessionRef.current = null;
   }, [processAndApply, clearTimer]);
 
   const startListening = useCallback(async () => {
@@ -144,9 +145,9 @@ export function useWhisper(): UseWhisperReturn {
       timeoutRef.current = setTimeout(() => {
         if (sessionRef.current) {
           sessionRef.current.stop();
-          sessionRef.current = null;
         }
         processAndApply(partialTextRef.current);
+        sessionRef.current = null;
       }, TIMEOUT_MS);
 
       // ── WhisperManager 未初期化時の自動初期化 ────────────

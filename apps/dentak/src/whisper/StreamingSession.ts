@@ -12,6 +12,13 @@ export class StreamingSession {
   /** whisper.rn transcribeRealtime の stop 関数（ネイティブ停止用） */
   private nativeStop: (() => Promise<void>) | null = null;
 
+  /** 診断用: subscribe コールバック受信回数 */
+  eventCount = 0;
+  /** 診断用: 最後のイベント概要 */
+  lastEvent = '';
+  /** 診断用: mock モードかどうか */
+  isMock = false;
+
   constructor(context: WhisperContext, options: StreamingOptions) {
     this.context = context;
     this.options = options;
@@ -21,6 +28,7 @@ export class StreamingSession {
     // ネイティブ whisper.rn コンテキストが有効かチェック
     if (!this.context || typeof this.context.transcribeRealtime !== 'function') {
       console.warn('[StreamingSession] whisper.rn not available — running mock mode');
+      this.isMock = true;
       this.runMock();
       return;
     }
@@ -35,7 +43,6 @@ export class StreamingSession {
       this.nativeStop = stop;
 
       // transcribeRealtime が resolve した後に stop() が呼ばれていた場合は即座に停止する
-      // （start() 待機中に stop() → nativeStop が null のまま終わる競合を防ぐ）
       if (this.stopFlag) {
         void stop();
         this.nativeStop = null;
@@ -44,16 +51,18 @@ export class StreamingSession {
 
       // subscribe コールバックで部分結果・完了結果を受信
       subscribe((event: any) => {
+        this.eventCount++;
+        const text: string = event.data?.result ?? '';
+        const capturing = event.isCapturing;
+        this.lastEvent = `#${this.eventCount} cap=${capturing} err=${!!event.error} len=${text.length} "${text.slice(0, 30)}"`;
+
         if (event.error) {
           this.options.onError(new Error(event.error));
           return;
         }
-        const text: string = event.data?.result ?? '';
-        if (!event.isCapturing) {
-          // ストリーミング完了 — 空文字でも呼び出す（呼び出し側で処理判断）
+        if (!capturing) {
           this.options.onFinalResult(text);
         } else if (text.trim()) {
-          // 部分認識結果（空白のみは無視）
           this.options.onPartialResult(text);
         }
       });
@@ -66,8 +75,15 @@ export class StreamingSession {
       }, maxMs);
     } catch (err) {
       console.warn('[StreamingSession] transcribeRealtime failed, falling back to mock:', err);
+      this.isMock = true;
+      this.lastEvent = `catch: ${err instanceof Error ? err.message : String(err)}`;
       this.runMock();
     }
+  }
+
+  /** 診断サマリ文字列 */
+  getDiag(): string {
+    return `mock=${this.isMock} events=${this.eventCount} last=[${this.lastEvent}]`;
   }
 
   stop(): void {
