@@ -54,12 +54,13 @@ import urllib.error
 
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
-# モデル allow-list (悪用防止)。無料枠〜低コスト帯のモデルのみ許可。
+# モデル allow-list (悪用防止)。低コスト帯の Flash / Flash-Lite 系のみ許可。
+# 2026年時点: gemini-1.5-* は deprecated & v1beta から削除済なので除外。
 ALLOWED_MODELS = {
-    "gemini-1.5-flash-8b",   # 最安 ($0.0375/1M in, $0.15/1M out)
-    "gemini-1.5-flash",      # ($0.075/1M in, $0.30/1M out)
-    "gemini-2.0-flash",      # ($0.10/1M in, $0.40/1M out)
-    "gemini-2.0-flash-lite", # ($0.075/1M in, $0.30/1M out)
+    "gemini-2.5-flash-lite",  # 2.5 系の最安 (新世代)
+    "gemini-2.5-flash",       # 2.5 系の標準
+    "gemini-2.0-flash-lite",  # 2.0 系の最安
+    "gemini-2.0-flash",       # 2.0 系の標準
 }
 
 # Gemini API タイムアウト (秒)。Lambda 最大 60s、RN クライアントも 60s なので 55s で打ち切る。

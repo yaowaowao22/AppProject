@@ -35,7 +35,7 @@ export const SETTING_DEFAULTS: Record<SettingKey, string> = {
   groq_use_byok: 'false',  // デフォルトは Lambda proxy 経由
   groq_model: 'llama-3.1-8b-instant',
   gemini_use_byok: 'false',  // デフォルトは Lambda proxy 経由
-  gemini_model: 'gemini-1.5-flash-8b',  // 最安モデル
+  gemini_model: 'gemini-2.5-flash-lite',  // Free Tier 対応の最安モデル
 };
 
 // 全設定をまとめた型

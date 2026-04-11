@@ -24,15 +24,17 @@ export type PipelineResult = AnalysisResult & { sourceUrl: string };
 
 /**
  * 現在選択されているプロバイダーを解決する。
+ * Groq / Bedrock は 2026/04 に UI から撤去したため、DB に残っていたら Gemini に自動移行する。
  * DB未設定 (空文字) なら LOCAL_AI_ENABLED で決定する後方互換。
  */
 async function resolveProvider(): Promise<LlmProvider> {
   const db = await getDatabase();
   const raw = (await getSetting(db, 'llm_provider')).trim();
-  if (raw === 'local' || raw === 'bedrock' || raw === 'groq' || raw === 'gemini') {
+  if (raw === 'local' || raw === 'gemini') {
     return raw;
   }
-  return LOCAL_AI_ENABLED ? 'local' : 'bedrock';
+  // 旧 provider (groq/bedrock) → gemini に自動マイグレーション
+  return LOCAL_AI_ENABLED ? 'local' : 'gemini';
 }
 
 /**

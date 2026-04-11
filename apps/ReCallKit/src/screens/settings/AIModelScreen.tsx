@@ -67,19 +67,22 @@ export function AIModelScreen() {
   const [geminiModel, setGeminiModel] = useState<string>(GEMINI_DEFAULT_MODEL_ID);
   const [showGeminiKey, setShowGeminiKey] = useState(false);
 
-  // プロバイダー設定を DB + SecureStore から読み込む
+  // プロバイダー設定を DB + SecureStore から読み込む。
+  // Groq/Bedrock は UI から撤去したので、既存の値が入っていたら Gemini に自動移行する。
   const loadProviderSettings = useCallback(async () => {
     const db = await getDatabase();
     const rawProvider = (await getSetting(db, 'llm_provider')).trim();
-    const resolved: LlmProvider =
-      rawProvider === 'local' ||
-      rawProvider === 'bedrock' ||
-      rawProvider === 'groq' ||
-      rawProvider === 'gemini'
-        ? rawProvider
-        : LOCAL_AI_ENABLED
-          ? 'local'
-          : 'bedrock';
+    let resolved: LlmProvider;
+    if (rawProvider === 'local' || rawProvider === 'gemini') {
+      resolved = rawProvider;
+    } else if (rawProvider === 'groq' || rawProvider === 'bedrock') {
+      // 旧 provider → gemini に自動マイグレーション
+      resolved = 'gemini';
+      await setSetting(db, 'llm_provider', 'gemini');
+      console.log(`[AIModel] 自動マイグレーション: ${rawProvider} → gemini`);
+    } else {
+      resolved = LOCAL_AI_ENABLED ? 'local' : 'gemini';
+    }
     setProvider(resolved);
 
     // ── Groq ──
@@ -266,11 +269,10 @@ export function AIModelScreen() {
     setActiveModelIdState(modelId);
   }, []);
 
+  // Groq / Bedrock は 2026/04 時点で廃止。Gemini 2.5 Flash Lite (Free Tier 対応) を標準に。
   const providerOptions: { id: LlmProvider; label: string; desc: string }[] = [
+    { id: 'gemini', label: 'Gemini API', desc: 'Gemini 2.5 Flash Lite（Lambda経由・設定不要）' },
     { id: 'local', label: 'ローカルAI', desc: 'デバイス内で実行（オフライン可・初回DL必要）' },
-    { id: 'bedrock', label: 'AWS Bedrock', desc: 'Claude 3 Haiku（Lambda経由）' },
-    { id: 'groq', label: 'Groq API', desc: 'Llama 3.1 8B（Lambda経由・設定不要）' },
-    { id: 'gemini', label: 'Gemini API', desc: 'Gemini 1.5 Flash 8B（Lambda経由・設定不要）' },
   ];
 
   return (
