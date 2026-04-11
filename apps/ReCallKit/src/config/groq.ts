@@ -29,14 +29,20 @@ export const GROQ_MODELS: GroqModelDef[] = [
     name: 'Llama 3.1 8B Instant',
     description: '高速・軽量 (8Bパラ)',
     priceNote: '高速',
-    // Free Tier TPM 6000 制限に合わせて縮小。
-    // 日本語は ~1 tok/char のため chunkSize=4500 で ~4500 tok、
-    // プロンプトテンプレ + 出力 ~1000 tok の余裕を確保して 6000 TPM に収める。
+    // 8B は指示追従が弱く 1 call で 12-15 件しか作らないことがあるため、
+    // max_tokens を output context (8192) 近くまで広げ、groqAnalysisService 側の
+    // 多段補填ループで目標件数 (30+) まで追加生成する設計にする。
+    // llama-3.1-8b-instant は ~500 tok/sec なので 5500 tok でも ~11 秒 = Lambda 55s の中に 3 call 収まる。
+    //
+    // 日本語は ~1 tok/char のため chunkSize=4500 で入力 ~4500 tok。
+    // 1 call = 入力 ~5000 tok (prompt込) + 出力 5500 tok = 10500 tok。
+    // Free Tier TPM 6000 では 1 req / min に絞られる可能性があるため、
+    // 大量生成には BYOK Dev Tier (TPM 30000) を強く推奨。
     profile: {
       chunkSize: 4_500,
-      maxQaTotal: 40,
-      maxTokensFirst: 2_500,
-      maxTokensChunk: 1_800,
+      maxQaTotal: 80,
+      maxTokensFirst: 5_500,
+      maxTokensChunk: 4_500,
     },
   },
 ];

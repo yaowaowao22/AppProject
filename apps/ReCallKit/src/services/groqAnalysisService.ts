@@ -147,7 +147,36 @@ async function getTemporaryCredentials(): Promise<CachedCredentials> {
 
 const SYSTEM_PROMPT =
   'あなたは日本語Webページを分析し、学習カード用のJSONを生成するアシスタントです。' +
-  '必ず有効なJSONオブジェクトのみを出力してください（説明文・マークダウン禁止）。';
+  '必ず有効なJSONオブジェクトのみを出力してください（説明文・マークダウン禁止）。' +
+  '無駄な前置き・列挙表現・水増しは厳禁。核心だけを端的に書いてください。';
+
+/** 学習カードとして価値のある観点リスト。プロンプトに埋め込みモデルを誘導する */
+const QA_ANGLES = [
+  '定義（これは何か？）',
+  '目的・理由（なぜ必要か／何を解決するか）',
+  '仕組み・方法（どうやって動くか）',
+  '主要な特徴・性質',
+  '具体例・事例（数字・固有名詞を含む）',
+  '対比・違い（類似概念との区別）',
+  '利点・メリット',
+  '欠点・制約・注意点',
+  '前提条件・依存関係',
+  '応用・使いどころ',
+  '歴史・背景・発端',
+  '関連する人物・組織・プロダクト',
+].join('\n- ');
+
+const QA_RULES = `【Q&Aペアの品質基準 — 厳守】
+- 答えは1文・30文字以内で完結させること（句点ひとつで終わる）
+- 「以下の通りです」「〜があります」「様々な〜」等の前置き・列挙・水増し表現は禁止
+- 各Q&Aは異なる観点・異なる切り口にすること。言い換えでの水増し禁止
+- 固有名詞・数字・具体例がある場合は答えに入れること（記憶定着の核）
+- 曖昧な「〜など」「〜的」で終わる答えは作らないこと
+- 本文に書かれていない推測・一般論は禁止
+- 日本語で生成すること
+
+【観点リスト（このうち複数の観点からQ&Aを作ること）】
+- ${QA_ANGLES}`;
 
 function buildFirstChunkUserMessage(
   url: string,
@@ -172,12 +201,12 @@ JSONオブジェクトのみ（説明文・マークダウン不要）:
   ]
 }
 
-【Q&Aペアの要件】
-- このセクションから必ず20個以上のQ&Aを生成すること (最低20、できれば30以上)
-- 答えは1文・30文字以内で完結させること（句点ひとつで終わる）
-- 「以下の通りです」「〜があります」等の前置き・列挙は禁止。核心だけ書く
-- 同じ内容・同じ観点の質問を繰り返さないこと。各Q&Aは異なるトピック・異なる切り口にすること
-- 日本語で生成すること
+【生成数の目標】
+- Q&Aペアは **必ず30個以上** 作ること（理想は40〜50個）
+- 本文から抽出できる情報をすべて拾う意識で生成すること
+- 30個に満たない場合は上の観点リストを順番に適用して追加すること
+
+${QA_RULES}
 
 【タグの要件】
 - 2〜5個のタグを生成すること
@@ -206,7 +235,7 @@ function buildChunkUserMessage(
 ): string {
   const existingList =
     existingQuestions.length > 0
-      ? `\n【生成済みの質問（これらと同じ・類似の質問は生成しないこと）】\n${existingQuestions
+      ? `\n【既に生成済みの質問（これらと同じ・類似の質問は絶対に作らないこと）】\n${existingQuestions
           .map((q, i) => `${i + 1}. ${q}`)
           .join('\n')}\n`
       : '';
@@ -221,13 +250,48 @@ JSONオブジェクトのみ（説明文・マークダウン不要）:
   ]
 }
 
-【Q&Aペアの要件】
-- このセクションから必ず15個以上のQ&Aを生成すること
-- 答えは1文・30文字以内で完結させること（句点ひとつで終わる）
-- 「以下の通りです」「〜があります」等の前置き・列挙は禁止。核心だけ書く
-- 既に生成済みの質問と同じ内容・同じ観点の質問は絶対に生成しないこと
-- 日本語で生成すること
+【生成数の目標】
+- このセクションから **必ず20個以上** のQ&Aを生成すること（理想は30個）
+- 既出の質問は絶対に繰り返さないこと
+
+${QA_RULES}
 ${existingList}
+URL: ${url}
+本文:
+${text}`;
+}
+
+/**
+ * 補填パス用プロンプト: 本文は渡さず、既出質問リストのみ渡して追加生成させる。
+ * 同じ本文のまま N 件追加で欲しいケース（目標未達時のリトライ）に使う。
+ */
+function buildTopUpUserMessage(
+  url: string,
+  text: string,
+  existingQuestions: string[],
+  targetAdditional: number,
+): string {
+  return `以下のWebページ本文について、既に ${existingQuestions.length} 個のQ&Aを生成済みですが、まだ足りません。
+既出の質問とは **完全に異なる観点** で、追加の学習カード用Q&Aを生成してください。
+
+【出力形式】
+JSONオブジェクトのみ（説明文・マークダウン不要）:
+{
+  "qa_pairs": [
+    {"question": "問い（?で終わる）", "answer": "答え（1文・30文字以内）"}
+  ]
+}
+
+【生成数の目標】
+- **必ず ${targetAdditional} 個以上** の追加Q&Aを生成すること
+- 既出の質問リストと同じ・類似・言い換えの質問は禁止
+- 既出で使っていない観点を優先的に使うこと
+
+${QA_RULES}
+
+【既出の質問リスト（これらと同じ・類似・言い換えは絶対に作らないこと）】
+${existingQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
+
 URL: ${url}
 本文:
 ${text}`;
@@ -520,16 +584,98 @@ export async function analyzeUrlGroq(
     }
   }
 
-  // ── フェーズ 4: 重複排除 + 最終結果 ──
-  const beforeDedup = allQaPairs.length;
+  // ── フェーズ 4-a: 中間重複排除 ──
+  const beforeMidDedup = allQaPairs.length;
   allQaPairs = deduplicateQaPairs(allQaPairs);
-  if (beforeDedup !== allQaPairs.length) {
+  if (beforeMidDedup !== allQaPairs.length) {
     console.log(
-      `[groqAnalysis] 重複排除: ${beforeDedup}件 → ${allQaPairs.length}件（${beforeDedup - allQaPairs.length}件除去）`,
+      `[groqAnalysis] 中間dedup: ${beforeMidDedup}件 → ${allQaPairs.length}件（${beforeMidDedup - allQaPairs.length}件除去）`,
     );
   }
+
+  // ── フェーズ 4-b: 目標未達時の多段補填ループ ──
+  // 8Bモデルは 1 call で 12-15 件しか作らないことがあるため、
+  // 目標件数 (QA_TARGET_COUNT) に満たない場合は既出質問を渡して追加生成する。
+  // 最大 MAX_TOP_UP_PASSES 回まで繰り返し、それでも届かない場合は諦める。
+  const QA_TARGET_COUNT = 30;
+  const MAX_TOP_UP_PASSES = 2;
+  const TOP_UP_BATCH_SIZE = 20;
+
+  for (let pass = 0; pass < MAX_TOP_UP_PASSES; pass++) {
+    const deficit = QA_TARGET_COUNT - allQaPairs.length;
+    if (deficit <= 0) break;
+    if (allQaPairs.length >= profile.maxQaTotal) {
+      console.log(
+        `[groqAnalysis] 補填スキップ: 上限(${profile.maxQaTotal})到達済`,
+      );
+      break;
+    }
+
+    const targetAdditional = Math.max(deficit, TOP_UP_BATCH_SIZE);
+    console.log(
+      `[groqAnalysis] 補填パス${pass + 1}/${MAX_TOP_UP_PASSES}: 現在${allQaPairs.length}件 / 目標${QA_TARGET_COUNT}件 → 追加${targetAdditional}件要求`,
+    );
+
+    try {
+      // 補填は最も情報密度の高い第1チャンクを再利用する
+      const topUpMessage = buildTopUpUserMessage(
+        url,
+        chunks[0],
+        allQaPairs.map((qa) => qa.question),
+        targetAdditional,
+      );
+      const topUpRaw = await callGroq(
+        config,
+        SYSTEM_PROMPT,
+        topUpMessage,
+        profile.maxTokensChunk,
+      );
+      const topUpPairs = parseChunkQaPairs(topUpRaw);
+      console.log(
+        `[groqAnalysis] 補填パス${pass + 1}: ${topUpPairs.length}件生成`,
+      );
+      if (topUpPairs.length === 0) {
+        console.warn(
+          `[groqAnalysis] 補填パス${pass + 1}: 0件 → ループ打ち切り`,
+        );
+        break;
+      }
+      allQaPairs.push(...topUpPairs);
+
+      // 各補填パス後に即座にdedup (次パスの既出リストを正確にするため)
+      const beforePassDedup = allQaPairs.length;
+      allQaPairs = deduplicateQaPairs(allQaPairs);
+      if (beforePassDedup !== allQaPairs.length) {
+        console.log(
+          `[groqAnalysis] 補填パス${pass + 1}後dedup: ${beforePassDedup}件 → ${allQaPairs.length}件`,
+        );
+      }
+      onProgress?.(chunks.length - 1, chunks.length, topUpPairs.length, allQaPairs.length);
+    } catch (err) {
+      console.warn(
+        `[groqAnalysis] 補填パス${pass + 1}失敗、ループ打ち切り:`,
+        err,
+      );
+      break;
+    }
+  }
+
+  // ── フェーズ 4-c: 最終重複排除 + 上限キャップ ──
+  const beforeFinalDedup = allQaPairs.length;
+  allQaPairs = deduplicateQaPairs(allQaPairs);
+  if (beforeFinalDedup !== allQaPairs.length) {
+    console.log(
+      `[groqAnalysis] 最終dedup: ${beforeFinalDedup}件 → ${allQaPairs.length}件`,
+    );
+  }
+  if (allQaPairs.length > profile.maxQaTotal) {
+    console.log(
+      `[groqAnalysis] 上限キャップ: ${allQaPairs.length}件 → ${profile.maxQaTotal}件`,
+    );
+    allQaPairs = allQaPairs.slice(0, profile.maxQaTotal);
+  }
   console.log(
-    `[groqAnalysis] 解析完了: 全${chunks.length}チャンク → QA合計${allQaPairs.length}件`,
+    `[groqAnalysis] 解析完了: 全${chunks.length}チャンク → QA合計${allQaPairs.length}件（目標${QA_TARGET_COUNT}件）`,
   );
 
   let finalResult: AnalysisResult = { ...baseResult, qa_pairs: allQaPairs };
