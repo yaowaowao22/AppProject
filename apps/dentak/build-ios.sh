@@ -162,17 +162,20 @@ export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 security unlock-keychain -p "$MAC_PASS" ~/Library/Keychains/login.keychain-db 2>/dev/null && echo "  keychain unlocked" || echo "  keychain unlock failed (continuing)"
 
-pkill -9 -f xcodebuild 2>/dev/null || true
-pkill -9 -f SWBBuildService 2>/dev/null || true
-pkill -9 -f XCBBuildService 2>/dev/null || true
-pkill -9 -f ibtoold 2>/dev/null || true
+# 競合プロセス停止 (graceful SIGTERM)
+# ⚠️ pkill -9 (SIGKILL) は build state を不整合にする可能性があるので使わない。
+# ⚠️ build.db や .dia を削除しないこと。削除すると xcodebuild の incremental 状態が
+#    壊れ、毎回広範囲再コンパイルが走る (ReCallKit で実測 1分→8分に膨れた)。
+pkill -f xcodebuild 2>/dev/null || true
+pkill -f SWBBuildService 2>/dev/null || true
+pkill -f XCBBuildService 2>/dev/null || true
+pkill -f ibtoold 2>/dev/null || true
 kill -STOP \$(pgrep -x mds_stores 2>/dev/null) 2>/dev/null || true
 kill -STOP \$(pgrep -x mediaanalysisd 2>/dev/null) 2>/dev/null || true
 for i in 1 2 3 4 5; do
   pgrep -f xcodebuild >/dev/null 2>&1 || break
   sleep 1
 done
-find "$MAC_BUILD_OUT/Build/Intermediates.noindex" -name "*.dia" -delete 2>/dev/null || true
 
 echo "$MAC_PASS" | sudo -S purge 2>/dev/null && echo "  memory purged" || true
 echo "  free after purge: \$(vm_stat | grep 'Pages free' | awk '{print int(\$3)*4/1024}') MB"
@@ -191,6 +194,13 @@ echo "  free: \$(vm_stat | grep 'Pages free' | awk '{print int(\$3)*4/1024}') MB
 BUILD_LOG=/tmp/dentak_xcode.log
 : > \$BUILD_LOG
 
+# ⚠️ OOM 対策は -jobs 1 のみで十分。以下の build setting は incremental を壊すので
+#    絶対に追加しないこと (ReCallKit で実測、1 分 → 8 分に劣化):
+#      COMPILER_INDEX_STORE_ENABLE=NO
+#      GCC_GENERATE_DEBUGGING_SYMBOLS=NO
+#      CLANG_ENABLE_EXPLICIT_MODULES=NO
+#    前回ビルドの .o と「build setting が不一致」判定になり、広範囲の Pods が
+#    再コンパイル対象になる。
 xcodebuild \\
   -workspace "\$WORKSPACE" \\
   -scheme "\$SCHEME" \\
@@ -201,8 +211,6 @@ xcodebuild \\
   -jobs 1 \\
   DEVELOPMENT_TEAM=PVM8Q8HG54 \\
   CODE_SIGN_STYLE=Automatic \\
-  CLANG_ENABLE_EXPLICIT_MODULES=NO \\
-  COMPILER_INDEX_STORE_ENABLE=NO \\
   build >> \$BUILD_LOG 2>&1 &
 XCODE_PID=\$!
 echo "  xcodebuild started (pid \$XCODE_PID)"

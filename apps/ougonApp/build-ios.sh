@@ -155,10 +155,13 @@ export LANG=en_US.UTF-8
 security unlock-keychain -p "$MAC_PASS" ~/Library/Keychains/login.keychain-db 2>/dev/null && echo "  ✓ keychain unlocked" || echo "  ⚠ keychain unlock failed (続行)"
 security set-keychain-settings -t 36000 ~/Library/Keychains/login.keychain-db 2>/dev/null || true
 
-# 競合ビルドプロセスを全停止（OOM防止 + build.db競合防止）
-pkill -9 -f xcodebuild 2>/dev/null || true
-pkill -9 -f SWBBuildService 2>/dev/null || true
-pkill -9 -f ibtoold 2>/dev/null || true
+# 競合ビルドプロセスを全停止（graceful SIGTERM）
+# ⚠️ pkill -9 (SIGKILL) は build state を不整合にする可能性があるので使わない。
+# ⚠️ build.db や .dia を削除しないこと。削除すると xcodebuild の incremental 状態が
+#    壊れ、毎回広範囲再コンパイルが走る (ReCallKit で実測 1分→8分に膨れた)。
+pkill -f xcodebuild 2>/dev/null || true
+pkill -f SWBBuildService 2>/dev/null || true
+pkill -f ibtoold 2>/dev/null || true
 sleep 2
 
 # ビルド出力ディレクトリを確保 (NEED_CLEAN=1 の場合は [3/5] で既に削除済)
@@ -174,6 +177,14 @@ SCHEME=\${WORKSPACE%.xcworkspace}
 echo "  workspace: \$WORKSPACE  scheme: \$SCHEME"
 
 # xcodebuild — ログファイルに全出力、フィルタ表示は別途
+#
+# ⚠️ OOM 対策は -jobs 1 のみで十分。以下の build setting は incremental を壊すので
+#    絶対に追加しないこと (ReCallKit で実測、1 分 → 8 分に劣化):
+#      COMPILER_INDEX_STORE_ENABLE=NO
+#      GCC_GENERATE_DEBUGGING_SYMBOLS=NO
+#      CLANG_ENABLE_EXPLICIT_MODULES=NO
+#    前回ビルドの .o と「build setting が不一致」判定になり、広範囲の Pods が
+#    再コンパイル対象になる。
 set +e
 xcodebuild \\
   -workspace "\$WORKSPACE" \\
@@ -187,8 +198,6 @@ xcodebuild \\
   CODE_SIGN_STYLE=Automatic \\
   DEVELOPMENT_TEAM=PVM8Q8HG54 \\
   "OTHER_CODE_SIGN_FLAGS=--keychain ~/Library/Keychains/login.keychain-db" \\
-  COMPILER_INDEX_STORE_ENABLE=NO \\
-  GCC_GENERATE_DEBUGGING_SYMBOLS=NO \\
   > "$BUILD_LOG" 2>&1
 STATUS=\$?
 set -e
