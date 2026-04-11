@@ -476,13 +476,44 @@ async function callGroqViaLambda(
   }
 }
 
-/** 統合 callGroq: モードに応じて直接 or Lambda に振り分け */
+// ============================================================
+// レート制限対策: call間最小間隔の強制
+//
+// Groq Free Tier: 30 RPM (requests per minute) = 2 秒/req が上限
+// 多段補填ループで連続 call すると瞬時に 429 を食らうため、前回 call 時刻を
+// モジュールレベルで保持し、次 call 前に GROQ_MIN_CALL_INTERVAL_MS を保証する。
+//
+// BYOK Dev Tier でも保守的に同じ間隔を守る (実害は最大 2.5 秒の遅延のみ)。
+// ============================================================
+
+/** call間の最小間隔 (ms)。30 RPM = 2 秒 + 0.5 秒の安全マージン */
+const GROQ_MIN_CALL_INTERVAL_MS = 2_500;
+
+/** 最後に Groq API を叩いた epoch ms。プロセス起動時は 0 */
+let lastGroqCallAt = 0;
+
+/** 次 call 前に必要なら sleep してレート制限を遵守する */
+async function enforceGroqRateLimit(): Promise<void> {
+  const now = Date.now();
+  const elapsed = now - lastGroqCallAt;
+  const wait = GROQ_MIN_CALL_INTERVAL_MS - elapsed;
+  if (wait > 0) {
+    console.log(
+      `[groqAnalysis] rate limit: 前回 call から ${elapsed}ms → ${wait}ms 待機`,
+    );
+    await new Promise((resolve) => setTimeout(resolve, wait));
+  }
+  lastGroqCallAt = Date.now();
+}
+
+/** 統合 callGroq: レート制限遵守 + モードに応じて直接 or Lambda に振り分け */
 async function callGroq(
   config: GroqRuntimeConfig,
   systemPrompt: string,
   userMessage: string,
   maxTokens: number,
 ): Promise<string> {
+  await enforceGroqRateLimit();
   if (config.mode === 'byok') {
     return callGroqDirect(config.apiKey, config.model, systemPrompt, userMessage, maxTokens);
   }
