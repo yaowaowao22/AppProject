@@ -34,17 +34,10 @@ echo ""
 echo "▶ [2/5] Mac: git pull..."
 ssh -i "$SSH_KEY" -o IdentitiesOnly=yes "$SSH_HOST" "bash -s" <<PULL_EOF
 cd $MAC_PROJECT
-if ! git diff --quiet; then
-  echo "  (ローカル変更をstash中...)"
-  git stash push -m "build-ios auto-stash"
-  STASHED=1
-else
-  STASHED=0
-fi
+# ougonApp のローカル変更を破棄（expo prebuildが生成する差分を除去）
+git checkout -- apps/ougonApp/ 2>/dev/null || true
+rm -f apps/ougonApp/package-lock.json 2>/dev/null || true
 git pull --ff-only 2>&1
-if [ "\$STASHED" -eq 1 ]; then
-  git stash pop || echo "  ⚠ stash pop failed"
-fi
 PULL_EOF
 echo "  ✓ pull 完了"
 
