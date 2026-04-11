@@ -202,9 +202,10 @@ JSONオブジェクトのみ（説明文・マークダウン不要）:
 }
 
 【生成数の目標】
-- Q&Aペアは **必ず30個以上** 作ること（理想は40〜50個）
+- Q&Aペアは **必ず15個以上** 作ること（理想は20個）
 - 本文から抽出できる情報をすべて拾う意識で生成すること
-- 30個に満たない場合は上の観点リストを順番に適用して追加すること
+- 15個に満たない場合は上の観点リストを順番に適用して追加すること
+- この呼び出しで生成しきれない分は後続の追加 call で補完されるため、1 call あたりは 20 個程度を上限目安に
 
 ${QA_RULES}
 
@@ -251,7 +252,7 @@ JSONオブジェクトのみ（説明文・マークダウン不要）:
 }
 
 【生成数の目標】
-- このセクションから **必ず20個以上** のQ&Aを生成すること（理想は30個）
+- このセクションから **必ず12個以上** のQ&Aを生成すること（理想は15-18個）
 - 既出の質問は絶対に繰り返さないこと
 
 ${QA_RULES}
@@ -335,7 +336,12 @@ function throwHttpError(status: number, fallback: string): never {
     throw new Error('Groq APIキーが無効です (Lambda側の環境変数を確認するか、自前キーを再入力してください)');
   }
   if (status === 413) {
-    throw new Error('Groq APIリクエストが大きすぎます (chunkSize を小さくしてください)');
+    // Groq Free Tier の TPM 6000 超過時、Groq は 413 を返す (待機しても回復しない)。
+    // ユーザーには BYOK (Dev Tier) への切り替えを案内する。
+    throw new Error(
+      'Groq Free Tier の TPM (トークン/分) 制限を超過しました。\n' +
+        '設定 → AIモデル → Groq設定 → 上級者モードで自前のDev TierキーをBYOKすると制限が50倍以上に緩和されます。',
+    );
   }
   if (status === 429) {
     throw new Error('Groq APIレート上限に達しました。少し待って再試行してください');
@@ -664,7 +670,9 @@ export async function analyzeUrlGroq(
     onProgress?.(i, chunks.length);
 
     try {
-      const existingQuestions = allQaPairs.map((qa) => qa.question);
+      // TPM 6000 制限のため既出質問リストは直近 20 個に制限
+      // (質問1個 ~50 tok × 20 = 1000 tok 追加入力)
+      const existingQuestions = allQaPairs.slice(-20).map((qa) => qa.question);
       const userMessage = buildChunkUserMessage(
         url,
         chunks[i],
@@ -703,12 +711,12 @@ export async function analyzeUrlGroq(
   }
 
   // ── フェーズ 4-b: 目標未達時の多段補填ループ ──
-  // 8Bモデルは 1 call で 12-15 件しか作らないことがあるため、
-  // 目標件数 (QA_TARGET_COUNT) に満たない場合は既出質問を渡して追加生成する。
-  // 最大 MAX_TOP_UP_PASSES 回まで繰り返し、それでも届かない場合は諦める。
+  // Free Tier TPM 6000 に合わせて 1 call あたり maxTokens=1200 (約 15-17 QA) に
+  // 縮小しているので、目標 30 件到達には 2-3 call 必要。
+  // 各 call 間は callGroq 内の enforceGroqRateLimit + 429 retry が効く。
   const QA_TARGET_COUNT = 30;
-  const MAX_TOP_UP_PASSES = 2;
-  const TOP_UP_BATCH_SIZE = 20;
+  const MAX_TOP_UP_PASSES = 3;
+  const TOP_UP_BATCH_SIZE = 15;
 
   for (let pass = 0; pass < MAX_TOP_UP_PASSES; pass++) {
     const deficit = QA_TARGET_COUNT - allQaPairs.length;
@@ -726,11 +734,12 @@ export async function analyzeUrlGroq(
     );
 
     try {
-      // 補填は最も情報密度の高い第1チャンクを再利用する
+      // 補填は最も情報密度の高い第1チャンクを再利用する。
+      // 既出質問リストは直近 20 個に制限 (TPM 6000 を超えないため)
       const topUpMessage = buildTopUpUserMessage(
         url,
         chunks[0],
-        allQaPairs.map((qa) => qa.question),
+        allQaPairs.slice(-20).map((qa) => qa.question),
         targetAdditional,
       );
       const topUpRaw = await callGroq(
