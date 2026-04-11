@@ -245,17 +245,21 @@ cd "$IOS_DIR"
 BUILD_LOG=/tmp/recallkit_xcode.log
 : > \$BUILD_LOG
 
-# xcodebuild — OOM対策は -jobs 1 (並列度制限) のみで十分。
+# xcodebuild — OOM対策は -jobs 1 (並列度制限) のみ必須。
 #
-# ⚠️ 過去の実装では COMPILER_INDEX_STORE_ENABLE=NO / GCC_GENERATE_DEBUGGING_SYMBOLS=NO /
-#    CLANG_ENABLE_EXPLICIT_MODULES=NO を追加していたが、これらを指定すると
-#    xcodebuild の incremental build で「前回の .o と build settings が不一致」と
-#    判定され、広範囲の pod が再コンパイル対象になっていた (Build #3 実測で 8 分)。
+# ⚠️ 過去の実装では以下も追加していたが、これらを指定すると xcodebuild の
+#    incremental build で「前回の .o と build settings が不一致」と判定され、
+#    広範囲の pod が再コンパイル対象になっていた (Build #3 実測で 8 分):
+#      - COMPILER_INDEX_STORE_ENABLE=NO
+#      - GCC_GENERATE_DEBUGGING_SYMBOLS=NO
+#      - CLANG_ENABLE_EXPLICIT_MODULES=NO
 #    143f04c (build-ios.sh v3 初版) ではこれらを付けておらず、JS のみ変更時は
 #    約 1 分で incremental が完走していた。本版ではそちらに揃える。
 #
-#    DEVELOPMENT_TEAM と CODE_SIGN_STYLE も project.pbxproj 側で設定済みなので
-#    コマンドラインでの再指定は不要 (変わると pbxproj と diff が出て署名再計算)。
+# ⚠️ DEVELOPMENT_TEAM と CODE_SIGN_STYLE は必ず指定する。Expo prebuild で
+#    生成される project.pbxproj には DEVELOPMENT_TEAM が空のため、コマンド
+#    ラインで渡さないと "Signing for 'ReCallKit' requires a development team"
+#    エラーで exit 65。Build #4 で一度外して失敗したので戻している。
 set +e
 xcodebuild \\
   -workspace ReCallKit.xcworkspace \\
@@ -265,6 +269,8 @@ xcodebuild \\
   -derivedDataPath "$MAC_BUILD_OUT" \\
   -allowProvisioningUpdates \\
   -jobs 1 \\
+  DEVELOPMENT_TEAM=PVM8Q8HG54 \\
+  CODE_SIGN_STYLE=Automatic \\
   build >> \$BUILD_LOG 2>&1 &
 XCODE_PID=\$!
 echo "  xcodebuild started (pid \$XCODE_PID)"
