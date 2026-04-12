@@ -93,6 +93,7 @@ function partAdjustmentOffset(
 
 export function useSkiaWarp(
   deviations: PhiDeviations | null,
+  landmarks: FaceLandmarks | null,
   imageWidth: number,
   imageHeight: number,
 ): UseSkiaWarpResult {
@@ -126,8 +127,10 @@ export function useSkiaWarp(
 
     const sourcePoints = buildGrid(w, h, COLS, ROWS);
 
-    // ランドマーク未取得時の仮想座標（正面ポートレートの標準比率から推定）
-    const virtualLandmarks: FaceLandmarks = {
+    // 実際のランドマークがあればそれを使用。未取得時は標準比率の仮想座標にフォールバック。
+    // ⚠️ 旧実装は常に仮想座標を使用していたため、顔が中心にない写真では
+    //    ワープ補正が誤った位置にアンカーされていた。
+    const effectiveLandmarks: FaceLandmarks = landmarks ?? {
       leftEyePosition:  { x: w * 0.35, y: h * 0.38 },
       rightEyePosition: { x: w * 0.65, y: h * 0.38 },
       noseBasePosition: { x: w * 0.50, y: h * 0.55 },
@@ -146,7 +149,7 @@ export function useSkiaWarp(
       const { dx: cdx, dy: cdy } = calcCorrection(
         src,
         deviations,
-        virtualLandmarks,
+        effectiveLandmarks,
         normalizedIntensity,
       );
       const { dx: adx, dy: ady } = partAdjustmentOffset(src, w, h, partAdjustments);
@@ -159,7 +162,7 @@ export function useSkiaWarp(
     const indices = buildTriangleIndices(COLS, ROWS);
 
     return { sourcePoints, destPoints, indices };
-  }, [deviations, imageWidth, imageHeight, intensity, partAdjustments]);
+  }, [deviations, landmarks, imageWidth, imageHeight, intensity, partAdjustments]);
 
   return {
     warpMesh,

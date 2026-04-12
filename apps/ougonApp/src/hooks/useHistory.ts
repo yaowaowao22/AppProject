@@ -60,23 +60,29 @@ export function useHistory(): UseHistoryResult {
         id: generateId(),
         createdAt: new Date().toISOString(),
       };
+      // setState updater は純関数でなければならない（React 19 Strict Mode では複数回呼ばれる可能性あり）
+      // AsyncStorage 書き込みは updater の外で行う
+      let updated: HistoryRecord[] = [];
       setRecords(prev => {
-        const updated = [newRecord, ...prev];
-        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        updated = [newRecord, ...prev];
         return updated;
       });
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     },
     [],
   );
 
   const deleteRecord = useCallback(
     async (id: string) => {
-      const target = recordsRef.current.find(r => r.id === id);
+      // prev から target を取得（recordsRef 経由だとレンダー前の stale 値を読む可能性がある）
+      let target: HistoryRecord | undefined;
+      let updated: HistoryRecord[] = [];
       setRecords(prev => {
-        const updated = prev.filter(r => r.id !== id);
-        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        target = prev.find(r => r.id === id);
+        updated = prev.filter(r => r.id !== id);
         return updated;
       });
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 
       if (target) {
         const deleteIfExists = async (path: string) => {

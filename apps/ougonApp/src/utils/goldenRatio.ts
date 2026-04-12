@@ -12,7 +12,7 @@ export function dist(a: Point, b: Point): number {
 
 export function check(actual: number, target: number): PhiDeviation {
   const safeActual = actual ?? 0;
-  const safeTarget = target || 1;
+  const safeTarget = target ?? 1;
   const deviation = Math.abs(safeActual - safeTarget) / safeTarget;
   // |actual - target| / target の逆数を 0–100 にマッピング
   // 完全一致(deviation=0)→100、乖離が大きいほど 0 に近づく
@@ -46,13 +46,15 @@ export function calcDeviations(
 
   const faceWidth = dist(leftEar, rightEar) || 1;
 
-  // topOfHead 推定: 各ランドマークの最小 y から仮の顔高を求め、
-  // noseBasePosition から上方向に faceHeight × 0.618 分を推定
+  // topOfHead 推定: 最も高いランドマーク(topY ≈ 目/耳ライン)から
+  // 上方向に額の高さ分(≈ 予備顔高 × 0.4)を加算。
+  // ⚠️ 旧実装は noseBase 基準だったため、鼻位置により faceHeight が変動していた。
+  // topY を基準に固定することで、推定が安定する。
   const topY = Math.min(leftEar.y, rightEar.y, leftEye.y, rightEye.y);
   const prelimFaceHeight = Math.max(bottomMouth.y - topY, 1);
   const topOfHead: Point = {
-    x: noseBase.x,
-    y: noseBase.y - prelimFaceHeight * 0.618,
+    x: (leftEye.x + rightEye.x) / 2,
+    y: topY - prelimFaceHeight * 0.4,
   };
 
   const faceHeight = dist(topOfHead, bottomMouth) || 1;
@@ -115,8 +117,10 @@ export function calcDeviations(
     deltaPixels: Math.round((faceToEyeTarget - faceToEyeRatio) * eyeWidth),
   };
 
+  // faceToEye は eyeToFace の逆数(1/φ² ↔ φ²)で数学的に同一の検査。
+  // totalScore に含めると目の比率が二重カウントされるため、4項目のみで平均する。
   const totalScore = Math.round(
-    (faceAspect.score + eyeToFace.score + noseToMouth.score + noseRatio.score + faceToEye.score) / 5,
+    (faceAspect.score + eyeToFace.score + noseToMouth.score + noseRatio.score) / 4,
   );
 
   return { faceAspect, eyeToFace, noseToMouth, noseRatio, faceToEye, totalScore };

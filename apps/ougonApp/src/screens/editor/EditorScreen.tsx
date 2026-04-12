@@ -119,7 +119,9 @@ export default function EditorScreen() {
   // Skia Canvas / フック内の計算はすべて viewport 空間（screenWidth × VIEWPORT_HEIGHT）で動作するため、
   // ここで一度変換してから各フックに渡す。
   const landmarks = useMemo<FaceLandmarks | null>(() => {
-    if (rawLandmarks == null || imageWidth === 0 || imageHeight === 0) return rawLandmarks;
+    // ⚠️ imageWidth/Height が 0 の場合、スケール変換不可なので null を返す。
+    // rawLandmarks をそのまま返すと、ピクセル座標がビューポート座標として誤用される。
+    if (rawLandmarks == null || imageWidth === 0 || imageHeight === 0) return null;
     const scaleX = screenWidth / imageWidth;
     const scaleY = VIEWPORT_HEIGHT / imageHeight;
     return scaleLandmarksToViewport(rawLandmarks, scaleX, scaleY);
@@ -146,7 +148,7 @@ export default function EditorScreen() {
     partAdjustments,
     setPartAdjustment,
     resetAll,
-  } = useSkiaWarp(deviations, screenWidth, VIEWPORT_HEIGHT);
+  } = useSkiaWarp(deviations, landmarks, screenWidth, VIEWPORT_HEIGHT);
 
   // ── History ──
   const { addRecord } = useHistory();
