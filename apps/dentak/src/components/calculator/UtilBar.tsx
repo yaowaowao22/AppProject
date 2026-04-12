@@ -1,47 +1,71 @@
 import React, { memo } from 'react';
 import { Pressable, Text, View, StyleSheet } from 'react-native';
+import { useShallow } from 'zustand/react/shallow';
 import tokens from '../../theme/tokens';
 import * as Haptics from '../../utils/haptics';
+import { useSettingsStore } from '../../store/settingsStore';
+import { resolveKey } from '../../config/keyLayouts';
+import type { LayoutRow } from '../../config/keyLayouts';
 
 // ══════════════════════════════════════════════
 // 無音の演算 — UtilBar
-// 5-column micro-row: （ ） EE ANS ⌫
+// レイアウト設定から動的にボタンを生成する汎用ユーティリティバー
 // height: 38px / bg: #0a0a0a / text: g2 → white on press
+// mic キーは onMicPress コールバックで処理
 // ══════════════════════════════════════════════
 
 export interface UtilBarProps {
-  onKeyPress: (key: string) => void;
+  onKeyPress:  (key: string) => void;
+  onMicPress?: () => void;
+  isVoiceActive?: boolean;
 }
 
 const UTIL_BG = '#0a0a0a';
 
-const BUTTONS: ReadonlyArray<{ label: string; key: string }> = [
-  { label: '（', key: '(' },
-  { label: '）', key: ')' },
-  { label: 'EE',  key: 'EE'  },
-  { label: 'ANS', key: 'ANS' },
-  { label: '⌫',  key: '⌫'  },
-];
+export const UtilBar = memo(function UtilBar({
+  onKeyPress,
+  onMicPress,
+  isVoiceActive = false,
+}: UtilBarProps) {
+  const utilLayout = useSettingsStore((s) => s.utilLayout);
 
-export const UtilBar = memo(function UtilBar({ onKeyPress }: UtilBarProps) {
   return (
     <View style={styles.row}>
-      {BUTTONS.map(({ label, key }) => (
-        <Pressable
-          key={key}
-          style={styles.btn}
-          onPressIn={() => { void Haptics.tap(); }}
-          onPress={() => onKeyPress(key)}
-          accessibilityLabel={label}
-          accessibilityRole="button"
-        >
-          {({ pressed }) => (
-            <Text style={[styles.label, pressed && styles.labelActive]}>
-              {label}
-            </Text>
-          )}
-        </Pressable>
-      ))}
+      {utilLayout.map((cell, idx) => {
+        const def = resolveKey(cell.keyId);
+        if (!def) return null;
+
+        const isMic = def.type === 'mic';
+
+        return (
+          <Pressable
+            key={`${cell.keyId}-${idx}`}
+            style={[styles.btn, { flex: cell.flex ?? 1 }]}
+            onPressIn={() => { void Haptics.tap(); }}
+            onPress={() => {
+              if (isMic && onMicPress) {
+                onMicPress();
+              } else if (!isMic) {
+                onKeyPress(def.pressKey);
+              }
+            }}
+            accessibilityLabel={def.label}
+            accessibilityRole="button"
+          >
+            {({ pressed }) => (
+              <Text
+                style={[
+                  styles.label,
+                  pressed && styles.labelActive,
+                  isMic && isVoiceActive && styles.labelMicActive,
+                ]}
+              >
+                {isMic ? '🎙' : def.label}
+              </Text>
+            )}
+          </Pressable>
+        );
+      })}
     </View>
   );
 });
@@ -53,7 +77,6 @@ const styles = StyleSheet.create({
     gap: tokens.size.gap,
   },
   btn: {
-    flex: 1,
     height: tokens.size.btnUtil, // 38
     backgroundColor: UTIL_BG,
     alignItems: 'center',
@@ -66,5 +89,8 @@ const styles = StyleSheet.create({
   },
   labelActive: {
     color: tokens.colors.white,
+  },
+  labelMicActive: {
+    color: tokens.colors.amber,
   },
 });

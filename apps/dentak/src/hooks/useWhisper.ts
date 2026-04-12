@@ -50,22 +50,39 @@ export function useWhisper(): UseWhisperReturn {
   const nativeStopRef  = useRef<(() => Promise<void>) | null>(null);
   /** 診断用イベントカウント */
   const eventCountRef  = useRef(0);
+  /** セッションID: staleコールバック検出用（起動ごとにインクリメント） */
+  const sessionIdRef   = useRef(0);
+  /** stopListening の backup setTimeout を追跡して cleanup 可能にする */
+  const backupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** applied → idle 遷移タイマー */
+  const lingerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const voiceLang        = useSettingsStore((s) => s.voiceLang);
   const applyVoiceResult = useCalculatorStore((s) => s.applyVoiceResult);
 
-  const clearTimer = useCallback(() => {
+  /** 全タイマーをクリーンアップ */
+  const clearAllTimers = useCallback(() => {
     if (timeoutRef.current !== null) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
+    if (backupTimerRef.current !== null) {
+      clearTimeout(backupTimerRef.current);
+      backupTimerRef.current = null;
+    }
+    if (lingerTimerRef.current !== null) {
+      clearTimeout(lingerTimerRef.current);
+      lingerTimerRef.current = null;
+    }
   }, []);
 
   const processAndApply = useCallback(
-    (text: string) => {
+    (text: string, forSessionId: number) => {
+      // staleセッションのコールバックを無視
+      if (forSessionId !== sessionIdRef.current) return;
       if (processedRef.current) return;
       processedRef.current = true;
-      clearTimer();
+      clearAllTimers();
 
       if (!text.trim()) {
         setError(`空結果 (events=${eventCountRef.current})`);
@@ -80,34 +97,50 @@ export function useWhisper(): UseWhisperReturn {
       applyVoiceResult(result);
 
       setVoiceState('applied');
-      setTimeout(() => setVoiceState('idle'), APPLIED_LINGER_MS);
+      lingerTimerRef.current = setTimeout(() => {
+        lingerTimerRef.current = null;
+        setVoiceState('idle');
+      }, APPLIED_LINGER_MS);
     },
-    [applyVoiceResult, clearTimer],
+    [applyVoiceResult, clearAllTimers],
   );
 
   const stopListening = useCallback(() => {
-    clearTimer();
+    const sid = sessionIdRef.current;
+    clearAllTimers();
+
     if (nativeStopRef.current) {
       void nativeStopRef.current();
       nativeStopRef.current = null;
     }
     // native stop 後に onFinalResult が呼ばれるので、
     // そこで processAndApply が走る。ただし即座に呼ばれない場合の保険:
-    setTimeout(() => {
-      processAndApply(partialTextRef.current);
+    backupTimerRef.current = setTimeout(() => {
+      backupTimerRef.current = null;
+      processAndApply(partialTextRef.current, sid);
     }, 500);
-  }, [processAndApply, clearTimer]);
+  }, [processAndApply, clearAllTimers]);
 
   const startListening = useCallback(async () => {
     try {
-      // ── リセット ──────────────────────────────────────
+      // ── 前セッションの完全クリーンアップ ──────────────────
+      clearAllTimers();
+
+      // 前セッションの native stop がまだ残っていたら停止
+      if (nativeStopRef.current) {
+        try { await nativeStopRef.current(); } catch (_) { /* ignore */ }
+        nativeStopRef.current = null;
+      }
+
+      // ── 新セッション開始 ──────────────────────────────────
+      const sid = ++sessionIdRef.current;
+
       setError(null);
       setPartialText('');
       setFinalText('');
       partialTextRef.current = '';
       processedRef.current   = false;
       eventCountRef.current  = 0;
-      nativeStopRef.current  = null;
 
       setVoiceState('requesting_permission');
 
@@ -119,15 +152,19 @@ export function useWhisper(): UseWhisperReturn {
         return;
       }
 
+      // セッションIDが変わっていたら中断（別の操作が割り込んだ）
+      if (sid !== sessionIdRef.current) return;
+
       setVoiceState('listening');
 
       // ── 30 秒タイムアウト ─────────────────────────────
       timeoutRef.current = setTimeout(() => {
+        timeoutRef.current = null;
         if (nativeStopRef.current) {
           void nativeStopRef.current();
           nativeStopRef.current = null;
         }
-        processAndApply(partialTextRef.current);
+        processAndApply(partialTextRef.current, sid);
       }, TIMEOUT_MS);
 
       // ── WhisperManager 自動初期化 ────────────────────
@@ -140,7 +177,7 @@ export function useWhisper(): UseWhisperReturn {
       if (modelPath) {
         const fileInfo = await FileSystem.getInfoAsync(modelPath);
         if (!fileInfo.exists) {
-          clearTimer();
+          clearAllTimers();
           setError(`モデルファイル不在: ${activeModelId}`);
           setVoiceState('idle');
           return;
@@ -149,7 +186,7 @@ export function useWhisper(): UseWhisperReturn {
 
       if (!manager.isReady()) {
         if (!modelPath) {
-          clearTimer();
+          clearAllTimers();
           setError(`モデル未DL (active=${activeModelId})`);
           setVoiceState('idle');
           return;
@@ -157,7 +194,7 @@ export function useWhisper(): UseWhisperReturn {
         try {
           await manager.initialize(modelPath);
         } catch (initErr) {
-          clearTimer();
+          clearAllTimers();
           setError(`初期化失敗: ${initErr instanceof Error ? initErr.message : String(initErr)}`);
           setVoiceState('idle');
           return;
@@ -165,9 +202,15 @@ export function useWhisper(): UseWhisperReturn {
       }
 
       if (!manager.isReady()) {
-        clearTimer();
+        clearAllTimers();
         setError('whisper.rn未リンク');
         setVoiceState('idle');
+        return;
+      }
+
+      // セッションIDが変わっていたら中断
+      if (sid !== sessionIdRef.current) {
+        clearAllTimers();
         return;
       }
 
@@ -191,9 +234,18 @@ export function useWhisper(): UseWhisperReturn {
           audioSessionOnStopIos: 'restore',
         });
 
+        // セッションIDが変わっていたら即停止
+        if (sid !== sessionIdRef.current) {
+          void stop();
+          return;
+        }
+
         nativeStopRef.current = stop;
 
         subscribe((event: any) => {
+          // staleセッションのイベントを無視
+          if (sid !== sessionIdRef.current) return;
+
           eventCountRef.current++;
           const code: number = event.code ?? 0;
           const text: string = event.data?.result ?? '';
@@ -204,7 +256,7 @@ export function useWhisper(): UseWhisperReturn {
             const finalText = (code === -999 || !text.trim())
               ? partialTextRef.current
               : text;
-            processAndApply(finalText);
+            processAndApply(finalText, sid);
           } else if (event.error) {
             // キャプチャ中のエラー（致命的ではない、次のスライスで回復する可能性）
             // code -999 は中断なので無視
@@ -217,7 +269,7 @@ export function useWhisper(): UseWhisperReturn {
           }
         });
       } catch (rtErr) {
-        clearTimer();
+        clearAllTimers();
         setError(`realtime失敗: ${rtErr instanceof Error ? rtErr.message : String(rtErr)}`);
         setVoiceState('idle');
       }
@@ -225,17 +277,19 @@ export function useWhisper(): UseWhisperReturn {
       setError('録音を開始できませんでした');
       setVoiceState('idle');
     }
-  }, [voiceLang, processAndApply, clearTimer]);
+  }, [voiceLang, processAndApply, clearAllTimers]);
 
   useEffect(() => {
     return () => {
-      clearTimer();
+      // コンポーネント unmount 時: セッションIDを無効化して全クリーンアップ
+      sessionIdRef.current = -1;
+      clearAllTimers();
       if (nativeStopRef.current) {
         void nativeStopRef.current();
         nativeStopRef.current = null;
       }
     };
-  }, [clearTimer]);
+  }, [clearAllTimers]);
 
   return {
     voiceState,

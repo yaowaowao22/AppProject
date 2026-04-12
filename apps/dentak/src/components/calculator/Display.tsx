@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 
 import { useCalculatorStore } from '../../store/calculatorStore';
@@ -11,27 +11,38 @@ import tokens from '../../theme/tokens';
 // ══════════════════════════════════════════════
 // 無音の演算 — Display
 // 3-layer layout (bottom-aligned):
-//   ① History strip — recent 2 entries (11px mono, #2a2a2a)
-//   ② Expression    — current formula  (14px mono, g3)
-//   ③ Result        — big number       (60px→44px→30px mono, white)
+//   ① History strip — recent 3 entries (12px mono, dim white)
+//   ② Expression    — current formula  (18px mono, secondary white, horizontal scroll)
+//   ③ Result        — big number       (64px→48px→32px→24px mono, white)
 // ══════════════════════════════════════════════
 
 export interface DisplayProps {
   // No external props — data is read directly from stores.
 }
 
-/** Map result character count → font size token key */
+/** Map result character count → font size + letter spacing */
 function resolveResultSize(charCount: number): {
   fontSize: number;
   letterSpacing: number;
 } {
-  if (charCount > 13) {
-    return { fontSize: tokens.resultFontSize.sm, letterSpacing: -1 };
+  if (charCount > 16) {
+    return { fontSize: 24, letterSpacing: -0.5 };
   }
-  if (charCount > 9) {
-    return { fontSize: tokens.resultFontSize.md, letterSpacing: -2 };
+  if (charCount > 12) {
+    return { fontSize: 32, letterSpacing: -1 };
   }
-  return { fontSize: tokens.resultFontSize.lg, letterSpacing: -3 };
+  if (charCount > 8) {
+    return { fontSize: 48, letterSpacing: -2 };
+  }
+  return { fontSize: 64, letterSpacing: -3 };
+}
+
+/** 式を見やすくフォーマット: 演算子の前後にスペースを挿入 */
+function formatExpression(expr: string): string {
+  return expr
+    .replace(/([+\-×÷^])/g, ' $1 ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
 const Display = memo(function Display(_props: DisplayProps) {
@@ -53,7 +64,7 @@ const Display = memo(function Display(_props: DisplayProps) {
   );
 
   // ── Derived values ──────────────────────────────────────────────────────
-  const recentHistory = history.slice(0, 2);
+  const recentHistory = history.slice(0, 3);
 
   const formattedResult = formatDisplay(current, {
     decimals,
@@ -61,33 +72,58 @@ const Display = memo(function Display(_props: DisplayProps) {
     useExpNotation,
   });
 
+  const displayExpression = formatExpression(expression);
+
   const { fontSize: resultFontSize, letterSpacing } = resolveResultSize(
     formattedResult.length,
   );
 
+  const isError = formattedResult === 'Error';
+
   return (
     <View style={styles.container}>
-      {/* ① History strip — direct recent 2 entries */}
+      {/* ① History strip — recent 3 entries */}
       <View style={styles.historyStrip}>
         {recentHistory.map((item: HistoryEntry, index: number) => (
-          <Text key={index} style={styles.historyItem} numberOfLines={1}>
+          <Text
+            key={`${item.timestamp}-${index}`}
+            style={[
+              styles.historyItem,
+              index === 0 && styles.historyItemRecent,
+            ]}
+            numberOfLines={1}
+          >
             {item.expression} = {item.result}
           </Text>
         ))}
       </View>
 
-      {/* ② Expression */}
-      <Text style={styles.expression} numberOfLines={1}>
-        {expression}
-      </Text>
+      {/* ② Expression — horizontal scrollable */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.expressionScroll}
+        style={styles.expressionWrapper}
+      >
+        <Text style={styles.expression}>
+          {displayExpression}
+        </Text>
+      </ScrollView>
 
       {/* ③ Result — font size responds to value length */}
       <Text
         style={[
           styles.result,
-          { fontSize: resultFontSize, letterSpacing, lineHeight: resultFontSize },
+          {
+            fontSize: resultFontSize,
+            letterSpacing,
+            lineHeight: resultFontSize * 1.1,
+          },
+          isError && styles.resultError,
         ]}
         numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.5}
       >
         {formattedResult}
       </Text>
@@ -106,33 +142,57 @@ const styles = StyleSheet.create({
     justifyContent:  'flex-end',
     paddingHorizontal: 20,
     paddingTop:      4,
-    paddingBottom:   10,
+    paddingBottom:   12,
     overflow:        'hidden',
   },
+
+  // ── History ──
   historyStrip: {
     flexDirection: 'column',
-    gap:           1,
-    minHeight:     30,
+    gap:           2,
+    minHeight:     46,
   },
   historyItem: {
-    fontFamily: tokens.fontFamily.mono,
-    fontSize:   11,
-    color:      '#2a2a2a',
-    textAlign:  'right',
+    fontFamily:    tokens.fontFamily.mono,
+    fontSize:      12,
+    color:         'rgba(255,255,255,0.25)',
+    textAlign:     'right',
+    letterSpacing: -0.3,
+  },
+  /** 直近の履歴はやや明るく */
+  historyItemRecent: {
+    color:    'rgba(255,255,255,0.40)',
+    fontSize: 13,
+  },
+
+  // ── Expression ──
+  expressionWrapper: {
+    maxHeight:  28,
+    minHeight:  24,
+    marginTop:  6,
+    flexGrow:   0,
+  },
+  expressionScroll: {
+    flexGrow:       1,
+    justifyContent: 'flex-end',
   },
   expression: {
     fontFamily:    tokens.fontFamily.mono,
-    fontSize:      14,
-    color:         tokens.colors.g3,   // #3A3A3C
+    fontSize:      18,
+    color:         'rgba(255,255,255,0.55)',
     textAlign:     'right',
-    minHeight:     18,
-    letterSpacing: -0.2,
-    marginTop:     4,
+    letterSpacing: -0.3,
   },
+
+  // ── Result ──
   result: {
     fontFamily:  tokens.fontFamily.mono,
     fontWeight:  '200',
     color:       tokens.colors.white,
     textAlign:   'right',
+    marginTop:   2,
+  },
+  resultError: {
+    color: '#FF6B6B',
   },
 });

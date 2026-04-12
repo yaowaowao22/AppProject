@@ -22,12 +22,14 @@ import { useWhisper } from '../../hooks/useWhisper';
 import { useSidebar } from '../../hooks/useSidebar';
 import { useSettingsStore } from '../../store/settingsStore';
 import type { AngleUnit } from '../../store/settingsStore';
+import { resolveKey } from '../../config/keyLayouts';
+import type { KeyDef, LayoutRow, KeyLayout } from '../../config/keyLayouts';
 import tokens from '../../theme/tokens';
 import * as Haptics from '../../utils/haptics';
 
 // ══════════════════════════════════════════════
 // 無音の演算 — CalculatorScreen
-// DESIGN.md §8 CalculatorScreen レイアウト準拠
+// カスタマイズ可能なキーレイアウトシステム
 // ══════════════════════════════════════════════
 
 // ── Angle unit cycling ───────────────────────────────────────────────────────
@@ -38,65 +40,6 @@ const ANGLE_LABEL: Record<AngleUnit, string> = {
   rad:  'RAD',
   grad: 'GRAD',
 };
-
-// ── NumRow button definitions ─────────────────────────────────────────────────
-
-type BtnType = 'fn' | 'num' | 'op' | 'op-eq' | 'mic';
-
-interface NumBtnDef {
-  label:     string;
-  /** key passed to handleKeyPress (may differ from displayed label) */
-  key:       string;
-  type:      BtnType;
-  /** flex value; default 1 */
-  flex?:     number;
-  /** use monospace font for label */
-  mono?:     boolean;
-  /** override label font size */
-  fontSize?: number;
-}
-
-const NUM_ROWS: NumBtnDef[][] = [
-  // Row 1: AC ± % π ÷
-  [
-    { label: 'AC',  key: 'AC',   type: 'fn'  },
-    { label: '±',   key: '±',    type: 'fn'  },
-    { label: '%',   key: '%',    type: 'fn'  },
-    { label: 'π',   key: 'π',    type: 'fn',  mono: true },
-    { label: '÷',   key: '÷',    type: 'op'  },
-  ],
-  // Row 2: 7 8 9 √x ×
-  [
-    { label: '7',   key: '7',    type: 'num' },
-    { label: '8',   key: '8',    type: 'num' },
-    { label: '9',   key: '9',    type: 'num' },
-    { label: '√x',  key: 'sqrt', type: 'fn',  mono: true, fontSize: 14 },
-    { label: '×',   key: '×',    type: 'op'  },
-  ],
-  // Row 3: 4 5 6 x² −
-  [
-    { label: '4',   key: '4',    type: 'num' },
-    { label: '5',   key: '5',    type: 'num' },
-    { label: '6',   key: '6',    type: 'num' },
-    { label: 'x²',  key: 'x²',  type: 'fn',  mono: true, fontSize: 14 },
-    { label: '−',   key: '-',    type: 'op'  },  // key '-' for handleKeyPress
-  ],
-  // Row 4: 1 2 3 log +
-  [
-    { label: '1',   key: '1',    type: 'num' },
-    { label: '2',   key: '2',    type: 'num' },
-    { label: '3',   key: '3',    type: 'num' },
-    { label: 'log', key: 'log',  type: 'fn',  mono: true, fontSize: 14 },
-    { label: '+',   key: '+',    type: 'op'  },
-  ],
-  // Row 5: 0 (flex 2) · mic =
-  [
-    { label: '0',   key: '0',    type: 'num', flex: 2 },
-    { label: '.',   key: '.',    type: 'num' },
-    { label: 'mic', key: 'mic',  type: 'mic' },
-    { label: '=',   key: '=',    type: 'op-eq' },
-  ],
-];
 
 // ── Inline icon components ────────────────────────────────────────────────────
 
@@ -132,6 +75,35 @@ const MicIconKbd = memo(function MicIconKbd({ color }: { color: string }) {
   );
 });
 
+// ── Button color resolver ─────────────────────────────────────────────────────
+
+function getBtnColors(type: KeyDef['type']) {
+  switch (type) {
+    case 'fn':
+      return { bg: tokens.colors.g3, pressed: tokens.colors.white, text: tokens.colors.white, pressedText: tokens.colors.black };
+    case 'num':
+      return { bg: tokens.colors.numBg, pressed: tokens.colors.white, text: tokens.colors.white, pressedText: tokens.colors.black };
+    case 'op':
+      return { bg: tokens.colors.amber, pressed: tokens.colors.white, text: tokens.colors.white, pressedText: tokens.colors.black };
+    case 'op-eq':
+      return { bg: tokens.colors.white, pressed: tokens.colors.g1, text: tokens.colors.black, pressedText: tokens.colors.black };
+    case 'util':
+      return { bg: tokens.colors.g3, pressed: tokens.colors.white, text: tokens.colors.g2, pressedText: tokens.colors.black };
+    case 'mic':
+      return { bg: tokens.colors.numBg, pressed: tokens.colors.white, text: tokens.colors.white, pressedText: tokens.colors.black };
+    default:
+      return { bg: tokens.colors.numBg, pressed: tokens.colors.white, text: tokens.colors.white, pressedText: tokens.colors.black };
+  }
+}
+
+function getLabelFontSize(def: KeyDef): number {
+  if (def.fontSize) return def.fontSize;
+  switch (def.type) {
+    case 'num': case 'op': case 'op-eq': return 28;
+    default: return 17;
+  }
+}
+
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function CalculatorScreen() {
@@ -157,6 +129,7 @@ export default function CalculatorScreen() {
 
   const angleUnit    = useSettingsStore((s) => s.angleUnit);
   const setAngleUnit = useSettingsStore((s) => s.setAngleUnit);
+  const numLayout    = useSettingsStore((s) => s.numLayout);
 
   // ── VoiceToast: finalText / error 変化時にトースト表示 ─────────────────
   const prevFinalText = useRef('');
@@ -274,61 +247,51 @@ export default function CalculatorScreen() {
 
         {/* ── Keyboard ─────────────────────────────────────────────────── */}
         <View style={styles.keyboard}>
-          {/* Utility micro-row: ( ) EE ANS ⌫ */}
-          <UtilBar onKeyPress={handleKeyPress} />
+          {/* Utility micro-row */}
+          <UtilBar
+            onKeyPress={handleKeyPress}
+            onMicPress={handleMicPress}
+            isVoiceActive={isVoiceActive}
+          />
 
           {/* Sci rows 1 & 2 (SciRow renders both internally) */}
           <SciRow isSecond={isSecond} onKeyPress={handleKeyPress} />
 
-          {/* NumRows × 5 */}
-          {NUM_ROWS.map((row, rowIdx) => (
+          {/* NumRows — driven by store layout */}
+          {numLayout.map((row, rowIdx) => (
             <View key={rowIdx} style={styles.numRow}>
-              {row.map((btn) => {
-                const bgColor =
-                  btn.type === 'fn'    ? tokens.colors.g3    :
-                  btn.type === 'num'   ? tokens.colors.numBg :
-                  btn.type === 'op'    ? tokens.colors.amber  :
-                  btn.type === 'op-eq' ? tokens.colors.white :
-                  /* mic */              tokens.colors.numBg;
+              {row.map((cell, colIdx) => {
+                const def = resolveKey(cell.keyId);
+                if (!def) return null;
 
-                const pressedBg =
-                  btn.type === 'op-eq' ? tokens.colors.g1 : tokens.colors.white;
-
-                const defaultTextColor =
-                  btn.type === 'op-eq' ? tokens.colors.black : tokens.colors.white;
-
-                const labelFontFamily =
-                  btn.mono ? tokens.fontFamily.mono : tokens.fontFamily.ui;
-
-                const labelFontSize =
-                  btn.fontSize ??
-                  (btn.type === 'num' || btn.type === 'op' || btn.type === 'op-eq'
-                    ? 28
-                    : 17);
+                const isMic = def.type === 'mic';
+                const colors = getBtnColors(def.type);
+                const labelFontSize = getLabelFontSize(def);
+                const labelFontFamily = def.mono ? tokens.fontFamily.mono : tokens.fontFamily.ui;
 
                 return (
                   <Pressable
-                    key={btn.key + rowIdx}
+                    key={`${cell.keyId}-${rowIdx}-${colIdx}`}
                     style={({ pressed }) => [
                       styles.numBtn,
                       {
-                        flex:            btn.flex ?? 1,
-                        backgroundColor: pressed ? pressedBg : bgColor,
+                        flex:            cell.flex ?? 1,
+                        backgroundColor: pressed ? colors.pressed : colors.bg,
                       },
                     ]}
                     onPressIn={() => { void Haptics.tap(); }}
                     onPress={() => {
-                      if (btn.type === 'mic') {
+                      if (isMic) {
                         handleMicPress();
                       } else {
-                        handleKeyPress(btn.key);
+                        handleKeyPress(def.pressKey);
                       }
                     }}
-                    accessibilityLabel={btn.label}
+                    accessibilityLabel={def.label}
                     accessibilityRole="button"
                   >
                     {({ pressed }) =>
-                      btn.type === 'mic' ? (
+                      isMic ? (
                         <MicIconKbd
                           color={
                             pressed       ? tokens.colors.black :
@@ -341,13 +304,13 @@ export default function CalculatorScreen() {
                           style={[
                             styles.numLabel,
                             {
-                              color:      pressed ? tokens.colors.black : defaultTextColor,
+                              color:      pressed ? colors.pressedText : colors.text,
                               fontFamily: labelFontFamily,
                               fontSize:   labelFontSize,
                             },
                           ]}
                         >
-                          {btn.label}
+                          {def.label}
                         </Text>
                       )
                     }

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   ScrollView,
@@ -21,6 +21,14 @@ import { useModelStore } from '../../store/modelStore';
 import { useModelManager } from '../../hooks/useModelManager';
 import type { AvailableModel } from '../../hooks/useModelManager';
 import { colors } from '../../theme/tokens';
+import {
+  KEY_CATALOG,
+  ALL_KEY_IDS,
+  resolveKey,
+  PRESET_LABELS,
+  PRESETS,
+} from '../../config/keyLayouts';
+import type { PresetName, KeyLayout, LayoutRow } from '../../config/keyLayouts';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -228,6 +236,247 @@ function angleSubText(unit: AngleUnit): string {
   }
 }
 
+// ── Layout Preview (mini keyboard visualization) ─────────────────────────────
+
+const LayoutPreview: React.FC<{ layout: KeyLayout; label: string }> = ({ layout, label }) => {
+  const typeColor: Record<string, string> = {
+    fn: '#3A3A3C',
+    num: '#1C1C1E',
+    op: '#FF9500',
+    'op-eq': '#fff',
+    mic: '#1C1C1E',
+    util: '#3A3A3C',
+  };
+
+  return (
+    <View style={layoutStyles.previewContainer}>
+      <Text style={layoutStyles.previewLabel}>{label}</Text>
+      <View style={layoutStyles.previewGrid}>
+        {layout.map((row, ri) => (
+          <View key={ri} style={layoutStyles.previewRow}>
+            {row.map((cell, ci) => {
+              const def = resolveKey(cell.keyId);
+              const bg = def ? (typeColor[def.type] ?? '#1C1C1E') : '#1C1C1E';
+              const textColor = def?.type === 'op-eq' ? '#000' : '#fff';
+              return (
+                <View
+                  key={`${ri}-${ci}`}
+                  style={[
+                    layoutStyles.previewCell,
+                    { flex: cell.flex ?? 1, backgroundColor: bg },
+                  ]}
+                >
+                  <Text
+                    style={[layoutStyles.previewCellText, { color: textColor }]}
+                    numberOfLines={1}
+                  >
+                    {def?.label ?? '?'}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+};
+
+// ── Key Picker Modal ─────────────────────────────────────────────────────────
+
+interface KeyPickerProps {
+  visible:  boolean;
+  onSelect: (keyId: string) => void;
+  onClose:  () => void;
+  currentKeyId: string;
+}
+
+/** グリッド型のキー選択パネル */
+const KeyPicker: React.FC<KeyPickerProps> = ({ visible, onSelect, onClose, currentKeyId }) => {
+  if (!visible) return null;
+
+  // カテゴリ分け
+  const categories: { title: string; ids: string[] }[] = [
+    { title: '数字', ids: ['0','1','2','3','4','5','6','7','8','9','.'] },
+    { title: '演算子', ids: ['+','-','×','÷','='] },
+    { title: '機能', ids: ['AC','±','%','π','e','sqrt','x²','x³','log','ln','sin','cos','tan','asin','acos','atan','xⁿ','eˣ','10^x','cbrt','n!','1/x'] },
+    { title: 'ユーティリティ', ids: ['(',')', 'EE','ANS','⌫','mic'] },
+  ];
+
+  return (
+    <View style={pickerStyles.overlay}>
+      <View style={pickerStyles.container}>
+        <View style={pickerStyles.header}>
+          <Text style={pickerStyles.title}>キーを選択</Text>
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}>
+            <Text style={pickerStyles.close}>✕</Text>
+          </TouchableOpacity>
+        </View>
+        <ScrollView style={pickerStyles.scroll} showsVerticalScrollIndicator={false}>
+          {categories.map((cat) => (
+            <View key={cat.title}>
+              <Text style={pickerStyles.catTitle}>{cat.title}</Text>
+              <View style={pickerStyles.grid}>
+                {cat.ids.map((id) => {
+                  const def = resolveKey(id);
+                  if (!def) return null;
+                  const isSelected = id === currentKeyId;
+                  return (
+                    <TouchableOpacity
+                      key={id}
+                      style={[
+                        pickerStyles.keyBtn,
+                        isSelected && pickerStyles.keyBtnSelected,
+                      ]}
+                      onPress={() => onSelect(id)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[
+                        pickerStyles.keyBtnText,
+                        isSelected && pickerStyles.keyBtnTextSelected,
+                      ]}>
+                        {def.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
+          <View style={{ height: 16 }} />
+        </ScrollView>
+      </View>
+    </View>
+  );
+};
+
+// ── Layout Editor ────────────────────────────────────────────────────────────
+
+const LayoutEditor: React.FC = () => {
+  const numLayout    = useSettingsStore((s) => s.numLayout);
+  const utilLayout   = useSettingsStore((s) => s.utilLayout);
+  const setNumKey    = useSettingsStore((s) => s.setNumKey);
+  const setUtilKey   = useSettingsStore((s) => s.setUtilKey);
+  const applyPreset  = useSettingsStore((s) => s.applyPreset);
+
+  // キー選択状態
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [editTarget, setEditTarget] = useState<{
+    area: 'num' | 'util';
+    row: number;
+    col: number;
+    currentKeyId: string;
+  } | null>(null);
+
+  const handleCellPress = (area: 'num' | 'util', row: number, col: number, currentKeyId: string) => {
+    setEditTarget({ area, row, col, currentKeyId });
+    setPickerVisible(true);
+  };
+
+  const handleKeySelect = (keyId: string) => {
+    if (!editTarget) return;
+    if (editTarget.area === 'num') {
+      setNumKey(editTarget.row, editTarget.col, keyId);
+    } else {
+      setUtilKey(editTarget.col, keyId);
+    }
+    setPickerVisible(false);
+    setEditTarget(null);
+  };
+
+  const handlePickerClose = () => {
+    setPickerVisible(false);
+    setEditTarget(null);
+  };
+
+  const typeColor: Record<string, string> = {
+    fn: '#3A3A3C',
+    num: '#2C2C2E',
+    op: '#FF9500',
+    'op-eq': '#fff',
+    mic: '#2C2C2E',
+    util: '#3A3A3C',
+  };
+
+  return (
+    <View>
+      {/* プリセット選択 */}
+      <View style={layoutEditorStyles.presetRow}>
+        {(Object.keys(PRESETS) as PresetName[]).map((name) => (
+          <TouchableOpacity
+            key={name}
+            style={layoutEditorStyles.presetBtn}
+            onPress={() => applyPreset(name)}
+            activeOpacity={0.7}
+          >
+            <Text style={layoutEditorStyles.presetBtnText}>
+              {PRESET_LABELS[name]}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <Text style={layoutEditorStyles.hint}>
+        タップしてキーを変更
+      </Text>
+
+      {/* UtilBar エディタ */}
+      <Text style={layoutEditorStyles.areaLabel}>ユーティリティバー</Text>
+      <View style={layoutEditorStyles.editorRow}>
+        {utilLayout.map((cell, ci) => {
+          const def = resolveKey(cell.keyId);
+          const bg = def ? (typeColor[def.type] ?? '#2C2C2E') : '#2C2C2E';
+          const textColor = def?.type === 'op-eq' ? '#000' : '#fff';
+          return (
+            <TouchableOpacity
+              key={`u-${ci}`}
+              style={[layoutEditorStyles.editorCell, { flex: cell.flex ?? 1, backgroundColor: bg }]}
+              onPress={() => handleCellPress('util', 0, ci, cell.keyId)}
+              activeOpacity={0.7}
+            >
+              <Text style={[layoutEditorStyles.editorCellText, { color: textColor }]} numberOfLines={1}>
+                {def?.label ?? '?'}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* NumGrid エディタ */}
+      <Text style={[layoutEditorStyles.areaLabel, { marginTop: 10 }]}>メインキーパッド</Text>
+      {numLayout.map((row, ri) => (
+        <View key={ri} style={layoutEditorStyles.editorRow}>
+          {row.map((cell, ci) => {
+            const def = resolveKey(cell.keyId);
+            const bg = def ? (typeColor[def.type] ?? '#2C2C2E') : '#2C2C2E';
+            const textColor = def?.type === 'op-eq' ? '#000' : '#fff';
+            return (
+              <TouchableOpacity
+                key={`n-${ri}-${ci}`}
+                style={[layoutEditorStyles.editorCell, { flex: cell.flex ?? 1, backgroundColor: bg }]}
+                onPress={() => handleCellPress('num', ri, ci, cell.keyId)}
+                activeOpacity={0.7}
+              >
+                <Text style={[layoutEditorStyles.editorCellText, { color: textColor }]} numberOfLines={1}>
+                  {def?.label ?? '?'}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      ))}
+
+      {/* Key Picker */}
+      <KeyPicker
+        visible={pickerVisible}
+        currentKeyId={editTarget?.currentKeyId ?? ''}
+        onSelect={handleKeySelect}
+        onClose={handlePickerClose}
+      />
+    </View>
+  );
+};
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 const ANGLE_OPTIONS: SegmentOption<AngleUnit>[] = [
@@ -344,7 +593,13 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ isVisible, onClose }) => 
         {/* Scrollable content */}
         <ScrollView style={styles.sheetScroll} showsVerticalScrollIndicator={false}>
 
-          {/* ── 角度モード ─────────────────────────────── */}
+          {/* ── キーレイアウト ──────────────────────── */}
+          <SectionHeader title="キーレイアウト" />
+          <View style={styles.layoutEditorSection}>
+            <LayoutEditor />
+          </View>
+
+          {/* ── 角度モード ─────────────────────────── */}
           <SectionHeader title="角度モード" />
           <SettingRow
             label="単位"
@@ -474,7 +729,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    maxHeight: '70%',
+    maxHeight: '85%',
     backgroundColor: colors.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -656,7 +911,7 @@ const styles = StyleSheet.create({
     color: colors.amber,
   },
   activeBadge: {
-    backgroundColor: colors.amberBg,
+    backgroundColor: 'rgba(255,149,0,0.10)',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 6,
@@ -684,5 +939,174 @@ const styles = StyleSheet.create({
     height: 3,
     backgroundColor: colors.amber,
     borderRadius: 2,
+  },
+
+  // ── Layout editor section ──────────────────────────────────────────────────
+  layoutEditorSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+});
+
+// ── Layout Preview Styles ────────────────────────────────────────────────────
+
+const layoutStyles = StyleSheet.create({
+  previewContainer: {
+    marginBottom: 8,
+  },
+  previewLabel: {
+    fontSize: 11,
+    color: colors.g2,
+    marginBottom: 4,
+  },
+  previewGrid: {
+    gap: 1,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 6,
+    overflow: 'hidden',
+    padding: 2,
+  },
+  previewRow: {
+    flexDirection: 'row',
+    gap: 1,
+  },
+  previewCell: {
+    height: 22,
+    borderRadius: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewCellText: {
+    fontSize: 8,
+    fontWeight: '500',
+  },
+});
+
+// ── Layout Editor Styles ─────────────────────────────────────────────────────
+
+const layoutEditorStyles = StyleSheet.create({
+  presetRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  presetBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.g0,
+    alignItems: 'center',
+  },
+  presetBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.black,
+  },
+  hint: {
+    fontSize: 11,
+    color: colors.g2,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  areaLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.g2,
+    letterSpacing: 0.5,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  editorRow: {
+    flexDirection: 'row',
+    gap: 2,
+    marginBottom: 2,
+  },
+  editorCell: {
+    height: 36,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  editorCellText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+});
+
+// ── Key Picker Styles ────────────────────────────────────────────────────────
+
+const pickerStyles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  container: {
+    width: '88%',
+    maxHeight: '70%',
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.g0,
+  },
+  title: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.black,
+  },
+  close: {
+    fontSize: 18,
+    color: colors.g2,
+    fontWeight: '300',
+  },
+  scroll: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  catTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.g2,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  keyBtn: {
+    minWidth: 48,
+    height: 38,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: colors.g0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  keyBtnSelected: {
+    backgroundColor: colors.black,
+  },
+  keyBtnText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.black,
+  },
+  keyBtnTextSelected: {
+    color: colors.white,
   },
 });

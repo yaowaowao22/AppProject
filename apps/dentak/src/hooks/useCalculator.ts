@@ -279,6 +279,55 @@ export function useCalculator() {
       _applyFnReal('sqrt');
     } else if (key === 'x²' || key === '²') {
       _applyFnReal('^2');
+    } else if (key === 'x³') {
+      _applyFnReal('^3');
+    } else if (key === 'cbrt') {
+      _applyFnReal('cbrt');
+    } else if (key === 'eˣ') {
+      // e^current
+      const s = useCalculatorStore.getState();
+      const rawExpr = `exp(${s.current})`;
+      const normalized = normalizeExpression(rawExpr);
+      const { angleUnit: au } = useSettingsStore.getState();
+      const resultStr = evaluate(normalized, au);
+      const entry: HistoryEntry = { expression: rawExpr, result: resultStr, timestamp: Date.now() };
+      useCalculatorStore.setState({
+        current: resultStr, expression: '', history: [entry, ...s.history],
+        shouldReset: true, lastAnswer: resultStr !== 'Error' ? parseFloat(resultStr) : s.lastAnswer,
+      });
+      void (resultStr === 'Error' ? Haptics.error() : Haptics.success());
+    } else if (key === '10^x') {
+      const s = useCalculatorStore.getState();
+      const rawExpr = `10^(${s.current})`;
+      const normalized = normalizeExpression(rawExpr);
+      const { angleUnit: au } = useSettingsStore.getState();
+      const resultStr = evaluate(normalized, au);
+      const entry: HistoryEntry = { expression: rawExpr, result: resultStr, timestamp: Date.now() };
+      useCalculatorStore.setState({
+        current: resultStr, expression: '', history: [entry, ...s.history],
+        shouldReset: true, lastAnswer: resultStr !== 'Error' ? parseFloat(resultStr) : s.lastAnswer,
+      });
+      void (resultStr === 'Error' ? Haptics.error() : Haptics.success());
+    } else if (key === 'n!') {
+      _applyFnReal('factorial');
+    } else if (key === '1/x') {
+      const s = useCalculatorStore.getState();
+      const rawExpr = `1/(${s.current})`;
+      const normalized = normalizeExpression(rawExpr);
+      const { angleUnit: au } = useSettingsStore.getState();
+      const resultStr = evaluate(normalized, au);
+      const entry: HistoryEntry = { expression: `(${s.current})⁻¹`, result: resultStr, timestamp: Date.now() };
+      useCalculatorStore.setState({
+        current: resultStr, expression: '', history: [entry, ...s.history],
+        shouldReset: true, lastAnswer: resultStr !== 'Error' ? parseFloat(resultStr) : s.lastAnswer,
+      });
+      void (resultStr === 'Error' ? Haptics.error() : Haptics.success());
+    } else if (key === 'EE') {
+      // Scientific notation input: append 'e' for exponent entry
+      const s = useCalculatorStore.getState();
+      if (!s.current.includes('e')) {
+        useCalculatorStore.setState({ current: s.current + 'e', shouldReset: false });
+      }
 
     // Constants — input as digit-like tokens
     } else if (key === 'π') {
